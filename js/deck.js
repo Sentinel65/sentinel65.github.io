@@ -114,7 +114,7 @@ var deck = {
       name: 'Stoletá voda',
       strength: 32,
       bonus: null,
-      penalty: '<span class="flood">Flood-Potopa</span><br />VYMAŽE všechny karty <span class="army">Armmy-Armáda</span>, všechny karty <span class="land">Land-Země</span> kromě karty <span class="land">Hora</span> a všechny karty <span class="flame">Flame-Oheň</span> kromě karty <span class="flame">Blesk</span>.',
+      penalty: '<span class="flood">Flood-Potopa</span><br />VYMAŽE všechny karty <span class="army">Army-Armáda</span>, všechny karty <span class="land">Land-Země</span> kromě karty <span class="land">Hora</span> a všechny karty <span class="flame">Flame-Oheň</span> kromě karty <span class="flame">Blesk</span>.',
       blanks: function(card, hand) {
         return (card.suit === 'Army-Armáda' && !(hand.containsId(25) || hand.containsId(41))) || // these clear the word 'Army-Armáda' from the penalty
           (card.suit === 'Land-Země' && card.name !== 'Hora') ||
@@ -524,7 +524,7 @@ var deck = {
       bonus: '<span class="beast">Beast-Tvor</span><br />+30, máš-li kartu <span class="leader">Princezna</span>. <br />NEBO +15, máš-li kartu <span class="leader">Císařovna</span>, <span class="leader">Královna</span> nebo <span class="leader">Kouzelnice</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Princess') ? 30 : (hand.contains('Empress') || hand.contains('Queen') || hand.contains('Enchantress')) ? 15 : 0;
+        return hand.contains('Princezna') ? 30 : (hand.contains('Císařovna') || hand.contains('Královna') || hand.contains('Kouzelnice')) ? 15 : 0;
       },
       relatedSuits: [],
       relatedCards: ['Princezna', 'Císařovna', 'Královna', 'Kouzelnice']
@@ -588,8 +588,8 @@ var deck = {
       suit: 'Weapon-Zbraň',
       name: 'Válečná loď',
       strength: 23,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />ODSTRAŇUJE slovo <span class="army">Army-Armáda</span> ze všech postihů na všech kartách <span class="flood">Flood-Potopa</span>.',
-      penalty: 'Je VYMAZÁNA, nemáš-li alespoň jednu kartu <span class="Flood-Potopa">Flood-Potopa</span>.',
+      bonus: '<span class="weapon">Weapon-Zbraň</span><br />Je VYMAZÁNA, nemáš-li alespoň jednu kartu <span class="Flood-Potopa">Flood-Potopa</span>.',
+      penalty: 'ODSTRAŇUJE slovo <span class="army">Army-Armáda</span> ze všech postihů na všech kartách <span class="flood">Flood-Potopa</span>.',
       blankedIf: function(hand) {
         return !hand.containsSuit('Flood-Potopa');
       },
@@ -627,13 +627,13 @@ var deck = {
       suit: 'Weapon-Zbraň',
       name: 'Elfský luk',
       strength: 3,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />+30, máš-li kartu <span class="army">Elfí lučištník</span>, <span class="leader">Velitel</span> nebo <span class="wizard">Pán šelem</span>.',
+      bonus: '<span class="weapon">Weapon-Zbraň</span><br />+30, máš-li kartu <span class="army">Elfí lučištníci</span>, <span class="leader">Velitel</span> nebo <span class="wizard">Pán šelem</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Elfí lučištník') || hand.contains('Velitel') || hand.contains('Pán šelem') ? 30 : 0;
+        return hand.contains('Elfí lučištníci') || hand.contains('Velitel') || hand.contains('Pán šelem') ? 30 : 0;
       },
       relatedSuits: [],
-      relatedCards: ['Elfí lučištník', 'Velitel', 'Pán šelem']
+      relatedCards: ['Elfí lučištníci', 'Velitel', 'Pán šelem']
     },
     {
       id: 45,
