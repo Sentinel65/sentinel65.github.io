@@ -759,7 +759,7 @@ var deck = {
       suit: 'Wild-Divoká',
       name: 'Přelud',
       strength: 0,
-      bonus: '<span class="wild">Wild-Divoká</span><br /><b>Přelud</b> může zkopírovat jméno a barvu jakékoliv karty  <span class="army">Army-Armáda</span>, <span class="land">Land-Země</span>, <span class="weather">Waether-Počasí</span>, <span class="flood">Potopa</span> nebo <span class="flame">Flame-Oheň</span> ve hře. <br />Základní síla, bonusy ani postihy se nekopírují.',
+      bonus: '<span class="wild">Wild-Divoká</span><br /><b>Přelud</b> může zkopírovat jméno a barvu jakékoliv karty  <span class="army">Army-Armáda</span>, <span class="land">Land-Země</span>, <span class="weather">Waether-Počasí</span>, <span class="flood">Flood-Potopa</span> nebo <span class="flame">Flame-Oheň</span> ve hře. <br />Základní síla, bonusy ani postihy se nekopírují.',
       penalty: null,
       action: 'Vyber z ruky kartu, kterou chceš zkopírovat.',
       relatedSuits: ['Army-Armáda', 'Land-Země', 'Weather-Počasí', 'Flood-Potopa', 'Flame-Oheň'].sort(),
