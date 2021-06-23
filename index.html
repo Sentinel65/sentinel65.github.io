@@ -1,1 +1,134 @@
-# sentinel.github.ipo
+<html lang="en" manifest="/fantasy-realms/fantasy-realms.appcache">
+
+<head>
+  <meta charset="utf-8">
+  <title>Tajuplné říše - bodování</title>
+  <meta name="description" content="Fantasy Realms: App of Scoring">
+  <meta name="author" content="Jimmy Praet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="icons/ms-icon-144x144.png">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="apple-touch-icon" sizes="57x57" href="icons/apple-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="icons/apple-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="icons/apple-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="icons/apple-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="icons/apple-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/apple-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/jquery-3.2.1.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/handlebars-v4.0.10.js"></script>
+  <script src="js/deck.js"></script>
+  <script src="js/hand.js"></script>
+  <script src="js/app.js"></script>
+</head>
+
+<body>
+  <script id="cards-template" type="text/x-handlebars-template">
+    {{#each suits}}
+    <div class="card">
+      <div class="card-header" role="tab" id="{{@key}}Header" data-toggle="collapse" data-parent="#cards" href="#{{@key}}" aria-expanded="false" aria-controls="{{@key}}">
+        <a>{{@key}}</a>
+      </div>
+      <div id="{{@key}}" class="collapse" role="tabpanel" aria-labelledby="{{@key}}Header">
+        <ul class="list-group">
+          {{#each this}}
+          <li class="list-group-item {{suit}}" onclick="addToHand({{id}})"><span class="badge badge-default">{{strength}}</span> {{name}}</li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+    {{/each}}
+  </script>
+  <script id="suit-selection-template" type="text/x-handlebars-template">
+    {{#each suits}}
+    <div class="card">
+      <div class="card-header suit-selection" onclick="selectSuit('{{this}}')">
+        {{this}}
+      </div>
+    </div>
+    {{/each}}
+  </script>
+  <script id="hand-template" type="text/x-handlebars-template">
+    {{#each cardsInHand}}
+    <div id="card-{{id}}" class="card" onclick="selectFromHand({{id}})">
+      <ul class="list-group">
+        <li class="list-group-item {{suit}} {{#if blanked}}blanked{{/if}}">
+          <span class="badge badge-default">
+            {{#if blanked}}
+              VYMAZÁNO
+            {{else}}
+              {{strength}}
+            {{/if}}
+          </span> {{name}}
+          {{#if magic}}
+          *
+          {{/if}}
+          <span class="float-right points">{{points}}</span>
+        </li>
+        {{#if bonus}}
+        <li class="list-group-item bonus {{#if blanked}}blanked{{/if}}">
+          {{{bonus}}}
+          {{#if bonusPoints}}
+          <span class="float-right bonus">+{{bonusPoints}}</span>
+          {{/if}}
+        </li>
+        {{/if}}
+        {{#if penalty}}
+        <li class="list-group-item penalty {{#if blanked}}blanked{{/if}} {{#if penaltyCleared}}cleared{{/if}}">
+          {{{penalty}}}
+          {{#if penaltyPoints}}
+          <span class="float-right penalty">{{penaltyPoints}}</span>
+          {{/if}}
+        </li>
+        {{/if}}
+        {{#if card.action}}
+        <li class="list-group-item bonus">
+            <span id="card-action-text-{{id}}" />
+            <button id="card-action-{{id}}" type="button" class="btn btn-sm btn-primary float-right" onclick="event.stopPropagation(); useCard({{id}});">Použít</button>
+        </li>
+        {{/if}}
+      </ul>
+    </div>
+    {{/each}}
+  </script>
+  <div id="container">
+    <div id="header">
+      <img src="img/fantasy-realms.jpg" style="height: 3rem;"></img>
+      <div id="header-right">
+        <div id="hand-info">
+          <span id="cardCount">0</span><span class="separator">/</span><span id="cardLimit">7</span>
+          <span id="points">000</span>
+        </div>
+        <button id="clear" type="button" class="btn btn-success" onclick="clearHand()">Vynulovat</button>
+      </div>
+    </div>
+    <div id="main">
+      <div id="left">
+        <div id="cards" class="panel" role="tablist" aria-multiselectable="true"></div>
+      </div>
+      <div id="right">
+        <div id="hand">
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/fantasy-realms/service-worker.js', {scope: '/fantasy-realms/'});
+  }
+</script>
+
+</html>
