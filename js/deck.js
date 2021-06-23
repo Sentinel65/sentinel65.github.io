@@ -124,13 +124,13 @@ var deck = {
       relatedCards: ['Hora', 'Blesk']
     },
     {
-      id: 9,
+       id: 9,
       suit: 'Flood-Potopa',
       name: 'Ostrov',
       strength: 14,
-      bonus: '<span class="flood">Flood-Potopa</span><br />ODSTRAŇUJE postih z jedné karty  <span class="flood">Flood-Potopa</span> nebo <span class="flame">Flame-Oheň</span>.',
+      bonus: '<span class="flood">Flood-Potopa</span><br />ODSTRANÍ postih z karty <span class="flood">Flood-Potopa</span> nebo <span class="flame">Flame-Oheň</span>.',
       penalty: null,
-      action: 'Vyber kartu Flood-Potopa nebo Flame-Oheň ze své ruky pro odstranění postihu.',
+      action: 'Pro odstranění postihu vyber ze své ruky kartu Flood-Potopa nebo Flame-Oheň.',
       relatedSuits: ['Flood-Potopa', 'Flame-Oheň'],
       relatedCards: []
     },
@@ -223,15 +223,15 @@ var deck = {
       relatedCards: []
     },
     {
-      id: 16,
+id: 16,
       suit: 'Flame-Oheň',
       name: 'Požár',
       strength: 40,
       bonus: null,
-      penalty: '<span class="flame">Flame-Oheň</span><br />VYMAŽE všechny karty kromě karet <span class="flame">Flame-Oheň</span>, <span class="wizard">Wizard-Čaroděj</span>, <span class="weather">Weather-Počasí</span>, <span class="weapon">Weapon-Zbraň</span>, <span class="artifact">Artifact-Artefakt</span>, <span class="land">Hora</span>, <span class="flood">Stoletá voda</span>, <span class="flood">Ostrov</span>, <span class="beast">Jednorožec</span> a <span class="beast">Drak</span>.',
+      penalty: '<span class="flame">Flame-Oheň</span><br />VYMAŽE vše kromě karet <span class="flame">Flame-Oheň</span>, <span class="wizard">Wizard-Čaroděj</span>, <span class="weather">Weather-Počasí</span>, <span class="weapon">Weapon-Zbraň</span>, <span class="artifact">Artifact-Artefakt</span>, <span class="land">Hora</span>, <span class="flood">Stoletá voda</span>, <span class="flood">Ostrov</span>, <span class="beast">Jednorožec</span> a <span class="beast">Drak</span>.',
       blanks: function(card, hand) {
         return !(card.suit === 'Flame-Oheň' || card.suit === 'Wizard-Čaroděj' || card.suit === 'Weather-Počasí' ||
-          card.suit === 'Weapon-Zbraň' || card.suit === 'Artifact-Artefakt' || card.suit === 'Wild-Divoká' || card.name === 'Hora' ||
+          card.suit === 'Weapon-Zbraň' || card.suit === 'Artifact-Aertefakt' || card.suit === 'Wild-Divoká' || card.name === 'Hora' ||
           card.name === 'Stoletá voda' || card.name === 'Ostrov' || card.name === 'Jednorožec' || card.name === 'Drak');
       },
       relatedSuits: allSuits(),

@@ -13,7 +13,8 @@ $(document).ready(function() {
   assertScoreByCode('28,29,31,32,34,35,51,53+51:31,53:29', -74, 'Nejhorší bodový zisk na ruce?');
   assertScoreByCode('37,53+53:37', 0, '2 Bazilišek by se měl při kopírování Dvojníkem navzájem vymazat');
   assertScoreByCode('24,53+53:24', 26, '2 Trpasličí pěchota se bude s Dvojníkem navzájem postihovat');
-  assertScoreByCode('9,12,16,37+9:16', 95, 'OStrov lze použít, i když je vymazaný');
+  assertScoreByCode('9,12,16,37+9:16', 95, 'Ostrov lze použít, i když je vymazaný');
+  assertScoreByCode('9,16+9:16,', 54, 'Ostrov a Požár');
   assertScoreByCode('10,53+53:10', 23, 'Elementálové počítají s Dvojníkem');
   assertScoreByCode('26,27,30,36,38,39,40+', 193, 'Sběratel může bodovat vícekrát');
   assertScoreByCode('26,46,47,51,53+51:46,53:46', 20, 'Sběratel neboduje u duplikovaných karet');
