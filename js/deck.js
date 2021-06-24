@@ -7,13 +7,13 @@ var deck = {
       bonus: '<span class="land">Zeme</span><br />+50, mas-li kartu <span class="weather">Kour</span> a <span class="flame">Pozar</span>. <br />ODSTRANUJE postih ze vsech karet <span class="flood">Potopa</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Kour') && hand.contains('Wildfire') ? 50 : 0;
+        return hand.contains('Kour') && hand.contains('Pozar') ? 50 : 0;
       },
       clearsPenalty: function(card) {
         return card.suit === 'Potopa';
       },
       relatedSuits: ['Potopa'],
-      relatedCards: ['Kour', 'pozar']
+      relatedCards: ['Kour', 'Pozarr']
     },
     {
       id: 2,
@@ -486,7 +486,7 @@ var deck = {
       suit: 'Vudce',
       name: 'Velitel',
       strength: 4,
-      bonus: '<span class="leader">Vůuce</span><br />Soucet zakladních sil vsech karet <span class="army">Armada</span>, ktere mas v ruce.',
+      bonus: '<span class="leader">Vudce</span><br />Soucet zakladních sil vsech karet <span class="army">Armada</span>, ktere mas v ruce.',
       penalty: null,
       bonusScore: function(hand) {
         var total = 0;
