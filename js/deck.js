@@ -1,86 +1,86 @@
 var deck = {
   cards: [{
       id: 1,
-      suit: 'Land-Země',
+      suit: 'Zeme',
       name: 'Hora',
       strength: 9,
-      bonus: '<span class="land">Land-Země</span><br />+50, máš-li kartu <span class="weather">Kouř</span> a <span class="flame">Požár</span>. <br />ODSTRAŇUJE postih ze všech karet <span class="flood">Flood-Potopa</span>.',
+      bonus: '<span class="land">Zeme</span><br />+50, mas-li kartu <span class="weather">Kour</span> a <span class="flame">Pozar</span>. <br />ODSTRANUJE postih ze vsech karet <span class="flood">Potopa</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Kouř') && hand.contains('Požár') ? 50 : 0;
+        return hand.contains('Kour') && hand.contains('Wildfire') ? 50 : 0;
       },
       clearsPenalty: function(card) {
-        return card.suit === 'Flood-Potopa';
+        return card.suit === 'Potopa';
       },
-      relatedSuits: ['Flood-Potopa'],
-      relatedCards: ['Kouř', 'Požár']
+      relatedSuits: ['Potopa'],
+      relatedCards: ['Kour', 'pozar']
     },
     {
       id: 2,
-      suit: 'Land-Země',
-      name: 'Jeskyně',
+      suit: 'Zeme',
+      name: 'Jeskyne',
       strength: 6,
-      bonus: '<span class="land">Land-Země</span><br />+25, máš-li kartu <span class="army">Trpasličí pěchota</span> nebo <span class="beast">Drak</span>. <br />ODSTRAŇUJE postih ze všech karet <span class="weather">Weather-Počasí</span>.',
+      bonus: '<span class="land">Zeme</span><br />+25, mas-li kartu <span class="army">Trpaslici pechota</span> nebo <span class="beast">Drak</span>. <br />ODSTRANUJE postih ze vsech karet <span class="weather">Pocasi</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Trpasličí pěchota') || hand.contains('Drak') ? 25 : 0;
+        return hand.contains('Trpaslici pechota') || hand.contains('Drak') ? 25 : 0;
       },
       clearsPenalty: function(card) {
-        return card.suit === 'Weather-Počasí';
+        return card.suit === 'Pocasi';
       },
-      relatedSuits: ['Weather-Počasí'],
-      relatedCards: ['Trpasličí pěchota', 'Drak']
+      relatedSuits: ['Pocasi'],
+      relatedCards: ['Trpaslici pechota', 'Drak']
     },
     {
       id: 3,
-      suit: 'Land-Země',
+      suit: 'Zeme',
       name: 'Zvonice',
       strength: 8,
-      bonus: '<span class="land">Land-Země</span><br />+15, máš-li alespoň jednu kartu <span class="wizard">Wizard-Čaroděj</span>.',
+      bonus: '<span class="land">Zeme</span><br />+15, mas-li alespon jednu kartu <span class="wizard">Caroděj</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Wizard-Čaroděj') ? 15 : 0;
+        return hand.containsSuit('Carodej') ? 15 : 0;
       },
-      relatedSuits: ['Wizard-Čaroděj'],
+      relatedSuits: ['Carodej'],
       relatedCards: []
     },
     {
       id: 4,
-      suit: 'Land-Země',
+      suit: 'Zeme',
       name: 'Les',
       strength: 7,
-      bonus: '<span class="land">Land-Země</span><br />+12 za každou kartu <span class="beast">Beast-Tvor</span> a <span class="army">Elfí lučištník</span>.',
+      bonus: '<span class="land">Zeme</span><br />+12 za kazdou kartu <span class="beast">Tvor</span> a <span class="army">Elfi lucistnici</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 12 * hand.countSuit('Beast-Tvor') + (hand.contains('Elfí lučištník') ? 12 : 0);
+        return 12 * hand.countSuit('Tvor') + (hand.contains('Elfi lucistnici') ? 12 : 0);
       },
-      relatedSuits: ['Beast-Tvor'],
-      relatedCards: ['Elfí lučištník']
+      relatedSuits: ['Tvor'],
+      relatedCards: ['Elfi lucistnici']
     },
     {
       id: 5,
-      suit: 'Land-Země',
-      name: 'Elementál země',
+      suit: 'Zeme',
+      name: 'Elemental zeme',
       strength: 4,
-      bonus: '<span class="land">Land-Země</span><br />+15 za každou další kartu <span class="land">Land-Země</span>.',
+      bonus: '<span class="land">Zeme</span><br />+15 za kazdou dalsi kartu <span class="land">Zeme</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 15 * hand.countSuitExcluding('Land-Země', this.id);
+        return 15 * hand.countSuitExcluding('Zeme', this.id);
       },
-      relatedSuits: ['Land-Země'],
+      relatedSuits: ['Zeme'],
       relatedCards: []
     },
     {
       id: 6,
-      suit: 'Flood-Potopa',
-      name: 'Fontána života',
+      suit: 'Potopa',
+      name: 'Fontana zivota',
       strength: 1,
-      bonus: '<span class="flood">Flood-Potopa</span><br />Přidej základní sílu jakékoli kartě <span class="weapon">Weapon-Zbraň</span>, <span class="flood">Flood-Potopa</span>, <span class="flame">Flame-Oheň</span>, <span class="land">Land-Země</span> nebo <span class="weather">Weather-Počasí</span> ve tvé ruce.',
+      bonus: '<span class="flood">Potopa</span><br />Pridej zakladni silu jakekoli karte <span class="weapon">Zbran</span>, <span class="flood">Potopa</span>, <span class="flame">Ohen</span>, <span class="land">Zeme</span> nebo <span class="weather">Pocasi</span> ve tve ruce.',
       penalty: null,
       bonusScore: function(hand) {
         var max = 0;
         for (const card of hand.nonBlankedCards()) {
-          if (card.suit === 'Weapon-Zbraň' || card.suit === 'Flood-Potopa' || card.suit === 'Flame-Oheň' || card.suit === 'Land-Země' || card.suit === 'Weather-Počasí') {
+          if (card.suit === 'Zbran' || card.suit === 'Potopa' || card.suit === 'Ohen' || card.suit === 'Zeme' || card.suit === 'Pocasi') {
             if (card.strength > max) {
               max = card.strength;
             }
@@ -88,282 +88,282 @@ var deck = {
         }
         return max;
       },
-      relatedSuits: ['Weapon-Zbraň', 'Flood-Potopa', 'Flame-Oheň', 'Land-Země', 'Weather-Počasí'],
+      relatedSuits: ['Zbran', 'Potopa', 'Ohen', 'Zeme', 'Pocasi'],
       relatedCards: []
     },
     {
       id: 7,
-      suit: 'Flood-Potopa',
-      name: 'Bažina',
+      suit: 'Potopa',
+      name: 'Bazina',
       strength: 18,
       bonus: null,
-      penalty: '<span class="flood">Flood-Potopa</span><br />-3 za každou kartu <span class="army">Army-Armáda</span> a <span class="flame">Flame-Oheň</span>.',
+      penalty: '<span class="flood">Potopa</span><br />-3 za kazdou kartu <span class="army">Armada</span> a <span class="flame">Ohen</span>.',
       penaltyScore: function(hand) {
-        var penaltyCards = hand.countSuit('Flame-Oheň');
-        if (!(hand.containsId(25) || hand.containsId(41))) { // these clear the word 'Army-Armáda' from the penalty
-          penaltyCards += hand.countSuit('Army-Armáda');
+        var penaltyCards = hand.countSuit('Ohen');
+        if (!(hand.containsId(25) || hand.containsId(41))) { // these clear the word 'Armada' from the penalty
+          penaltyCards += hand.countSuit('Armada');
         }
         return -3 * penaltyCards;
       },
-      relatedSuits: ['Army-Armáda', 'Flame-Oheň'],
+      relatedSuits: ['Armada', 'Ohen'],
       relatedCards: []
     },
     {
       id: 8,
-      suit: 'Flood-Potopa',
-      name: 'Stoletá voda',
+      suit: 'Potopa',
+      name: 'Stoleta voda',
       strength: 32,
       bonus: null,
-      penalty: '<span class="flood">Flood-Potopa</span><br />VYMAŽE všechny karty <span class="army">Army-Armáda</span>, všechny karty <span class="land">Land-Země</span> kromě karty <span class="land">Hora</span> a všechny karty <span class="flame">Flame-Oheň</span> kromě karty <span class="flame">Blesk</span>.',
+      penalty: '<span class="flood">Potopa</span><br />VYMAZE vsechny karty <span class="army">Armada</span>, vsechny karty <span class="land">Zeme</span>, krome karty <span class="land">Hora</span> a vsechny karty <span class="flame">Ohen</span>, krome karty <span class="flame">Blesk</span>.',
       blanks: function(card, hand) {
-        return (card.suit === 'Army-Armáda' && !(hand.containsId(25) || hand.containsId(41))) || // these clear the word 'Army-Armáda' from the penalty
-          (card.suit === 'Land-Země' && card.name !== 'Hora') ||
-          (card.suit === 'Flame-Oheň' && card.name !== 'Blesk');
+        return (card.suit === 'Armada' && !(hand.containsId(25) || hand.containsId(41))) || // these clear the word 'Armada' from the penalty
+          (card.suit === 'Zeme' && card.name !== 'Hora') ||
+          (card.suit === 'Ohen' && card.name !== 'Blesk');
       },
-      relatedSuits: ['Army-Armáda', 'Land-Země', 'Flame-Oheň'],
+      relatedSuits: ['Armada', 'Zeme', 'Ohen'],
       relatedCards: ['Hora', 'Blesk']
     },
     {
-       id: 9,
-      suit: 'Flood-Potopa',
+      id: 9,
+      suit: 'Potopa',
       name: 'Ostrov',
       strength: 14,
-      bonus: '<span class="flood">Flood-Potopa</span><br />ODSTRANÍ postih z karty <span class="flood">Flood-Potopa</span> nebo <span class="flame">Flame-Oheň</span>.',
+      bonus: '<span class="flood">Potopa</span><br />ODSTRANUJE postih z jedne karty  <span class="flood">Potopa</span> nebo <span class="flame">Ohen</span>.',
       penalty: null,
-      action: 'Pro odstranění postihu vyber ze své ruky kartu Flood-Potopa nebo Flame-Oheň.',
-      relatedSuits: ['Flood-Potopa', 'Flame-Oheň'],
+      action: 'Pro ODSTRANENI postihu vyber ze sve ruky jednu kartu Potopa nebo Ohen.',
+      relatedSuits: ['Potopa', 'Ohen'],
       relatedCards: []
     },
     {
       id: 10,
-      suit: 'Flood-Potopa',
-      name: 'Elementál vody',
+      suit: 'Potopa',
+      name: 'Elemental vody',
       strength: 4,
-      bonus: '<span class="flood">Flood-Potopa</span><br />+15 za každou další kartu <span class="flood">Flood-Potopa</span>.',
+      bonus: '<span class="flood">Potopa</span><br />+15 za kazdou dalsi kartu <span class="flood">Potopa</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 15 * hand.countSuitExcluding('Flood-Potopa', this.id);
+        return 15 * hand.countSuitExcluding('Potopa', this.id);
       },
-      relatedSuits: ['Flood-Potopa'],
+      relatedSuits: ['Potopa'],
       relatedCards: []
     },
     {
       id: 11,
-      suit: 'Weather-Počasí',
-      name: 'Bouře',
+      suit: 'Pocasi',
+      name: 'Boure',
       strength: 8,
-      bonus: '<span class="weather">Weather-Počasí</span><br />+10 za každou další kartu <span class="flood">Flood-Potopa</span>.',
-      penalty: 'VYMAŽE všechny  karty <span class="flame">Flame-Oheň</span> kromě karty <span class="flame">Blesk</span>.',
+      bonus: '<span class="weather">Pocasi</span><br />+10 za kazdou dalsi kartu <span class="flood">Potopa</span>.',
+      penalty: 'VYMAZE vsechny  karty <span class="flame">Ohen</span>, krome karty <span class="flame">Blesk</span>.',
       bonusScore: function(hand) {
-        return 10 * hand.countSuit('Flood-Potopa');
+        return 10 * hand.countSuit('Potopa');
       },
       blanks: function(card, hand) {
-        return card.suit === 'Flame-Oheň' && card.name !== 'Blesk';
+        return card.suit === 'Ohen' && card.name !== 'Blesk';
       },
-      relatedSuits: ['Flood-Potopa', 'Flame-Oheň'],
+      relatedSuits: ['Potopa', 'Ohen'],
       relatedCards: ['Blesk']
     },
     {
       id: 12,
-      suit: 'Weather-Počasí',
-      name: 'Sněhová vánice',
+      suit: 'Pocasi',
+      name: 'Snehova vanice',
       strength: 30,
       bonus: null,
-      penalty: '<span class="weather">Weather-Počasí</span><br />VYMAŽE všechny karty <span class="flood">Flood-Potopa</span>. <br />-5 za každou kartu <span class="army">Army-Armáda</span>, <span class="leader">Leader-Vůdce</span>, <span class="beast">Beast-Tvor</span> a <span class="flame">Flame-Oheň</span>.',
+      penalty: '<span class="weather">Pocasi</span><br />VYMAZE vsechny karty <span class="flood">Potopa</span>. <br />-5 za kazdou kartu <span class="army">Armada</span>, <span class="leader">Vudce</span>, <span class="beast">Tvor</span> a <span class="flame">Ohen</span>.',
       penaltyScore: function(hand) {
-        var penaltyCards = hand.countSuit('Leader-Vůdce') + hand.countSuit('Beast-Tvor') + hand.countSuit('Flame-Oheň');
-        if (!hand.containsId(25)) { // clears the word 'Army-Armáda' from the penalty
-          penaltyCards += hand.countSuit('Army-Armáda');
+        var penaltyCards = hand.countSuit('Vudce') + hand.countSuit('Tvor') + hand.countSuit('Ohen');
+        if (!hand.containsId(25)) { // clears the word 'Armada' from the penalty
+          penaltyCards += hand.countSuit('Armada');
         }
         return -5 * penaltyCards;
       },
       blanks: function(card, hand) {
-        return card.suit === 'Flood-Potopa';
+        return card.suit === 'Potopa';
       },
-      relatedSuits: ['Leader-Vůdce', 'Beast-Tvor', 'Flame-Oheň', 'Army-Armáda', 'Flood-Potopa'],
+      relatedSuits: ['Vudce', 'Tvor', 'Ohen', 'Armada', 'Potopa'],
       relatedCards: []
     },
     {
       id: 13,
-      suit: 'Weather-Počasí',
-      name: 'Kouř',
+      suit: 'Pocasi',
+      name: 'Kour',
       strength: 27,
       bonus: null,
-      penalty: '<span class="weather">Weather-Počasí</span><br />Tato karty je VYMAZÁNA, nemáš-li alespoň jednu kartu <span class="flame">Flame-Oheň</span>.',
+      penalty: '<span class="weather">Pocasi</span><br />Tato karty je VYMAZANA, nemas-li alespon jednu kartu <span class="flame">Ohen</span>.',
       blankedIf: function(hand) {
-        return !hand.containsSuit('Flame-Oheň');
+        return !hand.containsSuit('Ohen');
       },
-      relatedSuits: ['Flame-Oheň'],
+      relatedSuits: ['Ohen'],
       relatedCards: []
     },
     {
       id: 14,
-      suit: 'Weather-Počasí',
-      name: 'Tornádo',
+      suit: 'Pocasi',
+      name: 'Tornado',
       strength: 13,
-      bonus: '<span class="weather">Weather-Počasí</span><br />+40, máš-li kartu <span class="weather">Bouře</span> a k ní buď kartu <span class="weather">Sněhová vánice</span> nebo kartu <span class="flood">Stoletá voda</span>.',
+      bonus: '<span class="weather">Pocasi</span><br />+40, mas-li kartu <span class="weather">Boure</span> a k ni bud kartu <span class="weather">Snehová vanice</span> nebo kartu <span class="flood">Stoleta voda</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Bouře') && (hand.contains('Sněhová vánice') || hand.contains('Stoletá voda')) ? 40 : 0;
+        return hand.contains('Boure') && (hand.contains('Snehova vanice') || hand.contains('Stoleta voda')) ? 40 : 0;
       },
-      relatedSuits: ['Bouře'],
-      relatedCards: ['Sněhová vánice', 'Stoletá voda']
+      relatedSuits: ['Boure'],
+      relatedCards: ['Snehova vanice', 'Stoleta voda']
     },
     {
       id: 15,
-      suit: 'Weather-Počasí',
-      name: 'Elementál vzduchu',
+      suit: 'Pocasi',
+      name: 'Elemental vzduchu',
       strength: 4,
-      bonus: '<span class="weather">Weather-Počasí</span><br />+15 za každou další kartu <span class="weather">Weather-Počasí</span>.',
+      bonus: '<span class="weather">Pocasi</span><br />+15 za kazdou dalsi kartu <span class="weather">Pocasi</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 15 * hand.countSuitExcluding('Weather-Počasí', this.id);
+        return 15 * hand.countSuitExcluding('Pocasi', this.id);
       },
-      relatedSuits: ['Weather-Počasí'],
+      relatedSuits: ['Pocasi'],
       relatedCards: []
     },
     {
-id: 16,
-      suit: 'Flame-Oheň',
-      name: 'Požár',
+      id: 16,
+      suit: 'Ohen',
+      name: 'Pozar',
       strength: 40,
       bonus: null,
-      penalty: '<span class="flame">Flame-Oheň</span><br />VYMAŽE vše kromě karet <span class="flame">Flame-Oheň</span>, <span class="wizard">Wizard-Čaroděj</span>, <span class="weather">Weather-Počasí</span>, <span class="weapon">Weapon-Zbraň</span>, <span class="artifact">Artifact-Artefakt</span>, <span class="land">Hora</span>, <span class="flood">Stoletá voda</span>, <span class="flood">Ostrov</span>, <span class="beast">Jednorožec</span> a <span class="beast">Drak</span>.',
+      penalty: '<span class="flame">Ohen</span><br />VYMAZE vsechny karty krome karet <span class="flame">Ohen</span>, <span class="wizard">Carodej</span>, <span class="weather">Pocasi</span>, <span class="weapon">Zbran</span>, <span class="artifact">Artefakt</span>, <span class="land">Hora</span>, <span class="flood">Stoleta voda</span>, <span class="flood">Ostrov</span>, <span class="beast">Jednorozec</span> a <span class="beast">Drak</span>.',
       blanks: function(card, hand) {
-        return !(card.suit === 'Flame-Oheň' || card.suit === 'Wizard-Čaroděj' || card.suit === 'Weather-Počasí' ||
-          card.suit === 'Weapon-Zbraň' || card.suit === 'Artifact-Aertefakt' || card.suit === 'Wild-Divoká' || card.name === 'Hora' ||
-          card.name === 'Stoletá voda' || card.name === 'Ostrov' || card.name === 'Jednorožec' || card.name === 'Drak');
+        return !(card.suit === 'Ohen' || card.suit === 'Carodej' || card.suit === 'Pocasi' ||
+          card.suit === 'Zbran' || card.suit === 'Artefakt' || card.suit === 'Divoka' || card.name === 'Hora' ||
+          card.name === 'Stoleta voda' || card.name === 'Ostrov' || card.name === 'Jednorozec' || card.name === 'Drak');
       },
       relatedSuits: allSuits(),
-      relatedCards: ['Hora', 'Stoletá voda', 'Ostrov', 'Jednorožec', 'Drak']
+      relatedCards: ['Hora', 'Stoleta voda', 'Ostrov', 'Jednorozec', 'Drak']
     },
     {
       id: 17,
-      suit: 'Flame-Oheň',
-      name: 'Svíčka',
+      suit: 'Ohen',
+      name: 'Svicka',
       strength: 2,
-      bonus: '<span class="flame">Flame-Oheň</span><br />+100, máš-li kartu <span class="artifact">Kniha proměn</span>, <span class="land">Zvonice</span> a alespoň jednu kartu <span class="wizard">Wizard-Čaroděj</span>.',
+      bonus: '<span class="flame">Ohen</span><br />+100, mas-li kartu <span class="artifact">Kniha promen</span>, <span class="land">Zvonice</span> a alespon jednu kartu <span class="Wwzard">Carodej</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Kniha proměn') && hand.contains('Zvonice') && hand.containsSuit('Wizard-Čaroděj') ? 100 : 0;
+        return hand.contains('Kniha promen') && hand.contains('Zvonice') && hand.containsSuit('Carodej') ? 100 : 0;
       },
-      relatedSuits: ['Wizard-Čaroděj'],
-      relatedCards: ['Kniha proměn', 'Zvonice']
+      relatedSuits: ['Carodej'],
+      relatedCards: ['Kniha promen', 'Zvonice']
     },
     {
       id: 18,
-      suit: 'Flame-Oheň',
-      name: 'Kovárna',
+      suit: 'Ohen',
+      name: 'Kovarna',
       strength: 9,
-      bonus: '<span class="flame">Flame-Oheň</span><br />+9 za každou kartu <span class="weapon">Weapon-Zbraň</span> nebo kartu <span class="artifact">Artifact-Artefakt</span>.',
+      bonus: '<span class="flame">Ohen</span><br />+9 za kazdou kartu <span class="weapon">Zbran</span> nebo kartu <span class="artifact">Artefakt</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 9 * (hand.countSuit('Weapon-Zbraň') + hand.countSuit('Artifact-Artefakt'));
+        return 9 * (hand.countSuit('Zbran') + hand.countSuit('Artefakt'));
       },
-      relatedSuits: ['Weapon-Zbraň', 'Artifact-Artefakt'],
+      relatedSuits: ['Zbran', 'Artefakt'],
       relatedCards: []
     },
     {
       id: 19,
-      suit: 'Flame-Oheň',
+      suit: 'Ohen',
       name: 'Blesk',
       strength: 11,
-      bonus: '<span class="flame">Flame-Oheň</span><br />+30, máš-li kartu <span class="weather">Bouře</span>.',
+      bonus: '<span class="flame">Ohen</span><br />+30, mas-li kartu <span class="weather">Boure</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Bouře') ? 30 : 0;
+        return hand.contains('Boure') ? 30 : 0;
       },
       relatedSuits: [],
-      relatedCards: ['Bouře']
+      relatedCards: ['Boure']
     },
     {
       id: 20,
-      suit: 'Flame-Oheň',
-      name: 'Elementál ohně',
+      suit: 'Ohen',
+      name: 'Elemental ohne',
       strength: 4,
-      bonus: '<span class="flame">Flame-Oheň</span><br />+15 za každou další kartu <span class="flame">Flame-Oheň</span>.',
+      bonus: '<span class="flame">Ohen</span><br />+15 za kazdou dalsi kartu <span class="flame">Ohen</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 15 * hand.countSuitExcluding('Flame-Oheň', this.id);
+        return 15 * hand.countSuitExcluding('Ohen', this.id);
       },
-      relatedSuits: ['Flame-Oheň'],
+      relatedSuits: ['Ohen'],
       relatedCards: []
     },
     {
       id: 21,
-      suit: 'Army-Armáda',
-      name: 'Rytířky',
+      suit: 'Armada',
+      name: 'Rytirky',
       strength: 20,
       bonus: null,
-      penalty: '<span class="army">Army-Armáda</span><br />-8 nemáš-li alespoň jednoho <span class="leader">Leader-Vůdce</span>.',
+      penalty: '<span class="army">Armada</span><br />-8, nemas-li alespon jednoho <span class="leader">Vudce</span>.',
       penaltyScore: function(hand) {
-        return hand.containsSuit('Leader-Vůdce') ? 0 : -8;
+        return hand.containsSuit('Vudce') ? 0 : -8;
       },
-      relatedSuits: ['Leader-Vůdce'],
+      relatedSuits: ['Vudce'],
       relatedCards: []
     },
     {
       id: 22,
-      suit: 'Army-Armáda',
-      name: 'Elfí lučištníci',
+      suit: 'Armada',
+      name: 'Elfi lucistnici',
       strength: 10,
-      bonus: '<span class="army">Army-Armáda</span><br />+5 nemáš-li žádné <span class="weather">Weather-Počasí</span>.',
+      bonus: '<span class="army">Armada</span><br />+5, nemas-li zadne <span class="weather">Pocasi</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Weather-Počasí') ? 0 : 5;
+        return hand.containsSuit('Pocasi') ? 0 : 5;
       },
-      relatedSuits: ['Weather-Počasí'],
+      relatedSuits: ['Pocasi'],
       relatedCards: []
     },
     {
       id: 23,
-      suit: 'Army-Armáda',
-      name: 'Těžká jízda',
+      suit: 'Armada',
+      name: 'Tezka jizda',
       strength: 17,
       bonus: null,
-      penalty: '<span class="army">Army-Armáda</span><br />-2 za každou jinou kartu <span class="land">Land-Země</span>.',
+      penalty: '<span class="army">Armada</span><br />-2 za kazdou jinou kartu <span class="land">Zeme</span>.',
       penaltyScore: function(hand) {
-        return -2 * hand.countSuit('Land-Země');
+        return -2 * hand.countSuit('Zeme');
       },
-      relatedSuits: ['Land-Země'],
+      relatedSuits: ['Zeme'],
       relatedCards: []
 
     },
     {
       id: 24,
-      suit: 'Army-Armáda',
-      name: 'Trpasličí pěchota',
+      suit: 'Armada',
+      name: 'Trpaslici pechota',
       strength: 15,
       bonus: null,
-      penalty: '<span class="army">Army-Armáda</span><br />-2 za každou jinou kartu <span class="army">Army-Armáda</span>.',
+      penalty: '<span class="army">Armada</span><br />-2 za kazdou jinou kartu <span class="army">Armada</span>.',
       penaltyScore: function(hand) {
-        if (!hand.containsId(25)) { // clears the word 'Army-Armáda' from the penalty
-          return -2 * hand.countSuitExcluding('Army-Armáda', this.id);
+        if (!hand.containsId(25)) { // clears the word 'Armada' from the penalty
+          return -2 * hand.countSuitExcluding('Armada', this.id);
         }
         return 0;
       },
-      relatedSuits: ['Army-Armáda'],
+      relatedSuits: ['Armada'],
       relatedCards: []
     },
     {
       id: 25,
-      suit: 'Army-Armáda',
-      name: 'Hraničáři',
+      suit: 'Armada',
+      name: 'Hranicari',
       strength: 5,
-      bonus: '<span class="army">Army-Armáda</span><br />+10 každou kartu <span class="land">Země</span>. <br />ODSTRAŇUJE slovo <span class="army">Army-Armáda</span> ze všech postihů.',
+      bonus: '<span class="army">Armada</span><br />+10 kazdou kartu <span class="land">Zeme</span>. <br />ODSTRANUJE slovo <span class="army">Armada</span> ze vsech postihu.',
       penalty: null,
       bonusScore: function(hand) {
-        return 10 * hand.countSuit('Land-Země');
+        return 10 * hand.countSuit('Zeme');
       },
-      relatedSuits: ['Land-Země', 'Army-Armáda'],
+      relatedSuits: ['Zeme', 'Armada'],
       relatedCards: []
     },
     {
       id: 26,
-      suit: 'Wizard-Čaroděj',
-      name: 'Sběratel',
+      suit: 'Carodej',
+      name: 'Sberatel',
       strength: 7,
-      bonus: '<span class="wizard">Wizard-Čaroděj</span><br />+10 za tři různé karty stejné barvy, +40 za čtyři různé karty stejné barvy, +100 za pět různých karet stejné barvy.',
+      bonus: '<span class="wizard">Carodej</span><br />+10 za tri ruzné karty stejne barvy, +40 za ctyri ruzné karty stejne barvy, +100 za pet ruznych karet stejne barvy.',
       penalty: null,
       bonusScore: function(hand) {
         var bySuit = {};
@@ -392,281 +392,281 @@ id: 16,
     },
     {
       id: 27,
-      suit: 'Wizard-Čaroděj',
-      name: 'Pán šelem',
+      suit: 'Carodej',
+      name: 'Pan selem',
       strength: 9,
-      bonus: '<span class="wizard">Wizard-Čaroděj</span><br />+9 za každou kartu <span class="beast">Beast-Tvor</span>. <br />ODSTRAŇUJE postihy na všech kartách <span class="beast">Beast-Tvor</span>.',
+      bonus: '<span class="wizard">Carodej</span><br />+9 za kazdou kartu <span class="beast">Tvor</span>. <br />ODSTRANUJE postihy na vsech kartach <span class="beast">Tvor</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 9 * hand.countSuit('Beast-Tvor');
+        return 9 * hand.countSuit('Tvor');
       },
       clearsPenalty: function(card) {
-        return card.suit === 'Beast-Tvor';
+        return card.suit === 'Tvor';
       },
-      relatedSuits: ['Beast-Tvor'],
+      relatedSuits: ['Tvor'],
       relatedCards: []
     },
     {
       id: 28,
-      suit: 'Wizard-Čaroděj',
+      suit: 'Carodej',
       name: 'Nekromant',
       strength: 3,
-      bonus: '<span class="wizard">Wizard-Čaroděj</span><br />Na konci hry si z odkládacího prostoru můžeš vzít jakoukoli kartu <span class="army">Army-Armáda</span>, <span class="leader">Leader-Vůdce</span>, <span class="wizard">Wizard-Čaroděj</span> nebo <span class="beast">Beast-Tvor</span> a přidat si ji do ruky jako osmou kartu.',
+      bonus: '<span class="wizard">Carodej</span><br />Na konci hry si z odkladaciho prostoru muzes vzit jakoukoli kartu <span class="army">Armada</span>, <span class="leader">Vudce</span>, <span class="wizard">Carodej</span> nebo <span class="beast">Tvor</span> a pridat si ji do ruky jako osmou kartu.',
       penalty: null,
-      relatedSuits: ['Army-Armáda', 'Leader-Vůdce', 'Wizard-Čaroděj', 'Beast-Tvor'],
+      relatedSuits: ['Armada', 'Vudce', 'Carodej', 'Tvor'],
       relatedCards: []
     },
     {
       id: 29,
-      suit: 'Wizard-Čaroděj',
-      name: 'Nejvyšší mág',
+      suit: 'Carodej',
+      name: 'Nejvyssi mag',
       strength: 25,
       bonus: null,
-      penalty: '<span class="wizard">Wizard-Čaroděj</span><br />-10 za každou další kartu <span class="leader">Leader-Vůdce</span> nebo <span class="wizard">Wizard-Čaroděj</span>.',
+      penalty: '<span class="wizard">Carodej</span><br />-10 za kazdou dalsi kartu <span class="leader">Vudce</span> nebo <span class="wizard">Carodej</span>.',
       penaltyScore: function(hand) {
-        return -10 * (hand.countSuit('Leader-Vůdce') + hand.countSuitExcluding('Wizard-Čaroděj', this.id));
+        return -10 * (hand.countSuit('Vudce') + hand.countSuitExcluding('Carodej', this.id));
       },
-      relatedSuits: ['Leader-Vůdce', 'Wizard-Čaroděj'],
+      relatedSuits: ['Vudce', 'Carodej'],
       relatedCards: []
     },
     {
       id: 30,
-      suit: 'Wizard-Čaroděj',
+      suit: 'Carodej',
       name: 'Kouzelnice',
       strength: 5,
-      bonus: '<span class="wizard">Wizard-Čaroděj</span><br />+5 za každou kartu <span class="land">Land-Země</span>, <span class="weather">Weather-Počasí</span>, <span class="flood">Flood-Potopa</span> a <span class="flame">Flame-Oheň</span>.',
+      bonus: '<span class="wizard">Carodej</span><br />+5 za kazdou kartu <span class="land">Zeme</span>, <span class="weather">Pocasi</span>, <span class="flood">Potopa</span> a <span class="flame">Ohen</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 5 * (hand.countSuit('Land-Země') + hand.countSuit('Weather-Počasí') + hand.countSuit('Flood-Potopa') + hand.countSuit('Flame-Oheň'));
+        return 5 * (hand.countSuit('Zeme') + hand.countSuit('Pocasi') + hand.countSuit('Potopa') + hand.countSuit('Ohen'));
       },
-      relatedSuits: ['Land-Země', 'Weather-Počasí', 'Flood-Potopa', 'Flame-Oheň'],
+      relatedSuits: ['Zeme', 'Pocasi', 'Potopa', 'Ohen'],
       relatedCards: []
     },
     {
       id: 31,
-      suit: 'Leader-Vůdce',
-      name: 'Král',
+      suit: 'Vudce',
+      name: 'Kral',
       strength: 8,
-      bonus: '<span class="leader">Leader-Vůdce</span><br />+5, za každou kartu <span class="army">Army-Armáda</span>. <br />NEBO +20 za každou kartu <span class="army">Army-Armáda</span>, máš-li zároveň i kartu <span class="leader">Královna</span>.',
+      bonus: '<span class="leader">Vudce</span><br />+5 za kazdou kartu <span class="army">Armada</span>. <br />NEBO +20 za kazdou kartu <span class="army">Armada</span>, mas-li zaroven i kartu <span class="leader">Kralovna</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return (hand.contains('Královna') ? 20 : 5) * hand.countSuit('Army-Armáda');
+        return (hand.contains('Kralovna') ? 20 : 5) * hand.countSuit('Armada');
       },
-      relatedSuits: ['Army-Armáda'],
-      relatedCards: ['Královna']
+      relatedSuits: ['Armada'],
+      relatedCards: ['Kralovna']
     },
     {
       id: 32,
-      suit: 'Leader-Vůdce',
-      name: 'Královna',
+      suit: 'Vudce',
+      name: 'Kralovna',
       strength: 6,
-      bonus: '<span class="leader">Leader-Vůdce</span><br />+5 za každou kartu <span class="army">Army-Armáda</span>. <br />NEBO +20 za každou kartu <span class="army">Army-Armáda</span>, máš-li zároveň i kartu <span class="leader">Král</span>.',
+      bonus: '<span class="leader">Vudce</span><br />+5 za kazdou kartu <span class="army">Armada</span>. <br />NEBO +20 za kazdou kartu <span class="army">Armada</span>, mas-li zaroven i kartu <span class="leader">Kral</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return (hand.contains('Král') ? 20 : 5) * hand.countSuit('Army-Armáda');
+        return (hand.contains('Kral') ? 20 : 5) * hand.countSuit('Armada');
       },
-      relatedSuits: ['Army-Armáda'],
-      relatedCards: ['Král']
+      relatedSuits: ['Armada'],
+      relatedCards: ['Kral']
     },
     {
       id: 33,
-      suit: 'Leader-Vůdce',
+      suit: 'Vudce',
       name: 'Princezna',
       strength: 2,
-      bonus: '<span class="leader">Leader-Vůdce</span><br />+8 za každou kartu <span class="army">Army-Armáda</span>, <span class="wizard">Wizard-Čaroděj</span> nebo další kartu <span class="leader">Leader-Vůdce</span>.',
+      bonus: '<span class="leader">Vudce</span><br />+8 za kazdou kartu <span class="army">Armada</span>, <span class="wizard">Carodej</span> nebo dalsi kartu <span class="leader">Vudce</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return 8 * (hand.countSuit('Army-Armáda') + hand.countSuit('Wizard-Čaroděj') + hand.countSuitExcluding('Leader-Vůdce', this.id));
+        return 8 * (hand.countSuit('Armada') + hand.countSuit('Carodej') + hand.countSuitExcluding('Vudce', this.id));
       },
-      relatedSuits: ['Army-Armáda', 'Wizard-Čaroděj', 'Leader-Vůdce'],
+      relatedSuits: ['Armada', 'Carodej', 'Vudce'],
       relatedCards: []
     },
     {
       id: 34,
-      suit: 'Leader-Vůdce',
+      suit: 'Vudce',
       name: 'Velitel',
       strength: 4,
-      bonus: '<span class="leader">Leader-Vůdce</span><br />Součet základních sil všech karet <span class="army">Army-Armáda</span>, které máš.',
+      bonus: '<span class="leader">Vůuce</span><br />Soucet zakladních sil vsech karet <span class="army">Armada</span>, ktere mas v ruce.',
       penalty: null,
       bonusScore: function(hand) {
         var total = 0;
         for (const card of hand.nonBlankedCards()) {
-          if (card.suit === 'Army-Armáda') {
+          if (card.suit === 'Armada') {
             total += card.strength;
           }
         }
         return total;
       },
-      relatedSuits: ['Army-Armáda'],
+      relatedSuits: ['Armada'],
       relatedCards: []
     },
     {
       id: 35,
-      suit: 'Leader-Vůdce',
-      name: 'Císařovna',
+      suit: 'Vudce',
+      name: 'Cisarovna',
       strength: 15,
-      bonus: '<span class="leader">Leader-Vůdce</span><br />+10 za každou kartu <span class="army">Army-Armáda</span>.',
-      penalty: '-5 za každou další kartu <span class="leader">Leader-Vůdce</span>.',
+      bonus: '<span class="leader">Vudce</span><br />+10 za kazdou kartu <span class="army">Armada</span>.',
+      penalty: '-5 za kazdou dalsi kartu <span class="leader">Vudce</span>.',
       bonusScore: function(hand) {
-        return 10 * hand.countSuit('Army-Armáda');
+        return 10 * hand.countSuit('Armada');
       },
       penaltyScore: function(hand) {
-        return -5 * hand.countSuitExcluding('Leader-Vůdce', this.id);
+        return -5 * hand.countSuitExcluding('Vudce', this.id);
       },
-      relatedSuits: ['Army-Armáda', 'Leader-Vůdce'],
+      relatedSuits: ['Armada', 'Vudce'],
       relatedCards: []
     },
     {
       id: 36,
-      suit: 'Beast-Tvor',
-      name: 'Jednorožec',
+      suit: 'Tvor',
+      name: 'Jednorozec',
       strength: 9,
-      bonus: '<span class="beast">Beast-Tvor</span><br />+30, máš-li kartu <span class="leader">Princezna</span>. <br />NEBO +15, máš-li kartu <span class="leader">Císařovna</span>, <span class="leader">Královna</span> nebo <span class="leader">Kouzelnice</span>.',
+      bonus: '<span class="beast">Tvor</span><br />+30, mas-li kartu <span class="leader">Princezna</span>. <br />NEBO +15, mas-li kartu <span class="leader">Cisarovna</span>, <span class="leader">Kralovna</span> nebo <span class="leader">Kouzelnice</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Princezna') ? 30 : (hand.contains('Císařovna') || hand.contains('Královna') || hand.contains('Kouzelnice')) ? 15 : 0;
+        return hand.contains('Princena') ? 30 : (hand.contains('Cisarovna') || hand.contains('Kralovna') || hand.contains('Kouzelnice')) ? 15 : 0;
       },
       relatedSuits: [],
-      relatedCards: ['Princezna', 'Císařovna', 'Královna', 'Kouzelnice']
+      relatedCards: ['Princezna', 'Cisarovna', 'Kralovna', 'Kouzelnice']
     },
     {
       id: 37,
-      suit: 'Beast-Tvor',
-      name: 'Bazilišek',
+      suit: 'Tvor',
+      name: 'Bazilisek',
       strength: 35,
       bonus: null,
-      penalty: '<span class="beast">Beast-Tvor</span><br />VYMAŽE všechny karty <span class="army">Army-Armáda</span>, <span class="leader">Leader-Vůdce</span> a další karty <span class="beast">Beast-Tvor</span>.',
+      penalty: '<span class="beast">Tvor</span><br />VYMAZE vsechny karty <span class="army">Armada</span>, <span class="leader">Vudce</span> a dalsi karty <span class="beast">Tvor</span>.',
       blanks: function(card, hand) {
-        return (card.suit === 'Army-Armáda' && !hand.containsId(25)) || // clears the word 'Army-Armáda' from the penalty
-          card.suit === 'Leader-Vůdce' ||
-          (card.suit === 'Beast-Tvor' && card.id !== this.id);
+        return (card.suit === 'Armada' && !hand.containsId(25)) || // clears the word 'Armada' from the penalty
+          card.suit === 'Vudce' ||
+          (card.suit === 'Tvor' && card.id !== this.id);
       },
-      relatedSuits: ['Army-Armáda', 'Leader-Vůdce', 'Beast-Tvor'],
+      relatedSuits: ['Armada', 'Vudce', 'Tvor'],
       relatedCards: []
     },
     {
       id: 38,
-      suit: 'Beast-Tvor',
-      name: 'Válečný oř',
+      suit: 'Tvor',
+      name: 'Valecny or',
       strength: 6,
-      bonus: '<span class="beast">Beast-Tvor</span><br />+14, máš-li kartu <span class="leader">Leader-Vůdce</span> nebo kartu <span class="wizard">Wizard-Čaroděj</span>.',
+      bonus: '<span class="beast">Tvor</span><br />+14, mas-li kartu <span class="leader">Vudce</span> nebo kartu <span class="wizard">Carodej</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Leader-Vůdce') || hand.containsSuit('Wizard-Čaroděj') ? 14 : 0;
+        return hand.containsSuit('Vudce') || hand.containsSuit('Carodej') ? 14 : 0;
       },
-      relatedSuits: ['Leader-Vůdce', 'Wizard-Čaroděj'],
+      relatedSuits: ['Vudce', 'Carodej'],
       relatedCards: []
     },
     {
       id: 39,
-      suit: 'Beast-Tvor',
+      suit: 'Tvor',
       name: 'Drak',
       strength: 30,
       bonus: null,
-      penalty: '<span class="beast">Beast-Tvor</span><br />-40, nemáš-li alespoň jednu kartu <span class="wizard">Wizard-Čaroděj</span>.',
+      penalty: '<span class="beast">Tvor</span><br />-40, nemas-li alespon jednu kartu <span class="wizard">Carodej</span>.',
       penaltyScore: function(hand) {
-        return hand.containsSuit('Wizard-Čaroděj') ? 0 : -40;
+        return hand.containsSuit('Carodej') ? 0 : -40;
       },
-      relatedSuits: ['Wizard-Čaroděj'],
+      relatedSuits: ['Carodej'],
       relatedCards: []
     },
     {
       id: 40,
-      suit: 'Beast-Tvor',
+      suit: 'Tvor',
       name: 'Hydra',
       strength: 12,
-      bonus: '<span class="beast">Beast-Tvor</span><br />+28, máš-li kartu <span class="flood">Bažina</span>.',
+      bonus: '<span class="beast">Tvor</span><br />+28, mas-li kartu <span class="flood">Bazina</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Bažina') ? 28 : 0;
+        return hand.contains('Bazina') ? 28 : 0;
       },
       relatedSuits: [],
-      relatedCards: ['Bažina']
+      relatedCards: ['Bazina']
     },
     {
       id: 41,
-      suit: 'Weapon-Zbraň',
-      name: 'Válečná loď',
+      suit: 'Zbran',
+      name: 'Valecna lod',
       strength: 23,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />Je VYMAZÁNA, nemáš-li alespoň jednu kartu <span class="Flood-Potopa">Flood-Potopa</span>.',
-      penalty: 'ODSTRAŇUJE slovo <span class="army">Army-Armáda</span> ze všech postihů na všech kartách <span class="flood">Flood-Potopa</span>.',
+      bonus: '<span class="weapon">Zbran</span><br />ODSTRANUJE slovo <span class="army">Armada</span> ze vsech postihu na vsech kartach <span class="flood">Potopa</span>.',
+      penalty: 'Je VYMAZANA, nemas-li alespon jednu kartu <span class="flooda">Potopa</span>.',
       blankedIf: function(hand) {
-        return !hand.containsSuit('Flood-Potopa');
+        return !hand.containsSuit('Potopa');
       },
-      relatedSuits: ['Army-Armáda', 'Flood-Potopa'],
+      relatedSuits: ['Armada', 'Potopa'],
       relatedCards: []
     },
     {
       id: 42,
-      suit: 'Weapon-Zbraň',
-      name: 'Magická hůl',
+      suit: 'Zbran',
+      name: 'Magicka hul',
       strength: 1,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />+25, máš-li alespoň jednu kartu <span class="wizard">Wizard-Čaroděj</span>.',
+      bonus: '<span class="weapon">Zbran</span><br />+25, mas-li alespon jednu kartu <span class="wizard">Carodej</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Wizard-Čaroděj') ? 25 : 0;
+        return hand.containsSuit('Carodej') ? 25 : 0;
       },
-      relatedSuits: ['Wizard-Čaroděj'],
+      relatedSuits: ['Carodej'],
       relatedCards: []
     },
     {
       id: 43,
-      suit: 'Weapon-Zbraň',
-      name: 'Kethský meč',
+      suit: 'Zbran',
+      name: 'Kethsky mec',
       strength: 7,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />+10, máš-li alespoň jednu kartu <span class="leader">Leader-Vůdce</span>. <br />NEBO +40, máš-li kartu <span class="leader">Leader-Vůdce</span> a k ní kartu <span class="artifact">Kethský štít</span>.',
+      bonus: '<span class="weapon">Zbran</span><br />+10, mas-li alespon jednu kartu <span class="leader">Vudce</span>. <br />NEBO +40, mas-li kartu <span class="leader">Vudce</span> a k ni kartu <span class="artifact">Kethsky stit</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Leader-Vůdce') ? (hand.contains('Kethský štít') ? 40 : 10) : 0;
+        return hand.containsSuit('Vudce') ? (hand.contains('Kethsky stit') ? 40 : 10) : 0;
       },
-      relatedSuits: ['Leader-Vůdce'],
-      relatedCards: ['Kethský štít']
+      relatedSuits: ['Vudce'],
+      relatedCards: ['Kethsky stit']
     },
     {
       id: 44,
-      suit: 'Weapon-Zbraň',
-      name: 'Elfský luk',
+      suit: 'Zbran',
+      name: 'Elfsky luk',
       strength: 3,
-      bonus: '<span class="weapon">Weapon-Zbraň</span><br />+30, máš-li kartu <span class="army">Elfí lučištníci</span>, <span class="leader">Velitel</span> nebo <span class="wizard">Pán šelem</span>.',
+      bonus: '<span class="weapon">Zbran</span><br />+30, mas-li kartu <span class="army">Elfi lucistnici</span>, <span class="leader">Velitel</span> nebo <span class="wizard">Pan selem</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Elfí lučištníci') || hand.contains('Velitel') || hand.contains('Pán šelem') ? 30 : 0;
+        return hand.contains('Elfi lucistnici') || hand.contains('Velitel') || hand.contains('Pan selem') ? 30 : 0;
       },
       relatedSuits: [],
-      relatedCards: ['Elfí lučištníci', 'Velitel', 'Pán šelem']
+      relatedCards: ['Elfi lucistnici', 'Velitel', 'Pan selem']
     },
     {
       id: 45,
-      suit: 'Weapon-Zbraň',
-      name: 'Bojová vzducholoď',
+      suit: 'Zbran',
+      name: 'Bojova vzducholod',
       strength: 35,
       bonus: null,
-      penalty: '<span class="weapon">Weapon-Zbraň</span><br />Je VYMAZÁNA, nemáš-li alespoň jednu kartu <span class="army">Army-Armáda</span>. <br />Je VYMAZÁNA, máš-li jakoukoli kartu <span class="weather">Weather-Počasí</span>.',
+      penalty: '<span class="weapon">Zbran</span><br />Je VYMAZANA, nemas-li alespon jednu kartu <span class="army">Armada</span>. <br />Je VYMAZANA, mas-li jakoukoli kartu <span class="weather">Pocasi</span>.',
       blankedIf: function(hand) {
-        return !hand.containsSuit('Army-Armáda') || hand.containsSuit('Weather-Počasí');
+        return !hand.containsSuit('Armada') || hand.containsSuit('Pocasi');
       },
-      relatedSuits: ['Army-Armáda', 'Weather-Počasí'],
+      relatedSuits: ['Armada', 'Pocasi'],
       relatedCards: []
     },
     {
       id: 46,
-      suit: 'Artifact-Artefakt',
-      name: 'Kethský štít',
+      suit: 'Artefakt',
+      name: 'Kethsky stit',
       strength: 4,
-      bonus: '<span class="artifact">Artifact-Artefakt</span><br />+15 máš-li alespoň jednu kartu <span class="leader">Leader-Vůdce</span>. <br />NEBO +40, máš-li kartu <span class="leader">Leader-Vůdce</span> a kartu <span class="weapon">Kethský meč</span>.',
+      bonus: '<span class="artifact">Artefakt</span><br />+15, mas-li alespon jednu kartu <span class="leader">Vudce</span>. <br />NEBO +40, mas-li kartu <span class="leader">Vudce</span> a kartu <span class="weapon">Kethsky mec</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.containsSuit('Leader-Vůdce') ? (hand.contains('Kethský meč') ? 40 : 15) : 0;
+        return hand.containsSuit('Vudce') ? (hand.contains('Kethsky mec') ? 40 : 15) : 0;
       },
-      relatedSuits: ['Leader-Vůdce'],
-      relatedCards: ['Kethský meč']
+      relatedSuits: ['Vudce'],
+      relatedCards: ['Kethsky mec']
     },
     {
       id: 47,
-      suit: 'Artifact-Artefakt',
-      name: 'Krystal řádu',
+      suit: 'Artefakt',
+      name: 'Krystal radu',
       strength: 5,
-      bonus: '<span class="artifact">Artifact-Artefakt</span><br />+10 za postupku ze 3 karet, +30 za postupku ze 4 karet, +60 za postupku z 5 karet, +100 za postupku ze 6 karet, +150 za postupku ze 7 karet. Počítají se ihned po sobě jdoucí základní síly karet.',
+      bonus: '<span class="artifact">Artefakt</span><br />+10 za postupku ze 3 karet, +30 za postupku ze 4 karet, +60 za postupku z 5 karet, +100 za postupku ze 6 karet, +150 za postupku ze 7 karet. <br />Pocitaji se ihned po sobe jdouci zakladní sily karet.',
       penalty: null,
       bonusScore: function(hand) {
         var strengths = hand.nonBlankedCards().map(card => card.strength);
@@ -701,10 +701,10 @@ id: 16,
     },
     {
       id: 48,
-      suit: 'Artifact-Artefakt',
-      name: 'Strom světa',
+      suit: 'Artefakt',
+      name: 'Strom sveta',
       strength: 2,
-      bonus: '<span class="artifact">Artifact-Artefakt</span><br />+50, pokud mají všechny NEVYMAZANÉ karty rozdílné barvy.',
+      bonus: '<span class="artifact">Artefakt</span><br />+50, pokud maji vsechny NEVYMAZANE karty rozdilne barvy.',
       penalty: null,
       bonusScore: function(hand) {
         var suits = [];
@@ -721,21 +721,21 @@ id: 16,
     },
     {
       id: 49,
-      suit: 'Artifact-Artefakt',
-      name: 'Kniha proměn',
+      suit: 'Artefakt',
+      name: 'Kniha promen',
       strength: 3,
-      bonus: '<span class="artifact">Artifact-Artefakt</span><br />Můžeš změnit barvu jedné karty ve své ruce. Její jméno, bonus a postihy zůstávají.',
+      bonus: '<span class="artifact">Artefakt</span><br />Muzes zmenit barvu jedne karty ve sve ruce. Jeji jmeno, bonus a postihy zustavaji.',
       penalty: null,
-      action: 'Vyber kartu, jejíž barvu chceš změnit.',
+      action: 'Pick a suit and a target card from your hand.',
       relatedSuits: [], // empty because the main reason for relatedSuits is to determine how to use 'Book of Changes'
       relatedCards: []
     },
     {
       id: 50,
-      suit: 'Artifact-Artefakt',
-      name: 'Ochranná runa',
+      suit: 'Artefakt',
+      name: 'Ochranna runa',
       strength: 1,
-      bonus: '<span class="artifact">Artifact-Artefakt</span><br />ODSTRANÍ postihy ze všech karet v ruce.',
+      bonus: '<span class="artifact">Artefakt</span><br />ODSTRANI postihy ze vsech karet v ruce.',
       penalty: null,
       clearsPenalty: function(card) {
         return true;
@@ -745,43 +745,43 @@ id: 16,
     },
     {
       id: 51,
-      suit: 'Wild-Divoká',
-      name: 'Měňavec',
+      suit: 'Divoka',
+      name: 'Menavec',
       strength: 0,
-      bonus: '<span class="wild">Wild-Divoká</span><br /><b>Měňavec</b> může zkopírovat jméno a barvu jakékoliv karty  <span class="artifact">Artifact-Artefakt</span>, <span class="leader">Leader-Vůdce</span>, <span class="wizard">Wizard-Čaroděj</span>, <span class="weapon">Weapon-Zbraně</span> nebo <span class="beast">Beast-Tvor</span> ve hře. <br />Základní síla, bonusy ani postihy se nekopírují.',
+      bonus: '<span class="wild">Divoka</span><br /><b>Menavec</b> muze zkopirovat jmeno a barvu jakekoliv karty  <span class="artifact">Artefakt</span>, <span class="leader">Vudce</span>, <span class="wizard">Carodej</span>, <span class="weapon">Zbran</span> nebo <span class="beast">Tvor</span> ve hre. <br />Zakladni sila, bonusy ani postihy se nekopiruji.',
       penalty: null,
-      action: 'Vyber z ruky kartu, kterou chceš zkopírovat.',
-      relatedSuits: ['Artifact-Artefakt', 'Leader-Vůdce', 'Wizard-Čaroděj', 'Weapon-Zbraň', 'Beast-Tvor'].sort(),
+      action: 'Vyber z ruky kartu, kterou chces zkopirovat.',
+      relatedSuits: ['Artefakt', 'Vudce', 'Carodej', 'Zbran', 'Tvor'].sort(),
       relatedCards: []
     },
     {
       id: 52,
-      suit: 'Wild-Divoká',
-      name: 'Přelud',
+      suit: 'Divoka',
+      name: 'Prelud',
       strength: 0,
-      bonus: '<span class="wild">Wild-Divoká</span><br /><b>Přelud</b> může zkopírovat jméno a barvu jakékoliv karty  <span class="army">Army-Armáda</span>, <span class="land">Land-Země</span>, <span class="weather">Waether-Počasí</span>, <span class="flood">Flood-Potopa</span> nebo <span class="flame">Flame-Oheň</span> ve hře. <br />Základní síla, bonusy ani postihy se nekopírují.',
+      bonus: '<span class="wild">Divoka</span><br /><b>Prelud</b> muze zkopirovat jmeno a barvu jakekoliv karty  <span class="army">Armada</span>, <span class="land">Zeme</span>, <span class="weather">Pocasi</span>, <span class="flooda">Potopa</span> nebo <span class="flame">Ohen</span> ve hře. <br />Zakladni sila, bonusy ani postihy se nekopiruji.',
       penalty: null,
-      action: 'Vyber z ruky kartu, kterou chceš zkopírovat.',
-      relatedSuits: ['Army-Armáda', 'Land-Země', 'Weather-Počasí', 'Flood-Potopa', 'Flame-Oheň'].sort(),
+      action: 'Vyber z ruky kartu, kterou chces zkopirovat.',
+      relatedSuits: ['Armada', 'Zeme', 'Pocasi', 'Potopa', 'Ohen'].sort(),
       relatedCards: []
     },
     {
       id: 53,
-      suit: 'Wild-Divoká',
-      name: 'Dvojník',
+      suit: 'Divoka',
+      name: 'Dvojnik',
       strength: 0,
-      bonus: '<span class="wild">Wild-Divoká</span><br /><b>Dvojník</b> může kopírovat jmeno, barvu, základní sílu, ALE NIKOLI BONUS jakékoli jiné karty ve tvé ruce.',
+      bonus: '<span class="wild">Divoka</span><br /><b>Dvojnik</b> muze kopirovat jmeno, barvu, zakladni silu, ALE NIKOLI BONUS jakekoli jine karty ve tve ruce.',
       penalty: null,
-      action: 'Vyber z ruky kartu, kterou chceš zkopírovat.',
+      action: 'Vyber z ruky kartu, kterou chces zkopirovat.',
       relatedSuits: [],
       relatedCards: []
     },
     {
       id: 54,
-      suit: 'Wizard-Čaroděj',
-      name: 'Šašek',
+      suit: 'Carodej',
+      name: 'Sasek',
       strength: 3,
-      bonus: '<span class="wizard">Wizard-Čaroděj</span><br />+3 za každou další kartu ve tvé ruce s lichou základní silou. <br />NEBO +50, mají-li všechny karty ve tvé ruce lichou základní sílu .',
+      bonus: '<span class="wizard">Carodej</span><br />+3 za kazdou dalsi kartu ve tve ruce s lichou zakladni silou. <br />NEBO +50, maji-li vsechny karty ve tve ruce lichou zakladni silu .',
       penalty: null,
       bonusScore: function(hand) {
         var oddCount = 0;
@@ -829,7 +829,7 @@ id: 16,
 };
 
 function allSuits() {
-  return ['Land-Země', 'Flood-Potopa', 'Weather-Počasí', 'Flame-Oheň', 'Army-Armáda', 'Wizard-Čaroděj', 'Leader-Vůdce', 'Beast-Tvor', 'Weapon-Zbraň', 'Artifact-Artefakt', 'Wild-Divoká'].sort();
+  return ['Zeme', 'Potopa', 'Pocasi', 'Ohen', 'Armada', 'Carodej', 'Vudce', 'Tvor', 'Zbran', 'Artefakt', 'Divoka'].sort();
 }
 
 var NONE = -1;

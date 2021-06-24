@@ -283,7 +283,7 @@ class CardInHand {
         }
       } else if (this.id === ISLAND) {
         var selectedCard = hand.getCardById(this.actionData[0]);
-        if (selectedCard === undefined || !(selectedCard.suit === 'Flood-Potopa' || selectedCard.suit === 'Flame-Oheň')) {
+        if (selectedCard === undefined || !(selectedCard.suit === 'Potopa' || selectedCard.suit === 'Ohen')) {
           this.actionData = undefined;
         } else {
           this.clearsPenalty = function(card) {
