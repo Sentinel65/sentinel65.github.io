@@ -2,8 +2,8 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Tajuplné říše: bodovací app</title>
-  <meta name="description" content="Tajuplné říše: bodovací app">
+  <title>Tajuplne rise: bodovaci app</title>
+  <meta name="description" content="Tajuplne rise: bodovaci app">
   <meta name="author" content="Jimmy Praet">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="msapplication-TileColor" content="#ffffff">
@@ -66,7 +66,7 @@
         <li class="list-group-item {{suit}} {{#if blanked}}blanked{{/if}}">
           <span class="badge badge-default">
             {{#if blanked}}
-              VYMAZÁNO
+              VYMAZANO
             {{else}}
               {{strength}}
             {{/if}}
@@ -95,7 +95,7 @@
         {{#if card.action}}
         <li class="list-group-item bonus">
             <span id="card-action-text-{{id}}" />
-            <button id="card-action-{{id}}" type="button" class="btn btn-sm btn-primary float-right" onclick="event.stopPropagation(); useCard({{id}});">Použít</button>
+            <button id="card-action-{{id}}" type="button" class="btn btn-sm btn-primary float-right" onclick="event.stopPropagation(); useCard({{id}});">Pouzit</button>
         </li>
         {{/if}}
       </ul>
@@ -104,7 +104,7 @@
   </script>
   <div id="container">
     <div id="header">
-      <a href="./tests.html"><img src="img/fantasy-realms.jpg" style="height: 3rem;"></img></a>
+      <a href=./tests.html><img src="img/fantasy-realms.jpg" style="height: 3rem;"></img></a>
       <div id="header-right">
         <div id="hand-info">
           <span id="cardCount">0</span><span class="separator">/</span><span id="cardLimit">7</span>
