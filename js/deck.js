@@ -13,7 +13,7 @@ var deck = {
         return card.suit === 'Potopa';
       },
       relatedSuits: ['Potopa'],
-      relatedCards: ['Kour', 'Pozarr']
+      relatedCards: ['Kour', 'Pozar']
     },
     {
       id: 2,
