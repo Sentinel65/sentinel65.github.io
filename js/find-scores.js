@@ -171,7 +171,7 @@ function generateActionVariations(hand) {
   if (hand.containsId(ISLAND)) {
     var islandActions = [];
     for (const card of hand.cards()) {
-      if (((card.suit === 'Flood' || card.suit === 'Flame' || hand.containsId(BOOK_OF_CHANGES)) && card.penalty) || card.id === DOPPELGANGER) {
+      if (((card.suit === 'Flood-Potopa' || card.suit === 'Flame-Oheň' || hand.containsId(BOOK_OF_CHANGES)) && card.penalty) || card.id === DOPPELGANGER) {
         islandActions.push([ISLAND, + card.id]);
       }
     }
