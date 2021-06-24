@@ -189,7 +189,7 @@ var deck = {
       name: 'Kour',
       strength: 27,
       bonus: null,
-      penalty: '<span class="weather">Pocasi</span><br />Tato karty je VYMAZANA, nemas-li alespon jednu kartu <span class="flame">Ohen</span>.',
+      penalty: '<span class="weather">Pocasi</span><br />Tato karta je VYMAZANA, nemas-li alespon jednu kartu <span class="flame">Ohen</span>.',
       blankedIf: function(hand) {
         return !hand.containsSuit('Ohen');
       },
