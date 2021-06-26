@@ -524,7 +524,7 @@ var deck = {
       bonus: '<span class="beast">Tvor</span><br />+30, mas-li kartu <span class="leader">Princezna</span>. <br />NEBO +15, mas-li kartu <span class="leader">Cisarovna</span>, <span class="leader">Kralovna</span> nebo <span class="leader">Kouzelnice</span>.',
       penalty: null,
       bonusScore: function(hand) {
-        return hand.contains('Princena') ? 30 : (hand.contains('Cisarovna') || hand.contains('Kralovna') || hand.contains('Kouzelnice')) ? 15 : 0;
+        return hand.contains('Princezna') ? 30 : (hand.contains('Cisarovna') || hand.contains('Kralovna') || hand.contains('Kouzelnice')) ? 15 : 0;
       },
       relatedSuits: [],
       relatedCards: ['Princezna', 'Cisarovna', 'Kralovna', 'Kouzelnice']
@@ -726,7 +726,7 @@ var deck = {
       strength: 3,
       bonus: '<span class="artifact">Artefakt</span><br />Muzes zmenit barvu jedne karty ve sve ruce. Jeji jmeno, bonus a postihy zustavaji.',
       penalty: null,
-      action: 'Pick a suit and a target card from your hand.',
+      action: 'Vyber nejdrive barvu a pak cilovou kartu ve sve ruce.',
       relatedSuits: [], // empty because the main reason for relatedSuits is to determine how to use 'Book of Changes'
       relatedCards: []
     },
