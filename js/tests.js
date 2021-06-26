@@ -1,4 +1,7 @@
 $(document).ready(function() {
+  assertScoreByCode('6,9,16,53+9:16', 95, 'Fontana zivota kopiruje silu karty Pozar, Dvojnik nemuze take zkopirovat kartu Pozar, protoze ta by vymazala kartu Fontana zivota') 
+  assertScoreByCode('37,53+', 35, 'Dvojnik nemuze kopirovat Baziliska, obe karty se vymazou') 
+  assertScoreByCode('3,4,6,9,16,28,37,53+9:16,53:9', 189);
   assertScoreByName(['Snehova vanice', 'Stoleta voda', 'Elfi lucistnici'], 35);
   assertScoreByName(['Kour', 'Trpaslici pechota', 'Bojova vzducholod'], 50);
   assertScoreByName(['Svicka', 'Kour', 'Trpaslici pechota', 'Bojova vzducholod'], 44);
