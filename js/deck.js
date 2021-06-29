@@ -770,7 +770,7 @@ var deck = {
       suit: 'Divoka',
       name: 'Dvojnik',
       strength: 0,
-      bonus: '<span class="wild">Divoka</span><br /><b>Dvojnik</b> muze kopirovat jmeno, barvu, zakladni silu, ALE NIKOLI BONUS jakekoli jine karty ve tve ruce.',
+      bonus: '<span class="wild">Divoka</span><br /><b>Dvojnik</b> kopiruje jmeno, barvu a zakladni silu jakekoli jine karty ve tve ruce, ALE NIKOLI BONUS.',
       penalty: null,
       action: 'Vyber z ruky kartu, kterou chces zkopirovat.',
       relatedSuits: [],
