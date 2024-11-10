@@ -228,7 +228,7 @@
 <body>
 
 
-<button id="helpButton" class="help-button" onclick="showHelp()">Hra Trezor</button>
+<button id="helpButton" class="help-button" onclick="handleButtonClick()">Hra Trezor</button>
 </br>
 <div id="helpModal" class="modal">
   <div class="modal-content">
@@ -281,7 +281,8 @@ Na políčko „D“ jsou ale třeba dvě kostky, na hodnotě nezáleží, ale h
           <li>Lupič: 16 - 18</li>
           <li>Bankovní lupič: 19 - 21</li>
           <li>Arsene Lupin: 22 a více</li>
-      </ul></p>
+      </ul>
+      <b>Poznámka:</b> v posledních kolech se může stát, že hráč již nebude mít k dispozici žádný Skimmer, opakovaný hod a hodnoty kostek neumožní dokončit standardní cestou kolo. Proto lze kliknutím na tlačítko názvu hry v nabídce vyvolat <b>manuální ukončení hry</b>.  </p>
       <p>&nbsp;</p>
       <p>&nbsp;</p>
   </div>
@@ -351,6 +352,21 @@ Na políčko „D“ jsou ale třeba dvě kostky, na hodnotě nezáleží, ale h
 <!-- <button id="rollButton" onclick="rollDice()">Hod kostkami</button> -->
 
 <script>
+function handleButtonClick() {
+            // Logika pro zobrazení nápovědy
+            const option = prompt(`Hra Trezor\nVyberte možnost: \n1) Zobrazit nápovědu\n2) Ukončit manuálně hru`, "Zvol 1 nebo 2");
+  if (option === "1") {
+    showHelp();
+  } else if (option === "2") {
+    calculateFinalScore();
+    document.getElementById('score').innerText = `Počet diamantů: ${score}`;
+    confirm ("Hra skončila!");
+  } else {
+    confirm ("Neplatná volba. Zkuste to znovu.");
+  }
+}
+
+
 // Otevření modálního okna
 function showHelp() {
   document.getElementById('helpModal').style.display = 'block';
