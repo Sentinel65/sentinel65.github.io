@@ -385,7 +385,7 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 <!-- Tlačítko pro hod kostkami -->
 <!-- <button id="rollButton" onclick="rollDice()">Hod kostkami</button> -->
 
-<script>
+<script type="text/javascript">
 function handleButtonClick() {
             // Logika pro zobrazení nápovědy
             const option = prompt(`Hra Trezor - vyberte možnost:\n(zadejte číslo volby)\n1) Zobrazit nápovědu\n2) Ukončit manuálně kolo\n3) Ukončit manuálně hru`);
@@ -818,6 +818,7 @@ function displayGameStatsInModal() {
         <li>nejvyšší skóre: ${boardStats.highestScore}</li>
 		</ul>
       </div>
+      </br>
     `;
   });
 
@@ -896,10 +897,10 @@ const lockName = currentLock.name;
    
   });
   if (currentRound > totalRounds) {
-    confirm ("Hra skončila!");
+    alert("Hra skončila!");
     return;
   }
-  confirm (`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
+  alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
 }
 
 
