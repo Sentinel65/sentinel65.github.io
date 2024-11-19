@@ -869,7 +869,7 @@ function startRound() {
   locks.forEach(lock => {
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.remove('highlight-empty', 'highlight-filled');
+      cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
       cell.style.color = ''; // Resetuje barvu textu
       cell.style.fontWeight = ''; // Resetuje tucnečné pismo textu
 	const rating = getRating(score);
