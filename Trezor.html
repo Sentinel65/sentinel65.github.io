@@ -96,7 +96,7 @@
       cursor: pointer;
       user-select: none;
     }
-    .skimmer.clicked { background-color: #ffcccb; } /* Styl označených skimmerů */
+    .skimmer.clicked { background-color: #90cfff; } /* Styl označených skimmerů */
     #diceContainer {
       display: flex;
       gap: 10px;
@@ -1301,26 +1301,57 @@ function addDiceToSkimmer(index) {
 
 function useSkimmerAsDie(index) {
   if (skimmers[index] > 0) {
+    // Přidání hodnoty Skimmeru do seznamu vybraných kostek
     selectedDice.push(skimmers[index]);
-    document.querySelectorAll('.skimmer')[index].classList.add('disabled');
-    document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
-    confirm (`Vybrali jste Šperhák ${index + 1}\nByl použit jako kostka\ns hodnotou [${skimmers[index]}].\nVyber pole na hrací desce,\npřípadně zkombinuj s jinou kostkou.`);
-	document.querySelectorAll('.cell').forEach(cell => {
-			cell.classList.remove('highlight'); // Odstraníme staré zvýraznění
-			highlightPossibleCells(); //
-	// Zvýraznění políček na hrací desce, které odpovídají některému z možných součtů nebo rozdílů
-		  document.querySelectorAll('.cell').forEach(cell => {
-			const cellValue = cell.innerText;
+    
+    // Označení Skimmeru jako aktivního (modré zvýraznění)
+    const skimmerButton = document.querySelectorAll('.skimmer')[index];
+    skimmerButton.classList.add('clicked');  // Třída pro označení modrou barvou
+    skimmerButton.disabled = true;  // Zakážeme další kliknutí na Skimmer
 
-	if (skimmers.includes(parseInt(cellValue)) // Přidání podmínky pro skimmery
-			) {
-		console.log(`Zvýrazněno pole: (${cell.id}) s hodnotou ${cellValue}`);
-			  cell.classList.add('highlight',); // Zvýrazníme políčko, pokud odpovídá hodnotě nebo kombinaci kostek
-			}})
-		  });
+    // Zamezení opětovnému použití Skimmeru
+    skimmerButton.onclick = null;
+    
+    // Upozornění pro hráče
+    confirm(`Vybrali jste Šperhák ${index + 1}\nByl použit jako kostka\ns hodnotou [${skimmers[index]}].\nVyber pole na hrací desce,\npřípadně zkombinuj s jinou kostkou.`);
+
+    // Odstranění starého zvýraznění
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.classList.remove('highlight'); // Odstraníme staré zvýraznění
+    });
+
+    // Zvýraznění buněk odpovídajících hodnotě Skimmeru
+    document.querySelectorAll('.cell').forEach(cell => {
+      const cellValue = parseInt(cell.innerText); // Číselná hodnota buňky
+      if (skimmers.includes(cellValue)) {  // Pokud buňka odpovídá hodnotě Skimmeru
+        console.log(`Zvýrazněno pole: (${cell.id}) s hodnotou ${cellValue}`);
+        cell.classList.add('highlight'); // Zvýrazníme políčko, pokud odpovídá hodnotě Skimmeru
+      }
+    });
+
+    // Funkce pro kliknutí na buňku na herní desce
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.addEventListener("click", function () {
+        const cellValue = parseInt(this.innerText);  // Číselná hodnota buňky
+        if (cellValue === skimmers[index]) {
+          // Pokud klikneme na buňku, která odpovídá hodnotě Skimmeru
+          console.log(`Skimmer s hodnotou ${skimmers[index]} byl použit na buňce (${cell.id})`);
+
+          // Označíme Skimmer jako "použitý" a deaktivujeme ho
+          skimmerButton.classList.add('disabled');  // Odstraníme modré zvýraznění
+          skimmerButton.disabled = true;  // Skimmer se stává neaktivním
+          skimmerButton.onclick = null;  // Zamezíme opětovnému použití Skimmeru
+
+          // Resetujeme hodnotu Skimmeru
+          activeSkimmerValue = null;
+
+          // Můžeme zde provést další operace, jako je přenos hodnoty na herní desku
+        }
+      });
+    });
 
   } else {
-    confirm ("Hodnota Šperháku musí být minimálně 1.");
+    confirm("Hodnota Šperháku musí být minimálně 1.");
   }
 }
 
