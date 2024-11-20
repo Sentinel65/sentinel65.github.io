@@ -438,7 +438,7 @@ function handleButtonClick() {
     boardId = 'H'; // Nastavíme boardId pro desku H
   } else if (option === "9" || option === "09") {
     boardLayout = boardLayoutI;
-    locks = locksG;  //Definice zamku pro desku I - stejna jako pro G
+    locks = locksI;  //Definice zamku pro desku I
     boardId = 'I'; // Nastavíme boardId pro desku I
   } else if (option === "10") {
     boardLayout = boardLayoutJ;
@@ -774,6 +774,22 @@ const locksG = [
 	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 6 }] },
 	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
 	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }, { row: 0, col: 6 }] }
+]; 
+
+
+const locksI = [
+	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 2 }, { row: 4, col: 2 }] },
+	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 4, col: 4 }, { row: 5, col: 4 }] },
+	 { name: "C", coordinates: [{ row: 2, col: 6 }, { row: 3, col: 6 }, { row: 4, col: 6 }] },
+	 { name: "D", coordinates: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 5 }] },
+	 { name: "E", coordinates: [{ row: 3, col: 1 }, { row: 3, col: 3 }, { row: 3, col: 6 }] },
+	 { name: "F", coordinates: [{ row: 5, col: 1 }, { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }] },
+	 { name: "G", coordinates: [{ row: 0, col: 5 }, { row: 1, col: 5 }, { row: 2, col: 5 }, { row: 5, col: 5 }] },
+	 { name: "H", coordinates: [{ row: 0, col: 3 }, { row: 3, col: 3 }, { row: 4, col: 3 }, { row: 5, col: 3 }] },
+	 { name: "I", coordinates: [{ row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }, { row: 5, col: 1 }] },
+	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 6 }] },
+	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
+	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }] }
 ]; 
 
 const locksO = [
