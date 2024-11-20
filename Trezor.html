@@ -289,7 +289,7 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 	<p><b>Poznámka:</b> ikony v horním řádku obrazovky s názvem hry</p> 
       <ul>
 		  <li>🏠 menu s výběrem hrací desky</li> 
-		  <li>💡 nápovědu</li>
+		  <li>💡 nápověda</li>
 		  <li>🏆 statistiky hry </li>
 		  <li>🚫 manuální ukončení kola (v posledních kolech se může stát, že hráč již nebude mít k dispozici žádný Šperhák, opakovaný hod a hodnoty kostek neumožní dokončit standardní cestou kolo).</li>
 	  </ul>
@@ -403,7 +403,7 @@ function handleButtonClick() {
 
 
 	function selectBoard() {
-  const option = prompt(`Hra Trezor - vyberte herní desku:\n(zadejte číslo volby)\n01 - Deska A     07 - Deska G\n02 - Deska B     08 - Deska H\n03 - Deska C     09 - Deska I\n04 - Deska D     10 - Deska J\n05 - Deska E     11 - Deska K\n06 - Deska F     12 - Deska L`);
+  const option = prompt(`Hra Trezor - vyberte herní desku:\n(zadejte číslo desky 1 - 18)`);
   if (option === "1" || option === "01") {
     boardLayout = boardLayoutA;
     locks = locksA;  // Definice zamku pro desku A
@@ -452,6 +452,30 @@ function handleButtonClick() {
     boardLayout = boardLayoutL;
     locks = locksG;  //Definice zamku pro desku L - stejna jako pro G
     boardId = 'L'; // Nastavíme boardId pro desku L
+	} else if (option === "13") {
+    boardLayout = boardLayoutM;
+    locks = locksB;  //Definice zamku pro desku M - stejna jako pro B
+    boardId = 'M'; // Nastavíme boardId pro desku M
+	} else if (option === "14") {
+    boardLayout = boardLayoutN;
+    locks = locksB;  //Definice zamku pro desku N - stejna jako pro B
+    boardId = 'N'; // Nastavíme boardId pro desku N
+	} else if (option === "15") {
+    boardLayout = boardLayoutO;
+    locks = locksO;  //Definice zamku pro desku O
+    boardId = 'O'; // Nastavíme boardId pro desku O
+	} else if (option === "16") {
+    boardLayout = boardLayoutP;
+    locks = locksP;  //Definice zamku pro desku P
+    boardId = 'P'; // Nastavíme boardId pro desku P
+	} else if (option === "17") {
+    boardLayout = boardLayoutQ;
+    locks = locksQ;  //Definice zamku pro desku Q
+    boardId = 'Q'; // Nastavíme boardId pro desku Q
+	} else if (option === "18") {
+    boardLayout = boardLayoutR;
+    locks = locksR;  //Definice zamku pro desku R
+    boardId = 'R'; // Nastavíme boardId pro desku R
   } else {
     confirm("Neplatná volba. Zkuste to znovu.");
     selectBoard(); // Opakování výběru
@@ -580,12 +604,12 @@ window.onclick = function(event) {
 
   const boardLayoutI = [
 
-    ['20', 'x', '6', '15', '4', '13', '12'],
-    ['x', '7', '2', 'S', 'x', '5', 'x'],
-    ['10', '11', 'L', 'x', 'D', '9', '6'],
-    ['x', '14', 'x', '5', 'x', '3', '2'],
-    ['9', '15', '4', 'D', '3', 'x', '4'],
-    ['x', '12', 'x', '6', '5', '10', 'x']
+    ['21', 'x', '3', '15', 'L', '13', 'x'],
+    ['x', 'D', '6', 'x', 'x', '3', 'x'],
+    ['11', '7', '4', 'x', '6', '8', '3'],
+    ['x', '16', 'x', '5', 'x', 'x', '4'],
+    ['9', '15', '5', '8', '2', 'x', '6'],
+    ['x', 'D', 'x', '4', '1', '9', 'x']
  ];
 
 
@@ -620,7 +644,66 @@ window.onclick = function(event) {
     ['x', '10', 'x', '6', '4', '12', 'x']
  ];
 
+  const boardLayoutM = [
 
+    ['20', 'x', 'S', '14', 'L', '16', 'x'],
+    ['x', '12', '5', 'x', 'x', 'L', 'x'],
+    ['7', '11', 'x', 'x', '8', '7', '3'],
+    ['x', '14', 'x', '1', 'x', 'x', '5'],
+    ['D', '16', '1', '10', 'x', 'x', '4'],
+    ['x', 'x', 'x', 'S', '2', '10', 'x']
+
+ ];
+
+  const boardLayoutN = [
+
+    ['19', 'x', '4', '13', 'S', '17', 'x'],
+    ['x', '9', '2', 'x', 'x', '3', 'x'],
+    ['8', '14', 'x', 'x', '9', '11', 'L'],
+    ['x', '15', 'x', 'S', 'x', 'x', '2'],
+    ['12', '10', '5', '9', 'x', 'x', '3'],
+    ['x', 'x', 'x', '3', '5', '10', 'x']
+ ];
+
+  const boardLayoutO = [
+
+    ['23', 'x', '6', '14', '2', '16', '7'],
+    ['x', 'D', '2', '4', 'x', '3', 'x'],
+    ['7', '17', '1', 'x', '7', '9', '5'],
+    ['x', '12', 'x', '6', 'x', 'x', '4'],
+    ['D', '15', '5', '8', 'x', 'x', '3'],
+    ['x', 'x', 'x', '5', '1', 'D', 'x']
+ ];
+
+  const boardLayoutP = [
+
+    ['21', 'x', '2', '17', 'L', '15', '9'],
+    ['x', '10', '3', 'S', 'x', '2', 'x'],
+    ['D', '11', 'x', 'x', '9', '10', '2'],
+    ['x', '14', 'x', '6', 'x', '4', 'S'],
+    ['12', '15', 'L', '7', 'x', 'x', '4'],
+    ['x', 'x', 'x', '6', '5', '7', 'x']
+ ];
+
+  const boardLayoutQ = [
+
+    ['24', 'x', '1', '14', '2', '16', 'x'],
+    ['x', '10', '1', 'L', 'x', '3', 'x'],
+    ['7', '17', '6', 'x', '12', '11', 'S'],
+    ['x', '9', 'x', '4', 'x', 'x', '5'],
+    ['9', '18', '3', 'D', 'x', 'x', '6'],
+    ['x', '9', 'x', '5', '1', '8', 'x']
+ ];
+
+  const boardLayoutR = [
+
+    ['20', 'x', '4', '15', '3', '17', 'x'],
+    ['x', '9', '9', 'L', 'x', '3', 'x'],
+    ['12', '18', 'x', 'x', '9', '19', '2'],
+    ['x', '11', 'x', 'L', 'x', '1', '5'],
+    ['D', '17', 'S', '11', '4', 'x', '1'],
+    ['x', '10', 'x', 'S', '5', '11', 'x']
+ ];
 
 
 let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
@@ -691,6 +774,66 @@ const locksG = [
 	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 6 }] },
 	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
 	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }, { row: 0, col: 6 }] }
+]; 
+
+const locksO = [
+	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 2 }, { row: 4, col: 2 }] },
+	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 5, col: 4 }] },
+	 { name: "C", coordinates: [{ row: 0, col: 6 }, { row: 2, col: 6 }, { row: 3, col: 6 }, { row: 4, col: 6 }] },
+	 { name: "D", coordinates: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 1, col: 5 }] },
+	 { name: "E", coordinates: [{ row: 3, col: 1 }, { row: 3, col: 3 }, { row: 3, col: 6 }] },
+	 { name: "F", coordinates: [{ row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }] },
+	 { name: "G", coordinates: [{ row: 0, col: 5 }, { row: 1, col: 5 }, { row: 2, col: 5 }, { row: 5, col: 5 }] },
+	 { name: "H", coordinates: [{ row: 0, col: 3 }, { row: 1, col: 3 }, { row: 3, col: 3 }, { row: 4, col: 3 }, { row: 5, col: 3 }] },
+	 { name: "I", coordinates: [{ row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }] },
+	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 6 }] },
+	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
+	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }, { row: 0, col: 6 }] }
+]; 
+
+const locksP = [
+	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 4, col: 2 }] },
+	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 5, col: 4 }] },
+	 { name: "C", coordinates: [{ row: 0, col: 6 }, { row: 2, col: 6 }, { row: 3, col: 6 }, { row: 4, col: 6 }] },
+	 { name: "D", coordinates: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 1, col: 5 }] },
+	 { name: "E", coordinates: [{ row: 3, col: 1 }, { row: 3, col: 3 }, { row: 3, col: 5 },  { row: 3, col: 6 }] },
+	 { name: "F", coordinates: [{ row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }] },
+	 { name: "G", coordinates: [{ row: 0, col: 5 }, { row: 1, col: 5 }, { row: 2, col: 5 }, { row: 3, col: 5 }, { row: 5, col: 5 }] },
+	 { name: "H", coordinates: [{ row: 0, col: 3 }, { row: 1, col: 3 }, { row: 3, col: 3 }, { row: 4, col: 3 }, { row: 5, col: 3 }] },
+	 { name: "I", coordinates: [{ row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }] },
+	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 6 }] },
+	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
+	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }, { row: 0, col: 6 }] }
+]; 
+
+const locksQ = [
+	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 4, col: 2 }] },
+	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 5, col: 4 }] },
+	 { name: "C", coordinates: [{ row: 2, col: 6 }, { row: 3, col: 6 }, { row: 4, col: 6 }] },
+	 { name: "D", coordinates: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 1, col: 5 }] },
+	 { name: "E", coordinates: [{ row: 3, col: 1 }, { row: 3, col: 3 }, { row: 3, col: 6 }] },
+	 { name: "F", coordinates: [{ row: 5, col: 1 }, { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }] },
+	 { name: "G", coordinates: [{ row: 0, col: 5 }, { row: 1, col: 5 }, { row: 2, col: 5 }, { row: 5, col: 5 }] },
+	 { name: "H", coordinates: [{ row: 0, col: 3 }, { row: 1, col: 3 }, { row: 3, col: 3 }, { row: 4, col: 3 }, { row: 5, col: 3 }] },
+	 { name: "I", coordinates: [{ row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }, { row: 5, col: 1 }] },
+	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 6 }] },
+	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
+	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }] }
+]; 
+
+const locksR = [
+	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 4, col: 2 }] },
+	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 4, col: 4 }, { row: 5, col: 4 }] },
+	 { name: "C", coordinates: [{ row: 2, col: 6 }, { row: 3, col: 6 }, { row: 4, col: 6 }] },
+	 { name: "D", coordinates: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 1, col: 5 }] },
+	 { name: "E", coordinates: [{ row: 3, col: 1 }, { row: 3, col: 3 }, { row: 3, col: 5 }, { row: 3, col: 6 }] },
+	 { name: "F", coordinates: [{ row: 5, col: 1 }, { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }] },
+	 { name: "G", coordinates: [{ row: 0, col: 5 }, { row: 1, col: 5 }, { row: 2, col: 5 }, { row: 3, col: 5 }, { row: 5, col: 5 }] },
+	 { name: "H", coordinates: [{ row: 0, col: 3 }, { row: 1, col: 3 }, { row: 3, col: 3 }, { row: 4, col: 3 }, { row: 5, col: 3 }] },
+	 { name: "I", coordinates: [{ row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }, { row: 5, col: 1 }] },
+	 { name: "J", coordinates: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 6 }] },
+	 { name: "K", coordinates: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 4 }, { row: 2, col: 5 }, { row: 2, col: 6 }] },
+	 { name: "L", coordinates: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 }] }
 ]; 
 
 
