@@ -1337,6 +1337,7 @@ function useSkimmerAsDie(index) {
 
 
 // funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
+// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
 function highlightPossibleCells() {
   const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
   const lockCoordinates = new Set(
@@ -1365,11 +1366,11 @@ function highlightPossibleCells() {
   const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(activeDice);
   console.log("Možné součty a rozdíly:", Array.from(possibleSumsAndDiffs));
 
-  // Kontrola, zda se v součtech vyskytují liché a sudé výsledky
-  const hasOddSum = Array.from(possibleSumsAndDiffs).some(sum => sum % 2 !== 0);
-  const hasEvenSum = Array.from(possibleSumsAndDiffs).some(sum => sum % 2 === 0);
-  console.log("Obsahuje liché součty:", hasOddSum);
-  console.log("Obsahuje sudé součty:", hasEvenSum);
+  // Kontrola, zda se v součtech vyskytují liché a sudé výsledky pro jednu hodnotu
+  const hasSingleOdd = activeDice.length === 1 && activeDice[0] % 2 !== 0;
+  const hasSingleEven = activeDice.length === 1 && activeDice[0] % 2 === 0;
+  console.log("Obsahuje jednu lichou hodnotu:", hasSingleOdd);
+  console.log("Obsahuje jednu sudou hodnotu:", hasSingleEven);
 
   document.querySelectorAll('.cell').forEach(cell => {
     const cellValue = cell.innerText.trim();
@@ -1380,8 +1381,8 @@ function highlightPossibleCells() {
 
     // Kontrola, zda buňka splňuje některou z podmínek pro označení zelenou barvou
     if (
-      (cellValue === 'L' && hasOddSum) ||
-      (cellValue === 'S' && hasEvenSum) ||
+      (cellValue === 'L' && hasSingleOdd) ||
+      (cellValue === 'S' && hasSingleEven) ||
       isDoubleSame ||
       possibleSumsAndDiffs.has(parseInt(cellValue))
     ) {
