@@ -1511,7 +1511,7 @@ console.log(`--- markCell called ---`);
 	// Označení vybraných Skimmerů jako použitých a odstranění jejich výběru
 	document.querySelectorAll('.skimmer.clicked').forEach(skimmer => {
       skimmer.classList.add('used');
-      skimmer.classList.remove('clicked');
+      skimmer.classList.add('disabled');
     });
     
     selectedDice = []; // Reset vybraných kostek po použití
