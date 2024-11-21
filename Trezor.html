@@ -106,6 +106,7 @@
 	  background-color: #d3d3d3;
 	  color: #888;
 	  cursor: not-allowed;
+	  pointer-events: none;
 	  border-color: #888;
 	}
     
@@ -139,6 +140,7 @@
 		background-color: #d3d3d3;
 		color: #888;
 		cursor: not-allowed;
+	    pointer-events: none;
 		border-color: #888;
 	 }
 	   .highlight {
@@ -1213,39 +1215,61 @@ function endRound() {
 
 
 
-
-// Aktualizace tlačítek ReRoll
-  function updateReRollButtons() {
-    const isAnyDieSelected = selectedDice.some(selected => selected);
-    const reRollButtons = document.querySelectorAll('.reroll-button');
-    reRollButtons.forEach(button => {
-      button.classList.toggle('disabled', !isAnyDieSelected);
-    });
-  }
-
-  // Možnost opakovaného hodu
+// Možnost opakovaného hodu
 function reRollDice(rerollIndex) {
   if (selectedDice.length > 0) {    
-  const diceElements = document.querySelectorAll('.die:not(.used).clicked');
-  diceElements.forEach((die, index) => {
-    const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
-    die.innerText = newRoll;
-    die.classList.remove('clicked'); // Reset kliknutí po hodu
+    const diceElements = document.querySelectorAll('.die:not(.used).clicked');
+    diceElements.forEach((die, index) => {
+      const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
+      die.innerText = newRoll;
+      die.classList.remove('clicked'); // Reset kliknutí po hodu
 
-    // Aktualizace pole dice pro tuto kostku
-    const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
-    dice[dieIndex] = newRoll;
-  });
+      // Aktualizace pole dice pro tuto kostku
+      const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
+      dice[dieIndex] = newRoll;
+    });
 
-  // Reset pole selectedDice, aby obsahovalo pouze nové hodnoty
-  selectedDice = []; // Tím zajistíme, že se staré hodnoty nepřičítají
-  const button = document.getElementById(`reRoll${rerollIndex}`);
-  button.classList.add('disabled');
-  button.onclick = null; // Zamezení opětovnému kliknutí
+    // Reset pole selectedDice, aby obsahovalo pouze nové hodnoty
+    selectedDice = []; // Tím zajistíme, že se staré hodnoty nepřičítají
+
+    // Označení tlačítka ReRoll jako použité a deaktivované
+    const button = document.getElementById(`reRoll${rerollIndex}`);
+    button.classList.add('used');
+    button.classList.add('disabled');
+    button.onclick = null; // Zamezení opětovnému kliknutí
+
+    // Aktualizace tlačítek ReRoll
+    updateReRollButtons();
+
+    highlightPossibleCells();
   } else {
-    confirm ("Vyberte alespoň jednu kostku pro opakovaný hod.");
+    confirm("Vyberte alespoň jednu kostku pro opakovaný hod.");
   }
 }
+
+// Funkce pro aktualizaci ReRoll tlačítek
+function updateReRollButtons() {
+  console.log('Updating ReRoll buttons');
+  const reRollButtons = document.querySelectorAll('.reroll-button');
+
+  // Kontrola, zda je nějaký Skimmer aktivní
+  const isAnySkimmerActive = document.querySelectorAll('.skimmer.clicked').length > 0;
+
+  reRollButtons.forEach(button => {
+    if (isAnySkimmerActive || button.classList.contains('used')) {
+      // Pokud je skimmer aktivní nebo je tlačítko použité, deaktivujeme tlačítko
+      button.classList.add('disabled');
+      button.onclick = null; // Zamezení opětovnému kliknutí
+    } else {
+      // Pokud žádný skimmer není aktivní a tlačítko není použité, aktivujeme tlačítko
+      button.classList.remove('disabled');
+      button.onclick = function() {
+        reRollDice(parseInt(button.id.replace('reRoll', '')));
+      };
+    }
+  });
+}
+
 
 
 // Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
@@ -1303,7 +1327,7 @@ function useSkimmerAsDie(index) {
     document.querySelectorAll('.skimmer')[index].classList.add('clicked');
     document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
     confirm (`Vybrali jste Šperhák ${index + 1}\nByl použit jako kostka\ns hodnotou [${skimmers[index]}].\nVyber pole na hrací desce,\npřípadně zkombinuj s jinou kostkou.`);
-
+    updateReRollButtons();
     highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
   } else {
     confirm ("Hodnota Šperháku musí být minimálně 1.");
@@ -1488,6 +1512,7 @@ console.log(`--- markCell called ---`);
 	document.querySelectorAll('.skimmer.clicked').forEach(skimmer => {
       skimmer.classList.add('used');
       skimmer.classList.add('disabled');
+      skimmer.classList.remove('clicked');
     });
     
     selectedDice = []; // Reset vybraných kostek po použití
@@ -1495,6 +1520,7 @@ console.log(`--- markCell called ---`);
     // Zkontrolovat, zda byly použity všechny kostky
     checkAllDiceUsed();
     highlightPossibleCells();
+    updateReRollButtons(); 
   } else {
     confirm ("Hodnota kostek neodpovídá požadavkům na toto pole.");
   }
