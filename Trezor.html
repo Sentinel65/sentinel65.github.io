@@ -1247,6 +1247,8 @@ function reRollDice(rerollIndex) {
   }
 }
 
+
+// Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
 function showSkimmerOptions(index) {
   const skimmerName = `Šperhák ${index + 1}`;
   const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit do něj hodnoty kostek \n2) Použít ho jako další kostku`);
@@ -1258,7 +1260,6 @@ function showSkimmerOptions(index) {
     confirm ("Neplatná volba. Zkuste to znovu.");
   }
 }
-
 
 // Přidání vybraných kostek do skimmeru
 function addDiceToSkimmer(index) {
@@ -1273,7 +1274,7 @@ function addDiceToSkimmer(index) {
 
     // Kontrola, zda vybrané kostky nepřesahují zbývající kapacitu skimmeru
     if (diceSum > remainingCapacity) {
-      confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu  [${remainingCapacity}] šperháku.`);
+      confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku.`);
     } else {
       // Přidání kostek do skimmeru a aktualizace UI
       skimmers[index] += diceSum;
@@ -1283,13 +1284,10 @@ function addDiceToSkimmer(index) {
       document.querySelectorAll('.die.clicked').forEach(die => {
         die.classList.add('used');
         die.classList.remove('clicked');
-	document.querySelectorAll('.cell').forEach(cell => {
-			cell.classList.remove('highlight'); // Odstraníme staré zvýraznění
-		  });
       });
 
       selectedDice = []; // Reset vybraných kostek po přenosu
-      highlightPossibleCells(); //
+      highlightPossibleCells(); // Aktualizace zvýraznění po přidání do skimmeru
       // Zkontrolovat, zda byly použity všechny kostky
       checkAllDiceUsed();
     }
@@ -1298,27 +1296,15 @@ function addDiceToSkimmer(index) {
   }
 }
 
-
+// Použití Skimmeru jako virtuální kostky
 function useSkimmerAsDie(index) {
   if (skimmers[index] > 0) {
     selectedDice.push(skimmers[index]);
     document.querySelectorAll('.skimmer')[index].classList.add('clicked');
     document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
     confirm (`Vybrali jste Šperhák ${index + 1}\nByl použit jako kostka\ns hodnotou [${skimmers[index]}].\nVyber pole na hrací desce,\npřípadně zkombinuj s jinou kostkou.`);
-	document.querySelectorAll('.cell').forEach(cell => {
-			cell.classList.remove('highlight'); // Odstraníme staré zvýraznění
-			highlightPossibleCells(); //
-	// Zvýraznění políček na hrací desce, které odpovídají některému z možných součtů nebo rozdílů
-		  document.querySelectorAll('.cell').forEach(cell => {
-			const cellValue = cell.innerText;
 
-	if (skimmers.includes(parseInt(cellValue)) // Přidání podmínky pro skimmery
-			) {
-		console.log(`Zvýrazněno pole: (${cell.id}) s hodnotou ${cellValue}`);
-			  cell.classList.add('highlight',); // Zvýrazníme políčko, pokud odpovídá hodnotě nebo kombinaci kostek
-			}})
-		  });
-
+    highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
   } else {
     confirm ("Hodnota Šperháku musí být minimálně 1.");
   }
@@ -1326,43 +1312,57 @@ function useSkimmerAsDie(index) {
 
 
 
+// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
 function highlightPossibleCells() {
   const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
   const lockCoordinates = new Set(
     currentLock.coordinates.map(({ row, col }) => `cell-${row}-${col}`)
   );
 
-	
-
-
-	// Vytvoření seznamu aktivních kostek (včetně virtuální kostky, pokud existuje)
+  // Vytvoření seznamu aktivních kostek (včetně virtuální kostky, pokud existuje)
   const activeDice = virtualDice !== null ? [virtualDice] : selectedDice;
   console.log("Aktivní hodnoty pro zvýraznění:", activeDice);
-  
+
+  // Pokud nejsou žádné aktivní kostky, odstraníme zvýraznění a obnovíme zámky
+  if (activeDice.length === 0) {
+    document.querySelectorAll('.cell').forEach(cell => {
+      if (!lockCoordinates.has(cell.id)) {
+        cell.classList.remove('highlight', 'highlight-empty');
+      } else {
+        cell.classList.remove('highlight');
+        cell.classList.add('highlight-empty');
+      }
+    });
+    console.log("Žádné aktivní kostky, odstraněno všechno zvýraznění kromě zámků.");
+    return;
+  }
 
   // Generování všech možných součtů a rozdílů z vybraných kostek
-  const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(selectedDice);
-	console.log("Možné součty a rozdíly:", Array.from(possibleSumsAndDiffs));
+  const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(activeDice);
+  console.log("Možné součty a rozdíly:", Array.from(possibleSumsAndDiffs));
+
+  // Kontrola, zda se v součtech vyskytují liché a sudé výsledky
+  const hasOddSum = Array.from(possibleSumsAndDiffs).some(sum => sum % 2 !== 0);
+  const hasEvenSum = Array.from(possibleSumsAndDiffs).some(sum => sum % 2 === 0);
+  console.log("Obsahuje liché součty:", hasOddSum);
+  console.log("Obsahuje sudé součty:", hasEvenSum);
 
   document.querySelectorAll('.cell').forEach(cell => {
     const cellValue = cell.innerText.trim();
     const cellId = cell.id;
 
     // Podmínky pro speciální hodnoty
-    const isOdd = activeDice.length === 1 && activeDice[0] % 2 !== 0;
-    const isEven = activeDice.length === 1 && activeDice[0] % 2 === 0;
-    const isDoubleSame =
-      activeDice.length === 2 && activeDice[0] === activeDice[1];
+    const isDoubleSame = cellValue === 'D' && activeDice.length === 2 && activeDice[0] === activeDice[1];
 
     // Kontrola, zda buňka splňuje některou z podmínek pro označení zelenou barvou
     if (
-      (cellValue === 'L' && isOdd) ||
-      (cellValue === 'S' && isEven) ||
-      (cellValue === 'D' && isDoubleSame) ||
+      (cellValue === 'L' && hasOddSum) ||
+      (cellValue === 'S' && hasEvenSum) ||
+      isDoubleSame ||
       possibleSumsAndDiffs.has(parseInt(cellValue))
     ) {
       cell.classList.add('highlight'); // Nastaví zelenou barvu
-	  console.log(`Zvýrazněno pole: ${cellId} s hodnotou ${cellValue}`);
+      console.log(`Zvýrazněno pole: ${cellId} s hodnotou ${cellValue}`);
       cell.classList.remove('highlight-empty');
     } else if (lockCoordinates.has(cellId)) {
       // Pokud buňka patří k aktuálnímu zámku, obnovíme žlutou barvu
@@ -1374,10 +1374,6 @@ function highlightPossibleCells() {
     }
   });
 }
-	
-
-
-
 
 // Pomocná funkce pro generování všech možných součtů a rozdílů z vybraných kostek
 function generatePossibleSumsAndDiffs(diceArray) {
@@ -1402,28 +1398,8 @@ function generatePossibleSumsAndDiffs(diceArray) {
 
 
 
-// Vygenerování všech možných součtů a rozdílů z vybraných kostek
-function generatePossibleSumsAndDiffs(diceArray) {
-  const results = new Set();
-  
-  function calculateCombinations(dice, currentSum, currentDiff) {
-    if (dice.length === 0) {
-      results.add(currentSum);
-      results.add(Math.abs(currentDiff));
-      return;
-    }
 
-    for (let i = 0; i < dice.length; i++) {
-      const remainingDice = dice.slice(0, i).concat(dice.slice(i + 1));
-      calculateCombinations(remainingDice, currentSum + dice[i], currentDiff + dice[i]);
-      calculateCombinations(remainingDice, currentSum - dice[i], currentDiff - dice[i]);
-    }
-  }
 
-  calculateCombinations(diceArray, 0, 0);
-console.log("Vygenerované kombinace součtů a rozdílů:", results);
-  return results;
-}
 
 
 
