@@ -958,7 +958,21 @@ function displayGameStatsInModal() {
   // Získání desky s nejvyšším skóre
   const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
   totalStatsDiv.innerHTML += `<p><strong>Nejvyšší skóre:</strong> ${highestScore} (Deska ${bestBoardId})</p>`;
+  
+  // Dynamické zjištění nejčastěji hrané desky
+  let mostPlayedBoardId = '';
+  let mostPlayedGames = 0;
 
+  Object.keys(stats.boards).forEach(boardId => {
+    const boardStats = stats.boards[boardId];
+    if (boardStats.gamesPlayed > mostPlayedGames) {
+      mostPlayedBoardId = boardId;
+      mostPlayedGames = boardStats.gamesPlayed;
+    }
+  });
+
+  totalStatsDiv.innerHTML += `<p><strong>Nejčastěji hraná:</strong> ${mostPlayedGames} (Deska ${mostPlayedBoardId})</p>`;
+  
   const boardStatsDiv = document.getElementById('boardStats');
   boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
 
@@ -1337,7 +1351,6 @@ function useSkimmerAsDie(index) {
 
 
 // funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
-// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
 function highlightPossibleCells() {
   const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
   const lockCoordinates = new Set(
@@ -1420,11 +1433,6 @@ function generatePossibleSumsAndDiffs(diceArray) {
   calculateCombinations(diceArray, 0); // Spustíme výpočet kombinací se součtem 0
   return results;
 }
-
-
-
-
-
 
 
 
@@ -1527,6 +1535,7 @@ console.log(`--- markCell called ---`);
   }
 }
 
+// Funkce pro zahájení hry
 function startGame() {
   currentRound = 1;
   score = 0;
