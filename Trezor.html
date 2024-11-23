@@ -389,26 +389,22 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 </table>
 
 
-<!-- Tlačítko pro hod kostkami -->
-<!-- <button id="rollButton" onclick="rollDice()">Hod kostkami</button> -->
-
 <script type="text/javascript">
-function handleButtonClick() {
-            // Logika pro zobrazení nápovědy
-            const option = prompt(`Hra Trezor - vyberte možnost:\n(zadejte číslo volby)\n1) Zobrazit nápovědu\n2) Ukončit manuálně kolo\n3) Ukončit manuálně hru`);
-  if (option === "1") {
-    showHelp();
-  } else if (option === "2") {
-    manualEndRound();
-  } else if (option === "3") {
-    calculateFinalScore();
-    document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
-	updateGameStats(boardId, score);
-    confirm("Hra skončila!");
-  }
-}
+   
+let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
+let selectedDice = []; // Uchování vybraných kostek
+let virtualDice = null; // Uchování virtuální kostky ze skimmeru
+let BoardId = null;
+let currentRound = 1; // Aktuální kolo
+let score = 0; // Body hráče
+let skimmers = [0, 0, 0]; // Hodnoty pro skimmery
+let unusedSkimmers = 0; // Pocet nepoužitých Skimmerů
+let anySkimmerAsDie = false; // Přidání proměnné pro sledování stavu virtuální kostky
+const totalRounds = 12; // Počet kol
 
 
+
+  // Funkce pro výběr hracií desky 
 	function selectBoard() {
   const option = prompt(`Hra Trezor - vyberte herní desku:\n(zadejte číslo desky 1 - 18)`);
   if (option === "1" || option === "01") {
@@ -486,11 +482,70 @@ function handleButtonClick() {
   } else {
     confirm("Neplatná volba. Zkuste to znovu.");
     selectBoard(); // Opakování výběru
+    return ;
   }
 }
 
-	
+  // Vytvoření herní desky
+  function createBoard() {
+    const boardDiv = document.getElementById('board');
 
+if (!boardDiv) {
+    console.error("Chyba: Element s ID 'board' nebyl nalezen.");
+    alert("Chyba: Nemohu najít prvek pro hrací desku.");
+    return;
+  }
+  boardDiv.innerHTML = ''; // Odstranění starého obsahu
+
+    for (let row = 0; row < boardLayout.length; row++) {
+      for (let col = 0; col < boardLayout[row].length; col++) {
+        const cellValue = boardLayout[row][col];
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.id = `cell-${row}-${col}`;
+        cell.innerText = cellValue;
+
+        if (cellValue === 'x') {
+          cell.classList.add('disabled');
+        } else {
+          cell.onclick = () => markCell(row, col, cellValue); 
+        }
+
+        if (cellValue === 'L') cell.classList.add('odd');
+        else if (cellValue === 'S') cell.classList.add('even');
+        else if (cellValue === 'D') cell.classList.add('double');
+
+        boardDiv.appendChild(cell);
+      }
+    }
+  }	
+  
+  // Funkce pro zahájení hry
+function startGame() {
+
+if (!locks) {
+    console.error("Chyba: locks nejsou inicializovány.");
+    return;
+}
+  currentRound = 1;
+  score = 0;
+  rollDice();
+  startRound();
+  document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+ 
+// Ověřte, že boardId je nastavené před načítáním skóre
+  if (boardId) {
+    const highScore = loadHighScore(boardId);
+    document.getElementById('high-score').innerText = `Deska ${boardId} - nejvyšší dosažené skóre: ${highScore}`;
+  } else {
+    console.error("boardId není definováno při načítání skóre");
+  }
+}
+
+	function selectBoardMenu() {
+	location.reload();
+	}
+	
 
 // Otevření modálního okna
 function showHelp() {
@@ -507,7 +562,7 @@ function displayGameStatsInModal() {
   document.getElementById('statsModal').style.display = 'block';
 }
 
-function displayGameStatsInModal() {
+function closeGameStatsInModal() {
   document.getElementById('statsModal').style.display = 'none';
 }
 
@@ -713,16 +768,6 @@ window.onclick = function(event) {
  ];
 
 
-let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
-let skimmers = [0, 0, 0]; // Hodnoty pro skimmery
-let selectedDice = []; // Uchování vybraných kostek
-let virtualDice = null; // Uchování virtuální kostky ze skimmeru
-let currentRound = 1; // Aktuální kolo
-let score = 0; // Body hráče
-let unusedSkimmers = 0; // Pocet nepoužitých Skimmerů
-let anySkimmerAsDie = false; // Přidání proměnné pro sledování stavu virtuální kostky
-const totalRounds = 12; // Počet kol
-
 const locksA = [
 	 { name: "A", coordinates: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 2 }, { row: 4, col: 2 }] },
 	 { name: "B", coordinates: [{ row: 0, col: 4 }, { row: 2, col: 4 }, { row: 4, col: 4 }, { row: 5, col: 4 }] },
@@ -864,39 +909,7 @@ const locksR = [
 const lockPoints = { A: 1, B: 1, C: 1, D: 1, E: 1, F: 1, G: 2, H: 2, I: 2, J: 3, K: 3, L: 3 }; // Body za zámky
 
 
-  // Vytvoření herní desky
-  function createBoard() {
-    const boardDiv = document.getElementById('board');
 
-if (!boardDiv) {
-    console.error("Chyba: Element s ID 'board' nebyl nalezen.");
-    alert("Chyba: Nemohu najít prvek pro hrací desku.");
-    return;
-  }
-  boardDiv.innerHTML = ''; // Odstranění starého obsahu
-
-    for (let row = 0; row < boardLayout.length; row++) {
-      for (let col = 0; col < boardLayout[row].length; col++) {
-        const cellValue = boardLayout[row][col];
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.id = `cell-${row}-${col}`;
-        cell.innerText = cellValue;
-
-        if (cellValue === 'x') {
-          cell.classList.add('disabled');
-        } else {
-          cell.onclick = () => markCell(row, col, cellValue); 
-        }
-
-        if (cellValue === 'L') cell.classList.add('odd');
-        else if (cellValue === 'S') cell.classList.add('even');
-        else if (cellValue === 'D') cell.classList.add('double');
-
-        boardDiv.appendChild(cell);
-      }
-    }
-  }
 
 
 // Výchozí struktura statistik
@@ -919,7 +932,7 @@ function saveGameStats(stats) {
 // Aktualizace statistik po ukončení hry
 function updateGameStats(boardId, score) {
   const stats = loadGameStats();
-
+  
   // Celkové statistiky
   stats.totalGames += 1;
 
@@ -1081,7 +1094,7 @@ const lockName = currentLock.name;
     alert("Hra skončila!");
     return;
   }
-  alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
+   alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
 }
 
 
@@ -1141,6 +1154,7 @@ function calculateFinalScore() {
   }
 
   // Aktualizace zobrazení skóre na obrazovce
+ 
   document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
   document.getElementById('high-score').innerText = `Deska ${boardId} - nejvyšší dosažené skóre: ${Math.max(score, highScore)}`;
 
@@ -1220,6 +1234,7 @@ function endRound() {
 
   // Posun na další kolo a nový hod kostkami
   currentRound++;
+  
   if (currentRound <= locks.length) {
   	document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
     rollDice();
@@ -1227,7 +1242,7 @@ function endRound() {
    
   } else {   
     calculateFinalScore();
-   	document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+   	document.getElementById('score').innerText = `Kolo ${currentLock.name}/12, Deska ${boardId} - počet bodů: ${score}`;
 	updateGameStats(boardId, score);
     confirm("Hra skončila!");
   }
@@ -1312,7 +1327,7 @@ function addDiceToSkimmer(index) {
     return;
   }  
   if (anySkimmerAsDie) {
-    confirm("Jeden ze Šperháků je již použit jako kostka. Nelze přidávat hodnoty do ostatních Šperháků.");
+    confirm("Jeden ze Šperháků je již použit jako virtuální kostka. Nelze přidávat hodnoty do ostatních Šperháků.");
     return;
   }
   if (selectedDice.length > 0) {
@@ -1359,7 +1374,14 @@ function useSkimmerAsDie(index) {
   }
 }
 
-
+// Funkce pro resetování stavu, když je skimmer použit jako kostka a jeho hodnota je umístěna na hrací desku
+function resetSkimmerState() {
+  anySkimmerAsDie = false; // Reset stavu, že žádný Skimmer není použit jako kostka
+  document.querySelectorAll('.skimmer').forEach(skimmer => {
+    skimmer.classList.remove('clicked'); // Odstranit třídu clicked ze všech Skimmerů
+    skimmer.onclick = function() { showSkimmerOptions(Array.from(document.querySelectorAll('.skimmer')).indexOf(skimmer)); }; // Obnovit možnost kliknutí na Skimmer
+  });
+}
 
 // funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
 function highlightPossibleCells() {
@@ -1540,34 +1562,14 @@ console.log(`--- markCell called ---`);
     // Zkontrolovat, zda byly použity všechny kostky
     checkAllDiceUsed();
     highlightPossibleCells();
-    updateReRollButtons(); 
+    updateReRollButtons();
+    resetSkimmerState();
   } else {
     confirm ("Hodnota kostek neodpovídá požadavkům na toto pole.");
   }
 }
 
-// Funkce pro zahájení hry
-function startGame() {
-  currentRound = 1;
-  score = 0;
-  rollDice();
-  startRound();
-  document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
-  
-// Ověřte, že boardId je nastavené před načítáním skóre
-  if (boardId) {
-    const highScore = loadHighScore(boardId);
-    document.getElementById('high-score').innerText = `Deska ${boardId} - nejvyšší dosažené skóre: ${highScore}`;
-  } else {
-    console.error("boardId není definováno při načítání skóre");
-  }
-}
 
-
-
-	function selectBoardMenu() {
-	location.reload();
-	}
 
 
 	// Inicializace hry
