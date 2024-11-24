@@ -1310,7 +1310,7 @@ function updateReRollButtons() {
 // Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
 function showSkimmerOptions(index) {
   const skimmerName = `Šperhák ${index + 1}`;
-  const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit do něj hodnoty kostek \n2) Použít ho jako další kostku`);
+  const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit do něj hodnoty kostek \n2) Použít ho jako další kostku\n⚠️ Tato akce je nevratná ⚠️`);
   if (option === "1") {
     addDiceToSkimmer(index);
   } else if (option === "2") {
@@ -1366,7 +1366,7 @@ function useSkimmerAsDie(index) {
     document.querySelectorAll('.skimmer')[index].classList.add('clicked');
     document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
     anySkimmerAsDie = true; // Nastavení stavu, že je jeden ze Skimmerů použit jako kostka
-    confirm (`Vybrali jste Šperhák ${index + 1}\nByl použit jako kostka\ns hodnotou [${skimmers[index]}].\nVyber pole na hrací desce,\npřípadně zkombinuj s jinou kostkou.`);
+    confirm (`Vybrali jste Šperhák ${index + 1}\nByl použit jako virtuální kostka\ns hodnotou [${skimmers[index]}].\n💡 Vyber pole na hrací desce,\nmůžeš kombinovat s jinými kostkami.`);
     updateReRollButtons();
     highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
   } else {
