@@ -251,7 +251,7 @@
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Poté kliknutím označte pole (čtverečky), která odpovídají hodnotám (nebo jejich kombinaci) na hozených kostkách</li>
-         <li>Jakmile použijete všech 5 kostek, dané kolo skončí. Zámek zůstane otevřený nebo se uzamkne v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak "o". Aktuálně řešený zámek má podbarvená políčka žlutou barvou, již označená mají hodnotu ve žluté barvě.</li>
+         <li>Jakmile použijete všech 5 kostek, dané kolo skončí. Zámek zůstane otevřený nebo se uzamkne v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka žlutou barvou, již označená mají hodnotu ve žluté barvě.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
@@ -1178,11 +1178,11 @@ function manualEndRound() {
   });
 
   if (allCellsFilled) {
-    // Označíme všechny buňky tohoto zámku jako 'O' v herní desce
+    // Označíme všechny buňky tohoto zámku jako '✔️' v herní desce
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
       cell.classList.add('opened'); // Přidáme třídu 'opened' pro vizuální označení
-      cell.textContent = 'o'; // Změníme obsah buňky na 'o'
+      cell.textContent = '✔️'; // Změníme obsah buňky na '✔️'
     });
     score += lockPoints[lock.name];
     confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
@@ -1220,11 +1220,11 @@ function endRound() {
 
   if (allCellsFilled) {
       
-   // Označíme všechny buňky tohoto zámku jako 'O' v herní desce
+   // Označíme všechny buňky tohoto zámku jako '✔️' v herní desce
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
       cell.classList.add('opened'); // Přidáme třídu 'opened' pro vizuální označení
-      cell.textContent = 'o'; // Změníme obsah buňky na 'o'
+      cell.textContent = '✔️'; // Změníme obsah buňky na '✔️'
     });   
       
     score += lockPoints[lock.name];
