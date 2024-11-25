@@ -81,6 +81,9 @@
       font-weight: bold;
       font-size: 16px;
     }
+    .lock {
+      color: black;
+    }
     .score {
     font-size: 14px;
     font-weight: bold;
@@ -320,16 +323,16 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 <div id="gameContainer">
   <!-- Označení sloupců nahoře -->
   <div id="letters">
-    <div></div><div></div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A</div><div></div><div>&nbsp;&nbsp;&nbsp;&nbsp;B</div><div></div><div>C</div>
+    <div></div><div></div><div id="lockA">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A</div><div></div><div id="lockB">&nbsp;&nbsp;&nbsp;&nbsp;B</div><div></div><div id="lockC">C</div>
   </div>
 
   <!-- Označení řádků vlevo a vpravo -->
   <div id="left">
-    <div>L</div>
+    <div id="lockL">L</div>
     <div></div>
-    <div>K</div>
+    <div id="lockK">K</div>
     <div></div>
-    <div>J</div>
+    <div id="lockJ">J</div>
     <div></div>
   </div>
 
@@ -338,16 +341,16 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 
   <div id="right">
     <div></div>
-    <div>D</div>
+    <div id="lockD">D</div>
     <div></div>
-    <div>E</div>
+    <div id="lockE">E</div>
     <div></div>
-    <div>F</div>
+    <div id="lockF">F</div>
   </div>
 
   <!-- Označení sloupců dole -->
   <div id="bottom">
-    <div></div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I</div><div></div><div>&nbsp;&nbsp;&nbsp;&nbsp;H</div><div></div><div>G</div><div></div>
+    <div></div><div id="lockI">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I</div><div></div><div id="lockH">&nbsp;&nbsp;&nbsp;&nbsp;H</div><div></div><div id="lockG">G</div><div></div>
   </div>
 
   <!-- Skimmery jako tlačítka -->
@@ -393,7 +396,50 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 
 
 <script type="text/javascript">
-   
+
+
+// Funkce pro aktualizaci barev zámků po ukončení kola
+function updateLockColors() {
+  for (const lock of locks) {
+    const lockElement = document.getElementById(`lock${lock.name}`);
+    if (lockElement) {
+      console.log(`Updating color for lock ${lock.name}: isDetermined=${lock.isDetermined}, isOpen=${lock.isOpen}`);
+      if (!lock.isDetermined) {
+        lockElement.style.color = 'black'; // Pokud není stav určen, zámek je černý
+      } else {
+        lockElement.style.color = lock.isOpen ? 'limegreen' : 'red'; // Pokud je stav určen, zámek je zelený nebo červený
+      }
+    }
+  }
+}
+
+function handleEndRound() {
+  const lock = locks[currentRound - 1];
+  const allCellsFilled = lock.coordinates.every(({ row, col }) => {
+    const cell = document.getElementById(`cell-${row}-${col}`);
+    return cell.classList.contains('clicked');
+  });
+
+  if (allCellsFilled) {
+    lock.coordinates.forEach(({ row, col }) => {
+      const cell = document.getElementById(`cell-${row}-${col}`);
+      cell.classList.add('opened');
+      cell.textContent = '✔️';
+    });
+ 
+    lock.isOpen = true; // Nastavíme stav zámku na otevřený
+    confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
+  } else {
+    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
+    confirm(`Zámek ${lock.name} se uzamknul.`);
+  }
+
+  lock.isDetermined = true; // Označíme, že stav zámku je určen
+  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
+  updateLockColors();
+}
+
+
 let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
 let selectedDice = []; // Uchování vybraných kostek
 let virtualDice = null; // Uchování virtuální kostky ze skimmeru
@@ -912,9 +958,6 @@ const locksR = [
 const lockPoints = { A: 1, B: 1, C: 1, D: 1, E: 1, F: 1, G: 2, H: 2, I: 2, J: 3, K: 3, L: 3 }; // Body za zámky
 
 
-
-
-
 // Výchozí struktura statistik
 const defaultStats = {
   totalGames: 0,
@@ -1189,7 +1232,7 @@ function manualEndRound() {
   } else {
     confirm(`Zámek ${lock.name} se uzamknul.`);
   }
-
+  handleEndRound();
   // Aktualizujeme skóre na obrazovce
   document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
 
@@ -1233,7 +1276,7 @@ function endRound() {
     confirm (`Zámek ${lock.name} se uzamknul.`);
   }
 
-
+  handleEndRound();
 
   // Posun na další kolo a nový hod kostkami
   currentRound++;
