@@ -1010,22 +1010,41 @@ function updateGameStats(boardId, score) {
   saveGameStats(stats);
 }
 
+// Zajistíme, že getLowestScoreBoard používá loadHighScore:
+function getLowestScoreBoard(stats) {
+  let lowestScore = Infinity;
+  let worstBoardId = '';
+
+ Object.keys(stats.boards).forEach(boardId => {
+    const highScore = loadHighScore(boardId);
+    if (highScore < lowestScore) {
+      lowestScore = highScore;
+      worstBoardIds = [boardId];
+    } else if (highScore === lowestScore) {
+      worstBoardIds.push(boardId);
+    }
+  });
+
+  return { worstBoardIds, lowestScore };
+}
+
 	//Zajistíme, že getHighestScoreBoard používá loadHighScore:
 function getHighestScoreBoard(stats) {
   let highestScore = -Infinity;
   let bestBoardId = '';
 
-  Object.keys(stats.boards).forEach(boardId => {
-    const highScore = loadHighScore(boardId); // Použijeme `loadHighScore`
+Object.keys(stats.boards).forEach(boardId => {
+    const highScore = loadHighScore(boardId);
     if (highScore > highestScore) {
       highestScore = highScore;
-      bestBoardId = boardId;
+      bestBoardIds = [boardId];
+    } else if (highScore === highestScore) {
+      bestBoardIds.push(boardId);
     }
   });
 
-  return { bestBoardId, highestScore };
+  return { bestBoardIds, highestScore };
 }
-
 
 function displayGameStatsInModal() {
   const stats = loadGameStats();
@@ -1035,8 +1054,12 @@ function displayGameStatsInModal() {
 
   // Získání desky s nejvyšším skóre
   const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
-  totalStatsDiv.innerHTML += `<p><strong>Nejvyšší skóre:</strong> ${highestScore} (Deska ${bestBoardId})</p>`;
+  totalStatsDiv.innerHTML += `<p><strong>Nejvyšší skóre:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
   
+  // Získání desky s nejnižším skóre
+  const { worstBoardId, lowestScore } = getLowestScoreBoard(stats);
+  totalStatsDiv.innerHTML += `<p><strong>Nejnižší skóre:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
+
   // Dynamické zjištění nejčastěji hrané desky
   let mostPlayedBoardId = '';
   let mostPlayedGames = 0;
@@ -1049,8 +1072,8 @@ function displayGameStatsInModal() {
     }
   });
 
-  totalStatsDiv.innerHTML += `<p><strong>Nejčastěji hraná:</strong> ${mostPlayedGames} (Deska ${mostPlayedBoardId})</p>`;
-  
+  totalStatsDiv.innerHTML += `<p><strong>Nejčastěji hraná:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
+
   const boardStatsDiv = document.getElementById('boardStats');
   boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
 
