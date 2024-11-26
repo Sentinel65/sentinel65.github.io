@@ -18,7 +18,7 @@
         "left board right"
         "bottom bottom bottom"
         "skimmers skimmers skimmers";
-      gap: 10px;
+      gap: 5px;
     }
     #board {
       display: grid;
@@ -60,12 +60,12 @@
       grid-template-rows: repeat(6, 1fr);
       grid-area: left;
       justify-content: end;
-      margin-top: 28px;
+      margin-top: 23px;
     }
     #right {
       grid-template-rows: repeat(6, 1fr);
       grid-area: right;
-      margin-top: 28px;
+      margin-top: 20px;
     }
     #bottom {
       grid-template-columns: repeat(7, 1fr);
@@ -162,7 +162,7 @@
 	  color: yellow;
 	  font-weight: bold;
 	}
-		.die {
+			.die {
 		  width: 40px;
 		  height: 40px;
 		  display: flex;
@@ -174,6 +174,7 @@
 		  font-weight: bold;
 		  cursor: pointer;
 		  user-select: none;
+		  transition: transform 0.3s;
 		}
     .die.clicked { background-color: #90cfff; } /* Styl označených kostek */
     #rollButton {
@@ -182,6 +183,18 @@
       font-size: 16px;
       cursor: pointer;
     }
+
+.die.rolling {
+    animation: roll 0.5s ease-in-out;
+}
+
+@keyframes roll {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(90deg); }
+    50% { transform: rotate(180deg); }
+    75% { transform: rotate(270deg); }
+    100% { transform: rotate(360deg); }
+}
     @media (max-width: 600px) {
       .cell, .die {
         width: 30px;
@@ -323,7 +336,7 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 <div id="gameContainer">
   <!-- Označení sloupců nahoře -->
   <div id="letters">
-    <div></div><div></div><div id="lockA">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A</div><div></div><div id="lockB">&nbsp;&nbsp;&nbsp;&nbsp;B</div><div></div><div id="lockC">C</div>
+    <div></div><div></div><div id="lockA">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A</div><div></div><div id="lockB">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B</div><div></div><div id="lockC">C</div>
   </div>
 
   <!-- Označení řádků vlevo a vpravo -->
@@ -1097,10 +1110,13 @@ function rollDice() {
   dice = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6) + 1);
   const diceElements = document.querySelectorAll('.die');
   dice.forEach((value, index) => {
-    diceElements[index].innerText = value;
-    diceElements[index].classList.remove('clicked', 'used'); // Reset označení kostek při hodu
+    diceElements[index].classList.add('rolling');
+    setTimeout(() => {
+      diceElements[index].innerText = value;
+      diceElements[index].classList.remove('rolling', 'clicked', 'used');
+    }, 750); // Čas pro animaci
   });
-  selectedDice = []; // Reset vybraných kostek při hodu
+  selectedDice = [];
 }
 
 // Funkce pro zahájení nového kola
@@ -1140,7 +1156,7 @@ const lockName = currentLock.name;
     alert("Hra skončila!");
     return;
   }
-   alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
+  // alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
 }
 
 
@@ -1300,15 +1316,18 @@ function endRound() {
 function reRollDice(rerollIndex) {
   if (selectedDice.length > 0) {    
     const diceElements = document.querySelectorAll('.die:not(.used).clicked');
-    diceElements.forEach((die, index) => {
-      const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
-      die.innerText = newRoll;
-      die.classList.remove('clicked'); // Reset kliknutí po hodu
+   diceElements.forEach((die) => {
+            die.classList.add('rolling');
+            setTimeout(() => {
+                const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
+                die.innerText = newRoll;
+                die.classList.remove('clicked', 'rolling'); // Reset kliknutí a animace po hodu
 
       // Aktualizace pole dice pro tuto kostku
-      const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
-      dice[dieIndex] = newRoll;
-    });
+       const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
+                dice[dieIndex] = newRoll;
+            }, 750); // Čas pro animaci
+        });
 
     // Reset pole selectedDice, aby obsahovalo pouze nové hodnoty
     selectedDice = []; // Tím zajistíme, že se staré hodnoty nepřičítají
