@@ -426,31 +426,6 @@ function updateLockColors() {
   }
 }
 
-function handleEndRound() {
-  const lock = locks[currentRound - 1];
-  const allCellsFilled = lock.coordinates.every(({ row, col }) => {
-    const cell = document.getElementById(`cell-${row}-${col}`);
-    return cell.classList.contains('clicked');
-  });
-
-  if (allCellsFilled) {
-    lock.coordinates.forEach(({ row, col }) => {
-      const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.add('opened');
-      cell.textContent = '✔️';
-    });
- 
-    lock.isOpen = true; // Nastavíme stav zámku na otevřený
-    confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
-  } else {
-    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
-    confirm(`Zámek ${lock.name} se uzamknul.`);
-  }
-
-  lock.isDetermined = true; // Označíme, že stav zámku je určen
-  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
-  updateLockColors();
-}
 
 
 let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
@@ -1260,18 +1235,24 @@ function manualEndRound() {
   });
 
   if (allCellsFilled) {
-    // Označíme všechny buňky tohoto zámku jako '✔️' v herní desce
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.add('opened'); // Přidáme třídu 'opened' pro vizuální označení
-      cell.textContent = '✔️'; // Změníme obsah buňky na '✔️'
+      cell.classList.add('opened');
+      cell.textContent = '✔️';
     });
     score += lockPoints[lock.name];
+    lock.isOpen = true; // Nastavíme stav zámku na otevřený
     confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
   } else {
+    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
     confirm(`Zámek ${lock.name} se uzamknul.`);
   }
-  handleEndRound();
+
+  lock.isDetermined = true; // Označíme, že stav zámku je určen
+  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
+  updateLockColors();  //upraví barvu písmena zámku podle stavu
+
+
   // Aktualizujeme skóre na obrazovce
   document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
 
@@ -1301,21 +1282,22 @@ function endRound() {
   });
 
   if (allCellsFilled) {
-      
-   // Označíme všechny buňky tohoto zámku jako '✔️' v herní desce
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.add('opened'); // Přidáme třídu 'opened' pro vizuální označení
-      cell.textContent = '✔️'; // Změníme obsah buňky na '✔️'
-    });   
-      
+      cell.classList.add('opened');
+      cell.textContent = '✔️';
+    });
     score += lockPoints[lock.name];
-    confirm (`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
+    lock.isOpen = true; // Nastavíme stav zámku na otevřený
+    confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
   } else {
-    confirm (`Zámek ${lock.name} se uzamknul.`);
+    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
+    confirm(`Zámek ${lock.name} se uzamknul.`);
   }
 
-  handleEndRound();
+  lock.isDetermined = true; // Označíme, že stav zámku je určen
+  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
+  updateLockColors();  // upraví barvu písmena zámku podle stavu 
 
   // Posun na další kolo a nový hod kostkami
   currentRound++;
@@ -1398,10 +1380,10 @@ function updateReRollButtons() {
 // Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
 function showSkimmerOptions(index) {
   const skimmerName = `Šperhák ${index + 1}`;
-  const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit hodnotu označených kostek \n2) Použít jako další virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
+  const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit hodnotu označených kostek \n5) Použít jako další virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
   if (option === "1") {
     addDiceToSkimmer(index);
-  } else if (option === "2") {
+  } else if (option === "5") {
     useSkimmerAsDie(index);
   } else {
     confirm ("Neplatná volba. Zkuste to znovu.");
