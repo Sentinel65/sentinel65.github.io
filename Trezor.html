@@ -259,15 +259,15 @@
   <div class="modal-content">
     <span class="close" onclick="closeHelp()">&times;</span>
   <h2>TREZOR</h2>
-    <p>Kostková solitaire hra. Zdigitalizovaná verze (JavaScript) PnP hry <b>"Vault: A Solitaire Dice Game (2021)"</b>, autorem je <b>Wayne Koenig</b></p>
+    <p>Kostková solitaire hra. Autorem papírové verze (PnP) hry s názvem <b>"Vault: A Solitaire Dice Game (2021)"</b> je <b>Wayne Koenig</b>.</p>
     <p>Ve hře představujete bankovního lupiče, který se snaží prolomit specializovaný trezor. Pomocí hodu kostkami a pečlivého plánování doufáte, že se vám podaří dostat ven s co největším počtem diamantů dříve, než se všechny zámky na trezoru zavřou. Některé zámky obsahují více diamantů než jiné, takže je na vás, abyste se rozhodli, na kterém zámku strávíte svůj čas s ohledem na hozené hodnoty na kostkách.</p>
   <h3>Průběh hry</h3>
-    <p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L). Na konci každého kola (v abecedním pořadí písmen) se zavře příslušný zámek, čímž se odstraní šance na získání diamantů v jeho řadě nebo sloupci.</p>
+    <p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L).</p>
     <p>V každém kole je třeba splnit 4 kroky:
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
-         <li>Poté kliknutím označte pole (čtverečky), která odpovídají hodnotám (nebo jejich kombinaci) na hozených kostkách</li>
-         <li>Jakmile použijete všech 5 kostek, dané kolo skončí. Zámek zůstane otevřený nebo se uzamkne v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka žlutou barvou, již označená mají hodnotu ve žluté barvě.</li>
+         <li>Poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na hozených kostkách</li>
+         <li>Jakmile použijete všech 5 kostek, dané kolo skončí. Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka <span style="color: yellow; background-color: black;">žlutou</span> barvou, již označená mají hodnotu ve <span style="color: yellow; background-color: black;">žluté</span> barvě.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
@@ -303,7 +303,7 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
     
   <h3>Konec hry</h3>  
     <p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
-    <p>Po ukončení hry se ve spodní části zobrazí řádek s hodnocením:</p>
+    <p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
       <ul>
           <li>Jdeš do vězení</li>		  
           <li>Lapka&nbsp;&nbsp;&#11088;</li>
