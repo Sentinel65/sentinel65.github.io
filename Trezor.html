@@ -1116,7 +1116,7 @@ function rollDice() {
 
 // Funkce pro zahájení nového kola
 function startRound() {
-  // Vyčištění všech buněk
+  // Vyčištění předchozího zvýraznění
   locks.forEach(lock => {
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
@@ -1129,28 +1129,25 @@ function startRound() {
     });
   });
 
-  // Získání aktuálního zámku
   const currentLock = locks[currentRound - 1];
   if (!currentLock) {
     console.error("Neplatný zámek nebo ukončená hra.");
     return;
   }
 
-  // Zvýraznění buněk aktuálního zámku
+  // Zvýraznění aktuálního zámku
   currentLock.coordinates.forEach(({ row, col }) => {
     const cell = document.getElementById(`cell-${row}-${col}`);
     if (cell) {
       const backgroundColor = getComputedStyle(cell).backgroundColor;
 
       if (backgroundColor === 'rgb(75, 76, 75)') {
-        // Buňka označená v aktuálním zámku
-        cell.style.color = 'yellow'; // Žlutý text pro označené buňky
-        cell.style.fontWeight = 'bold';
+        // Pokud má buňka šedé pozadí (již označená)
+        cell.style.color = 'yellow'; // Nastavíme žlutý text
+        cell.style.fontWeight = 'bold'; // Nastavíme tučné písmo
       } else {
-        // Buňky aktuálního zámku, které nejsou označené
+        // Pokud je buňka v aktuálním zámku a není označená
         cell.classList.add('highlight-empty'); // Zvýrazní žlutým pozadím
-        cell.style.backgroundColor = 'yellow';
-        cell.style.color = 'black'; // Text zůstane černý
       }
 
       // Přidání klikací logiky pro buňky aktuálního zámku
@@ -1164,14 +1161,6 @@ function startRound() {
       const cell = document.getElementById(`cell-${row}-${col}`);
       if (cell && !currentLock.coordinates.some(c => c.row === row && c.col === col)) {
         // Pokud buňka není v aktuálním zámku
-        const backgroundColor = getComputedStyle(cell).backgroundColor;
-
-        if (backgroundColor === 'rgb(75, 76, 75)') {
-          // Již označená buňka mimo aktuální zámek
-          cell.style.color = 'white'; // Text musí být bílý
-        }
-
-        // Přidání klikací logiky pro buňky mimo aktuální zámek
         cell.addEventListener('click', () => handleCellClick(cell, currentLock));
       }
     });
@@ -1195,13 +1184,13 @@ function handleCellClick(cell, currentLock) {
     // Klik na buňku s žlutým pozadím
     cell.style.backgroundColor = 'rgb(75, 76, 75)';
     cell.style.color = 'yellow'; // Nastavíme žlutý text
-    cell.style.fontWeight = 'bold';
+    cell.style.fontWeight = 'bold'; // Nastavíme tučné písmo
   } else if (backgroundColor === 'rgb(75, 76, 75)') {
     // Klik na již označenou buňku
     if (currentLock.coordinates.some(({ row, col }) => cell.id === `cell-${row}-${col}`)) {
-      cell.style.color = 'yellow'; // Žlutý text pouze pro aktuální zámek
+      cell.style.color = 'yellow'; // Zajistí žlutý text pouze pro aktuální zámek
     } else {
-      cell.style.color = 'white'; // Bílý text mimo aktuální zámek
+      cell.style.color = 'white'; // Zajistí bílý text mimo aktuální zámek
     }
   }
 }
