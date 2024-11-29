@@ -252,8 +252,6 @@
 <body>
 
 
-
-
 <p><button class="help-button" onclick="selectBoardMenu()">🏠</button>&nbsp;<button id="helpButton" class="help-button" onclick="showHelp()">💡</button>&nbsp;<button class="help-button" >TREZOR</button>&nbsp;<button class="help-button" onclick="displayGameStatsInModal()">🏆</button>&nbsp;<button id="helpButton" class="help-button" onclick="manualEndRound()">🚫</button></p>
 <div id="helpModal" class="modal">
   <div class="modal-content">
@@ -302,11 +300,11 @@ Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezále
     <p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
       <ul>
           <li>Jdeš do vězení</li>		  
-          <li>Lapka&nbsp;&nbsp;&#11088;</li>
-          <li>Kapsář&nbsp;&nbsp;&#11088;&#11088;</li>
-          <li>Zloděj&nbsp;&nbsp;&#11088;&#11088;&#11088;</li>
-          <li>Bankovní lupič&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;</li>
-          <li>Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;</li>
+          <li>&#11088;&nbsp;&nbsp; Lapka</li>
+          <li>&#11088;&#11088;&nbsp;&nbsp;Kapsář</li>
+          <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Zloděj</li>
+          <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bankovní lupič</li>
+          <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
       </ul>
 	<p><b>Poznámka:</b> ikony v horním řádku obrazovky s názvem hry</p> 
       <ul>
@@ -453,7 +451,7 @@ const totalRounds = 12; // Počet kol
 
   // Funkce pro výběr hracií desky 
 	function selectBoard() {
-  const option = prompt(`Hra Trezor - vyberte herní desku:\n(zadejte číslo desky 1 - 18)`);
+  const option = prompt(`Hra Trezor - vyber desku:\n(zadej číslo 1 - 18)`);
   if (option === "1" || option === "01") {
     boardLayout = boardLayoutA;
     locks = locksA;  // Definice zamku pro desku A
@@ -1039,11 +1037,11 @@ function displayGameStatsInModal() {
 
   // Získání desky s nejvyšším skóre
   const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
-  totalStatsDiv.innerHTML += `<p><strong>Nejvyšší skóre:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
+  totalStatsDiv.innerHTML += `<p><strong>Nejlepší deska:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
   
   // Získání desky s nejnižším skóre
   const { worstBoardId, lowestScore } = getLowestScoreBoard(stats);
-  totalStatsDiv.innerHTML += `<p><strong>Nejnižší skóre:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
+  totalStatsDiv.innerHTML += `<p><strong>Nejhorší deska:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
 
   // Dynamické zjištění nejčastěji hrané desky
   let mostPlayedBoardId = '';
@@ -1057,7 +1055,7 @@ function displayGameStatsInModal() {
     }
   });
 
-  totalStatsDiv.innerHTML += `<p><strong>Nejčastěji hraná:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
+  totalStatsDiv.innerHTML += `<p><strong>Nejvíce hraná deska:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
 
   const boardStatsDiv = document.getElementById('boardStats');
   boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
@@ -1159,7 +1157,7 @@ function startRound() {
   
   
   if (currentRound > totalRounds) {
-    alert("Hra skončila!");
+    //alert("Hra skončila!");
     return;
   }
   // alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
@@ -1209,7 +1207,7 @@ function calculateFinalScore() {
   confirm(`Konečné skóre: ${score} (zahrnuje počet bodů za nepoužité Šperháky: ${unusedSkimmers})`);
 	// Výpočet hodnocení na základě skóre
   const rating = getRating(score);
- document.getElementById('final-rating').innerHTML = `Hodnocení: ${rating}`;
+ document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;
 
 
   // Načtěte nejvyšší skóre pro aktuální desku
@@ -1273,7 +1271,7 @@ function manualEndRound() {
     calculateFinalScore();
     document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
 	updateGameStats(boardId, score);
-    confirm("Hra skončila!");
+    //confirm("Hra skončila!");
    
   }
 }
@@ -1319,7 +1317,7 @@ function endRound() {
     calculateFinalScore();
    	document.getElementById('score').innerText = `Kolo ${currentLock.name}/12, Deska ${boardId} - počet bodů: ${score}`;
 	updateGameStats(boardId, score);
-    confirm("Hra skončila!");
+    //confirm("Hra skončila!");
   }
 }
 
@@ -1388,7 +1386,7 @@ function updateReRollButtons() {
 // Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
 function showSkimmerOptions(index) {
   const skimmerName = `Šperhák ${index + 1}`;
-  const option = prompt(`Vybrali jste ${skimmerName}\nVyberte možnost:\n(zadejte číslo volby)\n1) Uložit hodnotu označených kostek \n5) Použít jako další virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
+  const option = prompt(`${skimmerName}\nZadej číslo volby:\n1) Uložit hodnotu kostek \n5) Vytvořit virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
   if (option === "1") {
     addDiceToSkimmer(index);
   } else if (option === "5") {
