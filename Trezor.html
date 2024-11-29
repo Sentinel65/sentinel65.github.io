@@ -48,7 +48,7 @@
 }
 
 /* Styl pro kliknuté buňky */
-.clickedhighlight {
+.celloznacene{
   background-color: rgb(75, 76, 75); /* Šedé pozadí */
   color: yellow; /* Žlutý text */
   font-weight: bold; /* Tučný text */
@@ -1135,6 +1135,7 @@ function startRound() {
       const cell = document.getElementById(`cell-${row}-${col}`);
       if (cell) {
         cell.classList.remove('highlight-empty'); // Odebere předchozí styly
+        cell.classList.remove('celloznacene');
         cell.style.backgroundColor = ''; // Resetuje barvu pozadí
         cell.style.color = ''; // Resetuje barvu textu
         cell.style.fontWeight = ''; // Resetuje tučné písmo
@@ -1164,7 +1165,7 @@ function startRound() {
     if (cell) {
       cell.addEventListener('click', () => {
         // Nastaví kliknuté buňce šedé pozadí a žlutý text
-        cell.classList.add('clickedhighlight');
+        cell.classList.add('celloznacene');
         cell.style.backgroundColor = 'rgb(75, 76, 75)';
         cell.style.color = 'yellow';
         cell.style.fontWeight = 'bold';
