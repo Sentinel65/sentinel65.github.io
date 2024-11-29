@@ -152,7 +152,7 @@
 	  font-weight: bold;
 	} 
 	  .highlight-empty {
-	  background-color: yellow;
+	  background-color: #90cfff;
 	  color: black;
 	  font-weight: bold;
 	}
@@ -267,15 +267,15 @@
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka <span style="color: yellow; background-color: black;">žlutou</span> barvou, již označená mají hodnotu ve <span style="color: yellow; background-color: black;">žluté</span> barvě.</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color: yellow; background-color: black;">žlutou barvou</span>.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
-  <h3>Označení políček</h3>
-    <p>K označení políček, které se nacházejí v Trezoru, nebo políček ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na políčku v Trezoru. 
-Na některá políčka stačí pouze jedna kostka. Na většině políček v Trezoru je uvedeno číslo. U některých je ale hodnota daná znakem „<b>L</b>“ (lichá), „<b>S</b>“ (sudá) nebo „<b>D</b>“ (double).
-Na políčko „Lichá“ nebo „Sudá“ je potřeba pouze „<b>jedna</b>“ kostka, její hodnota pak musí být buď lichá nebo sudá. Nesmíte kombinovat hodnoty dvou kostek tak, aby se rovnala hodnotě třetí kostky.
-Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“. Nesmíte kombinovat hodnoty dvou kostek tak, aby se rovnala hodnotě třetí kostky.</p>
+  <h3>Označení polí</h3>
+    <p>K označení polí, které se nacházejí v Trezoru, nebo polí ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na poli v Trezoru. 
+Na některá pole stačí pouze jedna kostka. Na většině polí v Trezoru je uvedeno číslo. U některých je ale hodnota daná znakem „<span style="background-color: #e0ffe0";><b>L</b>“ (lichá)</span>, „<span style="background-color: #e0e0ff";><b>S</b>“ (sudá)</span> nebo „<span style="background-color: #ffe0e0";><b>D</b>“ (double)</span>.
+Na pole „Lichá“ nebo „Sudá“ lze označit pouze „<b>jednu</b>“ kostku, její hodnota pak musí být buď lichá nebo sudá.
+Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“.</p>
 
   <h3>Šperháky </h3>
     <p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodotu 20.</p>
@@ -407,6 +407,12 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
 <script type="text/javascript">
 
 
+// Spuštění první kola při načtení stránky
+document.addEventListener('DOMContentLoaded', () => {
+  startRound();
+});
+
+
 // Funkce pro aktualizaci barev zámků po ukončení kola
 function updateLockColors() {
   for (const lock of locks) {
@@ -418,10 +424,18 @@ function updateLockColors() {
       } else {
         lockElement.style.color = lock.isOpen ? 'limegreen' : 'red'; // Pokud je stav určen, zámek je zelený nebo červený
       }
+      // Nastavení barvy textu pro aktuální zámek
+      if (lock === locks[currentRound - 1]) {
+        lockElement.style.color = '#90cfff'; // Změna barvy textu aktuálního zámku
+        lockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
+      } else {
+        // Reset barvy textu pro ostatní zámky
+        lockElement.style.color = lock.isDetermined ? (lock.isOpen ? 'limegreen' : 'red') : 'black';
+        lockElement.style.fontWeight = ''; // Reset tučného písma
+      }
     }
   }
 }
-
 
 
 let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
@@ -1108,7 +1122,7 @@ function rollDice() {
     setTimeout(() => {
       diceElements[index].innerText = value;
       diceElements[index].classList.remove('rolling', 'clicked', 'used');
-    }, 750); // Čas pro animaci
+    }, 300); // Čas pro animaci
   });
   selectedDice = [];
 }
@@ -1116,8 +1130,8 @@ function rollDice() {
 // Funkce pro zahájení nového kola
 function startRound() {
       // Vyčištění předchozího zvýraznění
-  locks.forEach(lock => {
-    lock.coordinates.forEach(({ row, col }) => {
+      locks.forEach(lock => {
+      lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
       cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
       cell.style.color = ''; // Resetuje barvu textu
@@ -1125,27 +1139,25 @@ function startRound() {
 	const rating = getRating(score);
  	document.getElementById('final-rating').innerHTML = ``;
     });
-  });
-const currentLock = locks[currentRound - 1];
-const lockName = currentLock.name;
+    });
+    const currentLock = locks[currentRound - 1];
+    const lockName = currentLock.name;
 
-// Zvýraznění aktuálního zámku
-  currentLock.coordinates.forEach(({ row, col }) => {
+    // Zvýraznění aktuálního zámku
+    currentLock.coordinates.forEach(({ row, col }) => {
     const cell = document.getElementById(`cell-${row}-${col}`);
     const backgroundColor = getBackgroundColor(cell);
-    if (backgroundColor === 'rgb(75, 76, 75)') {
-            // Pokud je barva pozadí buňky šedá (rgb(128, 128, 128))
-            
-            cell.style.color = 'yellow'; // Nastavení žluté barvy textu pro buňky s šedým pozadím
-            cell.style.fontWeight = 'bold'; // Nastavení tučného písma pro buňky s šedým pozadím
-        } else {
+
             // Pokud je buňka nevyplněná
             cell.classList.add('highlight-empty');
-        }
-    
-    
-   
-  });
+            
+            // Aktualizace barev zámků
+            updateLockColors();
+
+        
+  }); 
+  
+  
   if (currentRound > totalRounds) {
     alert("Hra skončila!");
     return;
@@ -1327,7 +1339,7 @@ function reRollDice(rerollIndex) {
       // Aktualizace pole dice pro tuto kostku
        const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
                 dice[dieIndex] = newRoll;
-            }, 750); // Čas pro animaci
+            }, 350); // Čas pro animaci
         });
 
     // Reset pole selectedDice, aby obsahovalo pouze nové hodnoty
