@@ -1113,87 +1113,46 @@ function rollDice() {
   selectedDice = [];
 }
 
-
 // Funkce pro zahájení nového kola
 function startRound() {
-  // Vyčištění předchozího zvýraznění
+      // Vyčištění předchozího zvýraznění
   locks.forEach(lock => {
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
-      if (cell) {
-        cell.classList.remove('highlight-empty', 'highlight-filled'); // Reset tříd
-        cell.style.backgroundColor = ''; // Reset pozadí
-        cell.style.color = ''; // Reset barvy textu
-        cell.style.fontWeight = ''; // Reset tučného písma
-      }
+      cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
+      cell.style.color = ''; // Resetuje barvu textu
+      cell.style.fontWeight = ''; // Resetuje tucnečné pismo textu
+	const rating = getRating(score);
+ 	document.getElementById('final-rating').innerHTML = ``;
     });
   });
+const currentLock = locks[currentRound - 1];
+const lockName = currentLock.name;
 
-  const currentLock = locks[currentRound - 1];
-  if (!currentLock) {
-    console.error("Neplatný zámek nebo ukončená hra.");
-    return;
-  }
-
-  // Zvýraznění aktuálního zámku
+// Zvýraznění aktuálního zámku
   currentLock.coordinates.forEach(({ row, col }) => {
     const cell = document.getElementById(`cell-${row}-${col}`);
-    if (cell) {
-      const backgroundColor = getComputedStyle(cell).backgroundColor;
-
-      if (backgroundColor === 'rgb(75, 76, 75)') {
-        // Pokud má buňka šedé pozadí (již označená)
-        cell.style.color = 'yellow'; // Nastavíme žlutý text
-        cell.style.fontWeight = 'bold'; // Nastavíme tučné písmo
-      } else {
-        // Pokud je buňka v aktuálním zámku a není označená
-        cell.classList.add('highlight-empty'); // Zvýrazní žlutým pozadím
-      }
-
-      // Přidání klikací logiky pro buňky aktuálního zámku
-      cell.addEventListener('click', () => handleCellClick(cell, currentLock));
-    }
+    const backgroundColor = getBackgroundColor(cell);
+    if (backgroundColor === 'rgb(75, 76, 75)') {
+            // Pokud je barva pozadí buňky šedá (rgb(128, 128, 128))
+            
+            cell.style.color = 'yellow'; // Nastavení žluté barvy textu pro buňky s šedým pozadím
+            cell.style.fontWeight = 'bold'; // Nastavení tučného písma pro buňky s šedým pozadím
+        } else {
+            // Pokud je buňka nevyplněná
+            cell.classList.add('highlight-empty');
+        }
+    
+    
+   
   });
-
-  // Nastavení logiky pro všechny buňky mimo aktuální zámek
-  locks.forEach(lock => {
-    lock.coordinates.forEach(({ row, col }) => {
-      const cell = document.getElementById(`cell-${row}-${col}`);
-      if (cell && !currentLock.coordinates.some(c => c.row === row && c.col === col)) {
-        // Pokud buňka není v aktuálním zámku
-        cell.addEventListener('click', () => handleCellClick(cell, currentLock));
-      }
-    });
-  });
-
   if (currentRound > totalRounds) {
     alert("Hra skončila!");
     return;
   }
+  // alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
 }
 
-// Funkce pro zpracování kliknutí na buňku
-function handleCellClick(cell, currentLock) {
-  const backgroundColor = getComputedStyle(cell).backgroundColor;
-
-  if (backgroundColor === 'rgb(255, 255, 255)') {
-    // Klik na buňku s bílým pozadím
-    cell.style.backgroundColor = 'rgb(75, 76, 75)';
-    cell.style.color = 'white'; // Nastavíme bílý text
-  } else if (backgroundColor === 'rgb(255, 255, 0)') {
-    // Klik na buňku s žlutým pozadím
-    cell.style.backgroundColor = 'rgb(75, 76, 75)';
-    cell.style.color = 'yellow'; // Nastavíme žlutý text
-    cell.style.fontWeight = 'bold'; // Nastavíme tučné písmo
-  } else if (backgroundColor === 'rgb(75, 76, 75)') {
-    // Klik na již označenou buňku
-    if (currentLock.coordinates.some(({ row, col }) => cell.id === `cell-${row}-${col}`)) {
-      cell.style.color = 'yellow'; // Zajistí žlutý text pouze pro aktuální zámek
-    } else {
-      cell.style.color = 'white'; // Zajistí bílý text mimo aktuální zámek
-    }
-  }
-}
 
 
 // Kontrola, zda byly všechny kostky použity
