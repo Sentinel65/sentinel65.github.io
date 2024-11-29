@@ -39,6 +39,20 @@
       cursor: pointer;
       user-select: none;
     }
+    
+    /* Zvýraznění aktivních buněk zámku */
+.highlight {
+  background-color: yellow; /* Žluté pozadí */
+  color: black; /* Text zůstává černý */
+  font-weight: normal;
+}
+
+/* Styl pro kliknuté buňky */
+.clickedhighlight {
+  background-color: rgb(75, 76, 75); /* Šedé pozadí */
+  color: yellow; /* Žlutý text */
+  font-weight: bold; /* Tučný text */
+}
     .cell.clicked { background-color: #4B4C4B; color: #fff;cursor: not-allowed;pointer-events: none;} /* Styl označených políček */
     .disabled { background-color: #000; cursor: default; } /* Nehratelná políčka */
     .used { background-color: #d3d3d3; cursor: default; color: #333; } /* Styl použitých kostek */
@@ -266,8 +280,8 @@
     <p>V každém kole je třeba splnit 4 kroky:
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
-         <li>Poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na hozených kostkách</li>
-         <li>Jakmile použijete všech 5 kostek, dané kolo skončí. Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka <span style="color: yellow; background-color: black;">žlutou</span> barvou, již označená mají hodnotu ve <span style="color: yellow; background-color: black;">žluté</span> barvě.</li>
+         <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole (čtverečky). Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená políčka <span style="color: yellow; background-color: black;">žlutou</span> barvou, již označená mají hodnotu ve <span style="color: yellow; background-color: black;">žluté</span> barvě.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
@@ -296,10 +310,6 @@ Na políčko „<b>D</b>“ jsou ale třeba „<b>dvě</b>“ kostky, na hodnot�
      </ul>
      Poznámka: některé zámky mají více diamantů, z hlediska taktiky je tedy lepší označit dříve políčka ve sloupci či řádku těchto zámků. 
     </p>
-    
-  <h3>Konec kola</h3>
-    <p>Jakmile použijete všechny kostky, kolo končí.</p>
-    <p><b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 .</p>
     
   <h3>Konec hry</h3>  
     <p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
@@ -1119,24 +1129,48 @@ function rollDice() {
 
 // Funkce pro zahájení nového kola
 function startRound() {
-      // Vyčištění předchozího zvýraznění
+  // Vyčištění předchozího zvýraznění
   locks.forEach(lock => {
     lock.coordinates.forEach(({ row, col }) => {
       const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
-      cell.style.color = ''; // Resetuje barvu textu
-      cell.style.fontWeight = ''; // Resetuje tucnečné pismo textu
-	const rating = getRating(score);
- 	document.getElementById('final-rating').innerHTML = ``;
+      if (cell) {
+        cell.classList.remove('highlight-empty'); // Odebere předchozí styly
+        cell.style.backgroundColor = ''; // Resetuje barvu pozadí
+        cell.style.color = ''; // Resetuje barvu textu
+        cell.style.fontWeight = ''; // Resetuje tučné písmo
+      }
     });
   });
-const currentLock = locks[currentRound - 1];
-const lockName = currentLock.name;
 
-// Zvýraznění aktuálního zámku
+  // Získání aktuálního zámku
+  const currentLock = locks[currentRound - 1];
+
+  if (!currentLock) {
+    console.error("Neplatný zámek nebo ukončená hra.");
+    return;
+  }
+
+  // Zvýraznění aktuálního zámku
   currentLock.coordinates.forEach(({ row, col }) => {
     const cell = document.getElementById(`cell-${row}-${col}`);
-    const backgroundColor = getBackgroundColor(cell);
+    if (cell) {
+      cell.classList.add('highlight-empty'); // Nastaví třídu highlight
+    }
+  });
+
+  // Přidání události kliknutí na každou buňku aktuálního zámku
+  currentLock.coordinates.forEach(({ row, col }) => {
+    const cell = document.getElementById(`cell-${row}-${col}`);
+    if (cell) {
+      cell.addEventListener('click', () => {
+        // Nastaví kliknuté buňce šedé pozadí a žlutý text
+        cell.classList.add('clickedhighlight');
+        cell.style.backgroundColor = 'rgb(75, 76, 75)';
+        cell.style.color = 'yellow';
+        cell.style.fontWeight = 'bold';
+      });
+    }
+        const backgroundColor = getBackgroundColor(cell);
     if (backgroundColor === 'rgb(75, 76, 75)') {
             // Pokud je barva pozadí buňky šedá (rgb(128, 128, 128))
             
@@ -1146,17 +1180,14 @@ const lockName = currentLock.name;
             // Pokud je buňka nevyplněná
             cell.classList.add('highlight-empty');
         }
-    
-    
-   
   });
+
+  // Kontrola ukončení hry
   if (currentRound > totalRounds) {
     alert("Hra skončila!");
     return;
   }
-  // alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
 }
-
 
 
 // Kontrola, zda byly všechny kostky použity
