@@ -265,7 +265,7 @@
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color: yellow; background-color: black;">žlutou barvou</span>.</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #90cfff; ">modrou barvou</span>.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
@@ -440,7 +440,7 @@ function updateLockColors() {
   }
 }
 
-
+let selectedOption = '';
 let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
 let selectedDice = []; // Uchování vybraných kostek
 let virtualDice = null; // Uchování virtuální kostky ze skimmeru
@@ -534,6 +534,8 @@ const totalRounds = 12; // Počet kol
     selectBoard(); // Opakování výběru
     return ;
   }
+      // Uložíme text vybrané desky do proměnné
+  selectedOption = option;
 }
 
   // Vytvoření herní desky
@@ -581,12 +583,12 @@ if (!locks) {
   score = 0;
   rollDice();
   startRound();
-  document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+  document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
  
 // Ověřte, že boardId je nastavené před načítáním skóre
   if (boardId) {
     const highScore = loadHighScore(boardId);
-    document.getElementById('high-score').innerText = `Deska ${boardId} - nejvyšší dosažené skóre: ${highScore}`;
+    document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${highScore}`;
   } else {
     console.error("boardId není definováno při načítání skóre");
   }
@@ -1228,8 +1230,8 @@ function calculateFinalScore() {
 
   // Aktualizace zobrazení skóre na obrazovce
  
-  document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
-  document.getElementById('high-score').innerText = `Deska ${boardId} - nejvyšší dosažené skóre: ${Math.max(score, highScore)}`;
+  document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+  document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${Math.max(score, highScore)}`;
 
   // Aktualizace statistik
   updateGameStats(boardId, score);
@@ -1264,10 +1266,10 @@ function manualEndRound() {
   lock.isDetermined = true; // Označíme, že stav zámku je určen
   console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
   updateLockColors();  //upraví barvu písmena zámku podle stavu
-
+  
 
   // Aktualizujeme skóre na obrazovce
-  document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
 
   // Posun na další kolo
   currentRound++;
@@ -1276,7 +1278,7 @@ function manualEndRound() {
     startRound();     // Připraví hrací desku na nové kolo
   } else {
     calculateFinalScore();
-    document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+    document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
 	updateGameStats(boardId, score);
     //confirm("Hra skončila!");
    
@@ -1316,13 +1318,13 @@ function endRound() {
   currentRound++;
   
   if (currentRound <= locks.length) {
-  	document.getElementById('score').innerText = `Deska ${boardId} - počet bodů: ${score}`;
+  	document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
     rollDice();
     startRound();
    
   } else {   
     calculateFinalScore();
-   	document.getElementById('score').innerText = `Kolo ${currentLock.name}/12, Deska ${boardId} - počet bodů: ${score}`;
+   	document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
 	updateGameStats(boardId, score);
     //confirm("Hra skončila!");
   }
