@@ -1255,10 +1255,10 @@ function manualEndRound() {
     });
     score += lockPoints[lock.name];
     lock.isOpen = true; // Nastavíme stav zámku na otevřený
-    confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
+    //confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných bodů: ${lockPoints[lock.name]}.`);
   } else {
     lock.isOpen = false; // Nastavíme stav zámku na uzavřený
-    confirm(`Zámek ${lock.name} se uzamknul.`);
+    //confirm(`Zámek ${lock.name} se uzamknul.`);
   }
 
   lock.isDetermined = true; // Označíme, že stav zámku je určen
@@ -1302,10 +1302,10 @@ function endRound() {
     });
     score += lockPoints[lock.name];
     lock.isOpen = true; // Nastavíme stav zámku na otevřený
-    confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných diamantů: ${lockPoints[lock.name]}.`);
+    //confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných bodů: ${lockPoints[lock.name]}.`);
   } else {
     lock.isOpen = false; // Nastavíme stav zámku na uzavřený
-    confirm(`Zámek ${lock.name} se uzamknul.`);
+    //confirm(`Zámek ${lock.name} se uzamknul.`);
   }
 
   lock.isDetermined = true; // Označíme, že stav zámku je určen
