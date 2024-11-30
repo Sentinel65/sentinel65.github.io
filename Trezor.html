@@ -422,14 +422,19 @@ function updateLockColors() {
       } else {
         lockElement.style.color = lock.isOpen ? 'limegreen' : 'red'; // Pokud je stav určen, zámek je zelený nebo červený
       }
-      // Nastavení barvy textu pro aktuální zámek
-      if (lock === locks[currentRound - 1]) {
-        lockElement.style.color = '#90cfff'; // Změna barvy textu aktuálního zámku
-        lockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
-      } else {
-        // Reset barvy textu pro ostatní zámky
-        lockElement.style.color = lock.isDetermined ? (lock.isOpen ? 'limegreen' : 'red') : 'black';
-        lockElement.style.fontWeight = ''; // Reset tučného písma
+      // Reset tučného písma pro všechny zámky
+      lockElement.style.fontWeight = '';
+    }
+  }
+
+  // Nastavení barvy textu pro aktuální zámek, pokud to není poslední kolo
+  if (currentRound <= locks.length) {
+    const currentLock = locks[currentRound - 1];
+    if (currentLock) {
+      const currentLockElement = document.getElementById(`lock${currentLock.name}`);
+      if (currentLockElement) {
+        currentLockElement.style.color = '#90cfff'; // Změna barvy textu aktuálního zámku
+        currentLockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
       }
     }
   }
@@ -1207,7 +1212,9 @@ function calculateFinalScore() {
   confirm(`Konečné skóre: ${score} (zahrnuje počet bodů za nepoužité Šperháky: ${unusedSkimmers})`);
 	// Výpočet hodnocení na základě skóre
   const rating = getRating(score);
- document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;
+ document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;	
+// Aktualizace barev zámků
+            updateLockColors();
 
 
   // Načtěte nejvyšší skóre pro aktuální desku
