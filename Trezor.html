@@ -152,7 +152,7 @@
 	  font-weight: bold;
 	} 
 	  .highlight-empty {
-	  background-color: #90cfff;
+	  background-color: #fcba03;
 	  color: black;
 	  font-weight: bold;
 	}
@@ -265,7 +265,7 @@
        <ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #90cfff; ">modrou barvou</span>.</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
        </ol>
 
@@ -433,7 +433,7 @@ function updateLockColors() {
     if (currentLock) {
       const currentLockElement = document.getElementById(`lock${currentLock.name}`);
       if (currentLockElement) {
-        currentLockElement.style.color = '#90cfff'; // Změna barvy textu aktuálního zámku
+        currentLockElement.style.color = '#fcba03'; // Změna barvy textu aktuálního zámku
         currentLockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
       }
     }
