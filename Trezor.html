@@ -271,7 +271,7 @@
 		<ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>, písmeno aktuálního zámku je nahrazeno znakem 🔔.</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zámku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>, písmeno aktuálního zámku je nahrazeno znakem 🔔.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
 		</ol>
 
@@ -282,7 +282,7 @@ Na pole „Lichá“ nebo „Sudá“ lze označit pouze „<b>jednu</b>“ kost
 Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“.</p>
 
 	<h3>Šperháky </h3>
-		<p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodotu 20.</p>
+		<p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Tlačítka Šperháků jsou pod hrací deskou označená jako S1, S2 a S3. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodnotu 20.</p>
 		<p>Šperhák můžeme kdykoli v daném kole použít k označení políčka v Trezoru jako další "virtuální" kostku, která má pevně danou hodnotu, jakou má vybraný Šperhák. Můžeme jej  použít samostatně nebo v kombinaci (součet, odečet) s jakoukoli jinou označenou kostkou nebo jiným Šperhákem aktivovaným jako virtuální kostka.</p>
 		<p>Je-li aktivována virtuální kostka, <b>nelze</b> použít tlačítka pro opakovaný hod a dále <b>nelze</b> v tuto chvíli přidávat hodnoty označených kostek do Šperháku. Chceme-li tedy použít více Šperháků najednou jako virtuální kostku, musíme nejdříve Šperháky naplnit a poté je aktivovat jako virtulní kostky.</p>
 		<p>⚠️ <b>Aktivace Šperháku je nevratný úkon.</b></p>
@@ -368,9 +368,9 @@ Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezále
 
 	<!-- Skimmery jako tlačítka -->
 	<div id="skimmers">
-    <div class="skimmer" onclick="showSkimmerOptions(0)">S1: <span id="skimmer1">0</span>/20</div>&nbsp;
-    <div class="skimmer" onclick="showSkimmerOptions(1)">S2: <span id="skimmer2">0</span>/20</div>&nbsp;
-    <div class="skimmer" onclick="showSkimmerOptions(2)">S3: <span id="skimmer3">0</span>/20</div>
+    <div class="skimmer" onclick="showSkimmerOptions(0)">S1:&nbsp;&nbsp;<span id="skimmer1">0</span>&nbsp;|&nbsp;20</div>
+    <div class="skimmer" onclick="showSkimmerOptions(1)">S2:&nbsp;&nbsp;<span id="skimmer2">0</span>&nbsp;|&nbsp;20</div>
+    <div class="skimmer" onclick="showSkimmerOptions(2)">S3:&nbsp;&nbsp;<span id="skimmer3">0</span>&nbsp;|&nbsp;20</div>
 	</div>
 	</div>
 	</br>
@@ -1427,7 +1427,7 @@ const locksR = [
 
     // Kontrola, zda vybrané kostky nepřesahují zbývající kapacitu skimmeru
 		if (diceSum > remainingCapacity) {
-		confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku.`);
+		confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku. Max hodnota je 20.`);
 		} else {
     // Přidání kostek do skimmeru a aktualizace UI
 		skimmers[index] += diceSum;
