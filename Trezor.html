@@ -13,12 +13,15 @@
     }
     #gameContainer {
       display: grid;
-      grid-template-areas: 
-        "letters letters letters"
-        "left board right"
-        "bottom bottom bottom"
-        "skimmers skimmers skimmers";
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto 1fr auto;
       gap: 5px;
+      grid-template-areas: 
+      "letters letters letters"
+      "left board right"
+      "bottom bottom bottom"
+      "skimmers skimmers skimmers";
+      
     }
     #board {
       display: grid;
@@ -52,26 +55,29 @@
       text-align: center;
     }
     #letters {
+	  grid-column: 2 / 3;
+      display: grid;
       grid-template-columns: repeat(7, 1fr);
-      grid-area: letters;
-	  margin-right: 30px;
+      justify-items: center;
     }
     #left {
       grid-template-rows: repeat(6, 1fr);
       grid-area: left;
       justify-content: end;
-      margin-top: 23px;
+      margin-top: 22px;
     }
     #right {
       grid-template-rows: repeat(6, 1fr);
       grid-area: right;
-      margin-top: 20px;
+      margin-top: 22px;
     }
-    #bottom {
-      grid-template-columns: repeat(7, 1fr);
-      grid-area: bottom;
-	  margin-right: 18px;
-    }
+
+	#bottom {
+	  grid-column: 2 / 3;
+	  display: grid;
+	  grid-template-columns: repeat(7, 1fr);
+	  justify-items: center;
+	}
     #skimmers {
       grid-area: skimmers;
       display: flex;
@@ -85,12 +91,12 @@
       color: black;
     }
     .score {
-    font-size: 14px;
-    font-weight: bold;
+      font-size: 14px;
+      font-weight: bold;
     }
     .highscore {
-    font-size: 14px;
-    font-weight: bold;
+      font-size: 14px;
+      font-weight: bold;
     }
     .skimmer {
       padding: 5px 10px;
@@ -114,68 +120,68 @@
 	}
     
       /* Stylování pro tlačítka nápovědy  */
-	  .help-button {
-		padding: 5px 10px;
-		border: 2px solid #333;
-		border-radius: 5px;
-		cursor: pointer;
-		color: white;
-		background-color: #4B4C4B;
-		font-size: 20px;
-		font-weight: bold;
-		user-select: none;
-	 }
+	.help-button {
+	  padding: 5px 10px;
+	  border: 2px solid #333;
+	  border-radius: 5px;
+	  cursor: pointer;
+	  color: white;
+	  background-color: #4B4C4B;
+	  font-size: 20px;
+	  font-weight: bold;
+	  user-select: none;
+	}
     
       /* Stylování pro tlačítka ReRoll */
-	  .reroll-button {
-		padding: 5px 10px;
-		border: 2px solid #333;
-		border-radius: 5px;
-		cursor: pointer;
-		background-color: #90cfff;
-		font-size: 14px;
-		font-weight: bold;
-		user-select: none;
-	 }
+	.reroll-button {
+	  padding: 5px 10px;
+	  border: 2px solid #333;
+	  border-radius: 5px;
+	  cursor: pointer;
+	  background-color: #90cfff;
+	  font-size: 14px;
+	  font-weight: bold;
+	  user-select: none;
+	}
 
 	  /* Styl pro deaktivovaná tlačítka */
-	  .reroll-button.disabled {
-		background-color: #d3d3d3;
-		color: #888;
-		cursor: not-allowed;
-	    pointer-events: none;
-		border-color: #888;
-	 }
-	   .highlight {
+	.reroll-button.disabled {
+	  background-color: #d3d3d3;
+	  color: #888;
+	  cursor: not-allowed;
+	  pointer-events: none;
+	  border-color: #888;
+	}
+	.highlight {
 	  background-color: lightgreen;
 	  color: black;
 	  font-weight: bold;
 	} 
-	  .highlight-empty {
+	.highlight-empty {
 	  background-color: #fcba03;
 	  color: black;
 	  font-weight: bold;
 	}
 
-	  .highlight-filled {
+	.highlight-filled {
 	  background-color: #4B4C4B;
 	  color: yellow;
 	  font-weight: bold;
 	}
-			.die {
-		  width: 40px;
-		  height: 40px;
-		  display: flex;
-		  align-items: center;
-		  justify-content: center;
-		  border: 2px solid #333;
-		  border-radius: 5px;
-		  font-size: 18px;
-		  font-weight: bold;
-		  cursor: pointer;
-		  user-select: none;
-		  transition: transform 0.3s;
-		}
+	.die {
+	  width: 40px;
+	  height: 40px;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  border: 2px solid #333;
+	  border-radius: 5px;
+	  font-size: 18px;
+	  font-weight: bold;
+	  cursor: pointer;
+	  user-select: none;
+	  transition: transform 0.3s;
+	}
     .die.clicked { background-color: #90cfff; } /* Styl označených kostek */
     #rollButton {
       margin-top: 15px;
@@ -184,43 +190,43 @@
       cursor: pointer;
     }
 
-.die.rolling {
-    animation: roll 0.5s ease-in-out;
-}
+	.die.rolling {
+      animation: roll 0.5s ease-in-out;
+	}
 
-@keyframes roll {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(90deg); }
-    50% { transform: rotate(180deg); }
-    75% { transform: rotate(270deg); }
-    100% { transform: rotate(360deg); }
-}
+	@keyframes roll {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(90deg); }
+      50% { transform: rotate(180deg); }
+      75% { transform: rotate(270deg); }
+      100% { transform: rotate(360deg); }
+	}
     @media (max-width: 600px) {
-      .cell, .die {
-        width: 30px;
-        height: 30px;
-        font-size: 12px;
-      }
-      #letters, #left, #right, #bottom, #skimmers {
-        font-size: 14px;
-      }
-      .skimmer { padding: 5px; }
+    .cell, .die {
+	  width: 30px;
+      height: 30px;
+      font-size: 12px;
+    }
+    #letters, #left, #right, #bottom, #skimmers {
+      font-size: 14px;
+    }
+    .skimmer { padding: 5px; }
     }
 
 	 
 	/* Základní styl pro modální okno */
     .modal {
-    display: none; /* Skryté ve výchozím stavu */
-    position: fixed; /* Zůstane na jednom místě i při skrolování */
-    z-index: 1; /* Zajištění, že bude nad ostatním obsahem */
-    padding-top: 60px;
-    left: 0;
-    top: 0;
-    width: 100%; /* Plná šířka */
-    height: 100%; /* Plná výška */
-    overflow: auto; /* Povolí skrolování v případě potřeby */
-    background-color: rgb(0,0,0); /* Fallback barva */
-    background-color: rgba(0,0,0,0.4); /* Černý s průhledností */
+      display: none; /* Skryté ve výchozím stavu */
+      position: fixed; /* Zůstane na jednom místě i při skrolování */
+      z-index: 1; /* Zajištění, že bude nad ostatním obsahem */
+      padding-top: 60px;
+      left: 0;
+      top: 0;
+      width: 100%; /* Plná šířka */
+      height: 100%; /* Plná výška */
+      overflow: auto; /* Povolí skrolování v případě potřeby */
+      background-color: rgb(0,0,0); /* Fallback barva */
+      background-color: rgba(0,0,0,0.4); /* Černý s průhledností */
     }
 
 	/* Obsah modálního okna */
@@ -252,305 +258,310 @@
 <body>
 
 
-<p><button class="help-button" onclick="selectBoardMenu()">🏠</button>&nbsp;<button id="helpButton" class="help-button" onclick="showHelp()">💡</button>&nbsp;<button class="help-button" >TREZOR</button>&nbsp;<button class="help-button" onclick="displayGameStatsInModal()">🏆</button>&nbsp;<button id="helpButton" class="help-button" onclick="manualEndRound()">🚫</button></p>
-<div id="helpModal" class="modal">
-  <div class="modal-content">
+	<p><button class="help-button" onclick="selectBoardMenu()">🏠</button>&nbsp;<button id="helpButton" class="help-button" onclick="showHelp()">💡</button>&nbsp;<button class="help-button" >TREZOR</button>&nbsp;<button class="help-button" onclick="displayGameStatsInModal()">🏆</button>&nbsp;<button id="helpButton" class="help-button" onclick="manualEndRound()">🚫</button></p>
+	<div id="helpModal" class="modal">
+	<div class="modal-content">
     <span class="close" onclick="closeHelp()">&times;</span>
-  <h2>TREZOR</h2>
-    <p>Kostková solitaire hra. Autorem papírové verze (PnP) hry s názvem <b>"Vault: A Solitaire Dice Game (2021)"</b> je <b>Wayne Koenig</b>.</p>
-    <p>Ve hře představujete bankovního lupiče, který se snaží prolomit specializovaný trezor. Pomocí hodu kostkami a pečlivého plánování doufáte, že se vám podaří dostat ven s co největším počtem diamantů dříve, než se všechny zámky na trezoru zavřou. Některé zámky obsahují více diamantů než jiné, takže je na vás, abyste se rozhodli, na kterém zámku strávíte svůj čas s ohledem na hozené hodnoty na kostkách.</p>
-  <h3>Průběh hry</h3>
-    <p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L).</p>
-    <p>V každém kole je třeba splnit 4 kroky:
-       <ol>
+	<h2>TREZOR</h2>
+		<p>Kostková solitaire hra. Autorem papírové verze (PnP) hry s názvem <b>"Vault: A Solitaire Dice Game (2021)"</b> je <b>Wayne Koenig</b>.</p>
+		<p>Ve hře představujete bankovního lupiče, který se snaží prolomit specializovaný trezor. Pomocí hodu kostkami a pečlivého plánování doufáte, že se vám podaří dostat ven s co největším počtem diamantů dříve, než se všechny zámky na trezoru zavřou. Některé zámky obsahují více diamantů než jiné, takže je na vás, abyste se rozhodli, na kterém zámku strávíte svůj čas s ohledem na hozené hodnoty na kostkách.</p>
+	<h3>Průběh hry</h3>
+		<p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L).</p>
+		<p>V každém kole je třeba splnit 4 kroky:
+		<ol>
          <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
          <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>.</li>
+         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zamku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>, písmeno aktuálního zámku je nahrazeno znakem 🔔.</li>
          <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
-       </ol>
+		</ol>
 
-  <h3>Označení polí</h3>
-    <p>K označení polí, které se nacházejí v Trezoru, nebo polí ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na poli v Trezoru. 
+		<h3>Označení polí</h3>
+			<p>K označení polí, které se nacházejí v Trezoru, nebo polí ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na poli v Trezoru. 
 Na některá pole stačí pouze jedna kostka. Na většině polí v Trezoru je uvedeno číslo. U některých je ale hodnota daná znakem „<span style="background-color: #e0ffe0";><b>L</b>“ (lichá)</span>, „<span style="background-color: #e0e0ff";><b>S</b>“ (sudá)</span> nebo „<span style="background-color: #ffe0e0";><b>D</b>“ (double)</span>.
 Na pole „Lichá“ nebo „Sudá“ lze označit pouze „<b>jednu</b>“ kostku, její hodnota pak musí být buď lichá nebo sudá.
 Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“.</p>
 
-  <h3>Šperháky </h3>
-    <p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodotu 20.</p>
-    <p>Šperhák můžeme kdykoli v daném kole použít k označení políčka v Trezoru jako další "virtuální" kostku, která má pevně danou hodnotu, jakou má vybraný Šperhák. Můžeme jej  použít samostatně nebo v kombinaci (součet, odečet) s jakoukoli jinou označenou kostkou nebo jiným Šperhákem aktivovaným jako virtuální kostka.</p>
-    <p>Je-li aktivována virtuální kostka, <b>nelze</b> použít tlačítka pro opakovaný hod a dále <b>nelze</b> v tuto chvíli přidávat hodnoty označených kostek do Šperháku. Chceme-li tedy použít více Šperháků najednou jako virtuální kostku, musíme nejdříve Šperháky naplnit a poté je aktivovat jako virtulní kostky.</p>
-    <p>⚠️ <b>Aktivace Šperháku je nevratný úkon.</b></p>
-    <p>⚠️ <b>Jakmile je Šperhák již jednou použit, nelze do něj již přidávat, ani jej znovu použít.</b></p> 
+	<h3>Šperháky </h3>
+		<p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodotu 20.</p>
+		<p>Šperhák můžeme kdykoli v daném kole použít k označení políčka v Trezoru jako další "virtuální" kostku, která má pevně danou hodnotu, jakou má vybraný Šperhák. Můžeme jej  použít samostatně nebo v kombinaci (součet, odečet) s jakoukoli jinou označenou kostkou nebo jiným Šperhákem aktivovaným jako virtuální kostka.</p>
+		<p>Je-li aktivována virtuální kostka, <b>nelze</b> použít tlačítka pro opakovaný hod a dále <b>nelze</b> v tuto chvíli přidávat hodnoty označených kostek do Šperháku. Chceme-li tedy použít více Šperháků najednou jako virtuální kostku, musíme nejdříve Šperháky naplnit a poté je aktivovat jako virtulní kostky.</p>
+		<p>⚠️ <b>Aktivace Šperháku je nevratný úkon.</b></p>
+		<p>⚠️ <b>Jakmile je Šperhák již jednou použit, nelze do něj již přidávat, ani jej znovu použít.</b></p> 
 
-  <h3>Opakované hody</h3>
-    <p>V průběhu hry můžete kdykoli 3x opakovat hod (i v průběhu jednoho kola). Při opakovaném hodu můžete použít libovolný počet nepoužitých kostek (1 – 5).</p>
+	<h3>Opakované hody</h3>
+		<p>V průběhu hry můžete kdykoli 3x opakovat hod (i v průběhu jednoho kola). Při opakovaném hodu můžete použít libovolný počet nepoužitých kostek (1 – 5).</p>
   
-  <h3>Krádež diamantů</h3>
-    <p>Podaří-li se vám v daném kole označit všechna políčka v příslušném sloupci či řádku daného zámku, získáváte tento počet diamantů:
-     <ul>
-       <li>1 u zámků A, B, C, D, E, F</li>
-       <li>2 u zámků G, H, I</li>
-       <li>3 u zámků J, K, L</li>
-     </ul>
-     Poznámka: některé zámky mají více diamantů, z hlediska taktiky je tedy lepší označit dříve políčka ve sloupci či řádku těchto zámků. 
-    </p>
+	<h3>Krádež diamantů</h3>
+		<p>Podaří-li se vám v daném kole označit všechna políčka v příslušném sloupci či řádku daného zámku, získáváte tento počet diamantů:
+		<ul>
+		 <li>1 u zámků A, B, C, D, E, F</li>
+		 <li>2 u zámků G, H, I</li>
+		 <li>3 u zámků J, K, L</li>
+		</ul>
+		Poznámka: některé zámky mají více diamantů, z hlediska taktiky je tedy lepší označit dříve políčka ve sloupci či řádku těchto zámků. 
+		</p>
     
-  <h3>Konec hry</h3>  
-    <p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
-    <p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
-      <ul>
-          <li>Jdeš do vězení</li>		  
-          <li>&#11088;&nbsp;&nbsp; Lapka</li>
-          <li>&#11088;&#11088;&nbsp;&nbsp;Kapsář</li>
-          <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Zloděj</li>
-          <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bankovní lupič</li>
-          <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
-      </ul>
-	<p><b>Poznámka:</b> ikony v horním řádku obrazovky s názvem hry</p> 
-      <ul>
-		  <li>🏠 menu s výběrem hrací desky</li> 
-		  <li>💡 nápověda</li>
-		  <li>🏆 statistiky hry </li>
-		  <li>🚫 ruční ukončení kola (v posledních kolech se může stát, že hráč již nebude mít k dispozici žádný Šperhák, opakovaný hod a hodnoty kostek neumožní dokončit standardní cestou kolo).</li>
-	  </ul>
-      <p>&nbsp;</p>
-      <p>&nbsp;</p>
-  </div>
-</div>
+	<h3>Konec hry</h3>  
+		<p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
+		<p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
+		<ul>
+         <li>Jdeš do vězení</li>		  
+         <li>&#11088;&nbsp;&nbsp; Lapka</li>
+         <li>&#11088;&#11088;&nbsp;&nbsp;Kapsář</li>
+         <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Zloděj</li>
+         <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bankovní lupič</li>
+         <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
+		</ul>
+		<p><b>Poznámka:</b> ikony v horním řádku obrazovky s názvem hry</p> 
+		<ul>
+		 <li>🏠 menu s výběrem hrací desky</li> 
+		 <li>💡 nápověda</li>
+		 <li>🏆 statistiky hry </li>
+		 <li>🚫 ruční ukončení kola (v posledních kolech se může stát, že hráč již nebude mít k dispozici žádný Šperhák, opakovaný hod a hodnoty kostek neumožní dokončit standardní cestou kolo).</li>
+		</ul>
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+	</div>
+	</div>
 
-<div id="statsModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeStatsModal()">&times;</span>
-    <h2>Statistiky hry</h2>
-    <div id="totalStats"></div>
+	<div id="statsModal" class="modal">
+	<div class="modal-content">
+		<span class="close" onclick="closeStatsModal()">&times;</span>
+		<h2>Statistiky hry</h2>
+	<div id="totalStats"></div>
     <div id="boardStats"></div>
-  </div>
-</div>
+	</div>
+	</div>
 
-<div id="gameContainer">
-  <!-- Označení sloupců nahoře -->
-  <div id="letters">
-    <div></div><div></div><div id="lockA">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A</div><div></div><div id="lockB">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B</div><div></div><div id="lockC">C</div>
-  </div>
+	<div id="gameContainer">
+	<!-- Označení sloupců nahoře -->
+	<div id="letters">
+    <div></div><div></div><div id="lockA">A</div><div></div><div id="lockB">B</div><div></div><div id="lockC">C</div>
+	</div>
 
-  <!-- Označení řádků vlevo a vpravo -->
-  <div id="left">
+	<!-- Označení řádků vlevo a vpravo -->
+	<div id="left">
     <div id="lockL">L</div>
     <div></div>
     <div id="lockK">K</div>
     <div></div>
     <div id="lockJ">J</div>
     <div></div>
-  </div>
+	</div>
 
-  <!-- Hrací deska -->
-  <div id="board"></div>
+	<!-- Hrací deska -->
+	<div id="board"></div>
 
-  <div id="right">
+	<div id="right">
     <div></div>
     <div id="lockD">D</div>
     <div></div>
     <div id="lockE">E</div>
     <div></div>
     <div id="lockF">F</div>
-  </div>
+	</div>
 
-  <!-- Označení sloupců dole -->
-  <div id="bottom">
-    <div></div><div id="lockI">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I</div><div></div><div id="lockH">&nbsp;&nbsp;&nbsp;&nbsp;H</div><div></div><div id="lockG">G</div><div></div>
-  </div>
+	<!-- Označení sloupců dole -->
+	<div id="bottom">
+    <div></div><div id="lockI">I</div><div></div><div id="lockH">H</div><div></div><div id="lockG">G</div><div></div>
+	</div>
 
-  <!-- Skimmery jako tlačítka -->
-  <div id="skimmers">
+	<!-- Skimmery jako tlačítka -->
+	<div id="skimmers">
     <div class="skimmer" onclick="showSkimmerOptions(0)">S1: <span id="skimmer1">0</span>/20</div>&nbsp;
     <div class="skimmer" onclick="showSkimmerOptions(1)">S2: <span id="skimmer2">0</span>/20</div>&nbsp;
     <div class="skimmer" onclick="showSkimmerOptions(2)">S3: <span id="skimmer3">0</span>/20</div>
-  </div>
-</div>
-</br>
-<!-- Tlačítka ReRoll -->
-<div id="rerolls">
-  <button id="reRoll1" onclick="reRollDice(1)" class="reroll-button">Hod 1</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <button id="reRoll2" onclick="reRollDice(2)" class="reroll-button">Hod 2</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <button id="reRoll3" onclick="reRollDice(3)" class="reroll-button">Hod 3</button>
-</div>
-</br>
-<!-- Kostky -->
-<div id="diceContainer">
-  <div class="die" onclick="toggleDie(0)">1</div>
-  <div class="die" onclick="toggleDie(1)">2</div>
-  <div class="die" onclick="toggleDie(2)">3</div>
-  <div class="die" onclick="toggleDie(3)">4</div>
-  <div class="die" onclick="toggleDie(4)">5</div>
-</div></br>
+	</div>
+	</div>
+	</br>
+	<!-- Tlačítka ReRoll -->
+	<div id="rerolls">
+	<button id="reRoll1" onclick="reRollDice(1)" class="reroll-button">Hod 1</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	<button id="reRoll2" onclick="reRollDice(2)" class="reroll-button">Hod 2</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	<button id="reRoll3" onclick="reRollDice(3)" class="reroll-button">Hod 3</button>
+	</div>
+	</br>
+	<!-- Kostky -->
+	<div id="diceContainer">
+	<div class="die" onclick="toggleDie(0)">1</div>
+	<div class="die" onclick="toggleDie(1)">2</div>
+	<div class="die" onclick="toggleDie(2)">3</div>
+	<div class="die" onclick="toggleDie(3)">4</div>
+	<div class="die" onclick="toggleDie(4)">5</div>
+	</div></br>
 
 
-<table border="0">
-<tr>
-<td class="score"></td>
-<td class="score" id="score">0</td>
-</tr>
-<tr>
-<td class="highscore"></td>
-<td class="highscore" id="high-score">0</td>
-<tr>
-<td class="highscore"></td>
-<td class="highscore" id="final-rating"></td>
-</tr>
+	<table border="0">
+	<tr>
+	<td class="score"></td>
+	<td class="score" id="score">0</td>
+	</tr>
+	<tr>
+	<td class="highscore"></td>
+	<td class="highscore" id="high-score">0</td>
+	<tr>
+	<td class="highscore"></td>
+	<td class="highscore" id="final-rating"></td>
+	</tr>
 
-</tr>
-</table>
-
-
-<script type="text/javascript">
+	</tr>
+	</table>
 
 
-// Spuštění první kola při načtení stránky
-document.addEventListener('DOMContentLoaded', () => {
-  startRound();
-});
+	<script type="text/javascript">
 
 
-// Funkce pro aktualizaci barev zámků po ukončení kola
-function updateLockColors() {
-  for (const lock of locks) {
-    const lockElement = document.getElementById(`lock${lock.name}`);
-    if (lockElement) {
-      console.log(`Updating color for lock ${lock.name}: isDetermined=${lock.isDetermined}, isOpen=${lock.isOpen}`);
-      if (!lock.isDetermined) {
+	// Spuštění první kola při načtení stránky
+	document.addEventListener('DOMContentLoaded', () => {
+	startRound();
+	});
+
+
+	// Funkce pro aktualizaci barev zámků po ukončení kola
+	function updateLockColors() {
+		for (const lock of locks) {
+		const lockElement = document.getElementById(`lock${lock.name}`);
+		if (lockElement) {
+		console.log(`Updating color for lock ${lock.name}: isDetermined=${lock.isDetermined}, isOpen=${lock.isOpen}`);
+      
+    // Reset textového obsahu na původní písmeno
+		lockElement.textContent = lock.name;
+      
+		if (!lock.isDetermined) {
         lockElement.style.color = 'black'; // Pokud není stav určen, zámek je černý
-      } else {
-        lockElement.style.color = lock.isOpen ? 'limegreen' : 'red'; // Pokud je stav určen, zámek je zelený nebo červený
-      }
-      // Reset tučného písma pro všechny zámky
-      lockElement.style.fontWeight = '';
-    }
-  }
+		} else {
+		lockElement.style.color = lock.isOpen ? 'limegreen' : 'red'; // Pokud je stav určen, zámek je zelený nebo červený
+		}
+    // Reset tučného písma pro všechny zámky
+		lockElement.style.fontWeight = '';
+		}
+	}
 
-  // Nastavení barvy textu pro aktuální zámek, pokud to není poslední kolo
-  if (currentRound <= locks.length) {
-    const currentLock = locks[currentRound - 1];
-    if (currentLock) {
-      const currentLockElement = document.getElementById(`lock${currentLock.name}`);
-      if (currentLockElement) {
-        currentLockElement.style.color = '#fcba03'; // Změna barvy textu aktuálního zámku
-        currentLockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
-      }
-    }
-  }
-}
+	// Nastavení barvy textu pro aktuální zámek, pokud to není poslední kolo
+		if (currentRound <= locks.length) {
+		const currentLock = locks[currentRound - 1];
+		if (currentLock) {
+		const currentLockElement = document.getElementById(`lock${currentLock.name}`);
+		if (currentLockElement) {
+    // 	currentLockElement.style.color = '#fcba03'; // Změna barvy textu aktuálního zámku
+    //  currentLockElement.style.fontWeight = 'bold'; // Případně můžeme nastavit i tučné písmo
+        currentLockElement.textContent = '🔔'; // Změna textového obsahu na Unicode znak zámku
+		}
+	   }
+	  }
+	}
 
-let selectedOption = '';
-let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
-let selectedDice = []; // Uchování vybraných kostek
-let virtualDice = null; // Uchování virtuální kostky ze skimmeru
-let BoardId = null;
-let currentRound = 1; // Aktuální kolo
-let score = 0; // Body hráče
-let skimmers = [0, 0, 0]; // Hodnoty pro skimmery
-let unusedSkimmers = 0; // Pocet nepoužitých Skimmerů
-let anySkimmerAsDie = false; // Přidání proměnné pro sledování stavu virtuální kostky
-const totalRounds = 12; // Počet kol
+	let selectedOption = '';
+	let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
+	let selectedDice = []; // Uchování vybraných kostek
+	let virtualDice = null; // Uchování virtuální kostky ze skimmeru
+	let BoardId = null;
+	let currentRound = 1; // Aktuální kolo
+	let score = 0; // Body hráče
+	let skimmers = [0, 0, 0]; // Hodnoty pro skimmery
+	let unusedSkimmers = 0; // Pocet nepoužitých Skimmerů
+	let anySkimmerAsDie = false; // Přidání proměnné pro sledování stavu virtuální kostky
+	const totalRounds = 12; // Počet kol
 
 
 
-  // Funkce pro výběr hracií desky 
+	// Funkce pro výběr hrací desky 
 	function selectBoard() {
-  const option = prompt(`Hra Trezor - vyber desku:\n(zadej číslo 1 - 18)`);
-  if (option === "1" || option === "01") {
-    boardLayout = boardLayoutA;
-    locks = locksA;  // Definice zamku pro desku A
-    boardId = 'A'; // Nastavíme boardId pro desku A
-  } else if (option === "2" || option === "02") {
-    boardLayout = boardLayoutB;
-    locks = locksB;  // Definice zamku pro desku B
-    boardId = 'B'; // Nastavíme boardId pro desku B
-  } else if (option === "3" || option === "03") {
-    boardLayout = boardLayoutC;
-    locks = locksB;  // Definice zamku pro desku C - stejna jako pro B
-    boardId = 'C'; // Nastavíme boardId pro desku C
-  } else if (option === "4" || option === "04") {
-    boardLayout = boardLayoutD;
-    locks = locksB;  // Definice zamku pro desku D - stejna jako pro B
-    boardId = 'D'; // Nastavíme boardId pro desku D
-  } else if (option === "5" || option === "05") {
-    boardLayout = boardLayoutE;
-    locks = locksB;  // Definice zamku pro desku E - stejna jako pro B
-    boardId = 'E'; // Nastavíme boardId pro desku E
-  } else if (option === "6" || option === "06") {
-    boardLayout = boardLayoutF;
-    locks = locksF;  //Definice zamku pro desku F
-    boardId = 'F'; // Nastavíme boardId pro desku F
-  } else if (option === "7" || option === "07") {
-    boardLayout = boardLayoutG;
-    locks = locksG;  //Definice zamku pro desku G
-    boardId = 'G'; // Nastavíme boardId pro desku G
-  } else if (option === "8" || option === "08") {
-    boardLayout = boardLayoutH;
-    locks = locksG;  //Definice zamku pro desku H - stejna jako pro G
-    boardId = 'H'; // Nastavíme boardId pro desku H
-  } else if (option === "9" || option === "09") {
-    boardLayout = boardLayoutI;
-    locks = locksI;  //Definice zamku pro desku I
-    boardId = 'I'; // Nastavíme boardId pro desku I
-  } else if (option === "10") {
-    boardLayout = boardLayoutJ;
-    locks = locksG;  //Definice zamku pro desku J - stejna jako pro G
-    boardId = 'J'; // Nastavíme boardId pro desku J
-	} else if (option === "11") {
-    boardLayout = boardLayoutK;
-    locks = locksG;  //Definice zamku pro desku K - stejna jako pro G
-    boardId = 'K'; // Nastavíme boardId pro desku K
-	} else if (option === "12") {
-    boardLayout = boardLayoutL;
-    locks = locksG;  //Definice zamku pro desku L - stejna jako pro G
-    boardId = 'L'; // Nastavíme boardId pro desku L
-	} else if (option === "13") {
-    boardLayout = boardLayoutM;
-    locks = locksB;  //Definice zamku pro desku M - stejna jako pro B
-    boardId = 'M'; // Nastavíme boardId pro desku M
-	} else if (option === "14") {
-    boardLayout = boardLayoutN;
-    locks = locksB;  //Definice zamku pro desku N - stejna jako pro B
-    boardId = 'N'; // Nastavíme boardId pro desku N
-	} else if (option === "15") {
-    boardLayout = boardLayoutO;
-    locks = locksO;  //Definice zamku pro desku O
-    boardId = 'O'; // Nastavíme boardId pro desku O
-	} else if (option === "16") {
-    boardLayout = boardLayoutP;
-    locks = locksP;  //Definice zamku pro desku P
-    boardId = 'P'; // Nastavíme boardId pro desku P
-	} else if (option === "17") {
-    boardLayout = boardLayoutQ;
-    locks = locksQ;  //Definice zamku pro desku Q
-    boardId = 'Q'; // Nastavíme boardId pro desku Q
-	} else if (option === "18") {
-    boardLayout = boardLayoutR;
-    locks = locksR;  //Definice zamku pro desku R
-    boardId = 'R'; // Nastavíme boardId pro desku R
-  } else {
-    confirm("Neplatná volba. Zkuste to znovu.");
-    selectBoard(); // Opakování výběru
-    return ;
-  }
-      // Uložíme text vybrané desky do proměnné
-  selectedOption = option;
-}
+		const option = prompt(`Hra Trezor - vyber desku:\n(zadej číslo 1 - 18)`);
+		if (option === "1" || option === "01") {
+		boardLayout = boardLayoutA;
+		locks = locksA;  // Definice zamku pro desku A
+		boardId = 'A'; // Nastavíme boardId pro desku A
+		} else if (option === "2" || option === "02") {
+		boardLayout = boardLayoutB;
+		locks = locksB;  // Definice zamku pro desku B
+		boardId = 'B'; // Nastavíme boardId pro desku B
+		} else if (option === "3" || option === "03") {
+		boardLayout = boardLayoutC;
+		locks = locksB;  // Definice zamku pro desku C - stejna jako pro B
+		boardId = 'C'; // Nastavíme boardId pro desku C
+		} else if (option === "4" || option === "04") {
+		boardLayout = boardLayoutD;
+		locks = locksB;  // Definice zamku pro desku D - stejna jako pro B
+		boardId = 'D'; // Nastavíme boardId pro desku D
+		} else if (option === "5" || option === "05") {
+		boardLayout = boardLayoutE;
+		locks = locksB;  // Definice zamku pro desku E - stejna jako pro B
+		boardId = 'E'; // Nastavíme boardId pro desku E
+		} else if (option === "6" || option === "06") {
+		boardLayout = boardLayoutF;
+		locks = locksF;  //Definice zamku pro desku F
+		boardId = 'F'; // Nastavíme boardId pro desku F
+		} else if (option === "7" || option === "07") {
+		boardLayout = boardLayoutG;
+		locks = locksG;  //Definice zamku pro desku G
+		boardId = 'G'; // Nastavíme boardId pro desku G
+		} else if (option === "8" || option === "08") {
+		boardLayout = boardLayoutH;
+		locks = locksG;  //Definice zamku pro desku H - stejna jako pro G
+		boardId = 'H'; // Nastavíme boardId pro desku H
+		} else if (option === "9" || option === "09") {
+		boardLayout = boardLayoutI;
+		locks = locksI;  //Definice zamku pro desku I
+		boardId = 'I'; // Nastavíme boardId pro desku I
+		} else if (option === "10") {
+		boardLayout = boardLayoutJ;
+		locks = locksG;  //Definice zamku pro desku J - stejna jako pro G
+		boardId = 'J'; // Nastavíme boardId pro desku J
+		} else if (option === "11") {
+		boardLayout = boardLayoutK;
+		locks = locksG;  //Definice zamku pro desku K - stejna jako pro G
+		boardId = 'K'; // Nastavíme boardId pro desku K
+		} else if (option === "12") {
+		boardLayout = boardLayoutL;
+		locks = locksG;  //Definice zamku pro desku L - stejna jako pro G
+		boardId = 'L'; // Nastavíme boardId pro desku L
+		} else if (option === "13") {
+		boardLayout = boardLayoutM;
+		locks = locksB;  //Definice zamku pro desku M - stejna jako pro B
+		boardId = 'M'; // Nastavíme boardId pro desku M
+		} else if (option === "14") {
+		boardLayout = boardLayoutN;
+		locks = locksB;  //Definice zamku pro desku N - stejna jako pro B
+		boardId = 'N'; // Nastavíme boardId pro desku N
+		} else if (option === "15") {
+		boardLayout = boardLayoutO;
+		locks = locksO;  //Definice zamku pro desku O
+		boardId = 'O'; // Nastavíme boardId pro desku O
+		} else if (option === "16") {
+		boardLayout = boardLayoutP;
+		locks = locksP;  //Definice zamku pro desku P
+		boardId = 'P'; // Nastavíme boardId pro desku P
+		} else if (option === "17") {
+		boardLayout = boardLayoutQ;
+		locks = locksQ;  //Definice zamku pro desku Q
+		boardId = 'Q'; // Nastavíme boardId pro desku Q
+		} else if (option === "18") {
+		boardLayout = boardLayoutR;
+		locks = locksR;  //Definice zamku pro desku R
+		boardId = 'R'; // Nastavíme boardId pro desku R
+		} else {
+		confirm("Neplatná volba. Zkuste to znovu.");
+		selectBoard(); // Opakování výběru
+		return ;
+		}
+		// Uložíme text vybrané desky do proměnné
+		selectedOption = option;
+		}
 
-  // Vytvoření herní desky
-  function createBoard() {
-    const boardDiv = document.getElementById('board');
+	// Vytvoření herní desky
+	function createBoard() {
+		const boardDiv = document.getElementById('board');
 
-if (!boardDiv) {
-    console.error("Chyba: Element s ID 'board' nebyl nalezen.");
-    alert("Chyba: Nemohu najít prvek pro hrací desku.");
-    return;
-  }
-  boardDiv.innerHTML = ''; // Odstranění starého obsahu
+		if (!boardDiv) {
+		console.error("Chyba: Element s ID 'board' nebyl nalezen.");
+		alert("Chyba: Nemohu najít prvek pro hrací desku.");
+		return;
+		}
+		boardDiv.innerHTML = ''; // Odstranění starého obsahu
 
-    for (let row = 0; row < boardLayout.length; row++) {
-      for (let col = 0; col < boardLayout[row].length; col++) {
+		for (let row = 0; row < boardLayout.length; row++) {
+		for (let col = 0; col < boardLayout[row].length; col++) {
         const cellValue = boardLayout[row][col];
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -568,64 +579,64 @@ if (!boardDiv) {
         else if (cellValue === 'D') cell.classList.add('double');
 
         boardDiv.appendChild(cell);
-      }
-    }
-  }	
+		}
+	  }
+	}	
   
-  // Funkce pro zahájení hry
-function startGame() {
+	// Funkce pro zahájení hry
+	function startGame() {
 
-if (!locks) {
-    console.error("Chyba: locks nejsou inicializovány.");
-    return;
-}
-  currentRound = 1;
-  score = 0;
-  rollDice();
-  startRound();
-  document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		if (!locks) {
+		console.error("Chyba: locks nejsou inicializovány.");
+		return;
+		}
+		currentRound = 1;
+		score = 0;
+		rollDice();
+		startRound();
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
  
-// Ověřte, že boardId je nastavené před načítáním skóre
-  if (boardId) {
-    const highScore = loadHighScore(boardId);
-    document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${highScore}`;
-  } else {
-    console.error("boardId není definováno při načítání skóre");
-  }
-}
+	// Ověřte, že boardId je nastavené před načítáním skóre
+		if (boardId) {
+		const highScore = loadHighScore(boardId);
+		document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${highScore}`;
+		} else {
+		console.error("boardId není definováno při načítání skóre");
+		}
+	}
 
 	function selectBoardMenu() {
-	location.reload();
-	}
+		location.reload();
+		}
 	
 
-// Otevření modálního okna
-function showHelp() {
-  document.getElementById('helpModal').style.display = 'block';
-}
+	// Otevření modálního okna
+	function showHelp() {
+		document.getElementById('helpModal').style.display = 'block';
+		}
 
-function closeHelp() {
-  document.getElementById('helpModal').style.display = 'none';
-}
+	function closeHelp() {
+		document.getElementById('helpModal').style.display = 'none';
+		}
 
 
-// Otevření modálního okna
-function displayGameStatsInModal() {
-  document.getElementById('statsModal').style.display = 'block';
-}
+	// Otevření modálního okna
+	function displayGameStatsInModal() {
+		document.getElementById('statsModal').style.display = 'block';
+		}
 
-function closeGameStatsInModal() {
-  document.getElementById('statsModal').style.display = 'none';
-}
+	function closeGameStatsInModal() {
+		document.getElementById('statsModal').style.display = 'none';
+		}
 
-// Zavření modálního okna, když uživatel klikne mimo něj
-window.onclick = function(event) {
-  if (event.target == document.getElementById('statsModal')) {
-    document.getElementById('statsModal').style.display = 'none';
-  } else if (event.target == document.getElementById('helpModal')) {
-    document.getElementById('helpModal').style.display = 'none';
-}
-}
+	// Zavření modálního okna, když uživatel klikne mimo něj
+		window.onclick = function(event) {
+		if (event.target == document.getElementById('statsModal')) {
+		document.getElementById('statsModal').style.display = 'none';
+		} else if (event.target == document.getElementById('helpModal')) {
+		document.getElementById('helpModal').style.display = 'none';
+		}
+	}
 
 
   const boardLayoutA = [
@@ -958,716 +969,704 @@ const locksR = [
 ]; 
 
 
-const lockPoints = { A: 1, B: 1, C: 1, D: 1, E: 1, F: 1, G: 2, H: 2, I: 2, J: 3, K: 3, L: 3 }; // Body za zámky
+		const lockPoints = { A: 1, B: 1, C: 1, D: 1, E: 1, F: 1, G: 2, H: 2, I: 2, J: 3, K: 3, L: 3 }; // Body za zámky
 
 
-// Výchozí struktura statistik
-const defaultStats = {
-  totalGames: 0,
-  boards: {}, // Statistiky pro každou desku
-};
+	// Výchozí struktura statistik
+		const defaultStats = {
+		totalGames: 0,
+		boards: {}, // Statistiky pro každou desku
+		};
 
-// Načtení statistik z localStorage
-function loadGameStats() {
-  const stats = localStorage.getItem('gameStats');
-  return stats ? JSON.parse(stats) : { ...defaultStats };
-}
+	// Načtení statistik z localStorage
+	function loadGameStats() {
+		const stats = localStorage.getItem('gameStats');
+		return stats ? JSON.parse(stats) : { ...defaultStats };
+		}
 
-// Uložení statistik do localStorage
-function saveGameStats(stats) {
-  localStorage.setItem('gameStats', JSON.stringify(stats));
-}
+	// Uložení statistik do localStorage
+	function saveGameStats(stats) {
+		localStorage.setItem('gameStats', JSON.stringify(stats));
+		}
 
-// Aktualizace statistik po ukončení hry
-function updateGameStats(boardId, score) {
-  const stats = loadGameStats();
+	// Aktualizace statistik po ukončení hry
+	function updateGameStats(boardId, score) {
+		const stats = loadGameStats();
   
-  // Celkové statistiky
-  stats.totalGames += 1;
+	// Celkové statistiky
+		stats.totalGames += 1;
 
-  // Statistiky pro konkrétní desku
-  if (!stats.boards[boardId]) {
-    stats.boards[boardId] = { gamesPlayed: 0, totalScore: 0, highestScore: 0 };
-  }
+	// Statistiky pro konkrétní desku
+		if (!stats.boards[boardId]) {
+		stats.boards[boardId] = { gamesPlayed: 0, totalScore: 0, highestScore: 0 };
+		}
 
-  const boardStats = stats.boards[boardId];
-  boardStats.gamesPlayed += 1;
-  boardStats.totalScore += score;
-  if (score > boardStats.highestScore) {
-    boardStats.highestScore = score;
-  }
+		const boardStats = stats.boards[boardId];
+		boardStats.gamesPlayed += 1;
+		boardStats.totalScore += score;
+		if (score > boardStats.highestScore) {
+		boardStats.highestScore = score;
+		}
 
-  saveGameStats(stats);
-}
+		saveGameStats(stats);
+		}
 
-// Zajistíme, že getLowestScoreBoard používá loadHighScore:
-function getLowestScoreBoard(stats) {
-  let lowestScore = Infinity;
-  let worstBoardId = '';
+	// Zajistíme, že getLowestScoreBoard používá loadHighScore:
+	function getLowestScoreBoard(stats) {
+		let lowestScore = Infinity;
+		let worstBoardId = '';
 
- Object.keys(stats.boards).forEach(boardId => {
-    const highScore = loadHighScore(boardId);
-    if (highScore < lowestScore) {
-      lowestScore = highScore;
-      worstBoardIds = [boardId];
-    } else if (highScore === lowestScore) {
-      worstBoardIds.push(boardId);
-    }
-  });
-  worstBoardIds.sort(); // Seřadíme desky abecedně
-  return { worstBoardIds, lowestScore };
-}
+		Object.keys(stats.boards).forEach(boardId => {
+		const highScore = loadHighScore(boardId);
+		if (highScore < lowestScore) {
+		lowestScore = highScore;
+		worstBoardIds = [boardId];
+		} else if (highScore === lowestScore) {
+		worstBoardIds.push(boardId);
+		}
+		});
+		worstBoardIds.sort(); // Seřadíme desky abecedně
+		return { worstBoardIds, lowestScore };
+		}
 
 	//Zajistíme, že getHighestScoreBoard používá loadHighScore:
-function getHighestScoreBoard(stats) {
-  let highestScore = -Infinity;
-  let bestBoardId = '';
+	function getHighestScoreBoard(stats) {
+		let highestScore = -Infinity;
+		let bestBoardId = '';
 
-Object.keys(stats.boards).forEach(boardId => {
-    const highScore = loadHighScore(boardId);
-    if (highScore > highestScore) {
-      highestScore = highScore;
-      bestBoardIds = [boardId];
-    } else if (highScore === highestScore) {
-      bestBoardIds.push(boardId);
-    }
-  });
-  bestBoardIds.sort(); // Seřadíme desky abecedně
-  return { bestBoardIds, highestScore };
-}
+		Object.keys(stats.boards).forEach(boardId => {
+		const highScore = loadHighScore(boardId);
+		if (highScore > highestScore) {
+		highestScore = highScore;
+		bestBoardIds = [boardId];
+		} else if (highScore === highestScore) {
+		bestBoardIds.push(boardId);
+		}
+		});
+		bestBoardIds.sort(); // Seřadíme desky abecedně
+		return { bestBoardIds, highestScore };
+		}
 
-function displayGameStatsInModal() {
-  const stats = loadGameStats();
+	function displayGameStatsInModal() {
+		const stats = loadGameStats();
 
-  const totalStatsDiv = document.getElementById('totalStats');
-  totalStatsDiv.innerHTML = `<p><strong>Celkový počet her:</strong> ${stats.totalGames}</p>`;
-
-  // Získání desky s nejvyšším skóre
-  const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
-  totalStatsDiv.innerHTML += `<p><strong>Nejlepší deska:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
+		const totalStatsDiv = document.getElementById('totalStats');
+		totalStatsDiv.innerHTML = `<p><strong>Celkový počet her:</strong> ${stats.totalGames}</p>`;
+	
+	// Získání desky s nejvyšším skóre
+		const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
+		totalStatsDiv.innerHTML += `<p><strong>Nejlepší deska:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
   
-  // Získání desky s nejnižším skóre
-  const { worstBoardId, lowestScore } = getLowestScoreBoard(stats);
-  totalStatsDiv.innerHTML += `<p><strong>Nejhorší deska:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
+	// Získání desky s nejnižším skóre
+		const { worstBoardId, lowestScore } = getLowestScoreBoard(stats);
+		totalStatsDiv.innerHTML += `<p><strong>Nejhorší deska:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
 
-  // Dynamické zjištění nejčastěji hrané desky
-  let mostPlayedBoardId = '';
-  let mostPlayedGames = 0;
+	// Dynamické zjištění nejčastěji hrané desky
+		let mostPlayedBoardId = '';
+		let mostPlayedGames = 0;
 
-  Object.keys(stats.boards).forEach(boardId => {
-    const boardStats = stats.boards[boardId];
-    if (boardStats.gamesPlayed > mostPlayedGames) {
-      mostPlayedBoardId = boardId;
-      mostPlayedGames = boardStats.gamesPlayed;
-    }
-  });
+		Object.keys(stats.boards).forEach(boardId => {
+		const boardStats = stats.boards[boardId];
+		if (boardStats.gamesPlayed > mostPlayedGames) {
+		mostPlayedBoardId = boardId;
+		mostPlayedGames = boardStats.gamesPlayed;
+		}
+		});
 
-  totalStatsDiv.innerHTML += `<p><strong>Nejvíce hraná deska:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
+		totalStatsDiv.innerHTML += `<p><strong>Nejvíce hraná deska:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
 
-  const boardStatsDiv = document.getElementById('boardStats');
-  boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
+		const boardStatsDiv = document.getElementById('boardStats');
+		boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
 
-  // Získáme všechny desky, seřadíme je podle `boardId` abecedně
-  const sortedBoards = Object.keys(stats.boards).sort();
+	// Získáme všechny desky, seřadíme je podle `boardId` abecedně
+		const sortedBoards = Object.keys(stats.boards).sort();
 
-  sortedBoards.forEach(boardId => {
-    const boardStats = stats.boards[boardId];
-    const highScore = loadHighScore(boardId); // Načtení nejvyššího skóre
-    const averageScore = (boardStats.totalScore / boardStats.gamesPlayed).toFixed(2);
+		sortedBoards.forEach(boardId => {
+		const boardStats = stats.boards[boardId];
+		const highScore = loadHighScore(boardId); // Načtení nejvyššího skóre
+		const averageScore = (boardStats.totalScore / boardStats.gamesPlayed).toFixed(2);
 
-    boardStatsDiv.innerHTML += `
-      <div>
+		boardStatsDiv.innerHTML += `
+    <div>
         <strong>Deska ${boardId}:</strong>
 		<ul>
         <li>počet her: ${boardStats.gamesPlayed}</li>
         <li>průměrné skóre: ${averageScore}</li>
         <li>nejvyšší skóre: ${boardStats.highestScore}</li>
 		</ul>
-      </div>
-      </br>
-    `;
-  });
+    </div>
+    </br>
+		`;
+	});
 
-  const modal = document.getElementById('statsModal');
-  modal.style.display = 'block';
-}
-
-
-// Zavření modal okna
-function closeStatsModal() {
-  const modal = document.getElementById('statsModal');
-  modal.style.display = 'none';
-}
+		const modal = document.getElementById('statsModal');
+		modal.style.display = 'block';
+	}
 
 
-function loadHighScore(boardId) {
-  const savedScore = localStorage.getItem(`highScore_${boardId}`);
-  console.log(`Načítání nejvyššího skóre pro desku ${boardId}:`, savedScore); // Přidáno logování
-  return savedScore ? parseInt(savedScore, 10) : 0;
-}
-
-function saveHighScore(score, boardId) {
-  localStorage.setItem(`highScore_${boardId}`, score);
-  console.log(`Ukládání nového nejvyššího skóre pro desku ${boardId}:`, score); // Přidáno logování
-}
+	// Zavření modal okna
+	function closeStatsModal() {
+		const modal = document.getElementById('statsModal');
+		modal.style.display = 'none';
+		}
 
 
+	function loadHighScore(boardId) {
+		const savedScore = localStorage.getItem(`highScore_${boardId}`);
+		console.log(`Načítání nejvyššího skóre pro desku ${boardId}:`, savedScore); // Přidáno logování
+		return savedScore ? parseInt(savedScore, 10) : 0;
+		}
 
-// Funkce pro získání skutečné barvy pozadí elementu
-function getBackgroundColor(element) {
-    return window.getComputedStyle(element, null).getPropertyValue('background-color');
-}
+	function saveHighScore(score, boardId) {
+		localStorage.setItem(`highScore_${boardId}`, score);
+		console.log(`Ukládání nového nejvyššího skóre pro desku ${boardId}:`, score); // Přidáno logování
+		}
 
-// Funkce pro hod kostkami
-function rollDice() {
-  dice = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6) + 1);
-  const diceElements = document.querySelectorAll('.die');
-  dice.forEach((value, index) => {
-    diceElements[index].classList.add('rolling');
-    setTimeout(() => {
-      diceElements[index].innerText = value;
-      diceElements[index].classList.remove('rolling', 'clicked', 'used');
-    }, 300); // Čas pro animaci
-  });
-  selectedDice = [];
-}
 
-// Funkce pro zahájení nového kola
-function startRound() {
-      // Vyčištění předchozího zvýraznění
-      locks.forEach(lock => {
-      lock.coordinates.forEach(({ row, col }) => {
-      const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
-      cell.style.color = ''; // Resetuje barvu textu
-      cell.style.fontWeight = ''; // Resetuje tucnečné pismo textu
-	const rating = getRating(score);
- 	document.getElementById('final-rating').innerHTML = ``;
-    });
-    });
-    const currentLock = locks[currentRound - 1];
-    const lockName = currentLock.name;
+
+	// Funkce pro získání skutečné barvy pozadí elementu
+	function getBackgroundColor(element) {
+		return window.getComputedStyle(element, null).getPropertyValue('background-color');
+		}
+
+	// Funkce pro hod kostkami
+	function rollDice() {
+		dice = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6) + 1);
+		const diceElements = document.querySelectorAll('.die');
+		dice.forEach((value, index) => {
+		diceElements[index].classList.add('rolling');
+		setTimeout(() => {
+		diceElements[index].innerText = value;
+		diceElements[index].classList.remove('rolling', 'clicked', 'used');
+		}, 300); // Čas pro animaci
+		});
+		selectedDice = [];
+		}
+
+	// Funkce pro zahájení nového kola
+	function startRound() {
+    // Vyčištění předchozího zvýraznění
+		locks.forEach(lock => {
+		lock.coordinates.forEach(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		cell.classList.remove('highlight', 'highlight-empty', 'highlight-filled');
+		cell.style.color = ''; // Resetuje barvu textu
+		cell.style.fontWeight = ''; // Resetuje tucnečné pismo textu
+		const rating = getRating(score);
+		document.getElementById('final-rating').innerHTML = ``;
+		});
+		});
+		const currentLock = locks[currentRound - 1];
+		const lockName = currentLock.name;
 
     // Zvýraznění aktuálního zámku
-    currentLock.coordinates.forEach(({ row, col }) => {
-    const cell = document.getElementById(`cell-${row}-${col}`);
-    const backgroundColor = getBackgroundColor(cell);
+		currentLock.coordinates.forEach(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		const backgroundColor = getBackgroundColor(cell);
 
-            // Pokud je buňka nevyplněná
-            cell.classList.add('highlight-empty');
+    // Pokud je buňka nevyplněná
+        cell.classList.add('highlight-empty');
             
-            // Aktualizace barev zámků
-            updateLockColors();
-
-        
-  }); 
+    // Aktualizace barev zámků
+        updateLockColors();
+    
+		}); 
   
   
-  if (currentRound > totalRounds) {
+		if (currentRound > totalRounds) {
     //alert("Hra skončila!");
-    return;
-  }
-  // alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
-}
+		return;
+		}
+	// alert(`Zahajuje se kolo ${currentRound}: Řešíme zámek ${currentLock.name} na desce ${boardId}`);
+		}
 
 
 
-// Kontrola, zda byly všechny kostky použity
-function checkAllDiceUsed() {
-  const allUsed = Array.from(document.querySelectorAll('.die')).every(die => die.classList.contains('used'));
-  if (allUsed) {
-    endRound();
-  }
-}
+	// Kontrola, zda byly všechny kostky použity
+	function checkAllDiceUsed() {
+		const allUsed = Array.from(document.querySelectorAll('.die')).every(die => die.classList.contains('used'));
+		if (allUsed) {
+		endRound();
+		}
+		}
 
 
-function getRating(score) {
-  if (score < 10) {
-    return "Jdeš do vězení";
-  } else if (score <= 12) {
-    return "Lapka&nbsp;&nbsp;&#11088;";
-  } else if (score <= 15) {
-    return "Kapsář&nbsp;&nbsp;&#11088;&#11088;";
-  } else if (score <= 18) {
-    return "Zloděj&nbsp;&nbsp;&#11088;&#11088;&#11088;";
-  } else if (score <= 21) {
-    return "Bankovní lupič&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;";
-  } else {
-    return "Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;";
-  }
-}
+	function getRating(score) {
+		if (score < 10) {
+		return "Jdeš do vězení";
+		} else if (score <= 12) {
+		return "Lapka&nbsp;&nbsp;&#11088;";
+		} else if (score <= 15) {
+		return "Kapsář&nbsp;&nbsp;&#11088;&#11088;";
+		} else if (score <= 18) {
+		return "Zloděj&nbsp;&nbsp;&#11088;&#11088;&#11088;";
+		} else if (score <= 21) {
+		return "Bankovní lupič&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;";
+		} else {
+		return "Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;";
+		}
+		}
 
 
-// Funkce pro výpočet závěrečného skóre včetně nepoužitých skimmerů
-function calculateFinalScore() {
-  let unusedSkimmers = 0;
+	// Funkce pro výpočet závěrečného skóre včetně nepoužitých skimmerů
+	function calculateFinalScore() {
+		let unusedSkimmers = 0;
+	
+		document.querySelectorAll('.skimmer').forEach((skimmer) => {
+		if (!skimmer.classList.contains('disabled')) {
+		unusedSkimmers++;
+		}
+		});
 
-  document.querySelectorAll('.skimmer').forEach((skimmer) => {
-    if (!skimmer.classList.contains('disabled')) {
-      unusedSkimmers++;
-    }
-  });
+	// Přičtení bodů za nepoužité skimmery
+		score += unusedSkimmers;
 
-  // Přičtení bodů za nepoužité skimmery
-  score += unusedSkimmers;
-
-  confirm(`Konečné skóre: ${score} (zahrnuje počet bodů za nepoužité Šperháky: ${unusedSkimmers})`);
+		confirm(`Konečné skóre: ${score} (zahrnuje počet bodů za nepoužité Šperháky: ${unusedSkimmers})`);
 	// Výpočet hodnocení na základě skóre
-  const rating = getRating(score);
- document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;	
-// Aktualizace barev zámků
-            updateLockColors();
+		const rating = getRating(score);
+		document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;	
+	// Aktualizace barev zámků
+        updateLockColors();
 
 
-  // Načtěte nejvyšší skóre pro aktuální desku
-  const highScore = loadHighScore(boardId);
-  console.log(`Porovnání aktuálního skóre ${score} s nejvyšším skóre ${highScore} pro desku ${boardId}`);
+	// Načtěte nejvyšší skóre pro aktuální desku
+		const highScore = loadHighScore(boardId);
+		console.log(`Porovnání aktuálního skóre ${score} s nejvyšším skóre ${highScore} pro desku ${boardId}`);
 
-  if (score > highScore) {
-    saveHighScore(score, boardId);
-    confirm(`Gratulujeme! Dosáhli jste nového vysokého skóre: ${score}`);
-  }
+		if (score > highScore) {
+		saveHighScore(score, boardId);
+		confirm(`Gratulujeme! Dosáhli jste nového vysokého skóre: ${score}`);
+		}
 
-  // Aktualizace zobrazení skóre na obrazovce
+	// Aktualizace zobrazení skóre na obrazovce
  
-  document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
-  document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${Math.max(score, highScore)}`;
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${Math.max(score, highScore)}`;
 
-  // Aktualizace statistik
-  updateGameStats(boardId, score);
-}
+	// Aktualizace statistik
+		updateGameStats(boardId, score);
+		}
 
+	// Funkce pro manuální ukončení kola, pokud nelze použít všechny kostky
+	function manualEndRound() {
+		const lock = locks[currentRound - 1];
 
+	// Zkontrolujeme, zda jsou všechny relevantní buňky pro tento zámek vyplněny
+		const allCellsFilled = lock.coordinates.every(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		return cell.classList.contains('clicked');
+		});
 
-// Funkce pro manuální ukončení kola, pokud nelze použít všechny kostky
-function manualEndRound() {
-  const lock = locks[currentRound - 1];
-
-  // Zkontrolujeme, zda jsou všechny relevantní buňky pro tento zámek vyplněny
-  const allCellsFilled = lock.coordinates.every(({ row, col }) => {
-    const cell = document.getElementById(`cell-${row}-${col}`);
-    return cell.classList.contains('clicked');
-  });
-
-  if (allCellsFilled) {
-    lock.coordinates.forEach(({ row, col }) => {
-      const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.add('opened');
-      cell.textContent = '✔️';
-    });
-    score += lockPoints[lock.name];
-    lock.isOpen = true; // Nastavíme stav zámku na otevřený
+		if (allCellsFilled) {
+		lock.coordinates.forEach(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		cell.classList.add('opened');
+		cell.textContent = '✔️';
+		});
+		score += lockPoints[lock.name];
+		lock.isOpen = true; // Nastavíme stav zámku na otevřený
     //confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných bodů: ${lockPoints[lock.name]}.`);
-  } else {
-    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
+		} else {
+		lock.isOpen = false; // Nastavíme stav zámku na uzavřený
     //confirm(`Zámek ${lock.name} se uzamknul.`);
-  }
+		}
 
-  lock.isDetermined = true; // Označíme, že stav zámku je určen
-  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
-  updateLockColors();  //upraví barvu písmena zámku podle stavu
+		lock.isDetermined = true; // Označíme, že stav zámku je určen
+		console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
+		updateLockColors();  //upraví barvu písmena zámku podle stavu
   
 
-  // Aktualizujeme skóre na obrazovce
-document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+	// Aktualizujeme skóre na obrazovce
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
 
-  // Posun na další kolo
-  currentRound++;
-  if (currentRound <= locks.length) {
-    rollDice();       // Zahájení nového kola s novým hodem
-    startRound();     // Připraví hrací desku na nové kolo
-  } else {
-    calculateFinalScore();
-    document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
-	updateGameStats(boardId, score);
-    //confirm("Hra skončila!");
+	// Posun na další kolo
+		currentRound++;
+		if (currentRound <= locks.length) {
+		rollDice();       // Zahájení nového kola s novým hodem
+		startRound();     // Připraví hrací desku na nové kolo
+		} else {
+		calculateFinalScore();
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		updateGameStats(boardId, score);
+	//confirm("Hra skončila!");
    
-  }
-}
+		}
+	}
 
 
+	// Funkce pro ukončení kola, pokud jsou použity všechny kostky
+	function endRound() {
+	// Zkontrolujeme, zda jsou všechny relevantní buňky pro tento zámek vyplněny
+		const lock = locks[currentRound - 1];
+		const allCellsFilled = lock.coordinates.every(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		return cell.classList.contains('clicked');
+		});
 
-// Funkce pro ukončení kola, pokud jsou použity všechny kostky
-function endRound() {
-  // Zkontrolujeme, zda jsou všechny relevantní buňky pro tento zámek vyplněny
-  const lock = locks[currentRound - 1];
-  const allCellsFilled = lock.coordinates.every(({ row, col }) => {
-    const cell = document.getElementById(`cell-${row}-${col}`);
-    return cell.classList.contains('clicked');
-  });
-
-  if (allCellsFilled) {
-    lock.coordinates.forEach(({ row, col }) => {
-      const cell = document.getElementById(`cell-${row}-${col}`);
-      cell.classList.add('opened');
-      cell.textContent = '✔️';
-    });
-    score += lockPoints[lock.name];
-    lock.isOpen = true; // Nastavíme stav zámku na otevřený
+		if (allCellsFilled) {
+		lock.coordinates.forEach(({ row, col }) => {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		cell.classList.add('opened');
+		cell.textContent = '✔️';
+		});
+		score += lockPoints[lock.name];
+		lock.isOpen = true; // Nastavíme stav zámku na otevřený
     //confirm(`Zámek ${lock.name} zůstává otevřený, počet získaných bodů: ${lockPoints[lock.name]}.`);
-  } else {
-    lock.isOpen = false; // Nastavíme stav zámku na uzavřený
+		} else {
+		lock.isOpen = false; // Nastavíme stav zámku na uzavřený
     //confirm(`Zámek ${lock.name} se uzamknul.`);
-  }
+		}
 
-  lock.isDetermined = true; // Označíme, že stav zámku je určen
-  console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
-  updateLockColors();  // upraví barvu písmena zámku podle stavu 
+		lock.isDetermined = true; // Označíme, že stav zámku je určen
+		console.log(`Lock ${lock.name} status determined: isOpen=${lock.isOpen}`);
+		updateLockColors();  // upraví barvu písmena zámku podle stavu 
 
-  // Posun na další kolo a nový hod kostkami
-  currentRound++;
+	// Posun na další kolo a nový hod kostkami
+		currentRound++;
   
-  if (currentRound <= locks.length) {
-  	document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
-    rollDice();
-    startRound();
+		if (currentRound <= locks.length) {
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		rollDice();
+		startRound();
    
-  } else {   
-    calculateFinalScore();
-   	document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
-	updateGameStats(boardId, score);
+		} else {   
+		calculateFinalScore();
+		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		updateGameStats(boardId, score);
     //confirm("Hra skončila!");
-  }
-}
+		}
+	}
 
 
+	// Možnost opakovaného hodu
+	function reRollDice(rerollIndex) {
+		if (selectedDice.length > 0) {    
+		const diceElements = document.querySelectorAll('.die:not(.used).clicked');
+		diceElements.forEach((die) => {
+        die.classList.add('rolling');
+        setTimeout(() => {
+            const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
+            die.innerText = newRoll;
+            die.classList.remove('clicked', 'rolling'); // Reset kliknutí a animace po hodu
 
-// Možnost opakovaného hodu
-function reRollDice(rerollIndex) {
-  if (selectedDice.length > 0) {    
-    const diceElements = document.querySelectorAll('.die:not(.used).clicked');
-   diceElements.forEach((die) => {
-            die.classList.add('rolling');
-            setTimeout(() => {
-                const newRoll = Math.floor(Math.random() * 6) + 1; // Nová hodnota od 1 do 6
-                die.innerText = newRoll;
-                die.classList.remove('clicked', 'rolling'); // Reset kliknutí a animace po hodu
-
-      // Aktualizace pole dice pro tuto kostku
-       const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
-                dice[dieIndex] = newRoll;
+    // Aktualizace pole dice pro tuto kostku
+		const dieIndex = Array.from(document.querySelectorAll('.die')).indexOf(die);
+        dice[dieIndex] = newRoll;
             }, 350); // Čas pro animaci
         });
 
     // Reset pole selectedDice, aby obsahovalo pouze nové hodnoty
-    selectedDice = []; // Tím zajistíme, že se staré hodnoty nepřičítají
+		selectedDice = []; // Tím zajistíme, že se staré hodnoty nepřičítají
 
     // Označení tlačítka ReRoll jako použité a deaktivované
-    const button = document.getElementById(`reRoll${rerollIndex}`);
-    button.classList.add('used');
-    button.classList.add('disabled');
-    button.onclick = null; // Zamezení opětovnému kliknutí
+		const button = document.getElementById(`reRoll${rerollIndex}`);
+		button.classList.add('used');
+		button.classList.add('disabled');
+		button.onclick = null; // Zamezení opětovnému kliknutí
 
     // Aktualizace tlačítek ReRoll
-    updateReRollButtons();
+		updateReRollButtons();
 
-    highlightPossibleCells();
-  } else {
-    confirm("Vyberte alespoň jednu kostku pro opakovaný hod.");
-  }
-}
+		highlightPossibleCells();
+		} else {
+		confirm("Vyberte alespoň jednu kostku pro opakovaný hod.");
+		}
+	}
 
-// Funkce pro aktualizaci ReRoll tlačítek
-function updateReRollButtons() {
-  console.log('Updating ReRoll buttons');
-  const reRollButtons = document.querySelectorAll('.reroll-button');
+	// Funkce pro aktualizaci ReRoll tlačítek
+	function updateReRollButtons() {
+		console.log('Updating ReRoll buttons');
+		const reRollButtons = document.querySelectorAll('.reroll-button');
 
-  // Kontrola, zda je nějaký Skimmer aktivní
-  const isAnySkimmerActive = document.querySelectorAll('.skimmer.clicked').length > 0;
+	// Kontrola, zda je nějaký Skimmer aktivní
+		const isAnySkimmerActive = document.querySelectorAll('.skimmer.clicked').length > 0;
 
-  reRollButtons.forEach(button => {
-    if (isAnySkimmerActive || button.classList.contains('used')) {
-      // Pokud je skimmer aktivní nebo je tlačítko použité, deaktivujeme tlačítko
-      button.classList.add('disabled');
-      button.onclick = null; // Zamezení opětovnému kliknutí
-    } else {
-      // Pokud žádný skimmer není aktivní a tlačítko není použité, aktivujeme tlačítko
-      button.classList.remove('disabled');
-      button.onclick = function() {
+		reRollButtons.forEach(button => {
+		if (isAnySkimmerActive || button.classList.contains('used')) {
+    // Pokud je skimmer aktivní nebo je tlačítko použité, deaktivujeme tlačítko
+		button.classList.add('disabled');
+		button.onclick = null; // Zamezení opětovnému kliknutí
+		} else {
+    // Pokud žádný skimmer není aktivní a tlačítko není použité, aktivujeme tlačítko
+		button.classList.remove('disabled');
+		button.onclick = function() {
         reRollDice(parseInt(button.id.replace('reRoll', '')));
-      };
-    }
-  });
-}
+		};
+		}
+	  });
+	}
 
 
+	// Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
+	function showSkimmerOptions(index) {
+		const skimmerName = `Šperhák ${index + 1}`;
+		const option = prompt(`${skimmerName}\nZadej číslo volby:\n1) Uložit hodnotu kostek \n5) Vytvořit virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
+		if (option === "1") {
+		addDiceToSkimmer(index);
+		} else if (option === "5") {
+		useSkimmerAsDie(index);
+		} else {
+		confirm ("Neplatná volba. Zkuste to znovu.");
+		}
+	}
 
-// Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
-function showSkimmerOptions(index) {
-  const skimmerName = `Šperhák ${index + 1}`;
-  const option = prompt(`${skimmerName}\nZadej číslo volby:\n1) Uložit hodnotu kostek \n5) Vytvořit virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
-  if (option === "1") {
-    addDiceToSkimmer(index);
-  } else if (option === "5") {
-    useSkimmerAsDie(index);
-  } else {
-    confirm ("Neplatná volba. Zkuste to znovu.");
-  }
-}
-
-// Přidání vybraných kostek do skimmeru
-function addDiceToSkimmer(index) {
-  if (document.querySelectorAll('.skimmer')[index].classList.contains('disabled')) {
-    confirm ("Tento Šperhák již nelze použít.");
-    return;
-  }  
-  if (anySkimmerAsDie) {
-    confirm("Jeden ze Šperháků je již použit jako virtuální kostka. Nelze přidávat hodnoty do ostatních Šperháků.");
-    return;
-  }
-  if (selectedDice.length > 0) {
+	// Přidání vybraných kostek do skimmeru
+	function addDiceToSkimmer(index) {
+		if (document.querySelectorAll('.skimmer')[index].classList.contains('disabled')) {
+		confirm ("Tento Šperhák již nelze použít.");
+		return;
+		}  
+		if (anySkimmerAsDie) {
+		confirm("Jeden ze Šperháků je již použit jako virtuální kostka. Nelze přidávat hodnoty do ostatních Šperháků.");
+		return;
+		}
+		if (selectedDice.length > 0) {
     // Součet hodnot vybraných kostek
-    const diceSum = selectedDice.reduce((a, b) => a + b, 0);
-    const remainingCapacity = 20 - skimmers[index];
+		const diceSum = selectedDice.reduce((a, b) => a + b, 0);
+		const remainingCapacity = 20 - skimmers[index];
 
     // Kontrola, zda vybrané kostky nepřesahují zbývající kapacitu skimmeru
-    if (diceSum > remainingCapacity) {
-      confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku.`);
-    } else {
-      // Přidání kostek do skimmeru a aktualizace UI
-      skimmers[index] += diceSum;
-      document.getElementById(`skimmer${index + 1}`).innerText = skimmers[index];
+		if (diceSum > remainingCapacity) {
+		confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku.`);
+		} else {
+    // Přidání kostek do skimmeru a aktualizace UI
+		skimmers[index] += diceSum;
+		document.getElementById(`skimmer${index + 1}`).innerText = skimmers[index];
 
-      // Označení vybraných kostek jako použitých
-      document.querySelectorAll('.die.clicked').forEach(die => {
+    // Označení vybraných kostek jako použitých
+		document.querySelectorAll('.die.clicked').forEach(die => {
         die.classList.add('used');
         die.classList.remove('clicked');
-      });
+		});
 
-      selectedDice = []; // Reset vybraných kostek po přenosu
-      highlightPossibleCells(); // Aktualizace zvýraznění po přidání do skimmeru
-      // Zkontrolovat, zda byly použity všechny kostky
-      checkAllDiceUsed();
-    }
-  } else {
-    confirm ("Vyberte alespoň jednu kostku pro přesun do Šperháku.");
-  }
-}
+		selectedDice = []; // Reset vybraných kostek po přenosu
+		highlightPossibleCells(); // Aktualizace zvýraznění po přidání do skimmeru
+    // Zkontrolovat, zda byly použity všechny kostky
+		checkAllDiceUsed();
+		}
+		} else {
+		confirm ("Vyberte alespoň jednu kostku pro přesun do Šperháku.");
+		}
+	}
 
-// Použití Skimmeru jako virtuální kostky
-function useSkimmerAsDie(index) {
-  if (skimmers[index] > 0) {
-    selectedDice.push(skimmers[index]);
-    document.querySelectorAll('.skimmer')[index].classList.add('clicked');
-    document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
-    anySkimmerAsDie = true; // Nastavení stavu, že je jeden ze Skimmerů použit jako kostka
-    confirm (`Šperhák ${index + 1} byl použit jako virtuální kostka s hodnotou [${skimmers[index]}].\n💡 Vyber pole na hrací desce,\nmůžeš kombinovat s jinými kostkami.`);
-    updateReRollButtons();
-    highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
-  } else {
-    confirm ("Hodnota Šperháku musí být minimálně 1.");
-  }
-}
+	// Použití Skimmeru jako virtuální kostky
+	function useSkimmerAsDie(index) {
+		if (skimmers[index] > 0) {
+		selectedDice.push(skimmers[index]);
+		document.querySelectorAll('.skimmer')[index].classList.add('clicked');
+		document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
+		anySkimmerAsDie = true; // Nastavení stavu, že je jeden ze Skimmerů použit jako kostka
+		confirm (`Šperhák ${index + 1} byl použit jako virtuální kostka s hodnotou [${skimmers[index]}].\n💡 Vyber pole na hrací desce,\nmůžeš kombinovat s jinými kostkami.`);
+		updateReRollButtons();
+		highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
+		} else {
+		confirm ("Hodnota Šperháku musí být minimálně 1.");
+		}
+	}
 
-// Funkce pro resetování stavu, když je skimmer použit jako kostka a jeho hodnota je umístěna na hrací desku
-function resetSkimmerState() {
-  anySkimmerAsDie = false; // Reset stavu, že žádný Skimmer není použit jako kostka
-  document.querySelectorAll('.skimmer').forEach(skimmer => {
-    skimmer.classList.remove('clicked'); // Odstranit třídu clicked ze všech Skimmerů
-    skimmer.onclick = function() { showSkimmerOptions(Array.from(document.querySelectorAll('.skimmer')).indexOf(skimmer)); }; // Obnovit možnost kliknutí na Skimmer
-  });
-}
+	// Funkce pro resetování stavu, když je skimmer použit jako kostka a jeho hodnota je umístěna na hrací desku
+	function resetSkimmerState() {
+		anySkimmerAsDie = false; // Reset stavu, že žádný Skimmer není použit jako kostka
+		document.querySelectorAll('.skimmer').forEach(skimmer => {
+		skimmer.classList.remove('clicked'); // Odstranit třídu clicked ze všech Skimmerů
+		skimmer.onclick = function() { showSkimmerOptions(Array.from(document.querySelectorAll('.skimmer')).indexOf(skimmer)); }; // Obnovit možnost kliknutí na Skimmer
+		});
+	}
 
-// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
-function highlightPossibleCells() {
-  const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
-  const lockCoordinates = new Set(
-    currentLock.coordinates.map(({ row, col }) => `cell-${row}-${col}`)
-  );
+	// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
+	function highlightPossibleCells() {
+		const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
+		const lockCoordinates = new Set(
+		currentLock.coordinates.map(({ row, col }) => `cell-${row}-${col}`)
+		);
 
   // Vytvoření seznamu aktivních kostek (včetně virtuální kostky, pokud existuje)
-  const activeDice = virtualDice !== null ? [virtualDice] : selectedDice;
-  console.log("Aktivní hodnoty pro zvýraznění:", activeDice);
+		const activeDice = virtualDice !== null ? [virtualDice] : selectedDice;
+		console.log("Aktivní hodnoty pro zvýraznění:", activeDice);
 
   // Pokud nejsou žádné aktivní kostky, odstraníme zvýraznění a obnovíme zámky
-  if (activeDice.length === 0) {
-    document.querySelectorAll('.cell').forEach(cell => {
-      if (!lockCoordinates.has(cell.id)) {
+		if (activeDice.length === 0) {
+		document.querySelectorAll('.cell').forEach(cell => {
+		if (!lockCoordinates.has(cell.id)) {
         cell.classList.remove('highlight', 'highlight-empty');
-      } else {
+		} else {
         cell.classList.remove('highlight');
         cell.classList.add('highlight-empty');
-      }
+		}
     });
-    console.log("Žádné aktivní kostky, odstraněno všechno zvýraznění kromě zámků.");
-    return;
-  }
+		console.log("Žádné aktivní kostky, odstraněno všechno zvýraznění kromě zámků.");
+		return;
+	}
 
-  // Generování všech možných součtů a rozdílů z vybraných kostek
-  const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(activeDice);
-  console.log("Možné součty a rozdíly:", Array.from(possibleSumsAndDiffs));
+	// Generování všech možných součtů a rozdílů z vybraných kostek
+		const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(activeDice);
+		console.log("Možné součty a rozdíly:", Array.from(possibleSumsAndDiffs));
 
-  // Kontrola, zda se v součtech vyskytují liché a sudé výsledky pro jednu hodnotu
-  const hasSingleOdd = activeDice.length === 1 && activeDice[0] % 2 !== 0;
-  const hasSingleEven = activeDice.length === 1 && activeDice[0] % 2 === 0;
-  console.log("Obsahuje jednu lichou hodnotu:", hasSingleOdd);
-  console.log("Obsahuje jednu sudou hodnotu:", hasSingleEven);
+	// Kontrola, zda se v součtech vyskytují liché a sudé výsledky pro jednu hodnotu
+		const hasSingleOdd = activeDice.length === 1 && activeDice[0] % 2 !== 0;
+		const hasSingleEven = activeDice.length === 1 && activeDice[0] % 2 === 0;
+		console.log("Obsahuje jednu lichou hodnotu:", hasSingleOdd);
+		console.log("Obsahuje jednu sudou hodnotu:", hasSingleEven);
 
-  document.querySelectorAll('.cell').forEach(cell => {
-    const cellValue = cell.innerText.trim();
-    const cellId = cell.id;
+		document.querySelectorAll('.cell').forEach(cell => {
+		const cellValue = cell.innerText.trim();
+		const cellId = cell.id;
 
     // Podmínky pro speciální hodnoty
-    const isDoubleSame = cellValue === 'D' && activeDice.length === 2 && activeDice[0] === activeDice[1];
+		const isDoubleSame = cellValue === 'D' && activeDice.length === 2 && activeDice[0] === activeDice[1];
 
     // Kontrola, zda buňka splňuje některou z podmínek pro označení zelenou barvou
-    if (
-      (cellValue === 'L' && hasSingleOdd) ||
-      (cellValue === 'S' && hasSingleEven) ||
-      isDoubleSame ||
-      possibleSumsAndDiffs.has(parseInt(cellValue))
-    ) {
-      cell.classList.add('highlight'); // Nastaví zelenou barvu
-      console.log(`Zvýrazněno pole: ${cellId} s hodnotou ${cellValue}`);
-      cell.classList.remove('highlight-empty');
-    } else if (lockCoordinates.has(cellId)) {
-      // Pokud buňka patří k aktuálnímu zámku, obnovíme žlutou barvu
-      cell.classList.remove('highlight'); // Odstraní zelenou barvu
-      cell.classList.add('highlight-empty'); // Nastaví zpět na žlutou
-    } else {
-      // Pro ostatní buňky odstraníme jakékoli zvýraznění
-      cell.classList.remove('highlight', 'highlight-empty');
-    }
-  });
-}
+		if (
+		(cellValue === 'L' && hasSingleOdd) ||
+		(cellValue === 'S' && hasSingleEven) ||
+		isDoubleSame ||
+		possibleSumsAndDiffs.has(parseInt(cellValue))
+		) {
+		cell.classList.add('highlight'); // Nastaví zelenou barvu
+		console.log(`Zvýrazněno pole: ${cellId} s hodnotou ${cellValue}`);
+		cell.classList.remove('highlight-empty');
+		} else if (lockCoordinates.has(cellId)) {
+    // Pokud buňka patří k aktuálnímu zámku, obnovíme žlutou barvu
+		cell.classList.remove('highlight'); // Odstraní zelenou barvu
+		cell.classList.add('highlight-empty'); // Nastaví zpět na žlutou
+		} else {
+    // Pro ostatní buňky odstraníme jakékoli zvýraznění
+		cell.classList.remove('highlight', 'highlight-empty');
+		}
+	  });
+	}
 
-// Pomocná funkce pro generování všech možných součtů a rozdílů z vybraných kostek
-function generatePossibleSumsAndDiffs(diceArray) {
-  const results = new Set();
+	// Pomocná funkce pro generování všech možných součtů a rozdílů z vybraných kostek
+	function generatePossibleSumsAndDiffs(diceArray) {
+		const results = new Set();
   
-  function calculateCombinations(dice, currentSum) {
-    if (dice.length === 0) {
-      results.add(currentSum); // Přidáme aktuální součet do výsledků
-      return;
-    }
+	function calculateCombinations(dice, currentSum) {
+		if (dice.length === 0) {
+		results.add(currentSum); // Přidáme aktuální součet do výsledků
+		return;
+		}
 
-    for (let i = 0; i < dice.length; i++) {
-      const remainingDice = dice.slice(0, i).concat(dice.slice(i + 1));
-      calculateCombinations(remainingDice, currentSum + dice[i]);
-      calculateCombinations(remainingDice, currentSum - dice[i]);
-    }
-  }
+		for (let i = 0; i < dice.length; i++) {
+		const remainingDice = dice.slice(0, i).concat(dice.slice(i + 1));
+		calculateCombinations(remainingDice, currentSum + dice[i]);
+		calculateCombinations(remainingDice, currentSum - dice[i]);
+		}
+	}
 
-  calculateCombinations(diceArray, 0); // Spustíme výpočet kombinací se součtem 0
-  return results;
-}
+		calculateCombinations(diceArray, 0); // Spustíme výpočet kombinací se součtem 0
+		return results;
+	}
 
 
 
-  // Přepnutí stavu kostky (označení/odznačení) a přidání/odebrání její hodnoty do/z vybraných kostek
-  function toggleDie(index) {
-    const die = document.querySelectorAll('.die')[index];
-    const dieValue = dice[index];
+	// Přepnutí stavu kostky (označení/odznačení) a přidání/odebrání její hodnoty do/z vybraných kostek
+	function toggleDie(index) {
+		const die = document.querySelectorAll('.die')[index];
+		const dieValue = dice[index];
 
     	if (!die.classList.contains('used')) { // Kostku lze vybrat, pouze pokud nebyla použita
-      die.classList.toggle('clicked');
+		die.classList.toggle('clicked');
 
-      if (die.classList.contains('clicked')) {
+		if (die.classList.contains('clicked')) {
         selectedDice.push(dieValue); // Přidat hodnotu kostky do vybraných
-      } else {
-      selectedDice = selectedDice.filter((value, idx) => idx !== selectedDice.indexOf(dieValue));
-      }
-    console.log("Aktuální vybrané kostky:", selectedDice); // Pro kontrolu stavu
-	  highlightPossibleCells(); // Aktualizace zvýraznění polí po změně výběru kostek
-    }
-  }
+		} else {
+		selectedDice = selectedDice.filter((value, idx) => idx !== selectedDice.indexOf(dieValue));
+		}
+		console.log("Aktuální vybrané kostky:", selectedDice); // Pro kontrolu stavu
+		highlightPossibleCells(); // Aktualizace zvýraznění polí po změně výběru kostek
+		}
+	}
 
 
-// Funkce pro označení políčka na desce podle pravidel pro 'L', 'S' a 'D'
-function markCell(row, col, cellValue) {
-  const cell = document.getElementById(`cell-${row}-${col}`);
-console.log(`--- markCell called ---`);
-  console.log(`Vybrané políčko řádek: ${row}, sloupec: ${col}, hodnota: ${cellValue}`);
+	// Funkce pro označení políčka na desce podle pravidel pro 'L', 'S' a 'D'
+	function markCell(row, col, cellValue) {
+		const cell = document.getElementById(`cell-${row}-${col}`);
+		console.log(`--- markCell called ---`);
+		console.log(`Vybrané políčko řádek: ${row}, sloupec: ${col}, hodnota: ${cellValue}`);
   
-  // Podmínky pro jednotlivé kombinace kostek
-  const isSingleOdd = selectedDice.length === 1 && selectedDice[0] % 2 !== 0;
-  const isSingleEven = selectedDice.length === 1 && selectedDice[0] % 2 === 0;
-  const isDoubleSame = selectedDice.length === 2 && selectedDice[0] === selectedDice[1];
+	// Podmínky pro jednotlivé kombinace kostek
+		const isSingleOdd = selectedDice.length === 1 && selectedDice[0] % 2 !== 0;
+		const isSingleEven = selectedDice.length === 1 && selectedDice[0] % 2 === 0;
+		const isDoubleSame = selectedDice.length === 2 && selectedDice[0] === selectedDice[1];
   	
 	
 
-  // Funkce pro generování všech možných součtů a rozdílů z vybraných kostek
-  function generatePossibleSumsAndDiffs(diceArray) {
-    const results = new Set();
+	// Funkce pro generování všech možných součtů a rozdílů z vybraných kostek
+	function generatePossibleSumsAndDiffs(diceArray) {
+		const results = new Set();
     
     // Rekurzivní funkce pro generování všech kombinací sčítání a odečítání
     function calculateCombinations(dice, currentSum, currentDiff) {
-      if (dice.length === 0) {
+		if (dice.length === 0) {
         results.add(currentSum); // Přidáme součet
         results.add(Math.abs(currentDiff)); // Přidáme rozdíl
         return;
-      }
+		}
 
-      // Pro každou kostku, rozhodneme, zda ji přičteme nebo odečteme
-      for (let i = 0; i < dice.length; i++) {
-        const remainingDice = dice.slice(0, i).concat(dice.slice(i + 1));
+    // Pro každou kostku, rozhodneme, zda ji přičteme nebo odečteme
+		for (let i = 0; i < dice.length; i++) {
+		const remainingDice = dice.slice(0, i).concat(dice.slice(i + 1));
 
         // Představuje možnost přičíst aktuální kostku
         calculateCombinations(remainingDice, currentSum + dice[i], currentDiff + dice[i]);
         
         // Představuje možnost odečíst aktuální kostku
         calculateCombinations(remainingDice, currentSum - dice[i], currentDiff - dice[i]);
-      }
-    }
+		}
+	}
 
     // Začneme rekurzivní výpočty pro všechny kostky
-    calculateCombinations(diceArray, 0, 0);
+		calculateCombinations(diceArray, 0, 0);
 
-    return results;
-  }
+		return results;
+	}
 
-  // Vygeneruj všechny možné součty a rozdíly
-  const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(selectedDice);
+	// Vygeneruj všechny možné součty a rozdíly
+		const possibleSumsAndDiffs = generatePossibleSumsAndDiffs(selectedDice);
 
-  // Zkontroluj, jestli hodnota buňky odpovídá některému z možných součtů nebo rozdílů
-  if (
-    (cellValue === 'L' && isSingleOdd) ||
-    (cellValue === 'S' && isSingleEven) ||
-    (cellValue === 'D' && isDoubleSame) ||
-    possibleSumsAndDiffs.has(parseInt(cellValue)) // Zkontroluj, jestli je hodnota v seznamu možných součtů a rozdílů
-  ) {
-    cell.classList.add('clicked'); // Označení políčka jako "kliknuté"
-	document.querySelectorAll('.cell').forEach(cell => {
+	// Zkontroluj, jestli hodnota buňky odpovídá některému z možných součtů nebo rozdílů
+		if (
+		(cellValue === 'L' && isSingleOdd) ||
+		(cellValue === 'S' && isSingleEven) ||
+		(cellValue === 'D' && isDoubleSame) ||
+		possibleSumsAndDiffs.has(parseInt(cellValue)) // Zkontroluj, jestli je hodnota v seznamu možných součtů a rozdílů
+		) {
+		cell.classList.add('clicked'); // Označení políčka jako "kliknuté"
+		document.querySelectorAll('.cell').forEach(cell => {
 		cell.classList.remove('highlight'); // Odstraníme staré zvýraznění
-	  });
+		});
     // Označení vybraných kostek jako použitých a odstranění jejich výběru
-    document.querySelectorAll('.die.clicked').forEach(die => {
-      die.classList.add('used');
-      die.classList.remove('clicked');
-    });
+		document.querySelectorAll('.die.clicked').forEach(die => {
+		die.classList.add('used');
+		die.classList.remove('clicked');
+		});
 	// Označení vybraných Skimmerů jako použitých a odstranění jejich výběru
-	document.querySelectorAll('.skimmer.clicked').forEach(skimmer => {
-      skimmer.classList.add('used');
-      skimmer.classList.add('disabled');
-      skimmer.classList.remove('clicked');
-    });
+		document.querySelectorAll('.skimmer.clicked').forEach(skimmer => {
+		skimmer.classList.add('used');
+		skimmer.classList.add('disabled');
+		skimmer.classList.remove('clicked');
+		});
     
-    selectedDice = []; // Reset vybraných kostek po použití
+		selectedDice = []; // Reset vybraných kostek po použití
 
     // Zkontrolovat, zda byly použity všechny kostky
-    checkAllDiceUsed();
-    highlightPossibleCells();
-    updateReRollButtons();
-    resetSkimmerState();
-  } else {
-    confirm ("Hodnota kostek neodpovídá požadavkům na toto pole.");
-  }
-}
-
-
-
+		checkAllDiceUsed();
+		highlightPossibleCells();
+		updateReRollButtons();
+		resetSkimmerState();
+		} else {
+		confirm ("Hodnota kostek neodpovídá požadavkům na toto pole.");
+		}
+	}
 
 	// Inicializace hry
 	function initGame() {
-	  selectBoard(); // umožní výběr desky
-	  createBoard(); // vytvoří vybranou desku
-	  startGame();   // zahájí hru s vybranou deskou
-	}
+		selectBoard(); // umožní výběr desky
+		createBoard(); // vytvoří vybranou desku
+		startGame();   // zahájí hru s vybranou deskou
+		}
 
-
-initGame();
-
-
+	initGame();
 
 </script>
 </body>
