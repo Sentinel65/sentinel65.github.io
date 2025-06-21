@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>COLLALSI AI</title>
+  <style>
+    body { display:flex; flex-direction:column; align-items:center; margin:0; font-family:Arial,sans-serif; }
+    #board { display:grid; grid-template:repeat(4,1fr)/repeat(4,1fr); gap:10px; width:90vw; max-width:400px; aspect-ratio:1; }
+    .cell { display:flex; justify-content:center; align-items:center; border:1px solid #000; font-size:24px; background:#f0f0f0; transition:background .3s, box-shadow .3s; }
+    .cell:hover { background:#d3d3d3; }
+    .valid { box-shadow: inset 0 0 0 3px limegreen; }
+    .highlight {}
+    #controls { margin:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    button, select { padding:8px 12px; font-size:16px; }
+    #info { margin:5px; font-size:18px; }
+    #log { width:90vw; max-width:400px; height:140px; margin-top:10px; overflow-y:auto; border:1px solid #ccc; padding:5px; background:#fafafa; font-size:14px; }
+    #stats { margin-top:15px; text-align:center; font-size:16px; }
+  </style>
+</head>
+<body>
+  <h3>COLLAPSI by Mark S. Ball</h3>
+  <div id="controls">
+    <button id="resetBtn">Restart</button>
+    <label for="starter">It starts: </label>
+    <select id="starter">
+  <option value="R">Red (Player)</option>
+  <option value="B">Blue (AI)</option>
+  <option value="alternate">Alternately</option>
+  <option value="random" selected>Random</option>
+  <option value="pvp">Player vs Player</option>
+</select>
+    <span id="info">On the move: <strong id="turnIndicator">Red</strong></span>
+  </div>
+  <div id="board"></div>
+  <div id="log"></div>
+  <div id="stats">
+    <p><strong>Statistics:</strong></p>
+    <p>Number of games: <span id="gamesPlayed">0</span></p>
+    <p>Number of player wins (Red): <span id="playerWins">0</span></p>
+    <p>Number of AI wins (Blue): <span id="aiWins">0</span></p>
+    <button id="resetStatsBtn">Reset statistics</button>
+  </div>
+
+  <script>
+    const cards = ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
+    let board = [], currentPlayer = 'R', positions = { R: null, B: null }, collapsed = new Set(), selected = null;
+    let gameCount = 0;
+    let isPvP = false;
+    const logEl = document.getElementById('log');
+    const turnInd = document.getElementById('turnIndicator');
+    const starterSelect = document.getElementById('starter');
+
+    let stats = JSON.parse(localStorage.getItem('collapsiStats')) || { games: 0, player: 0, ai: 0 };
+
+    function saveStats() {
+      localStorage.setItem('collapsiStats', JSON.stringify(stats));
+    }
+
+    function updateStats() {
+      document.getElementById('gamesPlayed').textContent = stats.games;
+      document.getElementById('playerWins').textContent = stats.player;
+      document.getElementById('aiWins').textContent = stats.ai;
+      saveStats();
+    }
+
+    document.getElementById('resetStatsBtn').addEventListener('click', () => {
+      stats = { games: 0, player: 0, ai: 0 };
+      updateStats();
+    });
+
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+    }
+
+    function mod(n, m) {
+      return ((n % m) + m) % m;
+    }
+
+    function createBoard() {
+      shuffle(cards);
+      collapsed.clear();
+      selected = null;
+      isPvP = false;
+
+     const mode = starterSelect.value;
+if (mode === 'random') currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
+else if (mode === 'alternate') currentPlayer = gameCount % 2 === 0 ? 'R' : 'B';
+else if (mode === 'pvp') {
+  currentPlayer = 'R';
+  isPvP = true;
+} else currentPlayer = mode;
+      gameCount++;
+
+      logEl.innerHTML = '';
+      updateTurnText();
+
+      for (let i = 0; i < 4; i++) {
+        board[i] = [];
+        for (let j = 0; j < 4; j++) {
+          board[i][j] = cards[i * 4 + j];
+          if (board[i][j] === 'R') positions.R = { i, j };
+          if (board[i][j] === 'B') positions.B = { i, j };
+        }
+      }
+
+      renderBoard();
+     if (currentPlayer === 'B' && !isPvP) setTimeout(aiMove, 500);
+    }
+
+    function updateTurnText() {
+      turnInd.textContent = currentPlayer === 'R' ? 'Červený' : 'Modrý';
+    }
+
+    function getValidMoves(player) {
+      const pos = positions[player];
+      if (!pos) return [];
+      const start = board[pos.i][pos.j];
+      const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
+      const moves = [];
+
+      function dfs(i, j, rem, seen, path) {
+        if (rem === 0) {
+          if (i !== pos.i || j !== pos.j) {
+            if (!seen.has(`${pos.i},${pos.j}`) &&
+                !(positions.R && positions.R.i === i && positions.R.j === j) &&
+                !(positions.B && positions.B.i === i && positions.B.j === j)) {
+              moves.push({ i, j, path });
+            }
+          }
+          return;
+        }
+        for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+          const ni = mod(i + di, 4), nj = mod(j + dj, 4), key = `${ni},${nj}`;
+          if (seen.has(key) || collapsed.has(key)) continue;
+          const s2 = new Set(seen); s2.add(key);
+          dfs(ni, nj, rem - 1, s2, path + d);
+        }
+      }
+
+      if (steps) dfs(pos.i, pos.j, steps, new Set(), '');
+      else [1, 2, 3, 4].forEach(n => dfs(pos.i, pos.j, n, new Set(), ''));
+      return moves;
+    }
+
+    function renderBoard() {
+      const el = document.getElementById('board');
+      el.innerHTML = '';
+      const valids = selected ? getValidMoves(currentPlayer) : [];
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const key = `${i},${j}`;
+        if (collapsed.has(key)) cell.style.visibility = 'hidden';
+
+        const isR = positions.R && positions.R.i === i && positions.R.j === j;
+        const isB = positions.B && positions.B.i === i && positions.B.j === j;
+        const value = board[i][j];
+        cell.textContent = value;
+        cell.style.color = isR ? 'red' : isB ? 'blue' : 'black';
+
+        const isCurrent = positions[currentPlayer] && positions[currentPlayer].i === i && positions[currentPlayer].j === j;
+        if (isCurrent) {
+          cell.classList.add('highlight');
+          cell.style.boxShadow = currentPlayer === 'R'
+            ? '0 0 0 3px red'
+            : '0 0 0 3px blue';
+        }
+        if (selected && valids.some(m => m.i === i && m.j === j)) cell.classList.add('valid');
+
+        cell.addEventListener('click', () => selectCell(i, j, false));
+        el.appendChild(cell);
+      }
+    }
+
+    function logMove(start, dest, fromVal, toVal, pathCoords) {
+      const time = new Date().toLocaleTimeString();
+      const who = currentPlayer === 'R' ? 'R' : 'B';
+      const fullPath = pathCoords.map((p, idx) => {
+        const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
+        return `${p.i},${p.j}${val}`;
+      }).join(' → ');
+      const logEntry = `[${time}] ${who}: ${fullPath}<br>`;
+      logEl.innerHTML = logEntry + logEl.innerHTML;
+    }
+
+    function checkGameOver() {
+      const currentMoves = getValidMoves(currentPlayer);
+      if (currentMoves.length === 0) {
+        const loser = currentPlayer;
+        const winner = currentPlayer === 'R' ? 'B' : 'R';
+
+        stats.games++;
+        if (winner === 'R') stats.player++;
+        else stats.ai++;
+        updateStats();
+
+        setTimeout(() => {
+          alert(`End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer wins ${winner === 'R' ? 'Red' : 'Blue'}!`);
+        }, 100);
+        return true;
+      }
+      return false;
+    }
+
+    function selectCell(i, j, forceSelect) {
+      if (!currentPlayer) return;
+      const pos = positions[currentPlayer];
+      if (pos.i === i && pos.j === j) {
+        selected = { i, j };
+        renderBoard();
+        return;
+      }
+      if (forceSelect) {
+        selected = { i, j };
+        renderBoard();
+        return;
+      }
+      const valids = getValidMoves(currentPlayer);
+      const move = valids.find(m => m.i === i && m.j === j);
+      if (move) {
+        const key = `${pos.i},${pos.j}`;
+        collapsed.add(key);
+        const fromVal = board[pos.i][pos.j];
+        const toVal = board[i][j];
+        board[i][j] = toVal;
+        board[pos.i][pos.j] = '';
+        positions[currentPlayer] = { i, j };
+
+        const pathCoords = move.path
+          ? move.path.split('').reduce((acc, dir) => {
+              const last = acc[acc.length - 1];
+              const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
+              const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
+              acc.push({ i: ni, j: nj });
+              return acc;
+            }, [{ i: pos.i, j: pos.j }])
+          : [{ i: pos.i, j: pos.j }, { i, j }];
+
+        logMove(pos, { i, j }, fromVal, toVal, pathCoords);
+
+        currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
+        selected = null;
+        updateTurnText();
+        renderBoard();
+        if (!checkGameOver() && currentPlayer === 'B' && !isPvP) setTimeout(aiMove, 500);
+      }
+    }
+
+    function aiMove() {
+      if (currentPlayer !== 'B') return;
+      const moves = getValidMoves('B');
+      if (moves.length === 0) {
+        checkGameOver();
+        return;
+      }
+
+      const pos = positions['B'];
+      const redMoves = getValidMoves('R');
+      const redTargets = redMoves.map(m => `${m.i},${m.j}`);
+
+      const scored = moves.map(m => {
+        const val = board[m.i][m.j];
+        const value = parseInt(val) || 0;
+        const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
+        const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
+        const score = m.path.length + value + centerBonus + blocksOpponent;
+        return { ...m, score };
+      });
+
+      const best = scored.sort((a, b) => b.score - a.score)[0];
+
+      const key = `${pos.i},${pos.j}`;
+      collapsed.add(key);
+      const fromVal = board[pos.i][pos.j];
+      const toVal = board[best.i][best.j];
+      board[best.i][best.j] = toVal;
+      board[pos.i][pos.j] = '';
+      positions['B'] = { i: best.i, j: best.j };
+
+      const pathCoords = best.path
+        ? best.path.split('').reduce((acc, dir) => {
+            const last = acc[acc.length - 1];
+            const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
+            const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
+            acc.push({ i: ni, j: nj });
+            return acc;
+          }, [{ i: pos.i, j: pos.j }])
+        : [{ i: pos.i, j: pos.j }, { i: best.i, j: best.j }];
+
+      logMove(pos, best, fromVal, toVal, pathCoords);
+
+      currentPlayer = 'R';
+      updateTurnText();
+      renderBoard();
+      checkGameOver();
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', createBoard);
+    createBoard();
+    updateStats();
+  </script>
+</body>
+</html>
