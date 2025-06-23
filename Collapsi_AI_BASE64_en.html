@@ -312,7 +312,7 @@ function renderBoard() {
 
     function logMove(start, dest, fromVal, toVal, pathCoords) {
       const time = new Date().toLocaleTimeString();
-      const who = currentPlayer === 'R' ? 'Č' : 'M';
+      const who = currentPlayer === 'R' ? 'R' : 'B';
       const fullPath = pathCoords.map((p, idx) => {
         const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
         return `${p.i},${p.j}${val}`;
