@@ -716,6 +716,42 @@ function heuristicScore(m) {
     const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
     counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
   }
+  
+      // 🧱 AI: preventivní obrana proti pasti
+  let futureTrapPenalty = 0;
+  for (const redMove of redMovesAfter.slice(0, 2)) {
+    const futurePos = { i: redMove.i, j: redMove.j };
+    const futureBoard = simBoard.map(row => row.slice());
+    const futureCollapsed = new Set(simCollapsed);
+    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    futureBoard[futurePos.i][futurePos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+    futureBoard[simPositions.R.i][simPositions.R.j] = '';
+    const futurePositions = {
+      R: futurePos,
+      B: { ...simPositions.B }
+    };
+    const nextBlueMoves = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'B');
+    if (nextBlueMoves.length <= 1) futureTrapPenalty -= 3;
+    if (nextBlueMoves.length === 0) futureTrapPenalty -= 10;
+  }
+
+  // 🔺 BONUS: Předpověď pasti pro soupeře
+  let opponentFutureTrapBonus = 0;
+  for (const rm of redMovesAfter.slice(0, 2)) {
+    const redPos = { i: rm.i, j: rm.j };
+    const futureBoard = simBoard.map(row => row.slice());
+    const futureCollapsed = new Set(simCollapsed);
+    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    futureBoard[redPos.i][redPos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+    futureBoard[simPositions.R.i][simPositions.R.j] = '';
+    const futurePositions = {
+      R: redPos,
+      B: { ...simPositions.B }
+    };
+    const redEscape = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'R');
+    if (redEscape.length === 0) opponentFutureTrapBonus += 8;
+    else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
+  }
 
   const score =
     value +
@@ -729,6 +765,8 @@ function heuristicScore(m) {
     escapeRoutes +
     winBonus +
     preventLossPenalty +
+    futureTrapPenalty +
+    opponentFutureTrapBonus +
     counterAttackScore * 0.5; // váha protiútoku;
 
   // 📝 Důvod k tahu
@@ -745,6 +783,8 @@ function heuristicScore(m) {
   if (winBonus) reasonParts.push('🏆 winner turn');
   if (preventLossPenalty) reasonParts.push(`⚠️ deffensive prediction`);
   if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
+  if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
+  if (opponentFutureTrapBonus) reasonParts.push(`🎯 a threat to the opponent (${opponentFutureTrapBonus})`);
 
   return {
     score,
