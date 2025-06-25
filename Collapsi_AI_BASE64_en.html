@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>COLLAPSI</title>
+  <title>COLLAPSI</title>
 <style>
   body {
     display: flex;
@@ -87,27 +87,28 @@
 <body>
   <h3>COLLAPSI by Mark S. Ball</h3>
   <div id="controls">
-    <button id="resetBtn">Restart</button>
-    <label for="starter">It starts: </label>
+    <button id="resetBtn">Reset</button>
+    <label for="starter">Starting: </label>
     <select id="starter">
-  <option value="R">Red (Player)</option>
-  <option value="B">Blue (AI)</option>
-  <option value="alternate">Alternately</option>
-  <option value="random" selected>Random</option>
-  <option value="pvp">Player vs Player</option>
-</select>
-    <span id="info">On the move: <strong id="turnIndicator">Red</strong></span>
+      <option value="R"> Red (Player)</option>
+      <option value="B">Blue (AI)</option>
+      <option value="alternate" selected>Alternate</option>
+      <option value="random">Random</option>
+      <option value="pvp">PvP (R)</option>
+    </select>
+     <img id="aiToggleBtn" width="36" height="36" src="data:image/png;base64,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" alt="AI režim" title="Přepnout AI režim" />
+
+ <span id="info">It's turn: <strong id="turnIndicator">Red</strong></span>
   </div>
   <div id="board"></div>
   <div id="log"></div>
   <div id="stats">
   	<img width="70px" height="70px" alt="" src="data:image/png;base64,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">
-    <dl><strong>Statistics</strong>
-    <dt>Number of games: <span id="gamesPlayed">0</span></dt>
+    <dl><strong>Statistics:</strong>
+    <dt>Number of game: <span id="gamesPlayed">0</span></dt>
     <dt>Number of player wins (Red): <span id="playerWins">0</span></dt>
     <dt>Number of AI wins (Blue): <span id="aiWins">0</span></dt></dl>
-    <button id="resetStatsBtn">Reset statistics
-</button>
+    <button id="resetStatsBtn">Reset statistics</button>
   </div>
   
   <script>
@@ -133,13 +134,47 @@ const cardImages = {
     const cards = ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
     let board = [], currentPlayer = 'R', positions = { R: null, B: null }, collapsed = new Set(), selected = null;
     let gameCount = 0;
+    let blueAIMoveCount = 0; // Nová globální proměnná pro sledování kol AI
+    let aiEnabled = true; // nebo false, pokud začínáš PvP režimem
+    let aiMode = 'minimax'; // výchozí
     let isPvP = false;
     let lastMoveEnd = null; // {i, j}
+    let playerHistory = []; // paměť hráčových tahů
     const logEl = document.getElementById('log');
     const turnInd = document.getElementById('turnIndicator');
     const starterSelect = document.getElementById('starter');
+    
+    const aiToggleBtn = document.getElementById('aiToggleBtn');
+    const logDiv = document.getElementById('log');
 
+  // Funkce pro zápis do logu s časem
+  function logEvent(text) {
+    const time = new Date().toLocaleTimeString();
+    const entry = `[${time}] ${text}`;
+    logDiv.innerHTML = entry + '<br>' + logDiv.innerHTML;
+  }
+
+    // Přepínač ai režimu
+    aiToggleBtn.addEventListener('click', () => {
+    if (aiMode === 'heuristic') {
+      aiMode = 'minimax';
+      aiToggleBtn.src = 'data:image/png;base64,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'; // ikona M
+      aiToggleBtn.title = 'AI mode: minimax';
+    } else {
+      aiMode = 'heuristic';
+      aiToggleBtn.src = 'data:image/png;base64,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'; // ikona H
+      aiToggleBtn.title = 'AI mode: Heuristic';
+    }
+    blueAIMoveCount = 0; // reset počtu tahů AI
+    logEvent(`AI mode: ${aiMode}`);
+    // renderBoard();  // pokud máš renderovací funkci, zavolej ji zde
+  });
+    
+    
     let stats = JSON.parse(localStorage.getItem('collapsiStats')) || { games: 0, player: 0, ai: 0 };
+
+    
+
 
     function saveStats() {
       localStorage.setItem('collapsiStats', JSON.stringify(stats));
@@ -179,7 +214,7 @@ if (mode === 'random') currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
 else if (mode === 'alternate') currentPlayer = gameCount % 2 === 0 ? 'R' : 'B';
 else if (mode === 'pvp') {
   currentPlayer = 'R';
-  isPvP = true;
+  isPvP = true;  
 } else currentPlayer = mode;
       gameCount++;
 
@@ -195,20 +230,41 @@ else if (mode === 'pvp') {
         }
       }
 	lastMoveEnd = null;
+	blueAIMoveCount = 0;
       renderBoard();
      if (currentPlayer === 'B' && !isPvP) setTimeout(aiMove, 500);
+     if (isPvP) {
+     	currentPlayer = 'R';
+  isPvP = true;  
+  aiEnabled = false;
+  aiToggleBtn.style.pointerEvents = 'none';
+aiToggleBtn.style.opacity = '0.5';
+aiToggleBtn.title = 'AI je deaktivována v režimu Hráč vs Hráč';
+  logEvent('AI mode disabled [PvP (R)]');
+} else {
+	aiToggleBtn.style.pointerEvents = 'auto';
+aiToggleBtn.style.opacity = '1';
+aiToggleBtn.title = 'Click to change AI mode';
+logEvent(`AI mode: ${aiMode}`); 
+    }
     }
 
-    function updateTurnText() {
-      turnInd.textContent = currentPlayer === 'R' ? 'Red' : 'Blue';
-    }
+   function updateTurnText() {
+  if (currentPlayer === 'R') {
+    turnInd.textContent = 'Red';
+    turnInd.style.color = 'red';
+  } else {
+    turnInd.textContent = 'Blue';
+    turnInd.style.color = 'blue';
+  }
+}
 
-    function getValidMoves(player) {
-      const pos = positions[player];
-      if (!pos) return [];
-      const start = board[pos.i][pos.j];
-      const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
-      const moves = [];
+    function getValidMoves(player, b = board, posMap = positions) {
+    const pos = posMap[player];
+    if (!pos) return [];
+    const start = b[pos.i][pos.j];
+    const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
+    const moves = [];
 
       function dfs(i, j, rem, seen, path) {
         if (rem === 0) {
@@ -309,36 +365,70 @@ function renderBoard() {
   }
 }
 
+ function logMove(start, dest, fromVal, toVal, pathCoords, score = null, scoreReason = '', player = currentPlayer) {
+    const time = new Date().toLocaleTimeString();
+    const isRed = player === 'R';
+    const who = isRed ? 'Red' : 'Blue';
+    const whoColor = isRed ? 'red' : 'blue';
 
-    function logMove(start, dest, fromVal, toVal, pathCoords) {
-      const time = new Date().toLocaleTimeString();
-      const who = currentPlayer === 'R' ? 'R' : 'B';
-      const fullPath = pathCoords.map((p, idx) => {
-        const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
-        return `${p.i},${p.j}${val}`;
-      }).join(' → ');
-      const logEntry = `[${time}] ${who}: ${fullPath}<br>`;
-      logEl.innerHTML = logEntry + logEl.innerHTML;
-    }
+    const fullPath = pathCoords.map((p, idx) => {
+      const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
+      return `${p.i},${p.j}${val}`;
+    }).join(' → ');
 
-    function checkGameOver() {
-      const currentMoves = getValidMoves(currentPlayer);
-      if (currentMoves.length === 0) {
-        const loser = currentPlayer;
-        const winner = currentPlayer === 'R' ? 'B' : 'R';
+    let scoreColor = 'gray';
+    if (score >= 7) scoreColor = 'green';
+    else if (score >= 4) scoreColor = 'orange';
 
-        stats.games++;
-        if (winner === 'R') stats.player++;
-        else stats.ai++;
-        updateStats();
+    const scoreText = score !== null
+      ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
+      : '';
 
-        setTimeout(() => {
-          alert(`End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`);
-        }, 100);
-        return true;
-      }
-      return false;
-    }
+    const historyNote = isRed
+      ? ` <span style="color:darkred;">[↺ player's moves in memory]</span>`
+      : '';
+
+    const logEntry = `[${time}] <span style="color:${whoColor};">${who}</span>: ${fullPath}${scoreText}${historyNote}<br>`;
+    logEl.innerHTML = logEntry + logEl.innerHTML;
+  }
+
+function checkGameOver() {
+  const currentMoves = getValidMoves(currentPlayer);
+  if (currentMoves.length === 0) {
+    const loser = currentPlayer;
+    const winner = currentPlayer === 'R' ? 'B' : 'R';
+
+    stats.games++;
+    if (winner === 'R') stats.player++;
+    else stats.ai++;
+    updateStats();
+
+setTimeout(() => {
+  const winnerText = winner === 'R'
+    ? '<span style="color:red;"><strong>Red</strong></span>'
+    : '<span style="color:blue;"><strong>Modrý</strong></span>';
+
+  const loserText = loser === 'R'
+    ? '<span style="color:red;">Red</span>'
+    : '<span style="color:blue;">Blue</span>';
+
+  const plainWinnerText = winner === 'R' ? 'Red' : 'Blue';
+  const plainLoserText = loser === 'R' ? 'Red' : 'Blue';
+
+  const endMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
+  alert(endMessage);
+
+  const logMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
+  const time = new Date().toLocaleTimeString();
+  const logEntry = `[${time}] <span style="color:darkgreen;"><strong>${logMessage}</strong></span><br>`;
+  logEl.innerHTML = logEntry + logEl.innerHTML;
+}, 100);
+
+    return true;
+  }
+  return false;
+}
+
 
     function selectCell(i, j, forceSelect) {
       if (!currentPlayer) return;
@@ -356,6 +446,14 @@ function renderBoard() {
       const valids = getValidMoves(currentPlayer);
       const move = valids.find(m => m.i === i && m.j === j);
       if (move) {
+      	if (currentPlayer === 'R') {
+    playerHistory.push({
+      from: { i: pos.i, j: pos.j },
+      to: { i, j },
+      card: board[i][j],
+      time: Date.now()
+    });
+  }
         const key = `${pos.i},${pos.j}`;
         collapsed.add(key);
         const fromVal = board[pos.i][pos.j];
@@ -375,7 +473,7 @@ function renderBoard() {
             }, [{ i: pos.i, j: pos.j }])
           : [{ i: pos.i, j: pos.j }, { i, j }];
 
-        logMove(pos, { i, j }, fromVal, toVal, pathCoords);
+logMove(pos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
 
         currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
         selected = null;
@@ -385,59 +483,327 @@ function renderBoard() {
       }
     }
 
-    function aiMove() {
-      if (currentPlayer !== 'B') return;
-      const moves = getValidMoves('B');
-      if (moves.length === 0) {
-        checkGameOver();
-        return;
+
+function getValidMovesFrom(player, i, j) {
+  const val = board[i][j];
+  const steps = (val === 'R' || val === 'B') ? null : parseInt(val);
+  const moves = [];
+
+  function dfs(x, y, rem, seen, path) {
+    if (rem === 0) {
+      if (x !== i || y !== j) {
+        if (!(positions.R.i === x && positions.R.j === y) &&
+            !(positions.B.i === x && positions.B.j === y) &&
+            !collapsed.has(`${x},${y}`)) {
+          moves.push({ i: x, j: y, path });
+        }
       }
-
-      const pos = positions['B'];
-      const redMoves = getValidMoves('R');
-      const redTargets = redMoves.map(m => `${m.i},${m.j}`);
-
-      const scored = moves.map(m => {
-        const val = board[m.i][m.j];
-        const value = parseInt(val) || 0;
-        const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
-        const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
-        const score = m.path.length + value + centerBonus + blocksOpponent;
-        return { ...m, score };
-      });
-
-      const best = scored.sort((a, b) => b.score - a.score)[0];
-
-      const key = `${pos.i},${pos.j}`;
-      collapsed.add(key);
-      const fromVal = board[pos.i][pos.j];
-      const toVal = board[best.i][best.j];
-      board[best.i][best.j] = toVal;
-      board[pos.i][pos.j] = '';
-      positions['B'] = { i: best.i, j: best.j };
-
-      const pathCoords = best.path
-        ? best.path.split('').reduce((acc, dir) => {
-            const last = acc[acc.length - 1];
-            const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
-            const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
-            acc.push({ i: ni, j: nj });
-            return acc;
-          }, [{ i: pos.i, j: pos.j }])
-        : [{ i: pos.i, j: pos.j }, { i: best.i, j: best.j }];
-
-      logMove(pos, best, fromVal, toVal, pathCoords);
-
-      currentPlayer = 'R';
-      updateTurnText();
-lastMoveEnd = { i: best.i, j: best.j };      
-renderBoard();
-      checkGameOver();
+      return;
     }
+    for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+      const ni = mod(x + di, 4);
+      const nj = mod(y + dj, 4);
+      const key = `${ni},${nj}`;
+      if (seen.has(key) || collapsed.has(key)) continue;
+      const s2 = new Set(seen);
+      s2.add(key);
+      dfs(ni, nj, rem - 1, s2, path + d);
+    }
+  }
+
+  if (steps) dfs(i, j, steps, new Set([`${i},${j}`]), '');
+  else [1, 2, 3, 4].forEach(n => dfs(i, j, n, new Set([`${i},${j}`]), ''));
+
+  return moves;
+}
+
+function getValidMovesFor(board, collapsedSet, positions, player) {
+  const pos = positions[player];
+  if (!pos) return [];
+  const start = board[pos.i][pos.j];
+  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
+  const moves = [];
+
+  function dfs(i, j, rem, seen, path) {
+    if (rem === 0) {
+      if (i !== pos.i || j !== pos.j) {
+        if (!seen.has(`${pos.i},${pos.j}`) &&
+            !(positions.R && positions.R.i === i && positions.R.j === j) &&
+            !(positions.B && positions.B.i === i && positions.B.j === j)) {
+          moves.push({ i, j, path });
+        }
+      }
+      return;
+    }
+    for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+      const ni = mod(i + di, 4), nj = mod(j + dj, 4), key = `${ni},${nj}`;
+      if (seen.has(key) || collapsedSet.has(key)) continue;
+      const s2 = new Set(seen); s2.add(key);
+      dfs(ni, nj, rem - 1, s2, path + d);
+    }
+  }
+
+  if (steps) dfs(pos.i, pos.j, steps, new Set(), '');
+  else [1, 2, 3, 4].forEach(n => dfs(pos.i, pos.j, n, new Set(), ''));
+  return moves;
+}
+
+
+function evaluateBoard(board, positions) {
+  const aiMoves = getValidMoves('B', board, positions).length;
+  const playerMoves = getValidMoves('R', board, positions).length;
+
+  const aiPos = positions.B;
+  const redPos = positions.R;
+
+  // Bonus za střed
+  const centerBonus = (aiPos.i >= 1 && aiPos.i <= 2 && aiPos.j >= 1 && aiPos.j <= 2) ? 2 : 0;
+
+  // Penalizace za blízkost hráči
+  const distToRed = Math.abs(aiPos.i - redPos.i) + Math.abs(aiPos.j - redPos.j);
+  const dangerPenalty = distToRed <= 1 ? -2 : 0;
+  const distanceScore = distToRed >= 3 ? 1 : 0;
+
+  // Únikové cesty
+  const escapeRoutes = getValidMovesFrom('B', aiPos.i, aiPos.j).length;
+  const escapeBonus = escapeRoutes >= 2 ? 1 : 0;
+
+  // Okolní zbořené pozice
+  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
+    const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
+    return collapsed.has(`${ni},${nj}`);
+  }).length;
+  const trapPenalty = surroundingCollapsed >= 3 ? -2 : 0;
+
+  // Výhra/prohra
+  if (playerMoves === 0) return 100;
+  if (aiMoves === 0) return -100;
+
+  // Celkové skóre
+  return (
+    (aiMoves - playerMoves) + centerBonus + distanceScore +
+    escapeBonus + dangerPenalty + trapPenalty
+  );
+}
+
+
+function simulateMove(board, positions, collapsed, player, move) {
+  const newBoard = board.map(row => [...row]);
+  const newCollapsed = new Set([...collapsed]);
+  const newPositions = { R: { ...positions.R }, B: { ...positions.B } };
+
+  const from = positions[player];
+  const to = { i: move.i, j: move.j };
+  const key = `${from.i},${from.j}`;
+
+  newCollapsed.add(key);
+  newBoard[to.i][to.j] = newBoard[from.i][from.j];
+  newBoard[from.i][from.j] = '';
+  newPositions[player] = to;
+
+  return { newBoard, newPositions, newCollapsed };
+}
+
+
+function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) {
+  const aiMoves = getValidMoves('B', board, positions);
+  const playerMoves = getValidMoves('R', board, positions);
+
+  if (depth === 0 || aiMoves.length === 0 || playerMoves.length === 0) {
+    return evaluateBoard(board, positions);
+  }
+
+  if (isMaximizing) {
+    let maxEval = -Infinity;
+    for (const move of aiMoves) {
+      const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', move);
+      const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, alpha, beta);
+      maxEval = Math.max(maxEval, eval);
+      alpha = Math.max(alpha, eval);
+      if (beta <= alpha) break;
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (const move of playerMoves) {
+      const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'R', move);
+      const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, true, alpha, beta);
+      minEval = Math.min(minEval, eval);
+      beta = Math.min(beta, eval);
+      if (beta <= alpha) break;
+    }
+    return minEval;
+  }
+}
+
+function heuristicScore(m) {
+  const pos = positions['B'];
+  const val = board[m.i][m.j];
+  const value = parseInt(val) || 0;
+
+  const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
+
+  const redMoves = getValidMoves('R');
+  const redTargets = redMoves.map(rm => `${rm.i},${rm.j}`);
+  const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
+
+  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
+    return !collapsed.has(`${ni},${nj}`);
+  });
+
+  const readabilityPenalty = (positions.R.i === m.i || positions.R.j === m.j) ? -1 : 0;
+  const escapeRoutes = getValidMovesFrom('B', m.i, m.j).length;
+  const mobilityBonus = neighbors.length;
+
+  const lengthPenalty = m.path ? -m.path.length * 0.5 : 0;
+  const distToRed = Math.abs(m.i - positions.R.i) + Math.abs(m.j - positions.R.j);
+  const dangerPenalty = distToRed <= 1 ? -2 : 0;
+
+  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
+    return collapsed.has(`${ni},${nj}`);
+  }).length;
+
+  const simBoard = board.map(row => row.slice());
+  const simCollapsed = new Set(collapsed);
+  simCollapsed.add(`${pos.i},${pos.j}`);
+  simBoard[m.i][m.j] = simBoard[pos.i][pos.j];
+  simBoard[pos.i][pos.j] = '';
+
+  const simPositions = {
+    R: { ...positions.R },
+    B: { i: m.i, j: m.j }
+  };
+
+  const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
+  const winBonus = redMovesAfter.length === 0 ? 100 : 0;
+
+  const score =
+    value +
+    centerBonus +
+    blocksOpponent +
+    mobilityBonus +
+    lengthPenalty +
+    dangerPenalty +
+    surroundingCollapsed +
+    readabilityPenalty +
+    escapeRoutes +
+    winBonus;
+
+  // 📝 Sestavíme důvod (bestReason)
+  const reasonParts = [];
+  if (value) reasonParts.push(`${value} card`);
+  if (centerBonus) reasonParts.push(`${centerBonus} centre`);
+  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks players`);
+  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} legible direction`);
+  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
+  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} stroke path length`);
+  if (dangerPenalty) reasonParts.push(`${dangerPenalty} the proximity of the opponent`);
+  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
+  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} trap`);
+  if (winBonus) reasonParts.push('🏆 winner move');
+
+  return {
+    score,
+    reason: reasonParts.join(' + ')
+  };
+}
+
+
+function aiMove() {
+  if (currentPlayer !== 'B') return;
+
+  const moves = getValidMoves('B');
+  if (moves.length === 0) {
+    checkGameOver();
+    return;
+  }
+
+  const pos = positions['B'];
+  let bestMove = null;
+  let bestScore = -Infinity;
+  let bestReason = '';
+
+  // 🔷 Heuristika pro první 2 tahy nebo celý průběh (podle režimu)
+  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
+    const scoredMoves = moves.map(m => {
+      const { score, reason } = heuristicScore(m);
+      return { move: m, score, reason };
+    });
+
+    scoredMoves.sort((a, b) => b.score - a.score);
+
+    const top = scoredMoves[0];
+    bestMove = top.move;
+    bestScore = top.score;
+    bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
+
+  } else {
+    // 🔷 Minimax od 3. tahu
+    let depth = 2;
+    const bMoves = getValidMoves('B', board, positions);
+    if (bMoves.length <= 3) depth = 4;
+    if (bMoves.length <= 2) depth = 5;
+
+    const scoredMoves = bMoves.map(m => {
+      const { score } = heuristicScore(m);
+      return { move: m, score };
+    });
+    scoredMoves.sort((a, b) => b.score - a.score);
+    const topMoves = scoredMoves.slice(0, 3); // analyzuj jen top 3 tahy
+
+    for (const { move: m } of topMoves) {
+      const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
+      const score = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, -Infinity, Infinity);
+
+      if (score > bestScore || bestMove === null) {
+        bestScore = score;
+        bestMove = m;
+        bestReason = `Minimax score = ${score}`;
+      }
+    }
+  }
+
+  if (!bestMove) return;
+
+  // 🧠 Proveď tah AI
+  const key = `${pos.i},${pos.j}`;
+  collapsed.add(key);
+  const fromVal = board[pos.i][pos.j];
+  const toVal = board[bestMove.i][bestMove.j];
+  board[bestMove.i][bestMove.j] = toVal;
+  board[pos.i][pos.j] = '';
+  positions['B'] = { i: bestMove.i, j: bestMove.j };
+  lastMoveEnd = { i: bestMove.i, j: bestMove.j };
+
+  // 🔍 Zaznamenej trasu (pro log)
+  const pathCoords = bestMove.path
+    ? bestMove.path.split('').reduce((acc, dir) => {
+        const last = acc[acc.length - 1];
+        const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
+        const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
+        acc.push({ i: ni, j: nj });
+        return acc;
+      }, [{ i: pos.i, j: pos.j }])
+    : [{ i: pos.i, j: pos.j }, { i: bestMove.i, j: bestMove.j }];
+
+  logMove(pos, bestMove, fromVal, toVal, pathCoords, bestScore, bestReason, 'B');
+
+  currentPlayer = 'R';
+  blueAIMoveCount++; // 🔢 Zvýšíme počet tahů AI
+  updateTurnText();
+  renderBoard();
+  checkGameOver();
+}
 
     document.getElementById('resetBtn').addEventListener('click', createBoard);
     createBoard();
     updateStats();
+    
+    starterSelect.addEventListener('change', () => {
+  createBoard();
+});
   </script>
 </body>
 </html>
