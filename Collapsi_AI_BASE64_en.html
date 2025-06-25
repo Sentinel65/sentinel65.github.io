@@ -637,25 +637,25 @@ function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) 
 }
 
    // Funkci využívá AI v části minimaxu ve funkci aiMove
-function getAdaptiveDepth(board, positions, collapsed, moveCount) {
-  const bMoves = getValidMovesFor(board, collapsed, positions, 'B');
+function decideDepth(board, collapsed, moveCount) {
+  const bMoves = getValidMoves('B', board, positions);
   const numMoves = bMoves.length;
-  const collapsedRatio = collapsed.size / (board.length * board[0].length); // 0–1
+  const totalCells = board.length * board[0].length;
+  const collapsedRatio = collapsed.size / totalCells;
 
-  // Základní hloubka
-  let depth = 2;
-
-  // Kritická situace – málo tahů → nutnost hlubší predikce
+  // 🔴 1. Kritická situace – zcela málo tahů
   if (numMoves <= 2) return 5;
 
-  // Pokročilá fáze hry → zvýšíme hloubku
-  if (collapsedRatio > 0.5 || moveCount > 6) depth = 3;
+  // 🟠 2. Obranná situace – málo možností
+  if (numMoves <= 4) return 4;
 
-  // Málo tahů (obranná situace)
-  if (numMoves <= 4) depth = 4;
+  // 🟡 3. Pokročilá fáze – velká část desky obsazena nebo delší hra
+  if (collapsedRatio > 0.5 || moveCount > 6) return 3;
 
-  return depth;
+  // 🟢 Výchozí hloubka
+  return 2;
 }
+
 
 function heuristicScore(m) {
   const pos = positions['B'];
@@ -844,7 +844,7 @@ function aiMove() {
 
   } else {
     // 🔷 Minimax od 3. tahu
-    const depth = getAdaptiveDepth(board, positions, collapsed, blueAIMoveCount);
+    const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
     const bMoves = getValidMoves('B', board, positions);
 
     const scoredMoves = bMoves.map(m => {
