@@ -239,7 +239,7 @@ else if (mode === 'pvp') {
   aiEnabled = false;
   aiToggleBtn.style.pointerEvents = 'none';
 aiToggleBtn.style.opacity = '0.5';
-aiToggleBtn.title = 'AI je deaktivována v režimu Hráč vs Hráč';
+aiToggleBtn.title = 'AI mode disabled [PvP (R)]';
   logEvent('AI mode disabled [PvP (R)]');
 } else {
 	aiToggleBtn.style.pointerEvents = 'auto';
@@ -406,7 +406,7 @@ function checkGameOver() {
 setTimeout(() => {
   const winnerText = winner === 'R'
     ? '<span style="color:red;"><strong>Red</strong></span>'
-    : '<span style="color:blue;"><strong>Modrý</strong></span>';
+    : '<span style="color:blue;"><strong>Blue</strong></span>';
 
   const loserText = loser === 'R'
     ? '<span style="color:red;">Red</span>'
@@ -418,7 +418,7 @@ setTimeout(() => {
   const endMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
   alert(endMessage);
 
-  const logMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
+ const logMessage = `End of game – player ${loserText} has not valid move. Player ${winnerText} wins!`;
   const time = new Date().toLocaleTimeString();
   const logEntry = `[${time}] <span style="color:darkgreen;"><strong>${logMessage}</strong></span><br>`;
   logEl.innerHTML = logEntry + logEl.innerHTML;
@@ -679,6 +679,44 @@ function heuristicScore(m) {
   const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
   const winBonus = redMovesAfter.length === 0 ? 100 : 0;
 
+  // 🔮 Obranná predikce: test, zda by hráč mohl zablokovat AI v dalším tahu
+  let preventLossPenalty = 0;
+  for (const redMove of redMovesAfter) {
+    const redSimBoard = simBoard.map(row => row.slice());
+    const redSimCollapsed = new Set(simCollapsed);
+    redSimCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    redSimBoard[redMove.i][redMove.j] = redSimBoard[simPositions.R.i][simPositions.R.j];
+    redSimBoard[simPositions.R.i][simPositions.R.j] = '';
+
+    const afterRedPositions = {
+      R: { i: redMove.i, j: redMove.j },
+      B: simPositions.B
+    };
+
+    const aiMovesAfter = getValidMovesFor(redSimBoard, redSimCollapsed, afterRedPositions, 'B');
+    if (aiMovesAfter.length === 0) {
+      preventLossPenalty = -20;
+      break;
+    }
+  }
+  
+  // Nová část: simulace odpovědi hráče a protiútoku AI
+  let counterAttackScore = 0;
+  for (const rMove of redMovesAfter) {
+    const tempBoard = simBoard.map(row => row.slice());
+    const tempCollapsed = new Set(simCollapsed);
+    tempCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    tempBoard[rMove.i][rMove.j] = tempBoard[simPositions.R.i][simPositions.R.j];
+    tempBoard[simPositions.R.i][simPositions.R.j] = '';
+    const nextPositions = {
+      R: { i: rMove.i, j: rMove.j },
+      B: { ...simPositions.B }
+    };
+
+    const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
+    counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
+  }
+
   const score =
     value +
     centerBonus +
@@ -689,20 +727,24 @@ function heuristicScore(m) {
     surroundingCollapsed +
     readabilityPenalty +
     escapeRoutes +
-    winBonus;
+    winBonus +
+    preventLossPenalty +
+    counterAttackScore * 0.5; // váha protiútoku;
 
-  // 📝 Sestavíme důvod (bestReason)
+  // 📝 Důvod k tahu
   const reasonParts = [];
   if (value) reasonParts.push(`${value} card`);
   if (centerBonus) reasonParts.push(`${centerBonus} centre`);
-  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks players`);
-  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} legible direction`);
+  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks player`);
+  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} expected direction`);
   if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
-  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} stroke path length`);
+  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} lenght of turn`);
   if (dangerPenalty) reasonParts.push(`${dangerPenalty} the proximity of the opponent`);
   if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
   if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} trap`);
-  if (winBonus) reasonParts.push('🏆 winner move');
+  if (winBonus) reasonParts.push('🏆 winner turn');
+  if (preventLossPenalty) reasonParts.push(`⚠️ deffensive prediction`);
+  if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
 
   return {
     score,
