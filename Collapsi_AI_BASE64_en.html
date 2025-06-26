@@ -82,6 +82,26 @@
     text-align: center;
     font-size: 16px;
   }
+    .particle {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0.9;
+  z-index: 9999;
+  animation: shatterMove 1s forwards;
+}
+
+@keyframes shatterMove {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.5);
+    opacity: 0;
+  }
+}
 </style>
 </head>
 <body>
@@ -290,79 +310,145 @@ logEvent(`AI mode: ${aiMode}`);
       return moves;
     }
 
-function renderBoard() {
-  const el = document.getElementById('board');
-  el.innerHTML = '';
-  const valids = selected ? getValidMoves(currentPlayer) : [];
+    // Proměnné pro grafický efekt rozpadu karty 
+	let collapsedBy = {};
+	let justCollapsedKey = null;
+	let justCollapsedPlayed = false; // nová proměnná
 
-  const redPos = positions.R;
-  const bluePos = positions.B;
+function triggerShatter(cell, player, value) {
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
 
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      const key = `${i},${j}`;
+  const color = player === 'R' ? 'rgba(255, 50, 50, 0.8)' : 'rgba(50, 150, 255, 0.8)';
 
-      if (collapsed.has(key)) {
-        cell.style.visibility = 'hidden';
-        el.appendChild(cell);
-        continue;
-      }
+  let shapeClass = 'circle'; // výchozí tvar
 
-      const value = board[i][j];
-
-      // Zobraz obrázek karty, pokud existuje
-      if (cardImages[value]) {
-        const img = document.createElement('img');
-        img.src = cardImages[value];
-        img.alt = value;
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        cell.appendChild(img);
-      } else {
-        cell.textContent = value;
-      }
-
-      // Určení pozice hráčů
-      const isRed = redPos && redPos.i === i && redPos.j === j;
-      const isBlue = bluePos && bluePos.i === i && bluePos.j === j;
-
-      const isCurrent = (currentPlayer === 'R' && isRed) || (currentPlayer === 'B' && isBlue);
-      const isOpponent = (currentPlayer === 'R' && isBlue) || (currentPlayer === 'B' && isRed);
-
-      if (isCurrent) {
-        cell.classList.add('highlight');
-        cell.style.boxShadow = currentPlayer === 'R'
-          ? '0 0 0 4px red'
-          : '0 0 0 4px blue';
-      } else if (isOpponent) {
-        cell.style.boxShadow = currentPlayer === 'R'
-          ? '0 0 0 3px red dotted'
-          : '0 0 0 3px blue dotted';
-      }
-
-      // Pokud je to cílová karta posledního tahu, zvýrazni barvou soupeře
-      if (lastMoveEnd && lastMoveEnd.i === i && lastMoveEnd.j === j) {
-        if (currentPlayer === 'R') {
-          // Hráč R právě táhl, zvýrazni barvou B
-          cell.style.border = '3px solid blue'; // nebo jiný styl
-          cell.style.boxShadow = '0 0 10px blue';
-        } else {
-          // Hráč B právě táhl, zvýrazni barvou R
-          cell.style.border = '3px solid red';
-          cell.style.boxShadow = '0 0 10px red';
-        }
-      }
-
-      if (selected && valids.some(m => m.i === i && m.j === j)) {
-        cell.classList.add('valid');
-      }
-
-      cell.addEventListener('click', () => selectCell(i, j, false));
-      el.appendChild(cell);
-    }
+  switch (value) {
+    case '1':
+      shapeClass = 'circle';
+      break;
+    case '2':
+      shapeClass = 'square';
+      break;
+    case '3':
+      shapeClass = 'triangle';
+      break;
+    case '4':
+      shapeClass = 'star';
+      break;
   }
+
+  for (let i = 0; i < 80; i++) {
+    const particle = document.createElement('div');
+    particle.className = `particle ${shapeClass}`;
+    particle.style.background = color;
+    particle.style.left = `${centerX}px`;
+    particle.style.top = `${centerY}px`;
+
+    const angle = Math.random() * 2 * Math.PI;
+    const distance = 60 + Math.random() * 60;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+
+    particle.style.setProperty('--dx', `${dx}px`);
+    particle.style.setProperty('--dy', `${dy}px`);
+
+    document.body.appendChild(particle);
+    setTimeout(() => particle.remove(), 1000);
+  }
+}
+
+function renderBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  const valids = selected ? getValidMoves(currentPlayer) : [];
+
+  const redPos = positions.R;
+  const bluePos = positions.B;
+
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const key = `${i},${j}`;
+
+  // Podminka s grafickým rozpadem karty    
+if (collapsed.has(key)) {
+  const previousValue = board[i][j];
+  const ghost = document.createElement('div');
+  ghost.className = 'cell';
+  ghost.style.visibility = 'visible';
+  ghost.style.position = 'relative';
+  el.appendChild(ghost);
+
+  if (key === justCollapsedKey && !justCollapsedPlayed) {
+    setTimeout(() => {
+      triggerShatter(ghost, collapsedBy[key]);
+      ghost.style.visibility = 'hidden';
+    }, 50);
+    justCollapsedPlayed = true; // zajistí, že se efekt spustí jen jednou
+  } else {
+    ghost.style.visibility = 'hidden';
+  }
+
+  continue;
+}
+
+
+      const value = board[i][j];
+
+      // Zobraz obrázek karty, pokud existuje
+      if (cardImages[value]) {
+        const img = document.createElement('img');
+        img.src = cardImages[value];
+        img.alt = value;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        cell.appendChild(img);
+      } else {
+        cell.textContent = value;
+      }
+
+      // Určení pozice hráčů
+      const isRed = redPos && redPos.i === i && redPos.j === j;
+      const isBlue = bluePos && bluePos.i === i && bluePos.j === j;
+
+      const isCurrent = (currentPlayer === 'R' && isRed) || (currentPlayer === 'B' && isBlue);
+      const isOpponent = (currentPlayer === 'R' && isBlue) || (currentPlayer === 'B' && isRed);
+
+      if (isCurrent) {
+        cell.classList.add('highlight');
+        cell.style.boxShadow = currentPlayer === 'R'
+          ? '0 0 0 4px red'
+          : '0 0 0 4px blue';
+      } else if (isOpponent) {
+        cell.style.boxShadow = currentPlayer === 'R'
+          ? '0 0 0 3px red dotted'
+          : '0 0 0 3px blue dotted';
+      }
+
+      // Pokud je to cílová karta posledního tahu, zvýrazni barvou soupeře
+      if (lastMoveEnd && lastMoveEnd.i === i && lastMoveEnd.j === j) {
+        if (currentPlayer === 'R') {
+          // Hráč R právě táhl, zvýrazni barvou B
+          cell.style.border = '3px solid blue'; // nebo jiný styl
+          cell.style.boxShadow = '0 0 10px blue';
+        } else {
+          // Hráč B právě táhl, zvýrazni barvou R
+          cell.style.border = '3px solid red';
+          cell.style.boxShadow = '0 0 10px red';
+        }
+      }
+
+      if (selected && valids.some(m => m.i === i && m.j === j)) {
+        cell.classList.add('valid');
+      }
+
+      cell.addEventListener('click', () => selectCell(i, j, false));
+      el.appendChild(cell);
+    }
+  }
 }
 
  function logMove(start, dest, fromVal, toVal, pathCoords, score = null, scoreReason = '', player = currentPlayer) {
@@ -456,12 +542,17 @@ setTimeout(() => {
   }
         const key = `${pos.i},${pos.j}`;
         collapsed.add(key);
+    	justCollapsedKey = key; // nastavíme právě rozpadlou kartu
+       
         const fromVal = board[pos.i][pos.j];
         const toVal = board[i][j];
+        // 💡 Zajisti, že renderBoard ví, kdo byl na původní pozici
+        collapsedBy[key] = currentPlayer;
         board[i][j] = toVal;
         board[pos.i][pos.j] = '';
+     
         positions[currentPlayer] = { i, j };
-	lastMoveEnd = { i, j };
+	    lastMoveEnd = { i, j };
 
         const pathCoords = move.path
           ? move.path.split('').reduce((acc, dir) => {
@@ -473,11 +564,15 @@ setTimeout(() => {
             }, [{ i: pos.i, j: pos.j }])
           : [{ i: pos.i, j: pos.j }, { i, j }];
 
-logMove(pos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
+        logMove(pos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
 
         currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
         selected = null;
         updateTurnText();
+	
+    	justCollapsedKey = key;
+	    justCollapsedPlayed = false;
+
         renderBoard();
         if (!checkGameOver() && currentPlayer === 'B' && !isPvP) setTimeout(aiMove, 500);
       }
@@ -829,7 +924,7 @@ function aiMove() {
   let bestReason = '';
 
   // 🔷 Heuristika pro první 2 tahy nebo celý průběh (podle režimu)
-  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
+  if (aiMode === 'heuristická' || (aiMode === 'kombinovaná' && blueAIMoveCount < 2)) {
     const scoredMoves = moves.map(m => {
       const { score, reason } = heuristicScore(m);
       return { move: m, score, reason };
@@ -840,7 +935,7 @@ function aiMove() {
     const top = scoredMoves[0];
     bestMove = top.move;
     bestScore = top.score;
-    bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
+    bestReason = `Heuristika skóre = ${top.score.toFixed(1)} (${top.reason})`;
 
   } else {
     // 🔷 Minimax od 3. tahu
@@ -861,7 +956,7 @@ function aiMove() {
       if (score > bestScore || bestMove === null) {
         bestScore = score;
         bestMove = m;
-        bestReason = `Minimax score = ${score}`;
+        bestReason = `Minimax skóre = ${score}`;
       }
     }
   }
@@ -871,10 +966,16 @@ function aiMove() {
   // 🧠 Proveď tah AI
   const key = `${pos.i},${pos.j}`;
   collapsed.add(key);
-  const fromVal = board[pos.i][pos.j];
-  const toVal = board[bestMove.i][bestMove.j];
-  board[bestMove.i][bestMove.j] = toVal;
-  board[pos.i][pos.j] = '';
+  justCollapsedKey = key; // nastavíme právě rozpadlou kartu
+  
+const fromVal = board[pos.i][pos.j];
+const toVal = board[bestMove.i][bestMove.j];
+
+// 💡 Zajisti, že renderBoard ví, kdo byl na původní pozici
+collapsedBy[key] = currentPlayer;
+board[bestMove.i][bestMove.j] = toVal;
+board[pos.i][pos.j] = '';
+
   positions['B'] = { i: bestMove.i, j: bestMove.j };
   lastMoveEnd = { i: bestMove.i, j: bestMove.j };
 
@@ -894,6 +995,10 @@ function aiMove() {
   currentPlayer = 'R';
   blueAIMoveCount++; // 🔢 Zvýšíme počet tahů AI
   updateTurnText();
+ 
+  justCollapsedKey = key;
+  justCollapsedPlayed = false;
+
   renderBoard();
   checkGameOver();
 }
