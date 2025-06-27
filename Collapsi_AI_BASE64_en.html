@@ -1111,7 +1111,7 @@ function aiMove() {
   let bestReason = '';
 
   // 🔷 Heuristika pro první 2 tahy nebo celý průběh (podle režimu)
-  if (aiMode === 'heuristická' || (aiMode === 'kombinovaná' && blueAIMoveCount < 2)) {
+  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
     const scoredMoves = moves.map(m => {
       const { score, reason } = heuristicScore(m);
       return { move: m, score, reason };
