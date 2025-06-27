@@ -688,10 +688,10 @@ setTimeout(() => {
   const plainWinnerText = winner === 'R' ? 'Red' : 'Blue';
   const plainLoserText = loser === 'R' ? 'Red' : 'Blue';
 
-  const endMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has not valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
+  const endMessage = `End of game – player ${loser === 'R' ? 'Red' : 'Blue'} has no valid move.\nPlayer ${winner === 'R' ? 'Red' : 'Blue'} wins!`;
   // alert(endMessage);
   showGameOver(winner) // odkazuje na funkci grafického znázornění konce hry
- const logMessage = `End of game – player ${loserText} has not valid move. Player ${winnerText} wins!`;
+ const logMessage = `End of game – player ${loserText} has no valid move. Player ${winnerText} wins!`;
   const time = new Date().toLocaleTimeString();
   const logEntry = `[${time}] <span style="color:darkgreen;"><strong>${logMessage}</strong></span><br>`;
   logEl.innerHTML = logEntry + logEl.innerHTML;
