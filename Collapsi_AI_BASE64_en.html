@@ -155,14 +155,101 @@
   margin-bottom: 10px;
   animation: pulse 1s ease-in-out infinite;
 }
+   /* Modal základ */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    /* Obsah modalu */
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 30px;
+      border-radius: 8px;
+      width: 75vw;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    /* Zavírací tlačítko */
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: red;
+    }
 </style>
 </head>
 <body>
- <img
+ <img id="helpBtn"
   src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwIj4KICA8ZGVmcz4KICAgIDxmaWx0ZXIgaWQ9ImVtYm9zc1NoYWRvdyIgeD0iLTIwJSIgeT0iLTIwJSIgd2lkdGg9IjE0MCUiIGhlaWdodD0iMTQwJSI+CiAgICAgIDwhLS0gRHJvcCBzaGFkb3cgLS0+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjIiIGR5PSIyIiBzdGREZXZpYXRpb249IjIiIGZsb29kLWNvbG9yPSJibGFjayIgZmxvb2Qtb3BhY2l0eT0iMC42Ii8+CiAgICAgIDwhLS0gSW5uZXIgYmV2ZWwgKGVtYm9zcykgLS0+CiAgICAgIDxmZUNvbXBvc2l0ZSBpbjI9IlNvdXJjZUFscGhhIiBvcGVyYXRvcj0iaW4iLz4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8c3R5bGU+CiAgICAudGl0bGUgewogICAgICBmb250LWZhbWlseTogIk9yYml0cm9uIiwgIkFyaWFsIEJsYWNrIiwgc2Fucy1zZXJpZjsKICAgICAgZm9udC1zaXplOiA0OHB4OwogICAgICBmb250LXdlaWdodDogYm9sZDsKICAgICAgZmlsbDogY3JpbXNvbjsKICAgICAgZmlsdGVyOiB1cmwoI2VtYm9zc1NoYWRvdyk7CiAgICB9CiAgICAuc3VidGl0bGUgewogICAgICBmb250LWZhbWlseTogIk9yYml0cm9uIiwgIkFyaWFsIEJsYWNrIiwgc2Fucy1zZXJpZjsKICAgICAgZm9udC1zaXplOiAyNHB4OwogICAgICBmb250LXdlaWdodDogYm9sZDsKICAgICAgZmlsbDogYmxhY2s7CiAgICB9CiAgPC9zdHlsZT4KICA8dGV4dCB4PSI1MCUiIHk9IjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4KICAgIDx0c3BhbiBjbGFzcz0idGl0bGUiPkNPTExBUFNJIDwvdHNwYW4+CiAgICA8dHNwYW4gY2xhc3M9InN1YnRpdGxlIiBkeT0iMTIiPmJ5IE1hcmsgUy4gQmFsbDwvdHNwYW4+CiAgPC90ZXh0Pgo8L3N2Zz4="
   alt="COLLAPSI by Mark S. Ball"
   width="400"
-  height="60"/>
+  height="60"
+  style="cursor:pointer;" />
+	<!-- Modal -->
+  <div id="rulesModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+
+      <div class="game-rules">
+ <h3>GAME OBJECTIVE</h3>
+  <p>Win the game by being the last player able to make a legal move.</p>
+
+  <h4>PLAYERS</h4>
+  <p>2 players</p>
+
+  <h4>CONTENTS</h4>
+  <p>Red Joker, Black Joker, A, A, A, A, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, and 2 Pawns (each pawn a different color or item)</p>
+
+  <h4>INTRODUCTION</h4>
+  <p>In Collapsi, you will move your pawn around the board each turn. The last player able to make a legal move wins the game.</p>
+
+  <h4>SETUP</h4>
+  <p>To determine who will be player one, one person secretly takes the red pawn in one hand and the blue pawn in the other. The opposite player now chooses a hand and will play as that color for the game. Red player goes first.</p>
+
+  <h4>CREATE THE BOARD</h4>
+  <p>Player 1 (red) shuffles the deck of cards and deals them out face-up to form a 4x4 grid. Each player places their pawns on their own starting joker card. Red begins on the red joker, and blue begins on the black joker.</p>
+
+  <h4>PLAY</h4>
+  <p>Red goes first. The number of spaces you must move is determined by the number on your <strong> starting card</strong> . A <strong> starting card</strong>  is the card on which you begin your turn. On your first turn, your starting card is a <strong> joker</strong> .</p>
+  <p>The joker is wild, and it allows you to move 1, 2, 3, or 4 spaces. It is the only card that allows you to choose how far you move. After you complete your move, flip your <strong> starting card</strong>  face down. That card has <strong> collapsed</strong> , and it can no longer be passed through or landed on.</p>
+  <p>From your second turn on, you must move a number of spaces equal to your <strong> starting card’s</strong>  number. If your <strong> starting card</strong>  is a 2, you must move two spaces. If it is a 4, you must move four spaces and so on.</p>
+
+  <h4>MOVEMENT</h4>
+  <p>In Collapsi, you move your pawn orthogonally: left, right, up, or down. You may move in alternating directions to complete your turn. For example, if you must move four spaces, you could move up 1, left 3. Or, you could move down 2, left 1, up 1.</p>
+  <p>The board in Collapsi is unique in that it <strong> wraps around</strong>  like an old school video game (think Pac-man or Asteroids). This means that you can “exit” the left side of the board and “enter” the right side in the same row or vice versa. You can also “exit” the bottom of the board and enter the top in the same column or vice versa.</p>
+
+  <h4>There are some things you </strong> cannot do in Collapsi:</h4>
+  <ul>
+    <li>You may not move through a card more than once.</li>
+    <li>You may not complete your move on your <strong> starting card</strong> .</li>
+    <li>You may not complete your move on a card that contains your opponent’s piece.</li>
+  </ul>
+
+  <h4>CONTINUE PLAY</h4>
+  <p>Play like this continues until a player is unable to complete a move based on the <strong>starting card’s</strong> number. As soon as this occurs the game ends.</p>
+
+  <h4>WIN</h4>
+  <p>The last player able to complete a move wins the game.</p>
+      </div>
+    </div>
+  </div>
   <div id="controls">
     <button id="resetBtn">Reset</button>
     <label for="starter">Starting: </label>
@@ -192,6 +279,24 @@
   </div>
   
   <script>
+  	  const modal = document.getElementById("rulesModal");
+  const btn = document.getElementById("helpBtn");
+  const span = document.querySelector(".close");
+
+  btn.onclick = function () {
+    modal.style.display = "block";
+  }
+
+  span.onclick = function () {
+    modal.style.display = "none";
+  }
+
+  window.onclick = function (event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
+  
 const cardImages = {
   '11': 'data:image/png;base64,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',
   '12': 'data:image/png;base64,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',
