@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -664,12 +664,13 @@ function showGameOver(winner) {
   }, 3000);
 }
 
-
+ // Testuje konec hry
 function checkGameOver() {
   const currentMoves = getValidMoves(currentPlayer);
   if (currentMoves.length === 0) {
     const loser = currentPlayer;
     const winner = currentPlayer === 'R' ? 'B' : 'R';
+    document.getElementById("game-over-overlay").classList.remove("hidden");
 
     stats.games++;
     if (winner === 'R') stats.player++;
@@ -838,6 +839,10 @@ function evaluateBoard(board, positions) {
   const aiPos = positions.B;
   const redPos = positions.R;
 
+  // Výhra/prohra
+  if (playerMoves === 0) return 1000;  // jednoznačná výhra
+  if (aiMoves === 0) return -1000;    // jednoznačná prohra
+
   // Bonus za střed
   const centerBonus = (aiPos.i >= 1 && aiPos.i <= 2 && aiPos.j >= 1 && aiPos.j <= 2) ? 2 : 0;
 
@@ -856,15 +861,25 @@ function evaluateBoard(board, positions) {
     return collapsed.has(`${ni},${nj}`);
   }).length;
   const trapPenalty = surroundingCollapsed >= 3 ? -2 : 0;
-
-  // Výhra/prohra
-  if (playerMoves === 0) return 100;
-  if (aiMoves === 0) return -100;
+  
+  // Penalizace za pozici u vice nez 2 zničených sousedů 
+  const collapsedAround = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
+  const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
+  return collapsed.has(`${ni},${nj}`);
+  }).length;
+  const collapsedDangerPenalty = collapsedAround >= 3 ? -3 : (collapsedAround === 2 ? -1 : 0);
+  
+  // Bonus za umístění v bezpečné zóně 
+  const safeZoneBonus = (distToRed >= 3 && escapeRoutes >= 3) ? 2 : 0;
+ 
+  // Zohledňuje blokování polí u hráče (zavřít hráče do kouta je od AI dobrý tah)
+  const redEscapes = getValidMovesFrom('R', redPos.i, redPos.j).length;
+  const redTrappedPenalty = redEscapes <= 1 ? 2 : 0;
 
   // Celkové skóre
   return (
     (aiMoves - playerMoves) + centerBonus + distanceScore +
-    escapeBonus + dangerPenalty + trapPenalty
+    escapeBonus + dangerPenalty + trapPenalty + redTrappedPenalty + collapsedDangerPenalty + safeZoneBonus
   );
 }
 
@@ -891,9 +906,16 @@ function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) 
   const aiMoves = getValidMoves('B', board, positions);
   const playerMoves = getValidMoves('R', board, positions);
 
-  if (depth === 0 || aiMoves.length === 0 || playerMoves.length === 0) {
-    return evaluateBoard(board, positions);
-  }
+  // Detekce konce hry
+  // if (aiMoves.length === 0) return -1000; // AI nemá tah – prohra
+  // if (playerMoves.length === 0) return +1000; // Hráč nemá tah – výhra AI
+  // if (depth === 0) return evaluateBoard(board, positions);
+  
+   // Detekce konce hry - zohledňuje hloubku hry a rychlost výhry a zpomalení prohry
+  if (playerMoves.length === 0) return 1000 + depth;     // čím dřív AI vyhraje, tím líp
+  if (aiMoves.length === 0) return -1000 - depth;        // čím dřív prohraje, tím hůř
+  if (depth === 0) return evaluateBoard(board, positions);
+
 
   if (isMaximizing) {
     let maxEval = -Infinity;
@@ -902,7 +924,7 @@ function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) 
       const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, alpha, beta);
       maxEval = Math.max(maxEval, eval);
       alpha = Math.max(alpha, eval);
-      if (beta <= alpha) break;
+      if (beta <= alpha) break; // Alpha-beta ořez
     }
     return maxEval;
   } else {
@@ -912,7 +934,7 @@ function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) 
       const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, true, alpha, beta);
       minEval = Math.min(minEval, eval);
       beta = Math.min(beta, eval);
-      if (beta <= alpha) break;
+      if (beta <= alpha) break; // Alpha-beta ořez
     }
     return minEval;
   }
@@ -1019,8 +1041,8 @@ function heuristicScore(m) {
     const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
     counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
   }
-  
-      // 🧱 AI: preventivní obrana proti pasti
+   
+    // 🧱 AI: preventivní obrana proti pasti
   let futureTrapPenalty = 0;
   for (const redMove of redMovesAfter.slice(0, 2)) {
     const futurePos = { i: redMove.i, j: redMove.j };
@@ -1055,7 +1077,18 @@ function heuristicScore(m) {
     if (redEscape.length === 0) opponentFutureTrapBonus += 8;
     else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
   }
-
+  
+  // Penalizace za zvýšený pohyb mimo hru 
+  const uselessMovePenalty = (blocksOpponent === 0 && winBonus === 0 && centerBonus === 0 && distToRed >= 3) ? -2 : 0;
+  
+  // rozdíl mezi poctem tahů AI a hráče po daném tahu
+  const aiMobility = getValidMovesFrom('B', m.i, m.j).length;
+  const redMobility = redMovesAfter.length;
+  const mobilityDiff = aiMobility - redMobility;
+  
+  const riskyZonePenalty = (escapeRoutes <= 1 || surroundingCollapsed >= 3) ? -3 : 0;
+   
+   
   const score =
     value +
     centerBonus +
@@ -1070,9 +1103,12 @@ function heuristicScore(m) {
     preventLossPenalty +
     futureTrapPenalty +
     opponentFutureTrapBonus +
+    uselessMovePenalty +
+    0.5 * mobilityDiff +
+    riskyZonePenalty +
     counterAttackScore * 0.5; // váha protiútoku;
 
-  // 📝 Důvod k tahu
+   // 📝 Důvod k tahu
   const reasonParts = [];
   if (value) reasonParts.push(`${value} card`);
   if (centerBonus) reasonParts.push(`${centerBonus} centre`);
@@ -1088,6 +1124,10 @@ function heuristicScore(m) {
   if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
   if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
   if (opponentFutureTrapBonus) reasonParts.push(`🎯 a threat to the opponent (${opponentFutureTrapBonus})`);
+  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶  useless move`);
+  if (mobilityDiff !== 0) {reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in number of moves AI and player`);
+  if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
+}
 
   return {
     score,
@@ -1110,16 +1150,17 @@ function aiMove() {
   let bestScore = -Infinity;
   let bestReason = '';
 
-  // 🔷 Heuristika pro první 2 tahy nebo celý průběh (podle režimu)
+  // 🔷 Heuristika – první 2 tahy
   if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
-    const scoredMoves = moves.map(m => {
-      const { score, reason } = heuristicScore(m);
-      return { move: m, score, reason };
-    });
+    const top = moves
+      .map(m => {
+        const { score, reason } = heuristicScore(m);
+        return { move: m, score, reason };
+      })
+      .sort((a, b) => b.score - a.score)[0];
 
-    scoredMoves.sort((a, b) => b.score - a.score);
 
-    const top = scoredMoves[0];
+
     bestMove = top.move;
     bestScore = top.score;
     bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
@@ -1129,44 +1170,129 @@ function aiMove() {
     const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
     const bMoves = getValidMoves('B', board, positions);
 
-    const scoredMoves = bMoves.map(m => {
-      const { score } = heuristicScore(m);
-      return { move: m, score };
-    });
-    scoredMoves.sort((a, b) => b.score - a.score);
-    const topMoves = scoredMoves.slice(0, 3); // analyzuj jen top 3 tahy
+    const topMoves = bMoves
+      .map(m => ({ move: m, score: heuristicScore(m).score }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3); // analyzuj top 3
+
+
 
     for (const { move: m } of topMoves) {
       const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
+      const aiMovesAfter = getValidMoves('B', newBoard, newPositions);
+      const playerMoves = getValidMoves('R', newBoard, newPositions);
+
+      // ✅ Hráč nemá tah – AI vítězí
+      if (playerMoves.length === 0) {
+        const winScore = 1000 + depth;
+        if (winScore > bestScore || bestMove === null) {
+          bestScore = winScore;
+          bestMove = m;
+          bestMove.path = m.path;
+          bestReason = `🏆 Direct win (${winScore})`;
+        }
+        break;
+      }
+
+      // ❌ AI zablokovaná
+      if (aiMovesAfter.length === 0) {
+        const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
+        if (playerMovesAfter.length === 0) {
+          const winScore = 1000 + depth;
+          if (winScore > bestScore || bestMove === null) {
+            bestScore = winScore;
+            bestMove = m;
+            bestMove.path = m.path;
+            bestReason = `🏆 AI and player without moves - AI wins (${winScore})`;
+          }
+        } else {
+          const penaltyScore = -1000 - depth;
+          if (penaltyScore > bestScore || bestMove === null) {
+            bestScore = penaltyScore;
+            bestMove = m;
+            bestMove.path = m.path;
+            bestReason = `💀 This move results in a block - score = ${penaltyScore}`;
+          }
+        }
+        continue;
+      }
+
       const score = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, -Infinity, Infinity);
+      const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
+
+      if (playerMovesAfter.length === 0) {
+        const winScore = 1000 + depth;
+        if (winScore > bestScore || bestMove === null) {
+          bestScore = winScore;
+          bestMove = m;
+          bestMove.path = m.path;
+          bestReason = `🏆 Direct win (after minimax) – ${winScore}`;
+        }
+        break;
+      }
 
       if (score > bestScore || bestMove === null) {
-        bestScore = score;
-        bestMove = m;
-        bestReason = `Minimax score = ${score}`;
+        const redMoves = getValidMoves('R', newBoard, newPositions);
+        let aiBlockedAfterResponse = false;
+
+        for (const rMove of redMoves) {
+          const afterRed = simulateMove(newBoard, newPositions, newCollapsed, 'R', rMove);
+          const bMovesAfter = getValidMoves('B', afterRed.newBoard, afterRed.newPositions);
+          if (bMovesAfter.length === 0) {
+            aiBlockedAfterResponse = true;
+            break;
+          }
+        }
+
+        if (aiBlockedAfterResponse) {
+          const penalty = -1000 - depth;
+          bestScore = penalty;
+          bestMove = m;
+          bestMove.path = m.path;
+          bestReason = `💀 Minimax overlooked - AI will be blocked after player's turn (${penalty})`;
+        } else {
+          bestScore = score;
+          bestMove = m;
+          bestMove.path = m.path;
+          bestReason =
+            score >= 1000
+              ? `🏆 Minimax predicts AI to win – score = ${score}`
+              : score <= -1000
+              ? `❌ Minimax predicts AI to lose – score = ${score}`
+              : `Minimax score = ${score}`;
+        }
       }
+
+      if (bestScore >= 1000) break;
     }
   }
 
   if (!bestMove) return;
 
-  // 🧠 Proveď tah AI
+  // 🧠 Proveď tah AI na reálné desce
   const key = `${pos.i},${pos.j}`;
   collapsed.add(key);
-  justCollapsedKey = key; // nastavíme právě rozpadlou kartu
-  
-const fromVal = board[pos.i][pos.j];
-const toVal = board[bestMove.i][bestMove.j];
+  justCollapsedKey = key;
 
-// 💡 Zajisti, že renderBoard ví, kdo byl na původní pozici
-collapsedBy[key] = currentPlayer;
-board[bestMove.i][bestMove.j] = toVal;
-board[pos.i][pos.j] = '';
+  const fromVal = board[pos.i][pos.j];
+  const toVal = board[bestMove.i][bestMove.j];
+
+
+  collapsedBy[key] = currentPlayer;
+  board[bestMove.i][bestMove.j] = toVal;
+  board[pos.i][pos.j] = '';
 
   positions['B'] = { i: bestMove.i, j: bestMove.j };
   lastMoveEnd = { i: bestMove.i, j: bestMove.j };
 
-  // 🔍 Zaznamenej trasu (pro log)
+  // 📌 Ověř skutečný stav po tahu
+  const playerMovesAfterReal = getValidMoves('R', board, positions);
+  if (playerMovesAfterReal.length === 0) {
+    bestScore = 1000 + blueAIMoveCount;
+    bestReason = `🏆 Direct win (${bestScore})`;
+  }
+
+  // 🔍 Log trasy
   const pathCoords = bestMove.path
     ? bestMove.path.split('').reduce((acc, dir) => {
         const last = acc[acc.length - 1];
@@ -1180,11 +1306,11 @@ board[pos.i][pos.j] = '';
   logMove(pos, bestMove, fromVal, toVal, pathCoords, bestScore, bestReason, 'B');
 
   currentPlayer = 'R';
-  blueAIMoveCount++; // 🔢 Zvýšíme počet tahů AI
+  blueAIMoveCount++;
   updateTurnText();
- 
-  justCollapsedKey = key;
+
   justCollapsedPlayed = false;
+
 
   renderBoard();
   checkGameOver();
