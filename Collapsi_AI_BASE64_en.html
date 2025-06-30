@@ -1159,8 +1159,6 @@ function aiMove() {
       })
       .sort((a, b) => b.score - a.score)[0];
 
-
-
     bestMove = top.move;
     bestScore = top.score;
     bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
@@ -1173,16 +1171,13 @@ function aiMove() {
     const topMoves = bMoves
       .map(m => ({ move: m, score: heuristicScore(m).score }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 3); // analyzuj top 3
-
-
+      .slice(0, 3);
 
     for (const { move: m } of topMoves) {
       const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
       const aiMovesAfter = getValidMoves('B', newBoard, newPositions);
       const playerMoves = getValidMoves('R', newBoard, newPositions);
 
-      // ✅ Hráč nemá tah – AI vítězí
       if (playerMoves.length === 0) {
         const winScore = 10000 + depth;
         if (winScore > bestScore || bestMove === null) {
@@ -1194,7 +1189,6 @@ function aiMove() {
         break;
       }
 
-      // ❌ AI zablokovaná
       if (aiMovesAfter.length === 0) {
         const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
         if (playerMovesAfter.length === 0) {
@@ -1203,7 +1197,7 @@ function aiMove() {
             bestScore = winScore;
             bestMove = m;
             bestMove.path = m.path;
-            bestReason = `🏆 AI and player without moves - AI wins (${winScore})`;
+            bestReason = `🏆 AI and player without moves– AI is winnet (${winScore})`;
           }
         } else {
           const penaltyScore = -1000 - depth;
@@ -1211,7 +1205,7 @@ function aiMove() {
             bestScore = penaltyScore;
             bestMove = m;
             bestMove.path = m.path;
-            bestReason = `💀 This move results in a block - score = ${penaltyScore}`;
+            bestReason = `💀 This move leads to a stalemate.– score = ${penaltyScore}`;
           }
         }
         continue;
@@ -1249,17 +1243,12 @@ function aiMove() {
           bestScore = penalty;
           bestMove = m;
           bestMove.path = m.path;
-          bestReason = `💀 Minimax overlooked - AI will be blocked after player's turn (${penalty})`;
+          bestReason = `💀 Minimax overlooked – AI will be blocked after the player's move (${penalty})`;
         } else {
           bestScore = score;
           bestMove = m;
           bestMove.path = m.path;
-          bestReason =
-            score >= 1000
-              ? `🏆 Minimax predicts AI to win – score = ${score}`
-              : score <= -1000
-              ? `❌ Minimax predicts AI to lose – score = ${score}`
-              : `Minimax score = ${score}`;
+          bestReason = `Minimax score = ${score}`;
         }
       }
 
@@ -1277,7 +1266,6 @@ function aiMove() {
   const fromVal = board[pos.i][pos.j];
   const toVal = board[bestMove.i][bestMove.j];
 
-
   collapsedBy[key] = currentPlayer;
   board[bestMove.i][bestMove.j] = toVal;
   board[pos.i][pos.j] = '';
@@ -1292,7 +1280,7 @@ function aiMove() {
     bestReason = `🏆 Direct win (${bestScore})`;
   }
 
-  // 🔍 Log trasy
+  // 🔍 Log pouze reálného tahu AI
   const pathCoords = bestMove.path
     ? bestMove.path.split('').reduce((acc, dir) => {
         const last = acc[acc.length - 1];
@@ -1303,6 +1291,26 @@ function aiMove() {
       }, [{ i: pos.i, j: pos.j }])
     : [{ i: pos.i, j: pos.j }, { i: bestMove.i, j: bestMove.j }];
 
+
+// ✅ Ověření, že bestMove byl skutečně proveden
+if (
+  positions['B'].i !== bestMove.i ||
+  positions['B'].j !== bestMove.j ||
+  board[bestMove.i][bestMove.j] !== toVal ||
+  board[pos.i][pos.j] !== ''
+) {
+  console.error('❌ Error: bestMove was not executed correctly!', {
+    očekávanáPozice: { i: bestMove.i, j: bestMove.j },
+    aktuálníPozice: positions['B'],
+    tah: bestMove,
+    fromVal,
+    toVal,
+    boardState: board
+  });
+  return; // zamez zápisu chybného tahu
+}
+
+  // 📝 Zapisuj pouze skutečný tah
   logMove(pos, bestMove, fromVal, toVal, pathCoords, bestScore, bestReason, 'B');
 
   currentPlayer = 'R';
@@ -1310,8 +1318,6 @@ function aiMove() {
   updateTurnText();
 
   justCollapsedPlayed = false;
-
-
   renderBoard();
   checkGameOver();
 }
