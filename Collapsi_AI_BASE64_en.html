@@ -1184,7 +1184,7 @@ function aiMove() {
 
       // ✅ Hráč nemá tah – AI vítězí
       if (playerMoves.length === 0) {
-        const winScore = 1000 + depth;
+        const winScore = 10000 + depth;
         if (winScore > bestScore || bestMove === null) {
           bestScore = winScore;
           bestMove = m;
@@ -1221,7 +1221,7 @@ function aiMove() {
       const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
 
       if (playerMovesAfter.length === 0) {
-        const winScore = 1000 + depth;
+        const winScore = 10000 + depth;
         if (winScore > bestScore || bestMove === null) {
           bestScore = winScore;
           bestMove = m;
@@ -1288,7 +1288,7 @@ function aiMove() {
   // 📌 Ověř skutečný stav po tahu
   const playerMovesAfterReal = getValidMoves('R', board, positions);
   if (playerMovesAfterReal.length === 0) {
-    bestScore = 1000 + blueAIMoveCount;
+    bestScore = 10000 + blueAIMoveCount;
     bestReason = `🏆 Direct win (${bestScore})`;
   }
 
