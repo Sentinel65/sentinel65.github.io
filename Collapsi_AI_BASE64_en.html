@@ -976,7 +976,7 @@ function renderBoard() {
 		// ✅ Hráč vyhrál – je na výstupu a vše ostatní zkolabovalo
 		if (onExit && allCollapsed) {
 		  setTimeout(() => {
-			showGameOver('R', '🏆\n\nPUZZLE sloved.');
+			showGameOver('R', '🏆\n\nPUZZLE solved.');
 			logEvent(`🏆 The player has successfully solved the puzzle.`);
 			endGame('R');
 		  }, 200);
@@ -986,7 +986,7 @@ function renderBoard() {
 		// ❌ Hráč prohrál – žádný tah a **není** na výstupu
 		if (!hasMoves && !onExit) {
 		  setTimeout(() => {
-			showGameOver('R', '🚫\n\nPUZZLE unfinished.');
+			showGameOver('R', '🚫\n\nPUZZLE\nunfinished.');
 			logEvent(`🚫 The player has no valid move.`);
 			endGame('R');
 		  }, 200);
