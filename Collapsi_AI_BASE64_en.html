@@ -986,7 +986,7 @@ function renderBoard() {
 		// ❌ Hráč prohrál – žádný tah a **není** na výstupu
 		if (!hasMoves && !onExit) {
 		  setTimeout(() => {
-			showGameOver('R', '🚫\n\nPUZZLE\nunfinished.');
+			showGameOver('R', '💀\n\nPUZZLE\nunfinished.');
 			logEvent(`🚫 The player has no valid move.`);
 			endGame('R');
 		  }, 200);
