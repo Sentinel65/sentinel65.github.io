@@ -488,16 +488,16 @@ function createBoard() {
 
 function updateTurnText() {
   if (soloMode) {
-    turnInd.textContent = 'Červený (Sólo)';
+    turnInd.textContent = 'Red (solo)';
     turnInd.style.color = 'red';
     return;
   }
 
   if (currentPlayer === 'R') {
-    turnInd.textContent = 'Červený';
+    turnInd.textContent = 'Red';
     turnInd.style.color = 'red';
   } else {
-    turnInd.textContent = 'Modrý';
+    turnInd.textContent = 'Blue';
     turnInd.style.color = 'blue';
   }
 }
