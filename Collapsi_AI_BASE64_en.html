@@ -372,16 +372,7 @@ const cardImages = {
   });
     
     
-let stats = { games: 0, player: 0, ai: 0, solo: 0 };
-
-    function loadStats() {
-  const saved = localStorage.getItem('stats');
-  if (saved) {
-    stats = JSON.parse(saved);
-  } else {
-    stats = { games: 0, player: 0, ai: 0, solo: 0 };
-  }
-}
+    let stats = JSON.parse(localStorage.getItem('collapsiStats')) || { games: 0, player: 0, ai: 0, solo: 0 };
 
 
     function saveStats() {
