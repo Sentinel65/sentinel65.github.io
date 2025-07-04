@@ -1004,10 +1004,9 @@ function checkGameOver() {
     const allCollapsed = isAllCollapsedExcept([exit]);
     const hasMoves = getValidMoves('R').length > 0;
 
-    stats.games++;
-
     // ✅ Hráč úspěšně vyřešil puzzle
     if (onExit && allCollapsed) {
+    	stats.games++;
       stats.solo++;              // ⬅️ počítáme výhru jen tady!
       updateStats();
 
@@ -1019,7 +1018,6 @@ function checkGameOver() {
       return true;
     }
 
-    updateStats(); // ⬅️ přesunuto až za úspěšnou podmínku
 
     // ❌ Hráč prohrál – žádný tah a není na výstupu
     if (!hasMoves && !onExit) {
