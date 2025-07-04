@@ -735,13 +735,16 @@ el.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       }
 
       // ✅ Platné tahy
-      if (selected && valids.some(m => m.i === i && m.j === j)) {
-        const isExit = soloMode && exitCard && i === exitCard.i && j === exitCard.j;
-        const allowExit = isExit && isAllCollapsedExcept([exitCard]);
-        if (!isExit || allowExit) {
-          cell.classList.add('valid');
-        }
-      }
+if (selected) {
+  const isExit = soloMode && exitCard && i === exitCard.i && j === exitCard.j;
+  const allowExit = isExit && isAllCollapsedExcept([exitCard]);
+
+  const isValid = valids.some(m => m.i === i && m.j === j);
+
+  if (isValid || allowExit) {
+    cell.classList.add('valid');
+  }
+}
 
       cell.addEventListener('click', () => selectCell(i, j, false));
       el.appendChild(cell);
