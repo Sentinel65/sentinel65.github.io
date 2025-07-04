@@ -372,7 +372,7 @@ const cardImages = {
   });
     
     
-    let stats = JSON.parse(localStorage.getItem('collapsiStats')) || { games: 0, player: 0, ai: 0 };
+    let stats = JSON.parse(localStorage.getItem('collapsi,s')) || { games: 0, player: 0, ai: 0 };
 
     
 
@@ -392,6 +392,11 @@ const cardImages = {
       document.getElementById('soloWins').textContent = stats.solo;
       saveStats();
     }
+    
+    document.getElementById('resetStatsBtn').addEventListener('click', () => {
+      stats = { games: 0, player: 0, ai: 0, solo: 0 };
+      updateStats();
+    });
 
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
