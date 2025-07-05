@@ -256,7 +256,17 @@ collapse the entire grid before exiting. The black joker is the exit. To success
 be able to land on or pass through the exit card. If you successfully collapse all the cards before exiting,
 you win.</p>
 <p>All of the rules from the regular game apply. There are two ways to increase the difficulty of the
-game: 1) replace low numbers with higher numbers or 2) make the grid bigger by adding more cards to the deck. This version has a higher difficulty with the classic 16 card layout.</p>  
+game: 1) replace low numbers with higher numbers or 2) make the grid bigger by adding more cards to the deck. This version has a higher difficulty with the classic 16 card layout.</p>
+
+         <strong> Solo mode (difficulty)</strong>
+         <p>The program offers three levels of difficulty to choose from <strong>easy, medium and hard</strong>. In difficult mode, it is randomly generated <strong>from three sets of cards</strong>.</p>
+         
+               <dl>['1', '1', '1', '2', '2', '2', '3', 'R', 'B'] - easy</dl>
+               <dl>['1', '1', '2', '2', '3', '3', '4', 'R', 'B'] - medium</dl> 
+               <dl>['1', '2', '3', '3', '3', '3', '4', 'R', 'B'] - hard 1</dl>
+               <dl>['1', '2', '3', '3', '4', '4', '4', 'R', 'B'] - hard 2</dl>
+               <dl>['2', '2', '3', '3', '4', '4', '4', 'R', 'B'] - hard 3</dl>
+              
       </div>
     </div>
   </div>
@@ -421,9 +431,9 @@ console.log("Po nastavení remainingKeys:", remainingKeys)
 
 
 function createBoard() {
-  const mode = starterSelect.value;
+  const mode = document.getElementById('starter').value;
 
-  // 🎯 Detekce sólo módu a obtížnosti
+  // 🎯 Detekce sólo módu a PvP
   soloMode = mode.startsWith('solo');
   isPvP = mode === 'pvp';
 
@@ -431,16 +441,27 @@ function createBoard() {
   rows = soloMode ? 3 : 4;
   cols = soloMode ? 3 : 4;
 
+  // 🎲 Varianty pro těžkou obtížnost
+  const hardVariants = [
+    ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'], // hard
+    ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'], // very-hard
+    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']  // insane
+  ];
+
   // 🎲 Karty pro různé sólo obtížnosti
   const soloDecks = {
-    'solo-easy':   ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
-    'solo-medium': ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
-    'solo-hard':   ['1', '2', '3', '3', '3', '3', '4', 'R', 'B']
+    'solo-easy':      ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
+    'solo-medium':    ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
+    'solo-hard':      () => hardVariants[Math.floor(Math.random() * hardVariants.length)],
+    'solo-very-hard': ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+    'solo-insane':    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']
   };
 
-  // 🃏 Výběr balíčku
+  // 🃏 Výběr karet
   cards = soloMode
-    ? soloDecks[mode] || soloDecks['solo-easy']
+    ? typeof soloDecks[mode] === 'function'
+      ? soloDecks[mode]()
+      : soloDecks[mode]
     : ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
 
   shuffle(cards);
@@ -448,7 +469,7 @@ function createBoard() {
   selected = null;
   aiEnabled = !soloMode && !isPvP;
 
-  // 🎮 Začínající hráč
+  // 🎮 Výběr začínajícího hráče
   if (mode === 'random') {
     currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
   } else if (mode === 'alternate') {
@@ -463,7 +484,7 @@ function createBoard() {
   logEl.innerHTML = '';
   updateTurnText();
 
-  // 🧩 Vytvoření desky
+  // 🧩 Vytvoření hrací desky
   board = [];
   for (let i = 0; i < rows; i++) {
     board[i] = [];
