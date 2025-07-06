@@ -218,7 +218,7 @@
 <body>
  <img id="helpBtn"
   src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwIj4KICA8ZGVmcz4KICAgIDxmaWx0ZXIgaWQ9ImVtYm9zc1NoYWRvdyIgeD0iLTIwJSIgeT0iLTIwJSIgd2lkdGg9IjE0MCUiIGhlaWdodD0iMTQwJSI+CiAgICAgIDwhLS0gRHJvcCBzaGFkb3cgLS0+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjIiIGR5PSIyIiBzdGREZXZpYXRpb249IjIiIGZsb29kLWNvbG9yPSJibGFjayIgZmxvb2Qtb3BhY2l0eT0iMC42Ii8+CiAgICAgIDwhLS0gSW5uZXIgYmV2ZWwgKGVtYm9zcykgLS0+CiAgICAgIDxmZUNvbXBvc2l0ZSBpbjI9IlNvdXJjZUFscGhhIiBvcGVyYXRvcj0iaW4iLz4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8c3R5bGU+CiAgICAudGl0bGUgewogICAgICBmb250LWZhbWlseTogIk9yYml0cm9uIiwgIkFyaWFsIEJsYWNrIiwgc2Fucy1zZXJpZjsKICAgICAgZm9udC1zaXplOiA0OHB4OwogICAgICBmb250LXdlaWdodDogYm9sZDsKICAgICAgZmlsbDogcmVkOwogICAgICBmaWx0ZXI6IHVybCgjZW1ib3NzU2hhZG93KTsKICAgIH0KICAgIC5zdWJ0aXRsZSB7CiAgICAgIGZvbnQtZmFtaWx5OiAiT3JiaXRyb24iLCAiQXJpYWwgQmxhY2siLCBzYW5zLXNlcmlmOwogICAgICBmb250LXNpemU6IDI0cHg7CiAgICAgIGZvbnQtd2VpZ2h0OiBib2xkOwogICAgICBmaWxsOiBibGFjazsKICAgIH0KICA8L3N0eWxlPgogIDx0ZXh0IHg9IjUwJSIgeT0iNjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPgogICAgPHRzcGFuIGNsYXNzPSJ0aXRsZSI+Q09MTEFQU0kgPC90c3Bhbj4KICAgIDx0c3BhbiBjbGFzcz0ic3VidGl0bGUiIGR5PSIxMiI+YnkgTWFyayBTLiBCYWxsPC90c3Bhbj4KICA8L3RleHQ+Cjwvc3ZnPg=="
-  alt="COLLAPSI by Mark S. Ball"
+  alt="COLLAPSI by Mark S. Ball" title="Click to COLLAPSI Help Page"
   width="400"
   height="60"
   style="cursor:pointer;" />
@@ -1365,152 +1365,162 @@ function checkGameOver() {
 	}
 
 
-	function heuristicScore(m) {
-	  const pos = positions['B'];
-	  const val = board[m.i][m.j];
-	  const value = parseInt(val) || 0;
+// Silnější penalizaci slepých uliček a tahů bez únikových cest
+// Zvýšení penalizace za budoucí pasti
+// Zvýšení penalizace blízkosti soupeře
+// Nové komentáře a důvody pro log
 
-	  const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
+function heuristicScore(m) {
+  const pos = positions['B'];
+  const val = board[m.i][m.j];
+  const value = parseInt(val) || 0;
 
-	  const redMoves = getValidMoves('R');
-	  const redTargets = redMoves.map(rm => `${rm.i},${rm.j}`);
-	  const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
+  const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
 
-	  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
-		const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
-		return !collapsed.has(`${ni},${nj}`);
-	  });
+  const redMoves = getValidMoves('R');
+  const redTargets = redMoves.map(rm => `${rm.i},${rm.j}`);
+  const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
 
-	  const readabilityPenalty = (positions.R.i === m.i || positions.R.j === m.j) ? -1 : 0;
-	  const escapeRoutes = getValidMovesFrom('B', m.i, m.j).length;
-	  const mobilityBonus = neighbors.length;
+  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
+    return !collapsed.has(`${ni},${nj}`);
+  });
 
-	  const lengthPenalty = m.path ? -m.path.length * 0.5 : 0;
-	  const distToRed = Math.abs(m.i - positions.R.i) + Math.abs(m.j - positions.R.j);
-	  const dangerPenalty = distToRed <= 1 ? -2 : 0;
+  const readabilityPenalty = (positions.R.i === m.i || positions.R.j === m.j) ? -1 : 0;
+  const escapeRoutes = getValidMovesFrom('B', m.i, m.j).length;
+  const mobilityBonus = neighbors.length;
 
-	  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
-		const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
-		return collapsed.has(`${ni},${nj}`);
-	  }).length;
+  const lengthPenalty = m.path ? -m.path.length * 0.5 : 0;
+  const distToRed = Math.abs(m.i - positions.R.i) + Math.abs(m.j - positions.R.j);
+  const dangerPenalty = distToRed <= 1 ? -6 : 0; // zvýšeno z -2 na -6
 
-	  const simBoard = board.map(row => row.slice());
-	  const simCollapsed = new Set(collapsed);
-	  simCollapsed.add(`${pos.i},${pos.j}`);
-	  simBoard[m.i][m.j] = simBoard[pos.i][pos.j];
-	  simBoard[pos.i][pos.j] = '';
+  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
+    return collapsed.has(`${ni},${nj}`);
+  }).length;
 
-	  const simPositions = {
-		R: { ...positions.R },
-		B: { i: m.i, j: m.j }
-	  };
+  const simBoard = board.map(row => row.slice());
+  const simCollapsed = new Set(collapsed);
+  simCollapsed.add(`${pos.i},${pos.j}`);
+  simBoard[m.i][m.j] = simBoard[pos.i][pos.j];
+  simBoard[pos.i][pos.j] = '';
 
-	  const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
-	  const winBonus = redMovesAfter.length === 0 ? 100 : 0;
+  const simPositions = {
+    R: { ...positions.R },
+    B: { i: m.i, j: m.j }
+  };
 
-	  // 🔮 Obranná predikce: test, zda by hráč mohl zablokovat AI v dalším tahu
-	  let preventLossPenalty = 0;
-	  for (const redMove of redMovesAfter) {
-		const redSimBoard = simBoard.map(row => row.slice());
-		const redSimCollapsed = new Set(simCollapsed);
-		redSimCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-		redSimBoard[redMove.i][redMove.j] = redSimBoard[simPositions.R.i][simPositions.R.j];
-		redSimBoard[simPositions.R.i][simPositions.R.j] = '';
+  const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
+  const winBonus = redMovesAfter.length === 0 ? 100 : 0;
 
-		const afterRedPositions = {
-		  R: { i: redMove.i, j: redMove.j },
-		  B: simPositions.B
-		};
+  let preventLossPenalty = 0;
+  for (const redMove of redMovesAfter) {
+    const redSimBoard = simBoard.map(row => row.slice());
+    const redSimCollapsed = new Set(simCollapsed);
+    redSimCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    redSimBoard[redMove.i][redMove.j] = redSimBoard[simPositions.R.i][simPositions.R.j];
+    redSimBoard[simPositions.R.i][simPositions.R.j] = '';
 
-		const aiMovesAfter = getValidMovesFor(redSimBoard, redSimCollapsed, afterRedPositions, 'B');
-		if (aiMovesAfter.length === 0) {
-		  preventLossPenalty = -20;
-		  break;
-		}
-	  }
-	  
-	  // Nová část: simulace odpovědi hráče a protiútoku AI
-	  let counterAttackScore = 0;
-	  for (const rMove of redMovesAfter) {
-		const tempBoard = simBoard.map(row => row.slice());
-		const tempCollapsed = new Set(simCollapsed);
-		tempCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-		tempBoard[rMove.i][rMove.j] = tempBoard[simPositions.R.i][simPositions.R.j];
-		tempBoard[simPositions.R.i][simPositions.R.j] = '';
-		const nextPositions = {
-		  R: { i: rMove.i, j: rMove.j },
-		  B: { ...simPositions.B }
-		};
+    const afterRedPositions = {
+      R: { i: redMove.i, j: redMove.j },
+      B: simPositions.B
+    };
 
-		const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
-		counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
-	  }
-	   
-		// 🧱 AI: preventivní obrana proti pasti
-	  let futureTrapPenalty = 0;
-	  for (const redMove of redMovesAfter.slice(0, 2)) {
-		const futurePos = { i: redMove.i, j: redMove.j };
-		const futureBoard = simBoard.map(row => row.slice());
-		const futureCollapsed = new Set(simCollapsed);
-		futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-		futureBoard[futurePos.i][futurePos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
-		futureBoard[simPositions.R.i][simPositions.R.j] = '';
-		const futurePositions = {
-		  R: futurePos,
-		  B: { ...simPositions.B }
-		};
-		const nextBlueMoves = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'B');
-		if (nextBlueMoves.length <= 1) futureTrapPenalty -= 3;
-		if (nextBlueMoves.length === 0) futureTrapPenalty -= 10;
-	  }
+    const aiMovesAfter = getValidMovesFor(redSimBoard, redSimCollapsed, afterRedPositions, 'B');
+    if (aiMovesAfter.length === 0) {
+      preventLossPenalty = -25;
+      break;
+    }
+  }
 
-	  // 🔺 BONUS: Předpověď pasti pro soupeře
-	  let opponentFutureTrapBonus = 0;
-	  for (const rm of redMovesAfter.slice(0, 2)) {
-		const redPos = { i: rm.i, j: rm.j };
-		const futureBoard = simBoard.map(row => row.slice());
-		const futureCollapsed = new Set(simCollapsed);
-		futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-		futureBoard[redPos.i][redPos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
-		futureBoard[simPositions.R.i][simPositions.R.j] = '';
-		const futurePositions = {
-		  R: redPos,
-		  B: { ...simPositions.B }
-		};
-		const redEscape = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'R');
-		if (redEscape.length === 0) opponentFutureTrapBonus += 8;
-		else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
-	  }
-	  
-	  // Penalizace za zvýšený pohyb mimo hru 
-	  const uselessMovePenalty = (blocksOpponent === 0 && winBonus === 0 && centerBonus === 0 && distToRed >= 3) ? -2 : 0;
-	  
-	  // rozdíl mezi poctem tahů AI a hráče po daném tahu
-	  const aiMobility = getValidMovesFrom('B', m.i, m.j).length;
-	  const redMobility = redMovesAfter.length;
-	  const mobilityDiff = aiMobility - redMobility;
-	  
-	  const riskyZonePenalty = (escapeRoutes <= 1 || surroundingCollapsed >= 3) ? -3 : 0;
-	   
-	   
-	  const score =
-		value +
-		centerBonus +
-		blocksOpponent +
-		mobilityBonus +
-		lengthPenalty +
-		dangerPenalty +
-		surroundingCollapsed +
-		readabilityPenalty +
-		escapeRoutes +
-		winBonus +
-		preventLossPenalty +
-		futureTrapPenalty +
-		opponentFutureTrapBonus +
-		uselessMovePenalty +
-		0.5 * mobilityDiff +
-		riskyZonePenalty +
-		counterAttackScore * 0.5; // váha protiútoku;
+  let counterAttackScore = 0;
+  for (const rMove of redMovesAfter) {
+    const tempBoard = simBoard.map(row => row.slice());
+    const tempCollapsed = new Set(simCollapsed);
+    tempCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    tempBoard[rMove.i][rMove.j] = tempBoard[simPositions.R.i][simPositions.R.j];
+    tempBoard[simPositions.R.i][simPositions.R.j] = '';
+    const nextPositions = {
+      R: { i: rMove.i, j: rMove.j },
+      B: { ...simPositions.B }
+    };
+
+    const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
+    counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
+  }
+
+  let futureTrapPenalty = 0;
+  for (const redMove of redMovesAfter.slice(0, 2)) {
+    const futurePos = { i: redMove.i, j: redMove.j };
+    const futureBoard = simBoard.map(row => row.slice());
+    const futureCollapsed = new Set(simCollapsed);
+    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    futureBoard[futurePos.i][futurePos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+    futureBoard[simPositions.R.i][simPositions.R.j] = '';
+    const futurePositions = {
+      R: futurePos,
+      B: { ...simPositions.B }
+    };
+    const nextBlueMoves = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'B');
+    if (nextBlueMoves.length <= 1) futureTrapPenalty -= 5;
+    if (nextBlueMoves.length === 0) futureTrapPenalty -= 15;
+  }
+
+  let opponentFutureTrapBonus = 0;
+  for (const rm of redMovesAfter.slice(0, 2)) {
+    const redPos = { i: rm.i, j: rm.j };
+    const futureBoard = simBoard.map(row => row.slice());
+    const futureCollapsed = new Set(simCollapsed);
+    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+    futureBoard[redPos.i][redPos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+    futureBoard[simPositions.R.i][simPositions.R.j] = '';
+    const futurePositions = {
+      R: redPos,
+      B: { ...simPositions.B }
+    };
+    const redEscape = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'R');
+    if (redEscape.length === 0) opponentFutureTrapBonus += 8;
+    else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
+  }
+
+  // nové penalizace
+  const uselessMovePenalty = (blocksOpponent === 0 && winBonus === 0 && centerBonus === 0 && distToRed >= 3) ? -2 : 0;
+
+  const aiMobility = getValidMovesFrom('B', m.i, m.j).length;
+  const redMobility = redMovesAfter.length;
+  const mobilityDiff = aiMobility - redMobility;
+
+  const riskyZonePenalty = (escapeRoutes <= 1 || surroundingCollapsed >= 3) ? -3 : 0;
+
+  // penalizace slepé uličky
+  let deadEndPenalty = 0;
+  if (aiMobility === 0) {
+    deadEndPenalty = -50;
+  }
+
+  let noEscapePenalty = escapeRoutes === 0 ? -10 : 0;
+
+  const score =
+    value +
+    centerBonus +
+    blocksOpponent +
+    mobilityBonus +
+    lengthPenalty +
+    dangerPenalty +
+    surroundingCollapsed +
+    readabilityPenalty +
+    escapeRoutes +
+    winBonus +
+    preventLossPenalty +
+    futureTrapPenalty +
+    opponentFutureTrapBonus +
+    uselessMovePenalty +
+    1 * mobilityDiff +
+    riskyZonePenalty +
+    counterAttackScore * 0.5 +
+    deadEndPenalty +
+    noEscapePenalty;
+
 
    // 📝 Důvod k tahu
   const reasonParts = [];
@@ -1531,6 +1541,8 @@ function checkGameOver() {
   if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶  useless move`);
   if (mobilityDiff !== 0) {reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in number of moves AI and player`);
   if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
+  if (deadEndPenalty) reasonParts.push(`💀 dead end`);
+  if (noEscapePenalty) reasonParts.push(`🔒 no escape route`);
 }
 
   return {
