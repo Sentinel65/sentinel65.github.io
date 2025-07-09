@@ -453,25 +453,38 @@ const cardImages = {
   });
     
     
-    let stats = JSON.parse(localStorage.getItem('collapsiStats')) || { games: 0, player: 0, ai: 0, solo: 0 };
+ let statsRaw = localStorage.getItem('collapsiStats');
+  let stats;
 
-
-    function saveStats() {
-      localStorage.setItem('collapsiStats', JSON.stringify(stats));
+  try {
+    stats = JSON.parse(statsRaw);
+    if (
+      !stats || typeof stats !== 'object' ||
+      isNaN(stats.games) || isNaN(stats.player) ||
+      isNaN(stats.ai) || isNaN(stats.solo)
+    ) {
+      throw new Error('Invalid stats format');
     }
+  } catch (e) {
+    stats = { games: 0, player: 0, ai: 0, solo: 0 };
+  }
 
-   function updateStats() {
-     document.getElementById('gamesPlayed').textContent = stats.games || 0;
-     document.getElementById('playerWins').textContent = stats.player || 0;
-     document.getElementById('aiWins').textContent = stats.ai || 0;
-     document.getElementById('soloWins').textContent = stats.solo || 0;
-     saveStats();
-    }
+  function saveStats() {
+    localStorage.setItem('collapsiStats', JSON.stringify(stats));
+  }
 
-    document.getElementById('resetStatsBtn').addEventListener('click', () => {
-      stats = { games: 0, player: 0, ai: 0, solo: 0 };
-      updateStats();
-    });
+  function updateStats() {
+    document.getElementById('gamesPlayed').textContent = stats.games || 0;
+    document.getElementById('playerWins').textContent = stats.player || 0;
+    document.getElementById('aiWins').textContent = stats.ai || 0;
+    document.getElementById('soloWins').textContent = stats.solo || 0;
+    saveStats();
+  }
+
+  document.getElementById('resetStatsBtn').addEventListener('click', () => {
+    stats = { games: 0, player: 0, ai: 0, solo: 0 };
+    updateStats();
+  });
 
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
