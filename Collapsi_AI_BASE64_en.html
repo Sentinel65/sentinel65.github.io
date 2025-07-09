@@ -48,6 +48,40 @@
     box-shadow: inset 0 0 0 3px limegreen;
   }
 
+.active-step {
+  border: 3px solid red !important;
+  box-shadow: 0 0 10px red !important;
+}
+
+.target-step {
+  border: 3px solid limegreen !important;
+  box-shadow: 0 0 10px limegreen !important;
+}
+
+.final {
+  border: 3px solid red;
+  box-shadow: 0 0 15px red;
+  transition: outline 0.3s, box-shadow 1.0s;
+}
+
+.replay {
+  animation: flash 1s ease-in-out;
+  border: 2px solid gold !important;
+  box-shadow: 0 0 10px gold;
+}
+
+@keyframes flash {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+  .highlight-solution {
+  outline: 3px solid orange;
+  box-shadow: 0 0 10px orange;
+  transition: outline 0.3s, box-shadow 0.3s;
+}
+
 #controls {
   margin: 10px;
   display: flex;
@@ -279,21 +313,23 @@ you win.</p>
 game: 1) replace low numbers with higher numbers or 2) make the grid bigger by adding more cards to the deck. This version has a higher difficulty with the classic 16 card layout.</p>
 
          <strong> Solo mode (difficulty)</strong>
-         <p>The program offers three levels of difficulty to choose from <strong>easy, medium and hard</strong>. In difficult mode, it is randomly generated <strong>from three sets of cards</strong>.</p>
+         <p>The program offers three levels of difficulty to choose from <strong>easy, medium and hard</strong>. In difficult mode, it is randomly generated <strong>several selected card sets</strong>.</p>
          
                <dl>['1', '1', '1', '2', '2', '2', '3', 'R', 'B'] - easy</dl>
                <dl>['1', '1', '2', '2', '3', '3', '4', 'R', 'B'] - medium</dl> 
                <dl>['1', '2', '3', '3', '3', '3', '4', 'R', 'B'] - hard 1</dl>
                <dl>['1', '2', '3', '3', '4', '4', '4', 'R', 'B'] - hard 2</dl>
-               <dl>['2', '2', '3', '3', '4', '4', '4', 'R', 'B'] - hard 3</dl>
+               <dl>['1', '2', '3', '4', '4', '4', '4', 'R', 'B'] - hard 3</dl>
+               <dl>['2', '2', '3', '3', '4', '4', '4', 'R', 'B'] - hard 4</dl>
+               <dl>['2', '3', '3', '3', '4', '4', '4', 'R', 'B'] - hard 5</dl>
               
       </div>
     </div>
   </div>
   <div id="controls">
-  	<img id="resetBtn" width="32" height="32" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGTSURBVFiF7da/S1ZRHMfxlyYuQZCUYFOTFOgU1eBS4CoEDYkEDdUgQf9AkyXYFDQ02BBYmyBN4ZSjUGhFS205OaSI/YDAeJ7H4XyFy+0+euHq03I/y5dzP+d8v+977rmHL7Vq/Wd1FTy7iWuYxEbOm8TtEnkbWMciXuFPu4ndufEdzOE63uJ0zt8pURx6cRWz+IrLZRbdlcibaEX8XABRVj2YwCZ+Yfig4k18DOoW7gdQFQgYCoB3ij+5K1F8FX2YDoATuBUQ7ysAwFTkvJQ3urGGJxjFVs6fk7bxTUWA1xFHykzO7sBhqT9yzuSN/F9wVGpG/OcMdAqgrWqAGqAGKAJoRSy8tzsBsNcDnKmY+yHG2ngn8Qzni8wL0i48qAjwAX9xA6ci5+MovirdjqNFC7uwjG2cqwAwgC8BcS8AnkfxhtQCtNUQfuI7xqXmogpEtslpyLR1+x20i5jHWfzAt1h8kJ5KfWAWYknazab05i/2zGP7JFqXuqM16bAeV+63XcGnzPg3FjCIR3hZIketWp3TLmBxVqHfCjGFAAAAAElFTkSuQmCC" alt="Reset" title="Reset" />
+  	<img id="resetBtn" onclick="stopReplay()" width="32" height="32" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGTSURBVFiF7da/S1ZRHMfxlyYuQZCUYFOTFOgU1eBS4CoEDYkEDdUgQf9AkyXYFDQ02BBYmyBN4ZSjUGhFS205OaSI/YDAeJ7H4XyFy+0+euHq03I/y5dzP+d8v+977rmHL7Vq/Wd1FTy7iWuYxEbOm8TtEnkbWMciXuFPu4ndufEdzOE63uJ0zt8pURx6cRWz+IrLZRbdlcibaEX8XABRVj2YwCZ+Yfig4k18DOoW7gdQFQgYCoB3ij+5K1F8FX2YDoATuBUQ7ysAwFTkvJQ3urGGJxjFVs6fk7bxTUWA1xFHykzO7sBhqT9yzuSN/F9wVGpG/OcMdAqgrWqAGqAGKAJoRSy8tzsBsNcDnKmY+yHG2ngn8Qzni8wL0i48qAjwAX9xA6ci5+MovirdjqNFC7uwjG2cqwAwgC8BcS8AnkfxhtQCtNUQfuI7xqXmogpEtslpyLR1+x20i5jHWfzAt1h8kJ5KfWAWYknazab05i/2zGP7JFqXuqM16bAeV+63XcGnzPg3FjCIR3hZIketWp3TLmBxVqHfCjGFAAAAAElFTkSuQmCC" alt="Reset" title="Reset" />
     <label for="starter"><img  width="32" height="32" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAYAAAB/HSuDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAtGVYSWZJSSoACAAAAAYAEgEDAAEAAAABAAAAGgEFAAEAAABWAAAAGwEFAAEAAABeAAAAKAEDAAEAAAACAAAAEwIDAAEAAAABAAAAaYcEAAEAAABmAAAAAAAAAEgAAAABAAAASAAAAAEAAAAGAACQBwAEAAAAMDIxMAGRBwAEAAAAAQIDAACgBwAEAAAAMDEwMAGgAwABAAAA//8AAAKgBAABAAAAAAQAAAOgBAABAAAAAAQAAAAAAABvU8/zAAAgAElEQVR4nOzdacxtZ13G4bv0dBBaOiEBcWASi9JiFKwKCsYRxIqCiCCCCgoGkRA1YsSoxCFBVNAwCAiIoFCJYSgQw6BhFhxoRQQKFJWi0IKUtnI6HbN1f8BItV17r/3sd93XlewUPqz0//Td7Xue35oSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABbuqNEDsDNHJ/mCJLdef26W5LTP+py8/j4cSnLi6GEBAICNfTrJ1UmOJPlkkk8kuWT9uTjJh5J8OMlFSa4ZPSzzEwCW50ZJ7pDkzPXnTuvPFyc5ZvRwAADA3rlqHQLeneT8JOetP+9bxwMWQgA4+I5P8vVJ7pbk69af1dl8AACATayuGnjr+vOm9V8Pjx6K6QSAg+l2Se61/twzyY1HDwQAACze5UnekOQ1688HRg/EDSMAHBxfkuS+Sb5vfbYfAABgpH9Ick6SP07y3tHD8P8TAPbbSUkelORHktxl9DAAAADX4Z1J/iDJi5J8avQwfG4CwH46K8kjkzzA5f0AAMABckWSlyR5RpK3jx6G/0kA2K+n939nksck+ZbRwwAAAGzor5M8dX1VwOp1hAwmAIy3ejXfQ5P83PrhfgAAAEuyeljgbyR5/vqVgwwiAIw943+/JL+a5EtHDwMAADCzDyf5tfWzAlwRMIAAMMbqUv/fTHL66EEAAAB2bPXGgJ9J8orRg7QRAHbry5I8eR0AAAAAmr0+yeOSvGv0IC2OHj1AidWT/H89yR866w8AAPBfbpPkEUlOSfLmJFeOHmjpXAEwv9UT/Z+Z5LbZL6t3c34kySVJLl7/dXUfjnd2AgDAstw0yaEkp33W55brv+7T8wEeleTVowdZMgFgPick+Z0kPzL4n/PqiZvnJTl//Vn9/wuTfHLgTAAAwH6EgVuv30b2FUnOTHLnJLdfP7R8hBck+UknJjlIzkry/iRHdvy5Jsnb16/YODvJ54/+BwEAABw4JyW5V5InJvnL9aX5u9zXrE5YfsPofwjw/1lVsies3225q385Lk3yoiQPSnKz0f8AAACARQaB1SvMn53k4zva51y9fmW659axl1YPrjh3R/8y/EeSP0nyPUmOH71wAACgxupZAt+R5Lnry/Tn3vus3hRw89GLhs+2uk/mgh18+f8+yU8lOXX0ggEAgHqr5549PMlfzbwP+uckXzt6sbDy3Ukum/HLfm2SV63fJgAAALCP7prkxetL9+fYFx1O8pDRi6TbY2b8gl+zvrf/y0cvEgAA4Hpavf786esN+xwnR3/J2+zYtaPWr/ib64z/OevXcAAAABxEt0nyvJlOmP5hkmNGL5AOq6dQPmemzf87ktx99AIBAAC25PQkr55h77R6APvnjV4cy3bM+r6WbX95/zXJg13KAgAALNT3JrlwhjcEnDh6YSx38/+yGS73f876FYIAAABLf2vAU9fPO9vWnuqtSW46emEs77L/bZ/5/6ck3zx6YQAAADv29Unet8W91RuT3GT0oliG1WX5z9ry5n/1kL9TRy8MAABgkNX9+0/Z4h7rtUmOH70oDr7f3uKX8ookPzx6QQAAAHvigUk+vaX91svWV2/DJD++xc3/h5PcdfSCAAAA9syXJXn3lvZdzxy9GA6ms7f4zsrXedAfAADAdTpp/Wq/bey/fnr0YjhY7pzksi19+Z6zfoMAAAAA1211+f7Tt7AHW71l4L6jF8PBsDpTf8GWNv+/MHoxAAAAB8zPrV+Zvsle7FNJTh+9EPbbjbZ02cnqy/rY0YsBAAA4oB6xPpO/yb7svetbC+BzesIWNv+r5wY8bPRCAAAADrgf2sJz2V46ehHsp69NctUWzvx7zR8AAMB2/OAWrgR45OhFsF9usr48ZNPN/0+MXggAAMDCPGrDvdp/JDlj9CLYH8/ewqX/jx+9CAAAgIV6/Ib7tXclOW70Ihjvm7bwhMlnjV4EAADAwj1tw33br4xeAGPdOMkHNvwSvSrJodELAQAAWLhjkvz5Bnu3K5OcOXoRjPOkDTf/70ty8uhFAAAAlFjtv96/wR7uHU7gdrrjhk/9/3SSrxi9CAAAgDKrB/pdvsFe7jGjF8DuvWbDs/8PHL0AAACAUj+0wV7uE0k+f/QC2J37bLj5f+7oBQAAAJR74QZ7umeOHp7dODrJezb4oqzuNzlx9CIAAADKrZ4HcOHEfd01Sb5y9AKY30M32PyvviR3G70AAAAA/ss9N3it+ytHD8/8r424YIMA8JTRCwAAAOB/+P0N9njfOHp45vPwDb4Yq0tLThi9AAAAAP7XrQAfnbjPe8Po4Znv3v9Nzv5/7+gFAAAA8Dn9gKsA+Gz32+AL8brRwwMAAHCdjkryxon7vXNHD8/2vWnil+HqJGeMHh4AAID/09dMfCDgtfZ8y3LWBmf/nz96eAAAAK6XP56473vB6MHZnudN/BJcmeS2o4cHAADgerlDkqsm7P0OJ7n56OHZ3ElJLp8YAJ4xengAAABukBdM3P/97OjB2dyjNrj339l/AACAg+X0JNdM2ANekORGo4dnM++cGABeMnpwAAAAJnn5xH3gt4wenOluP/GHfmT94EAAAAAOnntM3Ac+d/TgTPfzE3/o7xg9OAAAABv52wl7wU8lOX704EzzdxMDwMNHDw4AAMBGHj1xP3j/0YNzw91u4g97VXxOGD08AAAAGzk5yRUT9oTnjB6c3dUe93wAAAAswwsn7AkvTXLs6MG5Yc6dGAC+ffTgAAAAbMXZE/eF3zp6cK6/45JcNuGH/PEkx4weHgAAgK3tDf99wt7wKVmgG2WZ7pbkJhPfFXnVDPMAAACwe4eTvGLCcffKAi01ANx94nGv2vIcAAAAjDVln/elSW41wyzM4NUTLvG4av2USAAAAJbj1CRXT9gjPigLs8QrAFZrOmvCcW9Z3xsCAADAcnwiyTsmHHePLMwSA8Adkpwy4bg3zjALAAAA471hh7eW760lBoA7TzzuTVueAwAAgP3w5gnHnJ7khCzIEgPAGROOuTbJ22aYBQAAgPHest733dD98plZkCUGgDtNOOYC9/8DAAAs1ifX+74b6quyIALAfztvhjkAAADYH+ft8BbzvbS0AHB0ki+ecNy7ZpgFAACA/XH+xIfML8bSAsCtkhwz4bi/n2EWAAAA9sf5E44RAPbYrSce98EtzwEAAMB++eCEY26R5MQsxNICwJTL/1cu3PIcAAAA7JcPTTzu9lmIpQWAm0845hNJLp1hFgAAAPbHpUkumXir+SIsLQCcNuGYi2aYAwAAgP3zkYm3ASzC0gLAzSYcc/EMcwAAALB/Lp5wzC2zEEsLAKdOOGbKJSAAAAAcPJdMOMYVAHvqxhOfAQAAAMDyXTLhmJOzEEsLAMdNOOYzM8wBAADA/vnMhGNOyEIsLQAcO+GYK2eYAwAAgP1zeMIxAsCCrgCY8gUAAADg4Dk84ZgTsxBLCwBHTzjm2hnmAAAAYP9cPeGY47MQSwsAUxwZPQAAAADMTQAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoMCh0QMA7NAtk/xskrOTfFGSY0YPBMAQVyf5eJK3J3lWkleNHghgF1wBALS4d5J/TPLYJLe1+QdI+0mwVRS+b5JzkzzXiTGggQAANLhHkj9LctPRgwCwlx6W5ImjhwCYmwAALN3x6zM7x44eBIC99rgkXzh6CIA5CQDA0n1PktuMHgKAvXfs+ncGwGIJAMDS3X30AAAcGHcaPQDAnAQAoOEWAAC4Po4ePQDAnAQAYOnOHz0AAAfGeaMHAJiTAAAs3YuTXDF6CAD23uXr3xkAiyUAAEv30SS/OHoIAPbeE5L82+ghAOYkAAANnpzkKaOHAGBv/fb6A7BoAgDQ4rFJHpDk/aMHAWBvvC/J/ZM8bvQgALtwaCd/F4D9cM76c8cktxo9DABDfSTJe0YPAbBLAgDQaPUHPn/oAwCgilsAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFBAAAAAAoIAAAAAAAAUEAAAAACggAAAAAEABAQAAAAAKCAAAAABQQAAAAACAAgIAAAAAFDg0egCAAY5PcgsRFKDax5JcNnoIgF0SAIAmd0nyy0m+zX//AEjyniTPSvJ7Sa4aPQzA3Jz9Alo8Osnbktzb5h+AtTsm+a0kr01y4uhhAOYmAAANfiDJU5McPXoQAPbSN66vAgBYNAEAWLqTk/xukqNGDwLAXntIktNHDwEwJwEAWLoHJDlt9BAA7L1VKD579BAAcxIAgKX76tEDAHBg3GH0AABzEgCApTsyegAADgxvAgAWTQAAlu6vRw8AwIHxztEDAMxJAACW7iVJLh49BAB772NJzhk9BMCcBABg6T6V5NFuBQDg/3Bk/bvi0tGDAMxJAAAavHj9B7urRw8CwN5Z/W74CWf/gQYCANDiaUnOSvJKD3kCYP274BVJvibJM0YPA7ALh3bydwHYD3+T5LuSHJfkliIoQK1rk3w0yeHRgwDskgAANFr9ge/C0UMAAMAuOfsFAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEBAAAAAAoIAAAAAFBAAAAAAIACAgAAAAAUEAAAAACggAAAAAAABQQAAAAAKCAAAAAAQAEB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" alt="Menu" title="Menu" /></label>
-    <select id="starter">
+    <select id="starter" onclick="stopReplay()">
       <option value="R"> Red (Player)</option>
       <option value="B">Blue (AI)</option>
       <option value="alternate" selected>Alternate</option>
@@ -372,17 +408,20 @@ const cardImages = {
 	// const cards = ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
 	let cards;
 	let rows = 4;
-    let cols = 4;	
+    let cols = 4;
     let board = [], currentPlayer = 'R', positions = { R: null, B: null }, collapsed = new Set(), selected = null;
     let gameCount = 0;
     let blueAIMoveCount = 0; // Nová globální proměnná pro sledování kol AI
     let aiEnabled = true; // nebo false, pokud začínáš PvP režimem
     let aiMode = 'minimax'; // výchozí
     let isPvP = false;
+    let solutionPath = null;  // sem se uloží cesta správného řešení
+    let solutionPathExpanded = null;
     let lastMoveEnd = null; // {i, j}
     let playerHistory = []; // paměť hráčových tahů
     let soloMode = false;
 	let remainingKeys = [];
+    const BOARD_SIZE = 3;
     const logEl = document.getElementById('log');
     const turnInd = document.getElementById('turnIndicator');
     const starterSelect = document.getElementById('starter');
@@ -458,46 +497,312 @@ console.log("Po nastavení remainingKeys:", remainingKeys)
 
 }
 
+// vypis prevodu tahu resitelne desky v logu hry
+function logCollapsedPath(path) {
+  for (let i = 0; i < path.length - 1; i++) {
+    const from = path[i];
+    const to = path[i + 1];
+    logEvent(`${i + 1}. ${from.i},${from.j} (${from.value}) → ${to.i},${to.j} (${to.value})`);
+  }
+}
+
+// vypis tahu resitelne desky v logu hry
+function logSolutionPath(board, solutionPath) {
+  const len = solutionPath.length;
+
+  for (let i = 0; i < len - 1; i++) {
+    const from = solutionPath[i];
+    const to = solutionPath[i + 1];
+
+    const fromVal = from.value || (board?.[from.i]?.[from.j] ?? '?');
+    const toVal = to.value || (board?.[to.i]?.[to.j] ?? '?');
+
+    logEvent(`${i}: (${from.i},${from.j}) = ${fromVal} → (${to.i},${to.j}) = ${toVal}`);
+  }
+}
+
+// zastavi prehravani animace tahu resitelne desky
+function stopReplay() {
+  if (window.replayTimeouts) {
+    for (const t of window.replayTimeouts) clearTimeout(t);
+    window.replayTimeouts = [];
+  }
+  isReplaying = false;
+  console.log('⏹️  Přehrávání zastaveno.');
+};
+
+// spousti a vykresluje prehravani animace tahu resitelne desky
+function replaySolution() {
+  if (!solutionPath || solutionPath.length < 2) {
+    console.warn('❗ Neexistuje cesta k přehrání.');
+    return;
+  }
+
+  console.log('🔁 Spouštím přehrání řešení...');
+
+  // Stopni předchozí přehrávání
+  if (window.replayTimeouts) {
+    for (const t of window.replayTimeouts) clearTimeout(t);
+  }
+  window.replayTimeouts = [];
+
+  // Reset hry
+  collapsed.clear();
+  collapsedBy = {};
+  justCollapsedKey = null;
+  justCollapsedPlayed = false;
+
+  selected = null; // ✅ Zruš výběr aktivní karty
+  lastMoveEnd = null;
+  positions = { R: null, B: null };
+
+  // Obnov hodnoty z původní solutionPath
+  for (const { i, j, value } of solutionPath) {
+    board[i][j] = value;
+  }
+
+  renderBoard(); // 🧼 vykreslení bez zvýraznění
+
+  let stepIndex = 0;
+
+  function nextStep() {
+    if (stepIndex >= solutionPath.length - 1) {
+      console.log('✅ Přehrání řešení dokončeno.');
+      const last = solutionPath.at(-1);
+      const lastCell = document.getElementById(`cell-${last.i}-${last.j}`);
+      if (lastCell) lastCell.classList.add('final');
+      return;
+    }
+
+    const from = solutionPath[stepIndex];
+    const to = solutionPath[stepIndex + 1];
+    const fromKey = `${from.i},${from.j}`;
+
+    const fromCell = document.getElementById(`cell-${from.i}-${from.j}`);
+    const toCell = document.getElementById(`cell-${to.i}-${to.j}`);
+
+    // Zvýrazni obě karty – aktivní (from) i cílovou (to)
+    if (fromCell) fromCell.classList.add('active-step');
+    if (toCell) toCell.classList.add('target-step');
+
+    const t1 = setTimeout(() => {
+      // Zruš zvýraznění
+      if (fromCell) fromCell.classList.remove('active-step');
+      if (toCell) toCell.classList.remove('target-step');
+
+      // Kolaps předchozí karty (pokud to není B)
+      if (from.value !== 'B') {
+        collapsed.add(fromKey);
+        collapsedBy[fromKey] = 'R';
+        justCollapsedKey = fromKey;
+        justCollapsedPlayed = false;
+        console.log(`💥 Kolaps ${stepIndex + 1}: (${from.i},${from.j})`);
+      }
+
+      renderBoard();
+
+      stepIndex++;
+      const t2 = setTimeout(nextStep, 500);
+      window.replayTimeouts.push(t2);
+    }, 2000);
+
+    window.replayTimeouts.push(t1);
+  }
+
+  nextStep();
+}
+
+
+// generator resitelne desky 3x3
+function generateSolvableBoardFromDeck(deck) {
+  const originalDeck = [...deck];
+  const board = Array.from({ length: 3 }, () => Array(3).fill(null));
+  const placed = [];
+
+const bIndex = originalDeck.indexOf('B');
+originalDeck.splice(bIndex, 1);
+
+// 🎯 Náhodná pozice pro B
+const bi = Math.floor(Math.random() * BOARD_SIZE);
+const bj = Math.floor(Math.random() * BOARD_SIZE);
+const bPos = [bi, bj];
+
+board[bi][bj] = 'B';
+placed.push({ x: bi, y: bj, value: 'B' });
+console.log(`✅ Položena karta B na [${bi},${bj}]`);
+
+  function getEmptyAdjacent() {
+    const set = new Set();
+    for (const { x, y } of placed) {
+      for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+        const nx = (x + dx + 3) % 3;
+        const ny = (y + dy + 3) % 3;
+        if (board[nx][ny] === null) set.add(`${nx},${ny}`);
+      }
+    }
+    return [...set].map(s => s.split(',').map(Number));
+  }
+
+  function findPath(from, to, steps, visited = new Set(), path = []) {
+    const key = `${from[0]},${from[1]}`;
+    if (key === `${to[0]},${to[1]}`) return steps === 0 ? [...path] : null;
+    if (steps <= 0 || visited.has(key)) return null;
+
+    visited.add(key);
+    for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+      const nx = (from[0] + dx + 3) % 3;
+      const ny = (from[1] + dy + 3) % 3;
+      if (board[nx][ny] == null) continue;
+      const res = findPath([nx, ny], to, steps - 1, new Set(visited), [...path, [nx, ny]]);
+      if (res) return res;
+    }
+    return null;
+  }
+
+  function build(index, deck) {
+    if (deck.length === 1 && deck[0] === 'R') {
+      const empty = [];
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (board[i][j] == null) empty.push([i, j]);
+        }
+      }
+      if (empty.length === 1) {
+        const [x, y] = empty[0];
+        board[x][y] = 'R';
+        placed.push({ x, y, value: 'R' });
+        return true;
+      }
+      return false;
+    }
+
+    const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
+    for (let i = 0; i < deck.length; i++) {
+      const card = deck[i];
+      if (card === 'R') continue;
+
+      for (const [x, y] of options) {
+        if (index === 1) {
+          if (Math.abs(x - bPos[0]) + Math.abs(y - bPos[1]) !== 1) continue;
+          board[x][y] = card;
+          placed.push({ x, y, value: card });
+          const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
+          if (build(index + 1, nextDeck)) return true;
+          board[x][y] = null;
+          placed.pop();
+        } else {
+          const last = placed[placed.length - 1];
+          const path = findPath([x, y], [last.x, last.y], parseInt(card));
+          if (path) {
+            board[x][y] = card;
+            placed.push({ x, y, value: card });
+            const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
+            if (build(index + 1, nextDeck)) return true;
+            board[x][y] = null;
+            placed.pop();
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+if (build(1, originalDeck)) {
+  console.log('🎯 Finální deska:');
+  console.table(board);
+  console.log('📜 Tahy (od posledního k prvnímu):');
+  for (let i = placed.length - 1; i > 0; i--) {
+    const from = placed[i];
+    const to = placed[i - 1];
+    console.log(`${placed.length - i}. ${from.x},${from.y} (${from.value}) → ${to.x},${to.y} (${to.value})`);
+  }
+
+  return {
+    board,
+    path: placed.slice().reverse() // od R po B
+  };
+} else {
+  console.warn('❌ Nepodařilo se složit řešitelnou desku.');
+  return null;
+}
+}
+
 
 function createBoard() {
   const mode = document.getElementById('starter').value;
 
-  // 🎯 Detekce sólo módu a PvP
   soloMode = mode.startsWith('solo');
   isPvP = mode === 'pvp';
-
-  // 📐 Rozměry
   rows = soloMode ? 3 : 4;
   cols = soloMode ? 3 : 4;
 
-  // 🎲 Varianty pro těžkou obtížnost
   const hardVariants = [
-    ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'], // hard
-    ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'], // very-hard
-    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']  // insane
+    ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'],
+    ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+    ['1', '2', '3', '4', '4', '4', '4', 'R', 'B'],
+    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+    ['2', '3', '3', '3', '4', '4', '4', 'R', 'B']
   ];
 
-  // 🎲 Karty pro různé sólo obtížnosti
   const soloDecks = {
-    'solo-easy':      ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
-    'solo-medium':    ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
-    'solo-hard':      () => hardVariants[Math.floor(Math.random() * hardVariants.length)],
+    'solo-easy': ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
+    'solo-medium': ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
+    'solo-hard': () => hardVariants[Math.floor(Math.random() * hardVariants.length)],
     'solo-very-hard': ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-    'solo-insane':    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']
+    'solo-insane': ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']
   };
 
-  // 🃏 Výběr karet
-  cards = soloMode
-    ? typeof soloDecks[mode] === 'function'
+  if (soloMode && rows === 3 && cols === 3) {
+    const deck = typeof soloDecks[mode] === 'function'
       ? soloDecks[mode]()
-      : soloDecks[mode]
-    : ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
+      : soloDecks[mode];
 
-  shuffle(cards);
+    const result = generateSolvableBoardFromDeck(deck);
+    if (!result) {
+      logEvent('❌ Nepodařilo se vygenerovat desku.');
+      return;
+    }
+
+    board = result.board;
+    solutionPath = result.path.map(({ x, y, value }) => ({ i: x, j: y, value }));
+    
+    cards = board.flat();
+    positions = {};
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j] === 'R') positions.R = { i, j };
+        if (board[i][j] === 'B') positions.B = { i, j };
+      }
+    }
+    logEvent(`✅ Vygenerována řešitelná deska (${mode})`);
+  } else {
+    // běžné režimy
+    cards = soloMode
+      ? typeof soloDecks[mode] === 'function'
+        ? soloDecks[mode]()
+        : soloDecks[mode]
+      : ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
+
+    shuffle(cards);
+    board = [];
+    positions = {};
+    for (let i = 0; i < rows; i++) {
+      board[i] = [];
+      for (let j = 0; j < cols; j++) {
+        const index = i * cols + j;
+        board[i][j] = cards[index];
+        if (board[i][j] === 'R') positions.R = { i, j };
+        if (board[i][j] === 'B') positions.B = { i, j };
+      }
+    }
+  }
+
+  // Reset stavu hry
   collapsed.clear();
   selected = null;
   aiEnabled = !soloMode && !isPvP;
 
+ 
   // 🎮 Výběr začínajícího hráče
   if (mode === 'random') {
     currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
@@ -512,19 +817,6 @@ function createBoard() {
   gameCount++;
   logEl.innerHTML = '';
   updateTurnText();
-
-  // 🧩 Vytvoření hrací desky
-  board = [];
-  for (let i = 0; i < rows; i++) {
-    board[i] = [];
-    for (let j = 0; j < cols; j++) {
-      const index = i * cols + j;
-      board[i][j] = cards[index];
-      if (board[i][j] === 'R') positions.R = { i, j };
-      if (board[i][j] === 'B') positions.B = { i, j };
-    }
-  }
-
   lastMoveEnd = null;
   blueAIMoveCount = 0;
   renderBoard();
@@ -533,18 +825,16 @@ function createBoard() {
     setTimeout(aiMove, 500);
   }
 
-  // 🎛 AI toggle
-  if (isPvP || soloMode) {
-    aiToggleBtn.style.pointerEvents = 'none';
-    aiToggleBtn.style.opacity = '0.5';
-    aiToggleBtn.title = 'AI mode disabled in [PvP] or [Solo mode]';
-    logEvent('AI mode disabled in [PvP] or [Solo mode]');
-  } else {
-    aiToggleBtn.style.pointerEvents = 'auto';
-    aiToggleBtn.style.opacity = '1';
-    aiToggleBtn.title = 'Click to change AI mode';
-    logEvent(`AI mode: ${aiMode}`);
-  }
+  aiToggleBtn.style.pointerEvents = (!soloMode && !isPvP) ? 'auto' : 'none';
+  aiToggleBtn.style.opacity = (!soloMode && !isPvP) ? '1' : '0.5';
+  aiToggleBtn.title = (!soloMode && !isPvP)
+    ? 'Click to change AI mode'
+    : 'AI mode disabled in [PvP] or [Solo mode]';
+
+  logEvent(!soloMode && !isPvP
+    ? `AI mode: ${aiMode}`
+    : 'AI mode disabled in [PvP] or [Solo mode]');
+
 }
 
 function updateTurnText() {
@@ -731,6 +1021,13 @@ function renderBoard() {
     for (let j = 0; j < cols; j++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
+      cell.id = `cell-${i}-${j}`; // ✅ Jednoznačné ID podle pozice
+
+      // 🧹 Reset všech předešlých stylů a tříd
+      cell.classList.remove('highlight', 'valid', 'active-step', 'final');
+      cell.style.border = '';
+      cell.style.boxShadow = '';
+
       const key = `${i},${j}`;
 
       // 💥 Rozpadlá karta
@@ -845,7 +1142,7 @@ function renderBoard() {
     else if (score >= 4) scoreColor = 'orange';
 
     const scoreText = score !== null
-      ? ` | skóre: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
+      ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
       : '';
 
     const historyNote = isRed
@@ -954,7 +1251,7 @@ function renderBoard() {
 	  }
 
 	  // Další logika (logování, rendering, přepnutí hráče, atd.)
-	  logMove(fromPos, { i, j }, fromVal, toVal, null, null, '', currentPlayer);
+	  logMove(fromPos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
 	  renderBoard();
 	  updateTurnText();
 
@@ -1011,12 +1308,16 @@ function renderBoard() {
 		 
 			positions[currentPlayer] = { i, j };
 			lastMoveEnd = { i, j };
+			
+			const rows = board.length;
+            const cols = board[0].length;
 
 			const pathCoords = move.path
 			  ? move.path.split('').reduce((acc, dir) => {
 				  const last = acc[acc.length - 1];
 				  const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
-				  const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
+                  const ni = mod(last.i + delta[0], rows);
+                  const nj = mod(last.j + delta[1], cols);
 				  acc.push({ i: ni, j: nj });
 				  return acc;
 				}, [{ i: pos.i, j: pos.j }])
@@ -1098,15 +1399,34 @@ function checkGameOver() {
     }
 
 
-    // ❌ Hráč prohrál – žádný tah a není na výstupu
-    if (!hasMoves && !onExit) {
-      setTimeout(() => {
-        showGameOver('R', '🤔 \n\nPUZZLE\nunfinished.');
-        logEvent(`🚫  The player has no valid move.`);
-        endGame('R');
-      }, 200);
-      return true;
-    }
+ // ❌ Hráč prohrál – žádný tah a není na výstupu
+if (!hasMoves && !onExit) {
+  setTimeout(() => {
+    showGameOver('R', '🤔 \n\nTry another\ndeck.');
+    logEvent(`🚫  The player has no valid move.`);
+
+    // 💡 Výpis správné cesty
+    logEvent(`💡 Generated solution path:`);
+    logCollapsedPath(solutionPath);
+    logEvent('<a href="#" style ="text-decoration:none" onclick="replaySolution()">▶️ Click to replay solution</a>');
+
+
+    // 🔗 Interaktivní odkaz pro přehrání řešení
+    const link = document.createElement('a');
+    link.href = '#';
+    // link.textContent = '▶️ Replay solution';
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('🖱️ Kliknuto na přehrání řešení');
+      replaySolution();
+    });
+    logEl.appendChild(link);
+
+    endGame('R');
+  }, 200);
+
+  return true;
+}
 
     // ✅ Povolený závěrečný tah na výstup, pokud zbývají jen dvě karty
     if (
