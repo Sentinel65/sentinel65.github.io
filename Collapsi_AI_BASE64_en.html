@@ -460,12 +460,12 @@ const cardImages = {
       localStorage.setItem('collapsiStats', JSON.stringify(stats));
     }
 
-    function updateStats() {
-      document.getElementById('gamesPlayed').textContent = stats.games;
-      document.getElementById('playerWins').textContent = stats.player;
-      document.getElementById('aiWins').textContent = stats.ai;
-      document.getElementById('soloWins').textContent = stats.solo;
-      saveStats();
+   function updateStats() {
+     document.getElementById('gamesPlayed').textContent = stats.games || 0;
+     document.getElementById('playerWins').textContent = stats.player || 0;
+     document.getElementById('aiWins').textContent = stats.ai || 0;
+     document.getElementById('soloWins').textContent = stats.solo || 0;
+     saveStats();
     }
 
     document.getElementById('resetStatsBtn').addEventListener('click', () => {
