@@ -672,53 +672,62 @@ console.log(`✅ Položena karta B na [${bi},${bj}]`);
     return null;
   }
 
-  function build(index, deck) {
-    if (deck.length === 1 && deck[0] === 'R') {
-      const empty = [];
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          if (board[i][j] == null) empty.push([i, j]);
-        }
+function build(index, deck) {
+  if (deck.length === 1 && deck[0] === 'R') {
+    const empty = [];
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j] == null) empty.push([i, j]);
       }
-      if (empty.length === 1) {
-        const [x, y] = empty[0];
-        board[x][y] = 'R';
-        placed.push({ x, y, value: 'R' });
-        return true;
-      }
-      return false;
     }
+    if (empty.length === 1) {
+      const [x, y] = empty[0];
+      board[x][y] = 'R';
+      placed.push({ x, y, value: 'R' });
+      return true;
+    }
+    return false;
+  }
 
-    const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
-    for (let i = 0; i < deck.length; i++) {
-      const card = deck[i];
-      if (card === 'R') continue;
+  const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
+  for (let i = 0; i < deck.length; i++) {
+    const card = deck[i];
+    if (card === 'R') continue;
 
-      for (const [x, y] of options) {
-        if (index === 1) {
-          if (Math.abs(x - bPos[0]) + Math.abs(y - bPos[1]) !== 1) continue;
+    for (const [x, y] of options) {
+      if (index === 1) {
+        // 🟥 Speciální omezení pro první kartu (musí být sousední ortogonálně k B)
+        const dx = Math.abs(x - bPos[0]);
+        const dy = Math.abs(y - bPos[1]);
+
+        const wrapDx = Math.min(dx, 3 - dx);
+        const wrapDy = Math.min(dy, 3 - dy);
+
+        const isOrthogonal = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
+        if (!isOrthogonal) continue;
+
+        board[x][y] = card;
+        placed.push({ x, y, value: card });
+        const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
+        if (build(index + 1, nextDeck)) return true;
+        board[x][y] = null;
+        placed.pop();
+      } else {
+        const last = placed[placed.length - 1];
+        const path = findPath([x, y], [last.x, last.y], parseInt(card));
+        if (path) {
           board[x][y] = card;
           placed.push({ x, y, value: card });
           const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
           if (build(index + 1, nextDeck)) return true;
           board[x][y] = null;
           placed.pop();
-        } else {
-          const last = placed[placed.length - 1];
-          const path = findPath([x, y], [last.x, last.y], parseInt(card));
-          if (path) {
-            board[x][y] = card;
-            placed.push({ x, y, value: card });
-            const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
-            if (build(index + 1, nextDeck)) return true;
-            board[x][y] = null;
-            placed.pop();
-          }
         }
       }
     }
-    return false;
   }
+  return false;
+}
 
 if (build(1, originalDeck)) {
   console.log('🎯 Finální deska:');
@@ -936,8 +945,37 @@ function getValidMoves(player, b = board, posMap = positions) {
     }
   }
 
-  if (steps) dfs(pos.i, pos.j, steps, new Set(), '');
-  else [1, 2, 3, 4].forEach(n => dfs(pos.i, pos.j, n, new Set(), ''));
+  // aplikováno nové pravidlo prvního tahu ve hře, kdy se může o 1 krok
+if (steps) {
+  // ✅ Karta má číselnou hodnotu – klasické DFS podle počtu kroků
+  dfs(pos.i, pos.j, steps, new Set(), '');
+} else {
+  // 👉 První tah z R nebo B: pouze 1 krok ortogonálně (bez rohů)
+  // ❌ Zakázáno vstoupit na druhého jokera
+
+  const directions = [
+    [1, 0, 'D'], [-1, 0, 'U'],
+    [0, 1, 'R'], [0, -1, 'L']
+  ];
+
+  for (const [di, dj, d] of directions) {
+    const ni = mod(pos.i + di, rows);
+    const nj = mod(pos.j + dj, cols);
+    const key = `${ni},${nj}`;
+
+    if (collapsed.has(key)) continue;
+
+    const targetValue = board[ni][nj];
+    const isOpponentJoker =
+      (start === 'R' && targetValue === 'B') ||
+      (start === 'B' && targetValue === 'R');
+
+    if (isOpponentJoker) continue;
+
+    moves.push({ i: ni, j: nj, path: d });
+  }
+}
+
 
   // 🔄 DODATEK – pokud zůstává pouze aktivní karta a výstupní 'B', přidáme tah na 'B' i bez ohledu na hodnotu
   if (soloMode) {
