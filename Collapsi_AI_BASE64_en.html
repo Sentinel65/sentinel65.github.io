@@ -516,7 +516,8 @@ function logCollapsedPath(path) {
   for (let i = 0; i < path.length - 1; i++) {
     const from = path[i];
     const to = path[i + 1];
-    logEvent(`${i + 1}. ${from.i},${from.j} (${from.value}) → ${to.i},${to.j} (${to.value})`);
+const stepNum = String(i + 1).padStart(2, '0');
+logEvent(`${stepNum}. ${from.i},${from.j} (${from.value}) → ${to.i},${to.j} (${to.value})`);
   }
 }
 
