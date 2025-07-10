@@ -335,10 +335,11 @@ game: 1) replace low numbers with higher numbers or 2) make the grid bigger by a
       <option value="alternate" selected>Alternate</option>
       <option value="random">Random</option>
       <option value="pvp">PvP (R)</option>
-      <option value="solo-easy">Solo 🟢 (easy)</option>
-      <option value="solo-medium">Solo 🟡 (medium)</option>
-      <option value="solo-hard">Solo 🔴 (hard)</option>
-    </select>
+  <option value="solo-3x3">Solo mode 3×3 🔁</option>
+  <option value="solo-4x4">Sólo mode 4×4 🔁</option>
+</select>
+<span id="difficultyLabel">🔁</span>
+
      <img id="aiToggleBtn" width="36" height="36" src="data:image/png;base64,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" alt="AI režim" title="Přepnout AI režim" />
 
  <span id="info">It's turn: <strong id="turnIndicator"><img width="32" height="32" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+"></strong></span>
@@ -629,16 +630,16 @@ function replaySolution() {
 // generator resitelne desky 3x3
 function generateSolvableBoardFromDeck(deck) {
   const originalDeck = [...deck];
-  const board = Array.from({ length: 3 }, () => Array(3).fill(null));
+  const board = Array.from({ length: rows }, () => Array(cols).fill(null));
   const placed = [];
 
-const bIndex = originalDeck.indexOf('B');
-originalDeck.splice(bIndex, 1);
+  const bIndex = originalDeck.indexOf('B');
+  originalDeck.splice(bIndex, 1);
 
-// 🎯 Náhodná pozice pro B
-const bi = Math.floor(Math.random() * BOARD_SIZE);
-const bj = Math.floor(Math.random() * BOARD_SIZE);
-const bPos = [bi, bj];
+  const bi = Math.floor(Math.random() * rows);
+  const bj = Math.floor(Math.random() * cols);
+
+  const bPos = [bi, bj];
 
 board[bi][bj] = 'B';
 placed.push({ x: bi, y: bj, value: 'B' });
@@ -648,8 +649,9 @@ console.log(`✅ Položena karta B na [${bi},${bj}]`);
     const set = new Set();
     for (const { x, y } of placed) {
       for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
-        const nx = (x + dx + 3) % 3;
-        const ny = (y + dy + 3) % 3;
+        const nx = (x + dx + rows) % rows;
+        const ny = (y + dy + cols) % cols;
+
         if (board[nx][ny] === null) set.add(`${nx},${ny}`);
       }
     }
@@ -663,8 +665,8 @@ console.log(`✅ Položena karta B na [${bi},${bj}]`);
 
     visited.add(key);
     for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
-      const nx = (from[0] + dx + 3) % 3;
-      const ny = (from[1] + dy + 3) % 3;
+      const nx = (from[0] + dx + rows) % rows;
+      const ny = (from[1] + dy + cols) % cols;
       if (board[nx][ny] == null) continue;
       const res = findPath([nx, ny], to, steps - 1, new Set(visited), [...path, [nx, ny]]);
       if (res) return res;
@@ -672,39 +674,39 @@ console.log(`✅ Položena karta B na [${bi},${bj}]`);
     return null;
   }
 
-function build(index, deck) {
-  if (deck.length === 1 && deck[0] === 'R') {
-    const empty = [];
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        if (board[i][j] == null) empty.push([i, j]);
+  function build(index, deck) {
+    if (deck.length === 1 && deck[0] === 'R') {
+      const empty = [];
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          if (board[i][j] == null) empty.push([i, j]);
+        }
       }
+      if (empty.length === 1) {
+        const [x, y] = empty[0];
+        board[x][y] = 'R';
+        placed.push({ x, y, value: 'R' });
+        return true;
+      }
+      return false;
     }
-    if (empty.length === 1) {
-      const [x, y] = empty[0];
-      board[x][y] = 'R';
-      placed.push({ x, y, value: 'R' });
-      return true;
-    }
-    return false;
-  }
 
-  const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
-  for (let i = 0; i < deck.length; i++) {
-    const card = deck[i];
-    if (card === 'R') continue;
+    const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
+    for (let i = 0; i < deck.length; i++) {
+      const card = deck[i];
+      if (card === 'R') continue;
 
-    for (const [x, y] of options) {
-      if (index === 1) {
-        // 🟥 Speciální omezení pro první kartu (musí být sousední ortogonálně k B)
-        const dx = Math.abs(x - bPos[0]);
-        const dy = Math.abs(y - bPos[1]);
+      for (const [x, y] of options) {
+        if (index === 1) {
 
-        const wrapDx = Math.min(dx, 3 - dx);
-        const wrapDy = Math.min(dy, 3 - dy);
+          const dx = Math.abs(x - bPos[0]);
+          const dy = Math.abs(y - bPos[1]);
+          const wrapDx = Math.min(dx, rows - dx);
+          const wrapDy = Math.min(dy, cols - dy);
 
-        const isOrthogonal = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
-        if (!isOrthogonal) continue;
+
+          const isOrthogonal = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
+          if (!isOrthogonal) continue;
 
         board[x][y] = card;
         placed.push({ x, y, value: card });
@@ -755,29 +757,66 @@ function createBoard() {
 
   soloMode = mode.startsWith('solo');
   isPvP = mode === 'pvp';
-  rows = soloMode ? 3 : 4;
-  cols = soloMode ? 3 : 4;
 
-  const hardVariants = [
-    ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'],
-    ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-    ['1', '2', '3', '4', '4', '4', '4', 'R', 'B'],
-    ['2', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-    ['2', '3', '3', '3', '4', '4', '4', 'R', 'B']
-  ];
+  // 🧠 Detekce velikosti desky podle sufixu
+  if (soloMode && mode.includes('4x4')) {
+    rows = cols = 4;
+  } else if (soloMode && mode.includes('3x3')) {
+    rows = cols = 3;
+  } else {
+    rows = cols = 4;
+  }
 
-  const soloDecks = {
-    'solo-easy': ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
-    'solo-medium': ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
-    'solo-hard': () => hardVariants[Math.floor(Math.random() * hardVariants.length)],
-    'solo-very-hard': ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-    'solo-insane': ['2', '2', '3', '3', '4', '4', '4', 'R', 'B']
+  // 🎲 Spojené náhodné varianty pro 3x3 a 4x4
+  const soloVariants = {
+    'solo-3x3': [
+      ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
+      ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
+      ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'],
+      ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+
+      ['2', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+      ['2', '3', '3', '3', '4', '4', '4', 'R', 'B']
+    ],
+    'solo-4x4': [
+      ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'],
+      ['1','1','1','2','2','2','3','3','3','3','4','4','4','4','R','B'],
+      ['1','1','2','2','2','2','3','3','3','3','4','4','4','4','R','B'],
+      ['1','1','2','2','2','3','3','3','3','3','4','4','4','4','R','B'],
+      ['1','2','2','2','3','3','3','3','3','4','4','4','4','4','R','B']
+    ]
   };
 
-  if (soloMode && rows === 3 && cols === 3) {
-    const deck = typeof soloDecks[mode] === 'function'
-      ? soloDecks[mode]()
-      : soloDecks[mode];
+  if (soloMode) {
+    const options = soloVariants[mode];
+    const deck = options[Math.floor(Math.random() * options.length)];
+
+    // 🧠 Zjistit obtížnost podle složení decku
+    let difficulty = '🔁';
+    const joined = deck.slice().sort().join(',');
+
+    const deckDifficulties = {
+      // 3x3
+      '1,1,1,2,2,2,3,B,R': '🟢',
+      '1,1,2,2,3,3,4,B,R': '🟡',
+      '1,2,3,3,3,3,4,B,R': '🟠',
+      '1,2,3,3,4,4,4,B,R': '🔴',
+      '2,2,3,3,4,4,4,B,R': '🟣',
+      '2,3,3,3,4,4,4,B,R': '🟣',
+
+      // 4x4
+      '1,1,1,1,2,2,2,2,3,3,3,3,4,4,B,R': '🟢',
+      '1,1,1,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟡',
+      '1,1,2,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟠',
+      '1,1,2,2,2,3,3,3,3,3,4,4,4,4,B,R': '🔴',
+      '1,2,2,2,3,3,3,3,3,4,4,4,4,4,B,R': '🟣'
+    };
+
+    if (deckDifficulties[joined]) {
+      difficulty = deckDifficulties[joined];
+    }
+
+    document.getElementById('difficultyLabel').textContent = difficulty;
 
     const result = generateSolvableBoardFromDeck(deck);
     if (!result) {
@@ -790,15 +829,17 @@ function createBoard() {
     
     cards = board.flat();
     positions = {};
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
         if (board[i][j] === 'R') positions.R = { i, j };
         if (board[i][j] === 'B') positions.B = { i, j };
       }
     }
     logEvent(`✅ Vygenerována řešitelná deska (${mode})`);
+
   } else {
     // běžné režimy
+    document.getElementById('difficultyLabel').textContent = '';
     cards = soloMode
       ? typeof soloDecks[mode] === 'function'
         ? soloDecks[mode]()
