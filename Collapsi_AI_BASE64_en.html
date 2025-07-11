@@ -1260,32 +1260,44 @@ function renderBoard() {
 	const overlay = document.getElementById('game-over-overlay');
 	const text = document.getElementById('game-over-text');
 
-	if (soloMode) {
-    // 🧩 V sólo režimu použij vlastní zprávu
+if (soloMode) {
+  // 🧩 V sólo režimu zobraz výsledek podle proměnné soloGameEnd
+  let soloMessage;
 
-    text.innerHTML = `
-      <div class="trophy">🧩</div>
+  if (soloGameEnd === 2) {
+    soloMessage = `
+      <div class="trophy">🤔</div>
       <div>End of game!</div>
       <div>${message}</div>
     `;
-	} else {
-    // 🧑‍🤝‍🧑 PvP nebo AI režim
-    const plainWinnerText = winner === 'R' ? 'Red' : 'Blue';
-    text.innerHTML = `
+  } else if (soloGameEnd === 1){
+    soloMessage = `
       <div class="trophy">🏆</div>
       <div>End of game!</div>
-      <div>Winner <br>is<br><strong>${plainWinnerText}</strong>!</div>
-      <div style="margin-top:10px;">${message}</div>
+      <div>${message}</div>
     `;
-	}
+  }
 
-	overlay.classList.remove('hidden');
+  text.innerHTML = soloMessage;
 
-	// Automatické schování po 3 sekundách
-	setTimeout(() => {
-    overlay.classList.add('hidden');
-	}, 3000);
-	}
+} else {
+  // 🧑‍🤝‍🧑 PvP nebo AI režim
+  const plainWinnerText = winner === 'R' ? 'Červený' : 'Modrý';
+  text.innerHTML = `
+    <div class="trophy">🏆</div>
+    <div>Konec hry!</div>
+    <div>Vítězí <br>hráč<br><strong>${plainWinnerText}</strong>!</div>
+    <div style="margin-top:10px;">${message}</div>
+  `;
+}
+
+		overlay.classList.remove('hidden');
+
+		// Automatické schování po 3 sekundách
+		setTimeout(() => {
+		overlay.classList.add('hidden');
+		}, 3000);
+		}
 
 
 	// 🔽 funkce pro solo hru 
@@ -1488,12 +1500,13 @@ function checkGameOver() {
 
     // ✅ Hráč úspěšně vyřešil puzzle
     if (onExit && allCollapsed) {
+    	soloGameEnd = 1;
     	stats.games++;
       stats.solo++;              // ⬅️ počítáme výhru jen tady!
       updateStats();
 
       setTimeout(() => {
-        showGameOver('R', '🏆\n\n\Congratulations.');
+        showGameOver('R', '🧩\n\n\Congratulations.');
         logEvent(`🏆 Player successfully solved the puzzle.`);
         endGame('R');
       }, 200);
@@ -1503,8 +1516,9 @@ function checkGameOver() {
 
  // ❌ Hráč prohrál – žádný tah a není na výstupu
 if (!hasMoves && !onExit) {
+	soloGameEnd = 2;
   setTimeout(() => {
-    showGameOver('R', '🤔 \n\nTry another\ndeck.');
+    showGameOver('R', '🧩 \n\nTry another\ndeck.');
     logEvent(`🚫  The player has no valid move.`);
 
     // 💡 Výpis správné cesty
