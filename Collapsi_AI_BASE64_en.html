@@ -1282,11 +1282,11 @@ if (soloMode) {
 
 } else {
   // 🧑‍🤝‍🧑 PvP nebo AI režim
-  const plainWinnerText = winner === 'R' ? 'Červený' : 'Modrý';
+  const plainWinnerText = winner === 'R' ? 'Red' : 'Blue';
   text.innerHTML = `
     <div class="trophy">🏆</div>
-    <div>Konec hry!</div>
-    <div>Vítězí <br>hráč<br><strong>${plainWinnerText}</strong>!</div>
+    <div>End of game!</div>
+    <div>Winner<br>is<br><strong>${plainWinnerText}</strong>!</div>
     <div style="margin-top:10px;">${message}</div>
   `;
 }
