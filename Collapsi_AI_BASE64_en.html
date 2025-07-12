@@ -1282,11 +1282,11 @@ if (soloMode) {
 
 } else {
   // 🧑‍🤝‍🧑 PvP nebo AI režim
-  const plainWinnerText = winner === 'R' ? 'Red' : 'Blue';
+  const plainWinnerText = winner === 'R' ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="144" height="144" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="144" height="144" alt="Blue">';
   text.innerHTML = `
     <div class="trophy">🏆</div>
-    <div>End of game!</div>
-    <div>Winner<br>is<br><strong>${plainWinnerText}</strong>!</div>
+    <div></div>
+    <div>${plainWinnerText}</div>
     <div style="margin-top:10px;">${message}</div>
   `;
 }
