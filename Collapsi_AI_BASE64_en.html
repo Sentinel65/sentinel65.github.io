@@ -369,8 +369,9 @@ game: 1) replace low numbers with higher numbers or 2) make the grid bigger by a
     <dt>Number of wins <img style="vertical-align: top;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="16" height="16" alt="Red"> : <span id="playerWins">0</span>
 </dt>
     <dt>Number of wins <img style="vertical-align: top;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="16" height="16" alt="Blue"> : <span id="aiWins">0</span></dt>
-
     <dt>Number of solved 🧩 : <span id="soloWins">0</span></dt>
+    <dt>Number of solved 3x3 🧩 : <span id="solo3x3Wins">0</span></dt>
+    <dt>Number of solved 4x4 🧩 : <span id="solo4x4Wins">0</span></dt>
   </dl>
     <p>  </p>
 
@@ -463,38 +464,43 @@ const cardImages = {
   });
     
     
- let statsRaw = localStorage.getItem('collapsiStats');
-  let stats;
+	  let statsRaw = localStorage.getItem('collapsiStats');
+	  let stats;
 
-  try {
-    stats = JSON.parse(statsRaw);
-    if (
+      try {
+      stats = JSON.parse(statsRaw);
+      if (
       !stats || typeof stats !== 'object' ||
       isNaN(stats.games) || isNaN(stats.player) ||
-      isNaN(stats.ai) || isNaN(stats.solo)
-    ) {
+      isNaN(stats.ai) || isNaN(stats.solo3x3) || isNaN(stats.solo4x4) || isNaN(stats.solo)
+      ) {
       throw new Error('Invalid stats format');
-    }
-  } catch (e) {
-    stats = { games: 0, player: 0, ai: 0, solo: 0 };
-  }
+      }
+      } catch (e) {
+      stats = { games: 0, player: 0, ai: 0, solo: 0, solo3x3: 0, solo4x4: 0 };
+     }
+     if (!('solo3x3' in stats)) stats.solo3x3 = 0;
+     if (!('solo4x4' in stats)) stats.solo4x4 = 0;
 
-  function saveStats() {
-    localStorage.setItem('collapsiStats', JSON.stringify(stats));
-  }
 
-  function updateStats() {
-    document.getElementById('gamesPlayed').textContent = stats.games || 0;
-    document.getElementById('playerWins').textContent = stats.player || 0;
-    document.getElementById('aiWins').textContent = stats.ai || 0;
-    document.getElementById('soloWins').textContent = stats.solo || 0;
-    saveStats();
-  }
+	  function saveStats() {
+		localStorage.setItem('collapsiStats', JSON.stringify(stats));
+	  }
 
-  document.getElementById('resetStatsBtn').addEventListener('click', () => {
-    stats = { games: 0, player: 0, ai: 0, solo: 0 };
-    updateStats();
-  });
+	  function updateStats() {
+		document.getElementById('gamesPlayed').textContent = stats.games || 0;
+		document.getElementById('playerWins').textContent = stats.player || 0;
+		document.getElementById('aiWins').textContent = stats.ai || 0;
+		document.getElementById('soloWins').textContent = stats.solo || 0;
+		document.getElementById('solo3x3Wins').textContent = stats.solo3x3 || 0;
+        document.getElementById('solo4x4Wins').textContent = stats.solo4x4 || 0;
+		saveStats();
+	  }
+
+	  document.getElementById('resetStatsBtn').addEventListener('click', () => {
+		stats = { games: 0, player: 0, ai: 0, solo: 0, solo3x3: 0, solo4x4: 0 };
+		updateStats();
+	  });
 
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
@@ -1498,12 +1504,18 @@ function checkGameOver() {
     const allCollapsed = isAllCollapsedExcept([exit]);
     const hasMoves = getValidMoves('R').length > 0;
 
-    // ✅ Hráč úspěšně vyřešil puzzle
-    if (onExit && allCollapsed) {
-    	soloGameEnd = 1;
-    	stats.games++;
-      stats.solo++;              // ⬅️ počítáme výhru jen tady!
-      updateStats();
+		// ✅ Hráč úspěšně vyřešil puzzle
+		if (onExit && allCollapsed) {
+			soloGameEnd = 1;
+			stats.games++;
+            stats.solo++; // celkové sólo vyřešené
+            const size = board.length; // pokud je board 2D pole, např. 3x3 nebo 4x4
+            if (size === 3) {
+            stats.solo3x3++;
+            } else if (size === 4) {
+           stats.solo4x4++;
+           }
+           updateStats();
 
       setTimeout(() => {
         showGameOver('R', '🧩\n\n\Congratulations.');
