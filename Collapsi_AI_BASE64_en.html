@@ -1231,7 +1231,7 @@ function renderBoard() {
  function logMove(start, dest, fromVal, toVal, pathCoords, score = null, scoreReason = '', player = currentPlayer) {
     const time = new Date().toLocaleTimeString();
     const isRed = player === 'R';
-    const who = isRed ? 'Red' : 'Blue';
+    const who = isRed ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue">';
     const whoColor = isRed ? 'red' : 'blue';
 
     const fullPath = pathCoords.map((p, idx) => {
@@ -1247,9 +1247,9 @@ function renderBoard() {
       ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
       : '';
 
-    const historyNote = isRed
-      ? ` <span style="color:darkred;">[↺ player´s moves in memory]</span>`
-      : '';
+const historyNote = isRed && !soloMode
+  ? ` <span style="color:darkred;">[↺ hráčova paměť]</span>`
+  : '';
 
     const logEntry = `[${time}] <span style="color:${whoColor};">${who}</span>: ${fullPath}${scoreText}${historyNote}<br>`;
     logEl.innerHTML = logEntry + logEl.innerHTML;
@@ -1587,8 +1587,8 @@ if (!hasMoves && !onExit) {
     updateStats();
 
     setTimeout(() => {
-      const loserText = loser === 'R' ? '<span style="color:red;">Red</span>' : '<span style="color:blue;">Blue</span>';
-      const winnerText = winner === 'R' ? '<span style="color:red;"><strong>Red</strong></span>' : '<span style="color:blue;"><strong>Blue</strong></span>';
+      const loserText = loser === 'R' ? '<span style="color:red;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></span>' : '<span style="color:blue;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></span>';
+      const winnerText = winner === 'R' ? '<span style="color:red;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></strong></span>' : '<span style="color:blue;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></strong></span>';
       showGameOver(winner, '');
       const logEntry = `[${new Date().toLocaleTimeString()}] <span style="color:darkgreen;"><strong>End of game – player ${loserText} has no valid move. Winner is ${winnerText}!</strong></span><br>`;
       logEl.innerHTML = logEntry + logEl.innerHTML;
