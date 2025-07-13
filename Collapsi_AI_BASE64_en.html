@@ -464,1178 +464,552 @@ const cardImages = {
   });
     
     
-	  let statsRaw = localStorage.getItem('collapsiStats');
-	  let stats;
+	// Výchozí šablona statistik – přidáš sem nové položky, když budeš chtít v budoucnu
+	const defaultStats = {
+	  games: 0,
+	  player: 0,
+	  ai: 0,
+	  solo: 0,
+	  solo3x3: 0,
+	  solo4x4: 0
+	};
 
-      try {
-      stats = JSON.parse(statsRaw);
-      if (
-      !stats || typeof stats !== 'object' ||
-      isNaN(stats.games) || isNaN(stats.player) ||
-      isNaN(stats.ai) || isNaN(stats.solo3x3) || isNaN(stats.solo4x4) || isNaN(stats.solo)
-      ) {
-      throw new Error('Invalid stats format');
-      }
-      } catch (e) {
-      stats = { games: 0, player: 0, ai: 0, solo: 0, solo3x3: 0, solo4x4: 0 };
-     }
-     if (!('solo3x3' in stats)) stats.solo3x3 = 0;
-     if (!('solo4x4' in stats)) stats.solo4x4 = 0;
+	let statsRaw = localStorage.getItem('collapsiStats');
+	let stats;
 
+	try {
+	  const parsed = JSON.parse(statsRaw);
+	  if (!parsed || typeof parsed !== 'object') throw new Error();
 
-	  function saveStats() {
-		localStorage.setItem('collapsiStats', JSON.stringify(stats));
+	  // Doplnění chybějících klíčů podle šablony (zachová existující hodnoty)
+	  stats = { ...defaultStats, ...parsed };
+
+	  // Ověření, že všechny hodnoty jsou čísla
+	  for (const key in defaultStats) {
+		if (typeof stats[key] !== 'number' || isNaN(stats[key])) {
+		  stats[key] = defaultStats[key];
+		}
 	  }
-
-	  function updateStats() {
-		document.getElementById('gamesPlayed').textContent = stats.games || 0;
-		document.getElementById('playerWins').textContent = stats.player || 0;
-		document.getElementById('aiWins').textContent = stats.ai || 0;
-		document.getElementById('soloWins').textContent = stats.solo || 0;
-		document.getElementById('solo3x3Wins').textContent = stats.solo3x3 || 0;
-        document.getElementById('solo4x4Wins').textContent = stats.solo4x4 || 0;
-		saveStats();
-	  }
-
-	  document.getElementById('resetStatsBtn').addEventListener('click', () => {
-		stats = { games: 0, player: 0, ai: 0, solo: 0, solo3x3: 0, solo4x4: 0 };
-		updateStats();
-	  });
-
-    function shuffle(a) {
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-    }
-
-    function mod(n, m) {
-      return ((n % m) + m) % m;
-    }
-
-function initializeRemainingKeys() {
-console.log("Před nastavením remainingKeys:", remainingKeys);
- 
-    const exit = findExitCard();
-    remainingKeys = [
-      `${exit.i},${exit.j}`,
-      `${positions.R.i},${positions.R.j}`
-    ];
-    console.log("Remaining keys inicializovány pro solo:", remainingKeys);
-console.log("Po nastavení remainingKeys:", remainingKeys)
-
-}
-
-// vypis prevodu tahu resitelne desky v logu hry
-function logCollapsedPath(path) {
-  for (let i = 0; i < path.length - 1; i++) {
-    const from = path[i];
-    const to = path[i + 1];
-const stepNum = String(i + 1).padStart(2, '0');
-logEvent(`${stepNum}. ${from.i},${from.j} (${from.value}) → ${to.i},${to.j} (${to.value})`);
-  }
-}
-
-// vypis tahu resitelne desky v logu hry
-function logSolutionPath(board, solutionPath) {
-  const len = solutionPath.length;
-
-  for (let i = 0; i < len - 1; i++) {
-    const from = solutionPath[i];
-    const to = solutionPath[i + 1];
-
-    const fromVal = from.value || (board?.[from.i]?.[from.j] ?? '?');
-    const toVal = to.value || (board?.[to.i]?.[to.j] ?? '?');
-
-    logEvent(`${i}: (${from.i},${from.j}) = ${fromVal} → (${to.i},${to.j}) = ${toVal}`);
-  }
-}
-
-// zastavi prehravani animace tahu resitelne desky
-function stopReplay() {
-  if (window.replayTimeouts) {
-    for (const t of window.replayTimeouts) clearTimeout(t);
-    window.replayTimeouts = [];
-  }
-  isReplaying = false;
-  console.log('⏹️  Přehrávání zastaveno.');
-};
-
-// spousti a vykresluje prehravani animace tahu resitelne desky
-function replaySolution() {
-  if (!solutionPath || solutionPath.length < 2) {
-    console.warn('❗ Neexistuje cesta k přehrání.');
-    return;
-  }
-
-  console.log('🔁 Spouštím přehrání řešení...');
-
-  // Stopni předchozí přehrávání
-  if (window.replayTimeouts) {
-    for (const t of window.replayTimeouts) clearTimeout(t);
-  }
-  window.replayTimeouts = [];
-
-  // Reset hry
-  collapsed.clear();
-  collapsedBy = {};
-  justCollapsedKey = null;
-  justCollapsedPlayed = false;
-
-  selected = null; // ✅ Zruš výběr aktivní karty
-  lastMoveEnd = null;
-  positions = { R: null, B: null };
-
-  // Obnov hodnoty z původní solutionPath
-  for (const { i, j, value } of solutionPath) {
-    board[i][j] = value;
-  }
-
-  renderBoard(); // 🧼 vykreslení bez zvýraznění
-
-  let stepIndex = 0;
-
-  function nextStep() {
-    if (stepIndex >= solutionPath.length - 1) {
-      console.log('✅ Přehrání řešení dokončeno.');
-      const last = solutionPath.at(-1);
-      const lastCell = document.getElementById(`cell-${last.i}-${last.j}`);
-      if (lastCell) lastCell.classList.add('final');
-      return;
-    }
-
-    const from = solutionPath[stepIndex];
-    const to = solutionPath[stepIndex + 1];
-    const fromKey = `${from.i},${from.j}`;
-
-    const fromCell = document.getElementById(`cell-${from.i}-${from.j}`);
-    const toCell = document.getElementById(`cell-${to.i}-${to.j}`);
-
-    // Zvýrazni obě karty – aktivní (from) i cílovou (to)
-    if (fromCell) fromCell.classList.add('active-step');
-    if (toCell) toCell.classList.add('target-step');
-
-    const t1 = setTimeout(() => {
-      // Zruš zvýraznění
-      if (fromCell) fromCell.classList.remove('active-step');
-      if (toCell) toCell.classList.remove('target-step');
-
-      // Kolaps předchozí karty (pokud to není B)
-      if (from.value !== 'B') {
-        collapsed.add(fromKey);
-        collapsedBy[fromKey] = 'R';
-        justCollapsedKey = fromKey;
-        justCollapsedPlayed = false;
-        console.log(`💥 Kolaps ${stepIndex + 1}: (${from.i},${from.j})`);
-      }
-
-      renderBoard();
-
-      stepIndex++;
-      const t2 = setTimeout(nextStep, 500);
-      window.replayTimeouts.push(t2);
-    }, 2000);
-
-    window.replayTimeouts.push(t1);
-  }
-
-  nextStep();
-}
-
-
-// generator resitelne desky 3x3
-function generateSolvableBoardFromDeck(deck) {
-  const originalDeck = [...deck];
-  const board = Array.from({ length: rows }, () => Array(cols).fill(null));
-  const placed = [];
-
-  const bIndex = originalDeck.indexOf('B');
-  originalDeck.splice(bIndex, 1);
-
-  const bi = Math.floor(Math.random() * rows);
-  const bj = Math.floor(Math.random() * cols);
-
-  const bPos = [bi, bj];
-
-board[bi][bj] = 'B';
-placed.push({ x: bi, y: bj, value: 'B' });
-console.log(`✅ Položena karta B na [${bi},${bj}]`);
-
-  function getEmptyAdjacent() {
-    const set = new Set();
-    for (const { x, y } of placed) {
-      for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
-        const nx = (x + dx + rows) % rows;
-        const ny = (y + dy + cols) % cols;
-
-        if (board[nx][ny] === null) set.add(`${nx},${ny}`);
-      }
-    }
-    return [...set].map(s => s.split(',').map(Number));
-  }
-
-  function findPath(from, to, steps, visited = new Set(), path = []) {
-    const key = `${from[0]},${from[1]}`;
-    if (key === `${to[0]},${to[1]}`) return steps === 0 ? [...path] : null;
-    if (steps <= 0 || visited.has(key)) return null;
-
-    visited.add(key);
-    for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
-      const nx = (from[0] + dx + rows) % rows;
-      const ny = (from[1] + dy + cols) % cols;
-      if (board[nx][ny] == null) continue;
-      const res = findPath([nx, ny], to, steps - 1, new Set(visited), [...path, [nx, ny]]);
-      if (res) return res;
-    }
-    return null;
-  }
-
-  function build(index, deck) {
-    if (deck.length === 1 && deck[0] === 'R') {
-      const empty = [];
-      for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-          if (board[i][j] == null) empty.push([i, j]);
-        }
-      }
-      if (empty.length === 1) {
-        const [x, y] = empty[0];
-        board[x][y] = 'R';
-        placed.push({ x, y, value: 'R' });
-        return true;
-      }
-      return false;
-    }
-
-    const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
-    for (let i = 0; i < deck.length; i++) {
-      const card = deck[i];
-      if (card === 'R') continue;
-
-      for (const [x, y] of options) {
-        if (index === 1) {
-
-          const dx = Math.abs(x - bPos[0]);
-          const dy = Math.abs(y - bPos[1]);
-          const wrapDx = Math.min(dx, rows - dx);
-          const wrapDy = Math.min(dy, cols - dy);
-
-
-          const isOrthogonal = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
-          if (!isOrthogonal) continue;
-
-        board[x][y] = card;
-        placed.push({ x, y, value: card });
-        const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
-        if (build(index + 1, nextDeck)) return true;
-        board[x][y] = null;
-        placed.pop();
-      } else {
-        const last = placed[placed.length - 1];
-        const path = findPath([x, y], [last.x, last.y], parseInt(card));
-        if (path) {
-          board[x][y] = card;
-          placed.push({ x, y, value: card });
-          const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
-          if (build(index + 1, nextDeck)) return true;
-          board[x][y] = null;
-          placed.pop();
-        }
-      }
-    }
-  }
-  return false;
-}
-
-if (build(1, originalDeck)) {
-  console.log('🎯 Finální deska:');
-  console.table(board);
-  console.log('📜 Tahy (od posledního k prvnímu):');
-  for (let i = placed.length - 1; i > 0; i--) {
-    const from = placed[i];
-    const to = placed[i - 1];
-    console.log(`${placed.length - i}. ${from.x},${from.y} (${from.value}) → ${to.x},${to.y} (${to.value})`);
-  }
-
-  return {
-    board,
-    path: placed.slice().reverse() // od R po B
-  };
-} else {
-  console.warn('❌ Nepodařilo se složit řešitelnou desku.');
-  return null;
-}
-}
-
-
-function createBoard() {
-  const mode = document.getElementById('starter').value;
-
-  soloMode = mode.startsWith('solo');
-  isPvP = mode === 'pvp';
-
-  // 🧠 Detekce velikosti desky podle sufixu
-  if (soloMode && mode.includes('4x4')) {
-    rows = cols = 4;
-  } else if (soloMode && mode.includes('3x3')) {
-    rows = cols = 3;
-  } else {
-    rows = cols = 4;
-  }
-
-  // 🎲 Spojené náhodné varianty pro 3x3 a 4x4
-  const soloVariants = {
-    'solo-3x3': [
-      ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
-      ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
-      ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'],
-      ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-
-      ['2', '2', '3', '3', '4', '4', '4', 'R', 'B'],
-      ['2', '3', '3', '3', '4', '4', '4', 'R', 'B']
-    ],
-    'solo-4x4': [
-      ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'],
-      ['1','1','1','2','2','2','3','3','3','3','4','4','4','4','R','B'],
-      ['1','1','2','2','2','2','3','3','3','3','4','4','4','4','R','B'],
-      ['1','1','2','2','2','3','3','3','3','3','4','4','4','4','R','B'],
-      ['1','2','2','2','3','3','3','3','3','4','4','4','4','4','R','B']
-    ]
-  };
-
-  if (soloMode) {
-    const options = soloVariants[mode];
-    const deck = options[Math.floor(Math.random() * options.length)];
-
-    // 🧠 Zjistit obtížnost podle složení decku
-    let difficulty = '🔁';
-    const joined = deck.slice().sort().join(',');
-
-    const deckDifficulties = {
-      // 3x3
-      '1,1,1,2,2,2,3,B,R': '🟢',
-      '1,1,2,2,3,3,4,B,R': '🟡',
-      '1,2,3,3,3,3,4,B,R': '🟠',
-      '1,2,3,3,4,4,4,B,R': '🔴',
-      '2,2,3,3,4,4,4,B,R': '🟣',
-      '2,3,3,3,4,4,4,B,R': '🟣',
-
-      // 4x4
-      '1,1,1,1,2,2,2,2,3,3,3,3,4,4,B,R': '🟢',
-      '1,1,1,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟡',
-      '1,1,2,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟠',
-      '1,1,2,2,2,3,3,3,3,3,4,4,4,4,B,R': '🔴',
-      '1,2,2,2,3,3,3,3,3,4,4,4,4,4,B,R': '🟣'
-    };
-
-    if (deckDifficulties[joined]) {
-      difficulty = deckDifficulties[joined];
-    }
-
-    document.getElementById('difficultyLabel').textContent = difficulty;
-
-    const result = generateSolvableBoardFromDeck(deck);
-    if (!result) {
-      logEvent('❌ Nepodařilo se vygenerovat desku.');
-      return;
-    }
-
-    board = result.board;
-    solutionPath = result.path.map(({ x, y, value }) => ({ i: x, j: y, value }));
-    
-    cards = board.flat();
-    positions = {};
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        if (board[i][j] === 'R') positions.R = { i, j };
-        if (board[i][j] === 'B') positions.B = { i, j };
-      }
-    }
-    logEvent(`✅ Vygenerována řešitelná deska (${mode})`);
-
-  } else {
-    // běžné režimy
-    document.getElementById('difficultyLabel').textContent = '';
-    cards = soloMode
-      ? typeof soloDecks[mode] === 'function'
-        ? soloDecks[mode]()
-        : soloDecks[mode]
-      : ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
-
-    shuffle(cards);
-    board = [];
-    positions = {};
-    for (let i = 0; i < rows; i++) {
-      board[i] = [];
-      for (let j = 0; j < cols; j++) {
-        const index = i * cols + j;
-        board[i][j] = cards[index];
-        if (board[i][j] === 'R') positions.R = { i, j };
-        if (board[i][j] === 'B') positions.B = { i, j };
-      }
-    }
-  }
-
-  // Reset stavu hry
-  collapsed.clear();
-  selected = null;
-  aiEnabled = !soloMode && !isPvP;
-
- 
-  // 🎮 Výběr začínajícího hráče
-  if (mode === 'random') {
-    currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
-  } else if (mode === 'alternate') {
-    currentPlayer = gameCount % 2 === 0 ? 'R' : 'B';
-  } else if (isPvP || soloMode) {
-    currentPlayer = 'R';
-  } else {
-    currentPlayer = mode;
-  }
-
-  gameCount++;
-  logEl.innerHTML = '';
-  updateTurnText();
-  lastMoveEnd = null;
-  blueAIMoveCount = 0;
-  renderBoard();
-
-  if (currentPlayer === 'B' && aiEnabled) {
-    setTimeout(aiMove, 500);
-  }
-
-  aiToggleBtn.style.pointerEvents = (!soloMode && !isPvP) ? 'auto' : 'none';
-  aiToggleBtn.style.opacity = (!soloMode && !isPvP) ? '1' : '0.5';
-  aiToggleBtn.title = (!soloMode && !isPvP)
-    ? 'Click to change AI mode'
-    : 'AI mode disabled in [PvP] or [Solo mode]';
-
-  logEvent(!soloMode && !isPvP
-    ? `AI mode: ${aiMode}`
-    : 'AI mode disabled in [PvP] or [Solo mode]');
-
-}
-
-function updateTurnText() {
-  if (soloMode) {
-     turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
-    turnInd.style.color = 'red';
-    return;
-  }
-
-
-
-  if (currentPlayer === 'R') {
-     turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
-    turnInd.style.color = 'red';
-  } else {
-turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="24" height="24" alt="Blue">';
-    turnInd.style.color = 'blue';
-  }
-}
-
-function countRemainingActive() {
-  let count = 0;
-  for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-      const key = `${i},${j}`;
-      if (!collapsed.has(key) && board[i][j] !== '') {
-        count++;
-      }
-    }
-  }
-  return count;
-}
-
-   function updateTurnText() {
-  if (currentPlayer === 'R') {
-         turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
-    turnInd.style.color = 'red';
-  } else {
-turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="24" height="24" alt="Blue">';
-    turnInd.style.color = 'blue';
-  }
-}
-
-function countRemainingActive() {
-  let count = 0;
-  for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-      const key = `${i},${j}`;
-      if (!collapsed.has(key) && board[i][j] !== '') {
-        count++;
-      }
-    }
-  }
-  return count;
-}
-
-
-function getValidMoves(player, b = board, posMap = positions) {
-  const pos = posMap[player];
-  if (!pos) return [];
-
-  const start = b[pos.i][pos.j];
-  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
-  const moves = [];
-  const rows = board.length;
-  const cols = board[0].length;
-
-  function dfs(i, j, rem, seen, path) {
-    if (rem === 0) {
-      if (i !== pos.i || j !== pos.j) {
-        if (!seen.has(`${pos.i},${pos.j}`) &&
-            !(positions.R && positions.R.i === i && positions.R.j === j) &&
-            !(positions.B && positions.B.i === i && positions.B.j === j)) {
-          moves.push({ i, j, path });
-        }
-      }
-      return;
-    }
-
-    for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
-      const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
-      if (seen.has(key) || collapsed.has(key)) continue;
-      const s2 = new Set(seen);
-      s2.add(key);
-      dfs(ni, nj, rem - 1, s2, path + d);
-    }
-  }
-
-  // aplikováno nové pravidlo prvního tahu ve hře, kdy se může o 1 krok
-if (steps) {
-  // ✅ Karta má číselnou hodnotu – klasické DFS podle počtu kroků
-  dfs(pos.i, pos.j, steps, new Set(), '');
-} else {
-  // 👉 První tah z R nebo B: pouze 1 krok ortogonálně (bez rohů)
-  // ❌ Zakázáno vstoupit na druhého jokera
-
-  const directions = [
-    [1, 0, 'D'], [-1, 0, 'U'],
-    [0, 1, 'R'], [0, -1, 'L']
-  ];
-
-  for (const [di, dj, d] of directions) {
-    const ni = mod(pos.i + di, rows);
-    const nj = mod(pos.j + dj, cols);
-    const key = `${ni},${nj}`;
-
-    if (collapsed.has(key)) continue;
-
-    const targetValue = board[ni][nj];
-    const isOpponentJoker =
-      (start === 'R' && targetValue === 'B') ||
-      (start === 'B' && targetValue === 'R');
-
-    if (isOpponentJoker) continue;
-
-    moves.push({ i: ni, j: nj, path: d });
-  }
-}
-
-
-  // 🔄 DODATEK – pokud zůstává pouze aktivní karta a výstupní 'B', přidáme tah na 'B' i bez ohledu na hodnotu
-  if (soloMode) {
-    const remaining = [];
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        if (!collapsed.has(`${i},${j}`)) remaining.push({ i, j });
-      }
-    }
-
-    if (remaining.length === 2) {
-      const exit = findExitCard();
-      const other = remaining.find(cell => !(cell.i === exit.i && cell.j === exit.j));
-      if (other.i === pos.i && other.j === pos.j) {
-        // Jsme na poslední aktivní kartě, přidejme ručně tah na B, pokud je sousední
-        const dx = Math.abs(pos.i - exit.i);
-        const dy = Math.abs(pos.j - exit.j);
-        const wrapDx = Math.min(dx, rows - dx);
-        const wrapDy = Math.min(dy, cols - dy);
-        const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
-
-        if (isAdjacent) {
-          moves.push({ i: exit.i, j: exit.j, path: '' }); // prázdná cesta – speciální případ
-        }
-      }
-    }
-  }
-
-  return moves;
-}
-
-
-    // Proměnné pro grafický efekt rozpadu karty 
-	let collapsedBy = {};
-	let justCollapsedKey = null;
-	let justCollapsedPlayed = false; // nová proměnná
-
-function triggerShatter(cell, player, value) {
-  const rect = cell.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-
-  const color = player === 'R' ? 'rgba(255, 50, 50, 0.8)' : 'rgba(50, 150, 255, 0.8)';
-
-  let shapeClass = 'circle'; // výchozí tvar
-
-  switch (value) {
-    case '1':
-      shapeClass = 'circle';
-      break;
-    case '2':
-      shapeClass = 'square';
-      break;
-    case '3':
-      shapeClass = 'triangle';
-      break;
-    case '4':
-      shapeClass = 'star';
-      break;
-  }
-
-  for (let i = 0; i < 80; i++) {
-    const particle = document.createElement('div');
-    particle.className = `particle ${shapeClass}`;
-    particle.style.background = color;
-    particle.style.left = `${centerX}px`;
-    particle.style.top = `${centerY}px`;
-
-    const angle = Math.random() * 2 * Math.PI;
-    const distance = 60 + Math.random() * 60;
-    const dx = Math.cos(angle) * distance;
-    const dy = Math.sin(angle) * distance;
-
-    particle.style.setProperty('--dx', `${dx}px`);
-    particle.style.setProperty('--dy', `${dy}px`);
-
-    document.body.appendChild(particle);
-    setTimeout(() => particle.remove(), 1000);
-  }
-}
-
-function renderBoard() {
-  const el = document.getElementById('board');
-  el.style.display = 'grid';
-  el.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-  el.innerHTML = '';
-  const valids = selected ? getValidMoves(currentPlayer) : [];
-
-  const redPos = positions.R;
-  const bluePos = positions.B;
-  const exitCard = soloMode ? findExitCard() : null;
-
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < cols; j++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.id = `cell-${i}-${j}`; // ✅ Jednoznačné ID podle pozice
-
-      // 🧹 Reset všech předešlých stylů a tříd
-      cell.classList.remove('highlight', 'valid', 'active-step', 'final');
-      cell.style.border = '';
-      cell.style.boxShadow = '';
-
-      const key = `${i},${j}`;
-
-      // 💥 Rozpadlá karta
-      if (collapsed.has(key)) {
-        const ghost = document.createElement('div');
-        ghost.className = 'cell';
-        ghost.style.visibility = 'visible';
-        ghost.style.position = 'relative';
-        el.appendChild(ghost);
-
-        if (key === justCollapsedKey && !justCollapsedPlayed) {
-          setTimeout(() => {
-            triggerShatter(ghost, collapsedBy[key]);
-            ghost.style.visibility = 'hidden';
-          }, 50);
-          justCollapsedPlayed = true;
-        } else {
-          ghost.style.visibility = 'hidden';
-        }
-
-        continue;
-      }
-
-      const value = board[i][j];
-
-      // 📷 Obrázek nebo text
-      if (cardImages[value]) {
-        const img = document.createElement('img');
-        img.src = cardImages[value];
-        img.alt = value;
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        cell.appendChild(img);
-      } else {
-        cell.textContent = value;
-      }
-
-      const isRed = redPos && redPos.i === i && redPos.j === j;
-      const isBlue = bluePos && bluePos.i === i && bluePos.j === j;
-      const isCurrent = (currentPlayer === 'R' && isRed) || (currentPlayer === 'B' && isBlue);
-      const isOpponent = (currentPlayer === 'R' && isBlue) || (currentPlayer === 'B' && isRed);
-      const isLast = lastMoveEnd && lastMoveEnd.i === i && lastMoveEnd.j === j;
-      const isExit = soloMode && exitCard && i === exitCard.i && j === exitCard.j;
-
-      // 🎯 SOLO režim
-      if (soloMode) {
-        const isSelected = selected && selected.i === i && selected.j === j;
-
-        if (isSelected) {
-          cell.style.border = '4px solid red';
-          cell.style.boxShadow = '0 0 10px red';
-        } else if (isLast) {
-          cell.style.border = '2px solid red';
-          cell.style.boxShadow = '0 0 5px red';
-        } else if (isRed) {
-          cell.style.border = '3px solid red';
-          cell.style.boxShadow = '0 0 8px red';
-        }
-      } else {
-        // 🤼 PvP / AI režim
-        if (isCurrent) {
-          cell.classList.add('highlight');
-          cell.style.boxShadow = currentPlayer === 'R'
-            ? '0 0 0 4px red'
-            : '0 0 0 4px blue';
-        } else if (isOpponent) {
-          cell.style.boxShadow = currentPlayer === 'R'
-            ? '0 0 0 4px red dotted'
-            : '0 0 0 4px blue dotted';
-        }
-
-        if (isLast) {
-          cell.style.border = currentPlayer === 'R'
-            ? '2px solid blue'
-            : '2px solid red';
-          cell.style.boxShadow = currentPlayer === 'R'
-            ? '0 0 10px blue'
-            : '0 0 10px red';
-        }
-      }
-
-      // ✅ Platné tahy (včetně výstupu)
-      if (selected) {
-        const allowExit = isExit && isAllCollapsedExcept([exitCard]);
-        const isValid = valids.some(m => m.i === i && m.j === j);
-
-        if (isValid || allowExit) {
-          cell.classList.add('valid');
-        }
-      }
-
-      cell.addEventListener('click', () => selectCell(i, j, false));
-      el.appendChild(cell);
-    }
-  }
-}
-
-
- function logMove(start, dest, fromVal, toVal, pathCoords, score = null, scoreReason = '', player = currentPlayer) {
-    const time = new Date().toLocaleTimeString();
-    const isRed = player === 'R';
-    const who = isRed ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue">';
-    const whoColor = isRed ? 'red' : 'blue';
-
-    const fullPath = pathCoords.map((p, idx) => {
-      const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
-      return `${p.i},${p.j}${val}`;
-    }).join(' → ');
-
-    let scoreColor = 'gray';
-    if (score >= 7) scoreColor = 'green';
-    else if (score >= 4) scoreColor = 'orange';
-
-    const scoreText = score !== null
-      ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
-      : '';
-
-const historyNote = isRed && !soloMode
-  ? ` <span style="color:darkred;">[↺ player's memory]</span>`
-  : '';
-
-    const logEntry = `[${time}] <span style="color:${whoColor};">${who}</span>: ${fullPath}${scoreText}${historyNote}<br>`;
-    logEl.innerHTML = logEntry + logEl.innerHTML;
+	} catch (e) {
+	  // V případě chyby použij výchozí statistiky
+	  stats = { ...defaultStats };
 	}
 
-	//  Grafické zobrazení konce hry a vítěze 
-	function showGameOver(winner, message = '') {
-	const overlay = document.getElementById('game-over-overlay');
-	const text = document.getElementById('game-over-text');
+		  function saveStats() {
+			localStorage.setItem('collapsiStats', JSON.stringify(stats));
+		  }
 
-if (soloMode) {
-  // 🧩 V sólo režimu zobraz výsledek podle proměnné soloGameEnd
-  let soloMessage;
+		// update statistik
+		  function updateStats() {
+			document.getElementById('gamesPlayed').textContent = stats.games || 0;
+			document.getElementById('playerWins').textContent = stats.player || 0;
+			document.getElementById('aiWins').textContent = stats.ai || 0;
+			document.getElementById('soloWins').textContent = stats.solo || 0;
+			document.getElementById('solo3x3Wins').textContent = stats.solo3x3 || 0;
+		    document.getElementById('solo4x4Wins').textContent = stats.solo4x4 || 0;
+			saveStats();
+		  }
 
-  if (soloGameEnd === 2) {
-    soloMessage = `
-      <div class="trophy">🤔</div>
-      <div>End of game!</div>
-      <div>${message}</div>
-    `;
-  } else if (soloGameEnd === 1){
-    soloMessage = `
-      <div class="trophy">🏆</div>
-      <div>End of game!</div>
-      <div>${message}</div>
-    `;
-  }
+		// reset statistik
+		  document.getElementById('resetStatsBtn').addEventListener('click', () => {
+			stats = { games: 0, player: 0, ai: 0, solo: 0, solo3x3: 0, solo4x4: 0 };
+			updateStats();
+		  });
 
-  text.innerHTML = soloMessage;
 
-} else {
-  // 🧑‍🤝‍🧑 PvP nebo AI režim
-  const plainWinnerText = winner === 'R' ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="144" height="144" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="144" height="144" alt="Blue">';
-  text.innerHTML = `
-    <div class="trophy">🏆</div>
-    <div></div>
-    <div>${plainWinnerText}</div>
-    <div style="margin-top:10px;">${message}</div>
-  `;
-}
-
-		overlay.classList.remove('hidden');
-
-		// Automatické schování po 3 sekundách
-		setTimeout(() => {
-		overlay.classList.add('hidden');
-		}, 3000);
+		function shuffle(a) {
+		  for (let i = a.length - 1; i > 0; i--) {
+		    const j = Math.floor(Math.random() * (i + 1));
+		    [a[i], a[j]] = [a[j], a[i]];
+		  }
 		}
 
+		function mod(n, m) {
+		  return ((n % m) + m) % m;
+		}
 
-	// 🔽 funkce pro solo hru 
+	function initializeRemainingKeys() {
+	console.log("Před nastavením remainingKeys:", remainingKeys);
+	 
+		const exit = findExitCard();
+		remainingKeys = [
+		  `${exit.i},${exit.j}`,
+		  `${positions.R.i},${positions.R.j}`
+		];
+		console.log("Remaining keys inicializovány pro solo:", remainingKeys);
+	console.log("Po nastavení remainingKeys:", remainingKeys)
 
-	function findExitCard() {
-	for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-      if (board[i][j] === 'B') return { i, j };
-    }
 	}
-	return null;
+
+	// vypis prevodu tahu resitelne desky v logu hry
+	function logCollapsedPath(path) {
+	  for (let i = 0; i < path.length - 1; i++) {
+		const from = path[i];
+		const to = path[i + 1];
+	const stepNum = String(i + 1).padStart(2, '0');
+	logEvent(`${stepNum}. ${from.i},${from.j} (${from.value}) → ${to.i},${to.j} (${to.value})`);
+	  }
 	}
 
-	function isAllCollapsedExcept(exceptions = []) {
-	  const exceptionKeys = new Set(exceptions.map(p => `${p.i},${p.j}`));
+	// vypis tahu resitelne desky v logu hry
+	function logSolutionPath(board, solutionPath) {
+	  const len = solutionPath.length;
+
+	  for (let i = 0; i < len - 1; i++) {
+		const from = solutionPath[i];
+		const to = solutionPath[i + 1];
+
+		const fromVal = from.value || (board?.[from.i]?.[from.j] ?? '?');
+		const toVal = to.value || (board?.[to.i]?.[to.j] ?? '?');
+
+		logEvent(`${i}: (${from.i},${from.j}) = ${fromVal} → (${to.i},${to.j}) = ${toVal}`);
+	  }
+	}
+
+	// zastavi prehravani animace tahu resitelne desky
+	function stopReplay() {
+	  if (window.replayTimeouts) {
+		for (const t of window.replayTimeouts) clearTimeout(t);
+		window.replayTimeouts = [];
+	  }
+	  isReplaying = false;
+	  console.log('⏹️  Přehrávání zastaveno.');
+	};
+
+	// spousti a vykresluje prehravani animace tahu resitelne desky
+	function replaySolution() {
+	  if (!solutionPath || solutionPath.length < 2) {
+		console.warn('❗ Neexistuje cesta k přehrání.');
+		return;
+	  }
+
+	  console.log('🔁 Spouštím přehrání řešení...');
+
+	  // Stopni předchozí přehrávání
+	  if (window.replayTimeouts) {
+		for (const t of window.replayTimeouts) clearTimeout(t);
+	  }
+	  window.replayTimeouts = [];
+
+	  // Reset hry
+	  collapsed.clear();
+	  collapsedBy = {};
+	  justCollapsedKey = null;
+	  justCollapsedPlayed = false;
+
+	  selected = null; // ✅ Zruš výběr aktivní karty
+	  lastMoveEnd = null;
+	  positions = { R: null, B: null };
+
+	  // Obnov hodnoty z původní solutionPath
+	  for (const { i, j, value } of solutionPath) {
+		board[i][j] = value;
+	  }
+
+	  renderBoard(); // 🧼 vykreslení bez zvýraznění
+
+	  let stepIndex = 0;
+
+	  function nextStep() {
+		if (stepIndex >= solutionPath.length - 1) {
+		  console.log('✅ Přehrání řešení dokončeno.');
+		  const last = solutionPath.at(-1);
+		  const lastCell = document.getElementById(`cell-${last.i}-${last.j}`);
+		  if (lastCell) lastCell.classList.add('final');
+		  return;
+		}
+
+		const from = solutionPath[stepIndex];
+		const to = solutionPath[stepIndex + 1];
+		const fromKey = `${from.i},${from.j}`;
+
+		const fromCell = document.getElementById(`cell-${from.i}-${from.j}`);
+		const toCell = document.getElementById(`cell-${to.i}-${to.j}`);
+
+		// Zvýrazni obě karty – aktivní (from) i cílovou (to)
+		if (fromCell) fromCell.classList.add('active-step');
+		if (toCell) toCell.classList.add('target-step');
+
+		const t1 = setTimeout(() => {
+		  // Zruš zvýraznění
+		  if (fromCell) fromCell.classList.remove('active-step');
+		  if (toCell) toCell.classList.remove('target-step');
+
+		  // Kolaps předchozí karty (pokud to není B)
+		  if (from.value !== 'B') {
+		    collapsed.add(fromKey);
+		    collapsedBy[fromKey] = 'R';
+		    justCollapsedKey = fromKey;
+		    justCollapsedPlayed = false;
+		    console.log(`💥 Kolaps ${stepIndex + 1}: (${from.i},${from.j})`);
+		  }
+
+		  renderBoard();
+
+		  stepIndex++;
+		  const t2 = setTimeout(nextStep, 500);
+		  window.replayTimeouts.push(t2);
+		}, 2000);
+
+		window.replayTimeouts.push(t1);
+	  }
+
+	  nextStep();
+	}
+
+
+	// generator resitelne desky 3x3
+	function generateSolvableBoardFromDeck(deck) {
+	  const originalDeck = [...deck];
+	  const board = Array.from({ length: rows }, () => Array(cols).fill(null));
+	  const placed = [];
+
+	  const bIndex = originalDeck.indexOf('B');
+	  originalDeck.splice(bIndex, 1);
+
+	  const bi = Math.floor(Math.random() * rows);
+	  const bj = Math.floor(Math.random() * cols);
+
+	  const bPos = [bi, bj];
+
+	board[bi][bj] = 'B';
+	placed.push({ x: bi, y: bj, value: 'B' });
+	console.log(`✅ Položena karta B na [${bi},${bj}]`);
+
+	  function getEmptyAdjacent() {
+		const set = new Set();
+		for (const { x, y } of placed) {
+		  for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+		    const nx = (x + dx + rows) % rows;
+		    const ny = (y + dy + cols) % cols;
+
+		    if (board[nx][ny] === null) set.add(`${nx},${ny}`);
+		  }
+		}
+		return [...set].map(s => s.split(',').map(Number));
+	  }
+
+	  function findPath(from, to, steps, visited = new Set(), path = []) {
+		const key = `${from[0]},${from[1]}`;
+		if (key === `${to[0]},${to[1]}`) return steps === 0 ? [...path] : null;
+		if (steps <= 0 || visited.has(key)) return null;
+
+		visited.add(key);
+		for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+		  const nx = (from[0] + dx + rows) % rows;
+		  const ny = (from[1] + dy + cols) % cols;
+		  if (board[nx][ny] == null) continue;
+		  const res = findPath([nx, ny], to, steps - 1, new Set(visited), [...path, [nx, ny]]);
+		  if (res) return res;
+		}
+		return null;
+	  }
+
+	  function build(index, deck) {
+		if (deck.length === 1 && deck[0] === 'R') {
+		  const empty = [];
+		  for (let i = 0; i < rows; i++) {
+		    for (let j = 0; j < cols; j++) {
+		      if (board[i][j] == null) empty.push([i, j]);
+		    }
+		  }
+		  if (empty.length === 1) {
+		    const [x, y] = empty[0];
+		    board[x][y] = 'R';
+		    placed.push({ x, y, value: 'R' });
+		    return true;
+		  }
+		  return false;
+		}
+
+		const options = getEmptyAdjacent().sort(() => Math.random() - 0.5);
+		for (let i = 0; i < deck.length; i++) {
+		  const card = deck[i];
+		  if (card === 'R') continue;
+
+		  for (const [x, y] of options) {
+		    if (index === 1) {
+
+		      const dx = Math.abs(x - bPos[0]);
+		      const dy = Math.abs(y - bPos[1]);
+		      const wrapDx = Math.min(dx, rows - dx);
+		      const wrapDy = Math.min(dy, cols - dy);
+
+
+		      const isOrthogonal = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
+		      if (!isOrthogonal) continue;
+
+		    board[x][y] = card;
+		    placed.push({ x, y, value: card });
+		    const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
+		    if (build(index + 1, nextDeck)) return true;
+		    board[x][y] = null;
+		    placed.pop();
+		  } else {
+		    const last = placed[placed.length - 1];
+		    const path = findPath([x, y], [last.x, last.y], parseInt(card));
+		    if (path) {
+		      board[x][y] = card;
+		      placed.push({ x, y, value: card });
+		      const nextDeck = deck.slice(0, i).concat(deck.slice(i + 1));
+		      if (build(index + 1, nextDeck)) return true;
+		      board[x][y] = null;
+		      placed.pop();
+		    }
+		  }
+		}
+	  }
+	  return false;
+	}
+
+	if (build(1, originalDeck)) {
+	  console.log('🎯 Finální deska:');
+	  console.table(board);
+	  console.log('📜 Tahy (od posledního k prvnímu):');
+	  for (let i = placed.length - 1; i > 0; i--) {
+		const from = placed[i];
+		const to = placed[i - 1];
+		console.log(`${placed.length - i}. ${from.x},${from.y} (${from.value}) → ${to.x},${to.y} (${to.value})`);
+	  }
+
+	  return {
+		board,
+		path: placed.slice().reverse() // od R po B
+	  };
+	} else {
+	  console.warn('❌ Nepodařilo se složit řešitelnou desku.');
+	  return null;
+	}
+	}
+
+
+	function createBoard() {
+	  const mode = document.getElementById('starter').value;
+
+	  soloMode = mode.startsWith('solo');
+	  isPvP = mode === 'pvp';
+
+	  // 🧠 Detekce velikosti desky podle sufixu
+	  if (soloMode && mode.includes('4x4')) {
+		rows = cols = 4;
+	  } else if (soloMode && mode.includes('3x3')) {
+		rows = cols = 3;
+	  } else {
+		rows = cols = 4;
+	  }
+
+	  // 🎲 Spojené náhodné varianty pro 3x3 a 4x4
+	  const soloVariants = {
+		'solo-3x3': [
+		  ['1', '1', '1', '2', '2', '2', '3', 'R', 'B'],
+		  ['1', '1', '2', '2', '3', '3', '4', 'R', 'B'],
+		  ['1', '2', '3', '3', '3', '3', '4', 'R', 'B'],
+		  ['1', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+
+		  ['2', '2', '3', '3', '4', '4', '4', 'R', 'B'],
+		  ['2', '3', '3', '3', '4', '4', '4', 'R', 'B']
+		],
+		'solo-4x4': [
+		  ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'],
+		  ['1','1','1','2','2','2','3','3','3','3','4','4','4','4','R','B'],
+		  ['1','1','2','2','2','2','3','3','3','3','4','4','4','4','R','B'],
+		  ['1','1','2','2','2','3','3','3','3','3','4','4','4','4','R','B'],
+		  ['1','2','2','2','3','3','3','3','3','4','4','4','4','4','R','B']
+		]
+	  };
+
+	  if (soloMode) {
+		const options = soloVariants[mode];
+		const deck = options[Math.floor(Math.random() * options.length)];
+
+		// 🧠 Zjistit obtížnost podle složení decku
+		let difficulty = '🔁';
+		const joined = deck.slice().sort().join(',');
+
+		const deckDifficulties = {
+		  // 3x3
+		  '1,1,1,2,2,2,3,B,R': '🟢',
+		  '1,1,2,2,3,3,4,B,R': '🟡',
+		  '1,2,3,3,3,3,4,B,R': '🟠',
+		  '1,2,3,3,4,4,4,B,R': '🔴',
+		  '2,2,3,3,4,4,4,B,R': '🟣',
+		  '2,3,3,3,4,4,4,B,R': '🟣',
+
+		  // 4x4
+		  '1,1,1,1,2,2,2,2,3,3,3,3,4,4,B,R': '🟢',
+		  '1,1,1,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟡',
+		  '1,1,2,2,2,2,3,3,3,3,4,4,4,4,B,R': '🟠',
+		  '1,1,2,2,2,3,3,3,3,3,4,4,4,4,B,R': '🔴',
+		  '1,2,2,2,3,3,3,3,3,4,4,4,4,4,B,R': '🟣'
+		};
+
+		if (deckDifficulties[joined]) {
+		  difficulty = deckDifficulties[joined];
+		}
+
+		document.getElementById('difficultyLabel').textContent = difficulty;
+
+		const result = generateSolvableBoardFromDeck(deck);
+		if (!result) {
+		  logEvent('❌ Nepodařilo se vygenerovat desku.');
+		  return;
+		}
+
+		board = result.board;
+		solutionPath = result.path.map(({ x, y, value }) => ({ i: x, j: y, value }));
+		
+		cards = board.flat();
+		positions = {};
+		for (let i = 0; i < rows; i++) {
+		  for (let j = 0; j < cols; j++) {
+		    if (board[i][j] === 'R') positions.R = { i, j };
+		    if (board[i][j] === 'B') positions.B = { i, j };
+		  }
+		}
+		logEvent(`✅ Vygenerována řešitelná deska (${mode})`);
+
+	  } else {
+		// běžné režimy
+		document.getElementById('difficultyLabel').textContent = '';
+		cards = soloMode
+		  ? typeof soloDecks[mode] === 'function'
+		    ? soloDecks[mode]()
+		    : soloDecks[mode]
+		  : ['1','1','1','1','2','2','2','2','3','3','3','3','4','4','R','B'];
+
+		shuffle(cards);
+		board = [];
+		positions = {};
+		for (let i = 0; i < rows; i++) {
+		  board[i] = [];
+		  for (let j = 0; j < cols; j++) {
+		    const index = i * cols + j;
+		    board[i][j] = cards[index];
+		    if (board[i][j] === 'R') positions.R = { i, j };
+		    if (board[i][j] === 'B') positions.B = { i, j };
+		  }
+		}
+	  }
+
+	  // Reset stavu hry
+	  collapsed.clear();
+	  selected = null;
+	  aiEnabled = !soloMode && !isPvP;
+
+	 
+	  // 🎮 Výběr začínajícího hráče
+	  if (mode === 'random') {
+		currentPlayer = Math.random() < 0.5 ? 'R' : 'B';
+	  } else if (mode === 'alternate') {
+		currentPlayer = gameCount % 2 === 0 ? 'R' : 'B';
+	  } else if (isPvP || soloMode) {
+		currentPlayer = 'R';
+	  } else {
+		currentPlayer = mode;
+	  }
+
+	  gameCount++;
+	  logEl.innerHTML = '';
+	  updateTurnText();
+	  lastMoveEnd = null;
+	  blueAIMoveCount = 0;
+	  renderBoard();
+
+	  if (currentPlayer === 'B' && aiEnabled) {
+		setTimeout(aiMove, 500);
+	  }
+
+	  aiToggleBtn.style.pointerEvents = (!soloMode && !isPvP) ? 'auto' : 'none';
+	  aiToggleBtn.style.opacity = (!soloMode && !isPvP) ? '1' : '0.5';
+	  aiToggleBtn.title = (!soloMode && !isPvP)
+		? 'Click to change AI mode'
+		: 'AI mode disabled in [PvP] or [Solo mode]';
+
+	  logEvent(!soloMode && !isPvP
+		? `AI mode: ${aiMode}`
+		: 'AI mode disabled in [PvP] or [Solo mode]');
+
+	}
+
+	function updateTurnText() {
+	  if (soloMode) {
+		 turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
+		turnInd.style.color = 'red';
+		return;
+	  }
+
+
+
+	  if (currentPlayer === 'R') {
+		 turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
+		turnInd.style.color = 'red';
+	  } else {
+	turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="24" height="24" alt="Blue">';
+		turnInd.style.color = 'blue';
+	  }
+	}
+
+	function countRemainingActive() {
+	  let count = 0;
 	  for (let i = 0; i < board.length; i++) {
 		for (let j = 0; j < board[i].length; j++) {
 		  const key = `${i},${j}`;
-		  if (!exceptionKeys.has(key) && !collapsed.has(key) && board[i][j] !== '') {
-			return false;
+		  if (!collapsed.has(key) && board[i][j] !== '') {
+		    count++;
 		  }
 		}
 	  }
-	  return true;
+	  return count;
 	}
 
-	function afterPlayerMove() {
-	  const exit = findExitCard();
-	  const start = positions.R;
-	  const reachable = isExitReachable(start, exit, board, collapsed);
-	  logMessage(`[${new Date().toLocaleTimeString()}] Kontrola cesty na výstupní kartu: ${reachable ? 'ANO' : 'NE'}`);
-	}
-
-	function logMessage(msg) {
-	  const logEl = document.getElementById('log'); // nebo tvůj prvek pro log
-	  const entry = document.createElement('div');
-	  entry.textContent = msg;
-	  logEl.prepend(entry);
-	}
-
-
-	function endGame(winner) {
-	  console.log(`Hra skončila, vítěz: ${winner}`);
-	  currentPlayer = null;
-	  gameOver = true;
-	  // Tady můžeš přidat další ukončovací logiku (popup, restart apod.)
-	}
-
-
-	function performMove(i, j, options = {}) {
-	  const fromPos = positions[currentPlayer];
-	  const fromVal = board[fromPos.i][fromPos.j];
-	  const toVal = board[i][j];
-
-	  // Přesun karty
-	  board[i][j] = fromVal;
-	  board[fromPos.i][fromPos.j] = '';
-
-	  // Aktualizace pozice
-	  positions[currentPlayer] = { i, j };
-
-	  // Ukončení hry pokud je to poslední tah
-	  if (options.lastMove) {
-		endGame(`Hráč ${currentPlayer} vyhrál!`);
+	   function updateTurnText() {
+	  if (currentPlayer === 'R') {
+		     turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="24" height="24" alt="Red">';
+		turnInd.style.color = 'red';
+	  } else {
+	turnInd.innerHTML = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="24" height="24" alt="Blue">';
+		turnInd.style.color = 'blue';
 	  }
-
-	  // Další logika (logování, rendering, přepnutí hráče, atd.)
-	  logMove(fromPos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
-	  renderBoard();
-	  updateTurnText();
-
-	  // Přepnout hráče
-	  currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
-
-	  // Pokud je AI nebo jiné podmínky, můžeš je přidat sem
 	}
 
-
-		function selectCell(i, j, forceSelect) {
-	console.log(`selectCell volána s i=${i}, j=${j}, forceSelect=${forceSelect}`); // Log vstupních parametrů
-
-		  if (!currentPlayer) return;
-		  const pos = positions[currentPlayer];
-	console.log(`Aktuální pozice hráče ${currentPlayer}: (${pos.i}, ${pos.j})`);
-		  if (pos.i === i && pos.j === j) {
-			selected = { i, j };
-			renderBoard();
-			return;
-		  }
-		  if (forceSelect) {
-			selected = { i, j };
-			renderBoard();
-			return;
-		  }
-		  const valids = getValidMoves(currentPlayer);
-	console.log(`Platné tahy pro hráče ${currentPlayer}:`, valids);
-		  const move = valids.find(m => m.i === i && m.j === j);
-		  if (move) {
-			if (currentPlayer === 'R') {
-		playerHistory.push({
-		  from: { i: pos.i, j: pos.j },
-		  to: { i, j },
-		  card: board[i][j],
-		  time: Date.now()
-		});
-	  }
-			const key = `${pos.i},${pos.j}`;
-			 collapsed.add(key);
-			justCollapsedKey = key; // nastavíme právě rozpadlou kartu
-		   
-			const fromVal = board[pos.i][pos.j];
-			const toVal = board[i][j];
-			// 💡 Zajisti, že renderBoard ví, kdo byl na původní pozici
-			collapsedBy[key] = currentPlayer;
-			board[i][j] = toVal;
-			board[pos.i][pos.j] = '';
-
-	// Log změn na desce
-		console.log(`Přesun z (${pos.i}, ${pos.j}) na (${i}, ${j})`);
-		console.log(`Hodnota na cílové pozici: ${toVal}`);
-		console.log(`Hodnota na původní pozici: ${fromVal}`);
-		 
-			positions[currentPlayer] = { i, j };
-			lastMoveEnd = { i, j };
-			
-			const rows = board.length;
-            const cols = board[0].length;
-
-			const pathCoords = move.path
-			  ? move.path.split('').reduce((acc, dir) => {
-				  const last = acc[acc.length - 1];
-				  const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
-                  const ni = mod(last.i + delta[0], rows);
-                  const nj = mod(last.j + delta[1], cols);
-				  acc.push({ i: ni, j: nj });
-				  return acc;
-				}, [{ i: pos.i, j: pos.j }])
-			  : [{ i: pos.i, j: pos.j }, { i, j }];
-	console.log(`Cesta tahy:`, pathCoords);
-			logMove(pos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
-
-			if (soloMode) {
-			currentPlayer = currentPlayer === 'R';
-			initializeRemainingKeys();
-	  // Najdi pozici výstupní karty B
-	  const exitPos = findExitCard();
-	console.log(`Výstupní karta B je na pozici: (${exitPos.i}, ${exitPos.j})`);
-	  // Kontrola, jestli je tah na B
-	  const isMovingToExit = (i === exitPos.i && j === exitPos.j);
-	console.log(`Tah na výstupní kartu? ${isMovingToExit}`);
-	  // Hledání platného tahu
-	  const valids = getValidMoves(currentPlayer);
-	  const move = valids.find(m => m.i === i && m.j === j);
-
-	  if (move) {
-		// Kontrola, jestli jsou všechny ostatní karty kolabované kromě cílové
-		const lastMove = isAllCollapsedExcept([{ i, j }]);
-	console.log(`Všechny ostatní karty jsou kolabované kromě (${i}, ${j})? ${lastMove}`);
-		// Pokud je tah na B a je to poslední tah
-		if (isMovingToExit && lastMove) {
-	console.log('Poslední tah na výstupní kartu B, hra končí výhrou.');
-		  // Provede poslední tah
-		  performMove(i, j, { lastMove: true });
-		  endGame('Hráč vyhrál!'); // nebo jiná akce ukončení
-		  return;
-		}
-	 
-		// Jinak standardní tah
-		performMove(i, j);
-	  }
-			} // nastavuje v solo režimu červenou barvu aktivního hráče
-			currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
-			selected = null;
-			updateTurnText();
-		
-			justCollapsedKey = key;
-			justCollapsedPlayed = false;
-		
-
-			renderBoard();
-			if (!checkGameOver() && currentPlayer === 'B' && !isPvP && !soloMode) setTimeout(aiMove, 500);
+	function countRemainingActive() {
+	  let count = 0;
+	  for (let i = 0; i < board.length; i++) {
+		for (let j = 0; j < board[i].length; j++) {
+		  const key = `${i},${j}`;
+		  if (!collapsed.has(key) && board[i][j] !== '') {
+		    count++;
 		  }
 		}
+	  }
+	  return count;
+	}
 
 
-		function endGame(winner) {
-			currentPlayer = null;
-			gameOver = true;
-		}
+	function getValidMoves(player, b = board, posMap = positions) {
+	  const pos = posMap[player];
+	  if (!pos) return [];
 
-
-	 // Testuje konec hry
-function checkGameOver() {
-  if (soloMode) {
-    const exit = findExitCard(); // výstupní karta B
-    const redPos = positions.R;
-    const onExit = redPos.i === exit.i && redPos.j === exit.j;
-    const allCollapsed = isAllCollapsedExcept([exit]);
-    const hasMoves = getValidMoves('R').length > 0;
-
-		// ✅ Hráč úspěšně vyřešil puzzle
-		if (onExit && allCollapsed) {
-			soloGameEnd = 1;
-			stats.games++;
-            stats.solo++; // celkové sólo vyřešené
-            const size = board.length; // pokud je board 2D pole, např. 3x3 nebo 4x4
-            if (size === 3) {
-            stats.solo3x3++;
-            } else if (size === 4) {
-           stats.solo4x4++;
-           }
-           updateStats();
-
-      setTimeout(() => {
-        showGameOver('R', '🧩\n\n\Congratulations.');
-        logEvent(`🏆 Player successfully solved the puzzle.`);
-        endGame('R');
-      }, 200);
-      return true;
-    }
-
-
- // ❌ Hráč prohrál – žádný tah a není na výstupu
-if (!hasMoves && !onExit) {
-	soloGameEnd = 2;
-  setTimeout(() => {
-    showGameOver('R', '🧩 \n\nTry another\ndeck.');
-    logEvent(`🚫  The player has no valid move.`);
-
-    // 💡 Výpis správné cesty
-    logEvent(`💡 Generated solution path:`);
-    logCollapsedPath(solutionPath);
-    logEvent('<a href="#" style ="text-decoration:none" onclick="replaySolution()">▶️ Click to replay solution</a>');
-
-
-    // 🔗 Interaktivní odkaz pro přehrání řešení
-    const link = document.createElement('a');
-    link.href = '#';
-    // link.textContent = '▶️ Replay solution';
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      console.log('🖱️ Kliknuto na přehrání řešení');
-      replaySolution();
-    });
-    logEl.appendChild(link);
-
-    endGame('R');
-  }, 200);
-
-  return true;
-}
-
-    // ✅ Povolený závěrečný tah na výstup, pokud zbývají jen dvě karty
-    if (
-      remainingKeys.length === 2 &&
-      remainingKeys.includes(`${exit.i},${exit.j}`) &&
-      remainingKeys.includes(`${redPos.i},${redPos.j}`)
-    ) {
-      const dx = Math.abs(redPos.i - exit.i);
-      const dy = Math.abs(redPos.j - exit.j);
-      const wrapDx = Math.min(dx, board.length - dx);
-      const wrapDy = Math.min(dy, board[0].length - dy);
-      const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
-
-      if (isAdjacent) {
-        return false; // umožní hráči provést závěrečný tah
-      }
-    }
-
-    // 🔒 Výstupní karta izolovaná – nelze se k ní dostat
-    const reachable = getValidMoves('R').some(m => m.i === exit.i && m.j === exit.j);
-    if (!reachable && !hasMoves && !onExit) {
-      setTimeout(() => {
-        showGameOver('R', '🚫 PUZZLE unfinished.');
-        logEvent(`🚫 The output card (${exit.i},${exit.j}) \nis isolated.`);
-        endGame('R');
-      }, 200);
-      return true;
-    }
-
-    return false;
-  }
-
-  // PvP nebo AI režim
-  const currentMoves = getValidMoves(currentPlayer);
-  if (currentMoves.length === 0) {
-    const loser = currentPlayer;
-    const winner = currentPlayer === 'R' ? 'B' : 'R';
-
-    stats.games++;
-    if (winner === 'R') stats.player++;
-    else stats.ai++;
-    updateStats();
-
-    setTimeout(() => {
-      const loserText = loser === 'R' ? '<span style="color:red;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></span>' : '<span style="color:blue;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></span>';
-      const winnerText = winner === 'R' ? '<span style="color:red;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></strong></span>' : '<span style="color:blue;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></strong></span>';
-      showGameOver(winner, '');
-      const logEntry = `[${new Date().toLocaleTimeString()}] <span style="color:darkgreen;"><strong>End of game – player ${loserText} has no valid move. Winner is ${winnerText}!</strong></span><br>`;
-      logEl.innerHTML = logEntry + logEl.innerHTML;
-    }, 100);
-
-    return true;
-  }
-
-  return false;
-}
-
-
-
-	function getValidMovesFrom(player, i, j) {
-	  const val = board[i][j];
-	  const steps = (val === 'R' || val === 'B') ? null : parseInt(val);
+	  const start = b[pos.i][pos.j];
+	  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
 	  const moves = [];
 	  const rows = board.length;
 	  const cols = board[0].length;
 
-	  function dfs(x, y, rem, seen, path) {
+	  function dfs(i, j, rem, seen, path) {
 		if (rem === 0) {
-		  if (x !== i || y !== j) {
-			if (!(positions.R.i === x && positions.R.j === y) &&
-				!(positions.B.i === x && positions.B.j === y) &&
-				!collapsed.has(`${x},${y}`)) {
-			  moves.push({ i: x, j: y, path });
-			}
+		  if (i !== pos.i || j !== pos.j) {
+		    if (!seen.has(`${pos.i},${pos.j}`) &&
+		        !(positions.R && positions.R.i === i && positions.R.j === j) &&
+		        !(positions.B && positions.B.i === i && positions.B.j === j)) {
+		      moves.push({ i, j, path });
+		    }
 		  }
 		  return;
 		}
+
 		for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
-		  const ni = mod(x + di, rows);
-		  const nj = mod(y + dj, cols);
-		  const key = `${ni},${nj}`;
+		  const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
 		  if (seen.has(key) || collapsed.has(key)) continue;
 		  const s2 = new Set(seen);
 		  s2.add(key);
@@ -1643,557 +1017,1198 @@ if (!hasMoves && !onExit) {
 		}
 	  }
 
-	  if (steps) dfs(i, j, steps, new Set([`${i},${j}`]), '');
-	  else [1, 2, 3, 4].forEach(n => dfs(i, j, n, new Set([`${i},${j}`]), ''));
+	  // aplikováno nové pravidlo prvního tahu ve hře, kdy se může o 1 krok
+	if (steps) {
+	  // ✅ Karta má číselnou hodnotu – klasické DFS podle počtu kroků
+	  dfs(pos.i, pos.j, steps, new Set(), '');
+	} else {
+	  // 👉 První tah z R nebo B: pouze 1 krok ortogonálně (bez rohů)
+	  // ❌ Zakázáno vstoupit na druhého jokera
+
+	  const directions = [
+		[1, 0, 'D'], [-1, 0, 'U'],
+		[0, 1, 'R'], [0, -1, 'L']
+	  ];
+
+	  for (const [di, dj, d] of directions) {
+		const ni = mod(pos.i + di, rows);
+		const nj = mod(pos.j + dj, cols);
+		const key = `${ni},${nj}`;
+
+		if (collapsed.has(key)) continue;
+
+		const targetValue = board[ni][nj];
+		const isOpponentJoker =
+		  (start === 'R' && targetValue === 'B') ||
+		  (start === 'B' && targetValue === 'R');
+
+		if (isOpponentJoker) continue;
+
+		moves.push({ i: ni, j: nj, path: d });
+	  }
+	}
+
+
+	  // 🔄 DODATEK – pokud zůstává pouze aktivní karta a výstupní 'B', přidáme tah na 'B' i bez ohledu na hodnotu
+	  if (soloMode) {
+		const remaining = [];
+		for (let i = 0; i < rows; i++) {
+		  for (let j = 0; j < cols; j++) {
+		    if (!collapsed.has(`${i},${j}`)) remaining.push({ i, j });
+		  }
+		}
+
+		if (remaining.length === 2) {
+		  const exit = findExitCard();
+		  const other = remaining.find(cell => !(cell.i === exit.i && cell.j === exit.j));
+		  if (other.i === pos.i && other.j === pos.j) {
+		    // Jsme na poslední aktivní kartě, přidejme ručně tah na B, pokud je sousední
+		    const dx = Math.abs(pos.i - exit.i);
+		    const dy = Math.abs(pos.j - exit.j);
+		    const wrapDx = Math.min(dx, rows - dx);
+		    const wrapDy = Math.min(dy, cols - dy);
+		    const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
+
+		    if (isAdjacent) {
+		      moves.push({ i: exit.i, j: exit.j, path: '' }); // prázdná cesta – speciální případ
+		    }
+		  }
+		}
+	  }
 
 	  return moves;
 	}
 
-	function getValidMovesFor(board, collapsedSet, positions, player) {
-	  const pos = positions[player];
-	  if (!pos) return [];
-	  const start = board[pos.i][pos.j];
-	  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
-	  const moves = [];
-	  const rows = board.length;
-	  const cols = board[0].length;
+
+		// Proměnné pro grafický efekt rozpadu karty 
+		let collapsedBy = {};
+		let justCollapsedKey = null;
+		let justCollapsedPlayed = false; // nová proměnná
+
+	function triggerShatter(cell, player, value) {
+	  const rect = cell.getBoundingClientRect();
+	  const centerX = rect.left + rect.width / 2;
+	  const centerY = rect.top + rect.height / 2;
+
+	  const color = player === 'R' ? 'rgba(255, 50, 50, 0.8)' : 'rgba(50, 150, 255, 0.8)';
+
+	  let shapeClass = 'circle'; // výchozí tvar
+
+	  switch (value) {
+		case '1':
+		  shapeClass = 'circle';
+		  break;
+		case '2':
+		  shapeClass = 'square';
+		  break;
+		case '3':
+		  shapeClass = 'triangle';
+		  break;
+		case '4':
+		  shapeClass = 'star';
+		  break;
+	  }
+
+	  for (let i = 0; i < 80; i++) {
+		const particle = document.createElement('div');
+		particle.className = `particle ${shapeClass}`;
+		particle.style.background = color;
+		particle.style.left = `${centerX}px`;
+		particle.style.top = `${centerY}px`;
+
+		const angle = Math.random() * 2 * Math.PI;
+		const distance = 60 + Math.random() * 60;
+		const dx = Math.cos(angle) * distance;
+		const dy = Math.sin(angle) * distance;
+
+		particle.style.setProperty('--dx', `${dx}px`);
+		particle.style.setProperty('--dy', `${dy}px`);
+
+		document.body.appendChild(particle);
+		setTimeout(() => particle.remove(), 1000);
+	  }
+	}
+
+	function renderBoard() {
+	  const el = document.getElementById('board');
+	  el.style.display = 'grid';
+	  el.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+	  el.innerHTML = '';
+	  const valids = selected ? getValidMoves(currentPlayer) : [];
+
+	  const redPos = positions.R;
+	  const bluePos = positions.B;
+	  const exitCard = soloMode ? findExitCard() : null;
+
+	  for (let i = 0; i < rows; i++) {
+		for (let j = 0; j < cols; j++) {
+		  const cell = document.createElement('div');
+		  cell.className = 'cell';
+		  cell.id = `cell-${i}-${j}`; // ✅ Jednoznačné ID podle pozice
+
+		  // 🧹 Reset všech předešlých stylů a tříd
+		  cell.classList.remove('highlight', 'valid', 'active-step', 'final');
+		  cell.style.border = '';
+		  cell.style.boxShadow = '';
+
+		  const key = `${i},${j}`;
+
+		  // 💥 Rozpadlá karta
+		  if (collapsed.has(key)) {
+		    const ghost = document.createElement('div');
+		    ghost.className = 'cell';
+		    ghost.style.visibility = 'visible';
+		    ghost.style.position = 'relative';
+		    el.appendChild(ghost);
+
+		    if (key === justCollapsedKey && !justCollapsedPlayed) {
+		      setTimeout(() => {
+		        triggerShatter(ghost, collapsedBy[key]);
+		        ghost.style.visibility = 'hidden';
+		      }, 50);
+		      justCollapsedPlayed = true;
+		    } else {
+		      ghost.style.visibility = 'hidden';
+		    }
+
+		    continue;
+		  }
+
+		  const value = board[i][j];
+
+		  // 📷 Obrázek nebo text
+		  if (cardImages[value]) {
+		    const img = document.createElement('img');
+		    img.src = cardImages[value];
+		    img.alt = value;
+		    img.style.maxWidth = '100%';
+		    img.style.maxHeight = '100%';
+		    cell.appendChild(img);
+		  } else {
+		    cell.textContent = value;
+		  }
+
+		  const isRed = redPos && redPos.i === i && redPos.j === j;
+		  const isBlue = bluePos && bluePos.i === i && bluePos.j === j;
+		  const isCurrent = (currentPlayer === 'R' && isRed) || (currentPlayer === 'B' && isBlue);
+		  const isOpponent = (currentPlayer === 'R' && isBlue) || (currentPlayer === 'B' && isRed);
+		  const isLast = lastMoveEnd && lastMoveEnd.i === i && lastMoveEnd.j === j;
+		  const isExit = soloMode && exitCard && i === exitCard.i && j === exitCard.j;
+
+		  // 🎯 SOLO režim
+		  if (soloMode) {
+		    const isSelected = selected && selected.i === i && selected.j === j;
+
+		    if (isSelected) {
+		      cell.style.border = '4px solid red';
+		      cell.style.boxShadow = '0 0 10px red';
+		    } else if (isLast) {
+		      cell.style.border = '2px solid red';
+		      cell.style.boxShadow = '0 0 5px red';
+		    } else if (isRed) {
+		      cell.style.border = '3px solid red';
+		      cell.style.boxShadow = '0 0 8px red';
+		    }
+		  } else {
+		    // 🤼 PvP / AI režim
+		    if (isCurrent) {
+		      cell.classList.add('highlight');
+		      cell.style.boxShadow = currentPlayer === 'R'
+		        ? '0 0 0 4px red'
+		        : '0 0 0 4px blue';
+		    } else if (isOpponent) {
+		      cell.style.boxShadow = currentPlayer === 'R'
+		        ? '0 0 0 4px red dotted'
+		        : '0 0 0 4px blue dotted';
+		    }
+
+		    if (isLast) {
+		      cell.style.border = currentPlayer === 'R'
+		        ? '2px solid blue'
+		        : '2px solid red';
+		      cell.style.boxShadow = currentPlayer === 'R'
+		        ? '0 0 10px blue'
+		        : '0 0 10px red';
+		    }
+		  }
+
+		  // ✅ Platné tahy (včetně výstupu)
+		  if (selected) {
+		    const allowExit = isExit && isAllCollapsedExcept([exitCard]);
+		    const isValid = valids.some(m => m.i === i && m.j === j);
+
+		    if (isValid || allowExit) {
+		      cell.classList.add('valid');
+		    }
+		  }
+
+		  cell.addEventListener('click', () => selectCell(i, j, false));
+		  el.appendChild(cell);
+		}
+	  }
+	}
 
 
-	  function dfs(i, j, rem, seen, path) {
-		if (rem === 0) {
-		  if (i !== pos.i || j !== pos.j) {
-			if (!seen.has(`${pos.i},${pos.j}`) &&
-				!(positions.R && positions.R.i === i && positions.R.j === j) &&
-				!(positions.B && positions.B.i === i && positions.B.j === j)) {
-			  moves.push({ i, j, path });
+	 function logMove(start, dest, fromVal, toVal, pathCoords, score = null, scoreReason = '', player = currentPlayer) {
+		const time = new Date().toLocaleTimeString();
+		const isRed = player === 'R';
+		const who = isRed ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue">';
+		const whoColor = isRed ? 'red' : 'blue';
+
+		const fullPath = pathCoords.map((p, idx) => {
+		  const val = idx === 0 ? ` (${fromVal})` : idx === pathCoords.length - 1 ? ` (${toVal})` : '';
+		  return `${p.i},${p.j}${val}`;
+		}).join(' → ');
+
+		let scoreColor = 'gray';
+		if (score >= 7) scoreColor = 'green';
+		else if (score >= 4) scoreColor = 'orange';
+
+		const scoreText = score !== null
+		  ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
+		  : '';
+
+	const historyNote = isRed && !soloMode
+	  ? ` <span style="color:darkred;">[↺ player's memory]</span>`
+	  : '';
+
+		const logEntry = `[${time}] <span style="color:${whoColor};">${who}</span>: ${fullPath}${scoreText}${historyNote}<br>`;
+		logEl.innerHTML = logEntry + logEl.innerHTML;
+		}
+
+		//  Grafické zobrazení konce hry a vítěze 
+		function showGameOver(winner, message = '') {
+		const overlay = document.getElementById('game-over-overlay');
+		const text = document.getElementById('game-over-text');
+
+	if (soloMode) {
+	  // 🧩 V sólo režimu zobraz výsledek podle proměnné soloGameEnd
+	  let soloMessage;
+
+	  if (soloGameEnd === 2) {
+		soloMessage = `
+		  <div class="trophy">🤔</div>
+		  <div>End of game!</div>
+		  <div>${message}</div>
+		`;
+	  } else if (soloGameEnd === 1){
+		soloMessage = `
+		  <div class="trophy">🏆</div>
+		  <div>End of game!</div>
+		  <div>${message}</div>
+		`;
+	  }
+
+	  text.innerHTML = soloMessage;
+
+	} else {
+	  // 🧑‍🤝‍🧑 PvP nebo AI režim
+	  const plainWinnerText = winner === 'R' ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="144" height="144" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="144" height="144" alt="Blue">';
+	  text.innerHTML = `
+		<div class="trophy">🏆</div>
+		<div></div>
+		<div>${plainWinnerText}</div>
+		<div style="margin-top:10px;">${message}</div>
+	  `;
+	}
+
+			overlay.classList.remove('hidden');
+
+			// Automatické schování po 3 sekundách
+			setTimeout(() => {
+			overlay.classList.add('hidden');
+			}, 3000);
+			}
+
+
+		// 🔽 funkce pro solo hru 
+
+		function findExitCard() {
+		for (let i = 0; i < board.length; i++) {
+		for (let j = 0; j < board[i].length; j++) {
+		  if (board[i][j] === 'B') return { i, j };
+		}
+		}
+		return null;
+		}
+
+		function isAllCollapsedExcept(exceptions = []) {
+		  const exceptionKeys = new Set(exceptions.map(p => `${p.i},${p.j}`));
+		  for (let i = 0; i < board.length; i++) {
+			for (let j = 0; j < board[i].length; j++) {
+			  const key = `${i},${j}`;
+			  if (!exceptionKeys.has(key) && !collapsed.has(key) && board[i][j] !== '') {
+				return false;
+			  }
 			}
 		  }
-		  return;
+		  return true;
 		}
-		for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
-		  const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
-		  if (seen.has(key) || collapsedSet.has(key)) continue;
-		  const s2 = new Set(seen); s2.add(key);
-		  dfs(ni, nj, rem - 1, s2, path + d);
+
+		function afterPlayerMove() {
+		  const exit = findExitCard();
+		  const start = positions.R;
+		  const reachable = isExitReachable(start, exit, board, collapsed);
+		  logMessage(`[${new Date().toLocaleTimeString()}] Kontrola cesty na výstupní kartu: ${reachable ? 'ANO' : 'NE'}`);
 		}
+
+		function logMessage(msg) {
+		  const logEl = document.getElementById('log'); // nebo tvůj prvek pro log
+		  const entry = document.createElement('div');
+		  entry.textContent = msg;
+		  logEl.prepend(entry);
+		}
+
+
+		function endGame(winner) {
+		  console.log(`Hra skončila, vítěz: ${winner}`);
+		  currentPlayer = null;
+		  gameOver = true;
+		  // Tady můžeš přidat další ukončovací logiku (popup, restart apod.)
+		}
+
+
+		function performMove(i, j, options = {}) {
+		  const fromPos = positions[currentPlayer];
+		  const fromVal = board[fromPos.i][fromPos.j];
+		  const toVal = board[i][j];
+
+		  // Přesun karty
+		  board[i][j] = fromVal;
+		  board[fromPos.i][fromPos.j] = '';
+
+		  // Aktualizace pozice
+		  positions[currentPlayer] = { i, j };
+
+		  // Ukončení hry pokud je to poslední tah
+		  if (options.lastMove) {
+			endGame(`Hráč ${currentPlayer} vyhrál!`);
+		  }
+
+		  // Další logika (logování, rendering, přepnutí hráče, atd.)
+		  logMove(fromPos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
+		  renderBoard();
+		  updateTurnText();
+
+		  // Přepnout hráče
+		  currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
+
+		  // Pokud je AI nebo jiné podmínky, můžeš je přidat sem
+		}
+
+
+			function selectCell(i, j, forceSelect) {
+		console.log(`selectCell volána s i=${i}, j=${j}, forceSelect=${forceSelect}`); // Log vstupních parametrů
+
+			  if (!currentPlayer) return;
+			  const pos = positions[currentPlayer];
+		console.log(`Aktuální pozice hráče ${currentPlayer}: (${pos.i}, ${pos.j})`);
+			  if (pos.i === i && pos.j === j) {
+				selected = { i, j };
+				renderBoard();
+				return;
+			  }
+			  if (forceSelect) {
+				selected = { i, j };
+				renderBoard();
+				return;
+			  }
+			  const valids = getValidMoves(currentPlayer);
+		console.log(`Platné tahy pro hráče ${currentPlayer}:`, valids);
+			  const move = valids.find(m => m.i === i && m.j === j);
+			  if (move) {
+				if (currentPlayer === 'R') {
+			playerHistory.push({
+			  from: { i: pos.i, j: pos.j },
+			  to: { i, j },
+			  card: board[i][j],
+			  time: Date.now()
+			});
+		  }
+				const key = `${pos.i},${pos.j}`;
+				 collapsed.add(key);
+				justCollapsedKey = key; // nastavíme právě rozpadlou kartu
+			   
+				const fromVal = board[pos.i][pos.j];
+				const toVal = board[i][j];
+				// 💡 Zajisti, že renderBoard ví, kdo byl na původní pozici
+				collapsedBy[key] = currentPlayer;
+				board[i][j] = toVal;
+				board[pos.i][pos.j] = '';
+
+		// Log změn na desce
+			console.log(`Přesun z (${pos.i}, ${pos.j}) na (${i}, ${j})`);
+			console.log(`Hodnota na cílové pozici: ${toVal}`);
+			console.log(`Hodnota na původní pozici: ${fromVal}`);
+			 
+				positions[currentPlayer] = { i, j };
+				lastMoveEnd = { i, j };
+				
+				const rows = board.length;
+		        const cols = board[0].length;
+
+				const pathCoords = move.path
+				  ? move.path.split('').reduce((acc, dir) => {
+					  const last = acc[acc.length - 1];
+					  const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
+		              const ni = mod(last.i + delta[0], rows);
+		              const nj = mod(last.j + delta[1], cols);
+					  acc.push({ i: ni, j: nj });
+					  return acc;
+					}, [{ i: pos.i, j: pos.j }])
+				  : [{ i: pos.i, j: pos.j }, { i, j }];
+		console.log(`Cesta tahy:`, pathCoords);
+				logMove(pos, { i, j }, fromVal, toVal, pathCoords, null, '', currentPlayer);
+
+				if (soloMode) {
+				currentPlayer = currentPlayer === 'R';
+				initializeRemainingKeys();
+		  // Najdi pozici výstupní karty B
+		  const exitPos = findExitCard();
+		console.log(`Výstupní karta B je na pozici: (${exitPos.i}, ${exitPos.j})`);
+		  // Kontrola, jestli je tah na B
+		  const isMovingToExit = (i === exitPos.i && j === exitPos.j);
+		console.log(`Tah na výstupní kartu? ${isMovingToExit}`);
+		  // Hledání platného tahu
+		  const valids = getValidMoves(currentPlayer);
+		  const move = valids.find(m => m.i === i && m.j === j);
+
+		  if (move) {
+			// Kontrola, jestli jsou všechny ostatní karty kolabované kromě cílové
+			const lastMove = isAllCollapsedExcept([{ i, j }]);
+		console.log(`Všechny ostatní karty jsou kolabované kromě (${i}, ${j})? ${lastMove}`);
+			// Pokud je tah na B a je to poslední tah
+			if (isMovingToExit && lastMove) {
+		console.log('Poslední tah na výstupní kartu B, hra končí výhrou.');
+			  // Provede poslední tah
+			  performMove(i, j, { lastMove: true });
+			  endGame('Hráč vyhrál!'); // nebo jiná akce ukončení
+			  return;
+			}
+		 
+			// Jinak standardní tah
+			performMove(i, j);
+		  }
+				} // nastavuje v solo režimu červenou barvu aktivního hráče
+				currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
+				selected = null;
+				updateTurnText();
+			
+				justCollapsedKey = key;
+				justCollapsedPlayed = false;
+			
+
+				renderBoard();
+				if (!checkGameOver() && currentPlayer === 'B' && !isPvP && !soloMode) setTimeout(aiMove, 500);
+			  }
+			}
+
+
+			function endGame(winner) {
+				currentPlayer = null;
+				gameOver = true;
+			}
+
+
+		 // Testuje konec hry
+	function checkGameOver() {
+	  if (soloMode) {
+		const exit = findExitCard(); // výstupní karta B
+		const redPos = positions.R;
+		const onExit = redPos.i === exit.i && redPos.j === exit.j;
+		const allCollapsed = isAllCollapsedExcept([exit]);
+		const hasMoves = getValidMoves('R').length > 0;
+
+			// ✅ Hráč úspěšně vyřešil puzzle
+			if (onExit && allCollapsed) {
+				soloGameEnd = 1;
+				stats.games++;
+		        stats.solo++; // celkové sólo vyřešené
+		        const size = board.length; // pokud je board 2D pole, např. 3x3 nebo 4x4
+		        if (size === 3) {
+		        stats.solo3x3++;
+		        } else if (size === 4) {
+		       stats.solo4x4++;
+		       }
+		       updateStats();
+
+		  setTimeout(() => {
+		    showGameOver('R', '🧩\n\n\Congratulations.');
+		    logEvent(`🏆 Player successfully solved the puzzle.`);
+		    endGame('R');
+		  }, 200);
+		  return true;
+		}
+
+
+	 // ❌ Hráč prohrál – žádný tah a není na výstupu
+	if (!hasMoves && !onExit) {
+		soloGameEnd = 2;
+	  setTimeout(() => {
+		showGameOver('R', '🧩 \n\nTry another\ndeck.');
+		logEvent(`🚫  The player has no valid move.`);
+
+		// 💡 Výpis správné cesty
+		logEvent(`💡 Generated solution path:`);
+		logCollapsedPath(solutionPath);
+		logEvent('<a href="#" style ="text-decoration:none" onclick="replaySolution()">▶️ Click to replay solution</a>');
+
+
+		// 🔗 Interaktivní odkaz pro přehrání řešení
+		const link = document.createElement('a');
+		link.href = '#';
+		// link.textContent = '▶️ Replay solution';
+		link.addEventListener('click', (e) => {
+		  e.preventDefault();
+		  console.log('🖱️ Kliknuto na přehrání řešení');
+		  replaySolution();
+		});
+		logEl.appendChild(link);
+
+		endGame('R');
+	  }, 200);
+
+	  return true;
+	}
+
+		// ✅ Povolený závěrečný tah na výstup, pokud zbývají jen dvě karty
+		if (
+		  remainingKeys.length === 2 &&
+		  remainingKeys.includes(`${exit.i},${exit.j}`) &&
+		  remainingKeys.includes(`${redPos.i},${redPos.j}`)
+		) {
+		  const dx = Math.abs(redPos.i - exit.i);
+		  const dy = Math.abs(redPos.j - exit.j);
+		  const wrapDx = Math.min(dx, board.length - dx);
+		  const wrapDy = Math.min(dy, board[0].length - dy);
+		  const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
+
+		  if (isAdjacent) {
+		    return false; // umožní hráči provést závěrečný tah
+		  }
+		}
+
+		// 🔒 Výstupní karta izolovaná – nelze se k ní dostat
+		const reachable = getValidMoves('R').some(m => m.i === exit.i && m.j === exit.j);
+		if (!reachable && !hasMoves && !onExit) {
+		  setTimeout(() => {
+		    showGameOver('R', '🚫 PUZZLE unfinished.');
+		    logEvent(`🚫 The output card (${exit.i},${exit.j}) \nis isolated.`);
+		    endGame('R');
+		  }, 200);
+		  return true;
+		}
+
+		return false;
 	  }
 
-	  if (steps) dfs(pos.i, pos.j, steps, new Set(), '');
-	  else [1, 2, 3, 4].forEach(n => dfs(pos.i, pos.j, n, new Set(), ''));
-	  return moves;
+	  // PvP nebo AI režim
+	  const currentMoves = getValidMoves(currentPlayer);
+	  if (currentMoves.length === 0) {
+		const loser = currentPlayer;
+		const winner = currentPlayer === 'R' ? 'B' : 'R';
+
+		stats.games++;
+		if (winner === 'R') stats.player++;
+		else stats.ai++;
+		updateStats();
+
+		setTimeout(() => {
+		  const loserText = loser === 'R' ? '<span style="color:red;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></span>' : '<span style="color:blue;"><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></span>';
+		  const winnerText = winner === 'R' ? '<span style="color:red;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="18" height="18" alt="Red"></strong></span>' : '<span style="color:blue;"><strong><img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue"></strong></span>';
+		  showGameOver(winner, '');
+		  const logEntry = `[${new Date().toLocaleTimeString()}] <span style="color:darkgreen;"><strong>End of game – player ${loserText} has no valid move. Winner is ${winnerText}!</strong></span><br>`;
+		  logEl.innerHTML = logEntry + logEl.innerHTML;
+		}, 100);
+
+		return true;
+	  }
+
+	  return false;
 	}
 
 
-	function evaluateBoard(board, positions) {
-	  const aiMoves = getValidMoves('B', board, positions).length;
-	  const playerMoves = getValidMoves('R', board, positions).length;
 
-	  const aiPos = positions.B;
-	  const redPos = positions.R;
+		function getValidMovesFrom(player, i, j) {
+		  const val = board[i][j];
+		  const steps = (val === 'R' || val === 'B') ? null : parseInt(val);
+		  const moves = [];
+		  const rows = board.length;
+		  const cols = board[0].length;
 
-	  // Výhra/prohra
-	  if (playerMoves === 0) return 1000;  // jednoznačná výhra
-	  if (aiMoves === 0) return -1000;    // jednoznačná prohra
+		  function dfs(x, y, rem, seen, path) {
+			if (rem === 0) {
+			  if (x !== i || y !== j) {
+				if (!(positions.R.i === x && positions.R.j === y) &&
+					!(positions.B.i === x && positions.B.j === y) &&
+					!collapsed.has(`${x},${y}`)) {
+				  moves.push({ i: x, j: y, path });
+				}
+			  }
+			  return;
+			}
+			for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+			  const ni = mod(x + di, rows);
+			  const nj = mod(y + dj, cols);
+			  const key = `${ni},${nj}`;
+			  if (seen.has(key) || collapsed.has(key)) continue;
+			  const s2 = new Set(seen);
+			  s2.add(key);
+			  dfs(ni, nj, rem - 1, s2, path + d);
+			}
+		  }
 
-	  // Bonus za střed
-	  const centerBonus = (aiPos.i >= 1 && aiPos.i <= 2 && aiPos.j >= 1 && aiPos.j <= 2) ? 2 : 0;
+		  if (steps) dfs(i, j, steps, new Set([`${i},${j}`]), '');
+		  else [1, 2, 3, 4].forEach(n => dfs(i, j, n, new Set([`${i},${j}`]), ''));
 
-	  // Penalizace za blízkost hráči
-	  const distToRed = Math.abs(aiPos.i - redPos.i) + Math.abs(aiPos.j - redPos.j);
-	  const dangerPenalty = distToRed <= 1 ? -2 : 0;
-	  const distanceScore = distToRed >= 3 ? 1 : 0;
+		  return moves;
+		}
 
-	  // Únikové cesty
-	  const escapeRoutes = getValidMovesFrom('B', aiPos.i, aiPos.j).length;
-	  const escapeBonus = escapeRoutes >= 2 ? 1 : 0;
+		function getValidMovesFor(board, collapsedSet, positions, player) {
+		  const pos = positions[player];
+		  if (!pos) return [];
+		  const start = board[pos.i][pos.j];
+		  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
+		  const moves = [];
+		  const rows = board.length;
+		  const cols = board[0].length;
 
-	  // Okolní zbořené pozice
-	  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
-		const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
+
+		  function dfs(i, j, rem, seen, path) {
+			if (rem === 0) {
+			  if (i !== pos.i || j !== pos.j) {
+				if (!seen.has(`${pos.i},${pos.j}`) &&
+					!(positions.R && positions.R.i === i && positions.R.j === j) &&
+					!(positions.B && positions.B.i === i && positions.B.j === j)) {
+				  moves.push({ i, j, path });
+				}
+			  }
+			  return;
+			}
+			for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+			  const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
+			  if (seen.has(key) || collapsedSet.has(key)) continue;
+			  const s2 = new Set(seen); s2.add(key);
+			  dfs(ni, nj, rem - 1, s2, path + d);
+			}
+		  }
+
+		  if (steps) dfs(pos.i, pos.j, steps, new Set(), '');
+		  else [1, 2, 3, 4].forEach(n => dfs(pos.i, pos.j, n, new Set(), ''));
+		  return moves;
+		}
+
+
+		function evaluateBoard(board, positions) {
+		  const aiMoves = getValidMoves('B', board, positions).length;
+		  const playerMoves = getValidMoves('R', board, positions).length;
+
+		  const aiPos = positions.B;
+		  const redPos = positions.R;
+
+		  // Výhra/prohra
+		  if (playerMoves === 0) return 1000;  // jednoznačná výhra
+		  if (aiMoves === 0) return -1000;    // jednoznačná prohra
+
+		  // Bonus za střed
+		  const centerBonus = (aiPos.i >= 1 && aiPos.i <= 2 && aiPos.j >= 1 && aiPos.j <= 2) ? 2 : 0;
+
+		  // Penalizace za blízkost hráči
+		  const distToRed = Math.abs(aiPos.i - redPos.i) + Math.abs(aiPos.j - redPos.j);
+		  const dangerPenalty = distToRed <= 1 ? -2 : 0;
+		  const distanceScore = distToRed >= 3 ? 1 : 0;
+
+		  // Únikové cesty
+		  const escapeRoutes = getValidMovesFrom('B', aiPos.i, aiPos.j).length;
+		  const escapeBonus = escapeRoutes >= 2 ? 1 : 0;
+
+		  // Okolní zbořené pozice
+		  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
+			const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
+			return collapsed.has(`${ni},${nj}`);
+		  }).length;
+		  const trapPenalty = surroundingCollapsed >= 3 ? -2 : 0;
+		  
+		  // Penalizace za pozici u vice nez 2 zničených sousedů 
+		  const collapsedAround = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
+		  const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
+		  return collapsed.has(`${ni},${nj}`);
+		  }).length;
+		  const collapsedDangerPenalty = collapsedAround >= 3 ? -3 : (collapsedAround === 2 ? -1 : 0);
+		  
+		  // Bonus za umístění v bezpečné zóně 
+		  const safeZoneBonus = (distToRed >= 3 && escapeRoutes >= 3) ? 2 : 0;
+		 
+		  // Zohledňuje blokování polí u hráče (zavřít hráče do kouta je od AI dobrý tah)
+		  const redEscapes = getValidMovesFrom('R', redPos.i, redPos.j).length;
+		  const redTrappedPenalty = redEscapes <= 1 ? 2 : 0;
+
+		  // Celkové skóre
+		  return (
+			(aiMoves - playerMoves) + centerBonus + distanceScore +
+			escapeBonus + dangerPenalty + trapPenalty + redTrappedPenalty + collapsedDangerPenalty + safeZoneBonus
+		  );
+		}
+
+
+		function simulateMove(board, positions, collapsed, player, move) {
+		  const newBoard = board.map(row => [...row]);
+		  const newCollapsed = new Set([...collapsed]);
+		  const newPositions = { R: { ...positions.R }, B: { ...positions.B } };
+
+		  const from = positions[player];
+		  const to = { i: move.i, j: move.j };
+		  const key = `${from.i},${from.j}`;
+
+		  newCollapsed.add(key);
+		  newBoard[to.i][to.j] = newBoard[from.i][from.j];
+		  newBoard[from.i][from.j] = '';
+		  newPositions[player] = to;
+
+		  return { newBoard, newPositions, newCollapsed };
+		}
+
+
+		function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) {
+		  const aiMoves = getValidMoves('B', board, positions);
+		  const playerMoves = getValidMoves('R', board, positions);
+
+		  // Detekce konce hry
+		  // if (aiMoves.length === 0) return -1000; // AI nemá tah – prohra
+		  // if (playerMoves.length === 0) return +1000; // Hráč nemá tah – výhra AI
+		  // if (depth === 0) return evaluateBoard(board, positions);
+		  
+		   // Detekce konce hry - zohledňuje hloubku hry a rychlost výhry a zpomalení prohry
+		  if (playerMoves.length === 0) return 1000 + depth;     // čím dřív AI vyhraje, tím líp
+		  if (aiMoves.length === 0) return -1000 - depth;        // čím dřív prohraje, tím hůř
+		  if (depth === 0) return evaluateBoard(board, positions);
+
+
+		  if (isMaximizing) {
+			let maxEval = -Infinity;
+			for (const move of aiMoves) {
+			  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', move);
+			  const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, alpha, beta);
+			  maxEval = Math.max(maxEval, eval);
+			  alpha = Math.max(alpha, eval);
+			  if (beta <= alpha) break; // Alpha-beta ořez
+			}
+			return maxEval;
+		  } else {
+			let minEval = Infinity;
+			for (const move of playerMoves) {
+			  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'R', move);
+			  const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, true, alpha, beta);
+			  minEval = Math.min(minEval, eval);
+			  beta = Math.min(beta, eval);
+			  if (beta <= alpha) break; // Alpha-beta ořez
+			}
+			return minEval;
+		  }
+		}
+
+		   // Funkci využívá AI Minimax od 3. tahu v aiMove
+		function decideDepth(board, collapsed, moveCount) {
+		  const bMoves = getValidMoves('B', board, positions);
+		  const numMoves = bMoves.length;
+		  const totalCells = board.length * board[0].length;
+		  const collapsedRatio = collapsed.size / totalCells;
+
+		  // 🔴 1. Kritická situace – zcela málo tahů
+		  if (numMoves <= 2) return 5;
+
+		  // 🟠 2. Obranná situace – málo možností
+		  if (numMoves <= 4) return 4;
+
+		  // 🟡 3. Pokročilá fáze – velká část desky obsazena nebo delší hra
+		  if (collapsedRatio > 0.5 || moveCount > 6) return 3;
+
+		  // 🟢 Výchozí hloubka
+		  return 2;
+		}
+
+
+	// Silnější penalizaci slepých uliček a tahů bez únikových cest
+	// Zvýšení penalizace za budoucí pasti
+	// Zvýšení penalizace blízkosti soupeře
+	// Nové komentáře a důvody pro log
+
+	function heuristicScore(m) {
+	  const pos = positions['B'];
+	  const val = board[m.i][m.j];
+	  const value = parseInt(val) || 0;
+
+	  const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
+
+	  const redMoves = getValidMoves('R');
+	  const redTargets = redMoves.map(rm => `${rm.i},${rm.j}`);
+	  const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
+
+	  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+		const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
+		return !collapsed.has(`${ni},${nj}`);
+	  });
+
+	  const readabilityPenalty = (positions.R.i === m.i || positions.R.j === m.j) ? -1 : 0;
+	  const escapeRoutes = getValidMovesFrom('B', m.i, m.j).length;
+	  const mobilityBonus = neighbors.length;
+
+	  const lengthPenalty = m.path ? -m.path.length * 0.5 : 0;
+	  const distToRed = Math.abs(m.i - positions.R.i) + Math.abs(m.j - positions.R.j);
+	  const dangerPenalty = distToRed <= 1 ? -6 : 0; // zvýšeno z -2 na -6
+
+	  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
+		const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
 		return collapsed.has(`${ni},${nj}`);
 	  }).length;
-	  const trapPenalty = surroundingCollapsed >= 3 ? -2 : 0;
-	  
-	  // Penalizace za pozici u vice nez 2 zničených sousedů 
-	  const collapsedAround = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di, dj]) => {
-	  const ni = mod(aiPos.i + di, 4), nj = mod(aiPos.j + dj, 4);
-	  return collapsed.has(`${ni},${nj}`);
-	  }).length;
-	  const collapsedDangerPenalty = collapsedAround >= 3 ? -3 : (collapsedAround === 2 ? -1 : 0);
-	  
-	  // Bonus za umístění v bezpečné zóně 
-	  const safeZoneBonus = (distToRed >= 3 && escapeRoutes >= 3) ? 2 : 0;
-	 
-	  // Zohledňuje blokování polí u hráče (zavřít hráče do kouta je od AI dobrý tah)
-	  const redEscapes = getValidMovesFrom('R', redPos.i, redPos.j).length;
-	  const redTrappedPenalty = redEscapes <= 1 ? 2 : 0;
 
-	  // Celkové skóre
-	  return (
-		(aiMoves - playerMoves) + centerBonus + distanceScore +
-		escapeBonus + dangerPenalty + trapPenalty + redTrappedPenalty + collapsedDangerPenalty + safeZoneBonus
-	  );
-	}
+	  const simBoard = board.map(row => row.slice());
+	  const simCollapsed = new Set(collapsed);
+	  simCollapsed.add(`${pos.i},${pos.j}`);
+	  simBoard[m.i][m.j] = simBoard[pos.i][pos.j];
+	  simBoard[pos.i][pos.j] = '';
 
+	  const simPositions = {
+		R: { ...positions.R },
+		B: { i: m.i, j: m.j }
+	  };
 
-	function simulateMove(board, positions, collapsed, player, move) {
-	  const newBoard = board.map(row => [...row]);
-	  const newCollapsed = new Set([...collapsed]);
-	  const newPositions = { R: { ...positions.R }, B: { ...positions.B } };
+	  const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
+	  const winBonus = redMovesAfter.length === 0 ? 100 : 0;
 
-	  const from = positions[player];
-	  const to = { i: move.i, j: move.j };
-	  const key = `${from.i},${from.j}`;
+	  let preventLossPenalty = 0;
+	  for (const redMove of redMovesAfter) {
+		const redSimBoard = simBoard.map(row => row.slice());
+		const redSimCollapsed = new Set(simCollapsed);
+		redSimCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+		redSimBoard[redMove.i][redMove.j] = redSimBoard[simPositions.R.i][simPositions.R.j];
+		redSimBoard[simPositions.R.i][simPositions.R.j] = '';
 
-	  newCollapsed.add(key);
-	  newBoard[to.i][to.j] = newBoard[from.i][from.j];
-	  newBoard[from.i][from.j] = '';
-	  newPositions[player] = to;
+		const afterRedPositions = {
+		  R: { i: redMove.i, j: redMove.j },
+		  B: simPositions.B
+		};
 
-	  return { newBoard, newPositions, newCollapsed };
-	}
-
-
-	function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) {
-	  const aiMoves = getValidMoves('B', board, positions);
-	  const playerMoves = getValidMoves('R', board, positions);
-
-	  // Detekce konce hry
-	  // if (aiMoves.length === 0) return -1000; // AI nemá tah – prohra
-	  // if (playerMoves.length === 0) return +1000; // Hráč nemá tah – výhra AI
-	  // if (depth === 0) return evaluateBoard(board, positions);
-	  
-	   // Detekce konce hry - zohledňuje hloubku hry a rychlost výhry a zpomalení prohry
-	  if (playerMoves.length === 0) return 1000 + depth;     // čím dřív AI vyhraje, tím líp
-	  if (aiMoves.length === 0) return -1000 - depth;        // čím dřív prohraje, tím hůř
-	  if (depth === 0) return evaluateBoard(board, positions);
-
-
-	  if (isMaximizing) {
-		let maxEval = -Infinity;
-		for (const move of aiMoves) {
-		  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', move);
-		  const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, alpha, beta);
-		  maxEval = Math.max(maxEval, eval);
-		  alpha = Math.max(alpha, eval);
-		  if (beta <= alpha) break; // Alpha-beta ořez
+		const aiMovesAfter = getValidMovesFor(redSimBoard, redSimCollapsed, afterRedPositions, 'B');
+		if (aiMovesAfter.length === 0) {
+		  preventLossPenalty = -25;
+		  break;
 		}
-		return maxEval;
-	  } else {
-		let minEval = Infinity;
-		for (const move of playerMoves) {
-		  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'R', move);
-		  const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, true, alpha, beta);
-		  minEval = Math.min(minEval, eval);
-		  beta = Math.min(beta, eval);
-		  if (beta <= alpha) break; // Alpha-beta ořez
-		}
-		return minEval;
 	  }
+
+	  let counterAttackScore = 0;
+	  for (const rMove of redMovesAfter) {
+		const tempBoard = simBoard.map(row => row.slice());
+		const tempCollapsed = new Set(simCollapsed);
+		tempCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+		tempBoard[rMove.i][rMove.j] = tempBoard[simPositions.R.i][simPositions.R.j];
+		tempBoard[simPositions.R.i][simPositions.R.j] = '';
+		const nextPositions = {
+		  R: { i: rMove.i, j: rMove.j },
+		  B: { ...simPositions.B }
+		};
+
+		const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
+		counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
+	  }
+
+	  let futureTrapPenalty = 0;
+	  for (const redMove of redMovesAfter.slice(0, 2)) {
+		const futurePos = { i: redMove.i, j: redMove.j };
+		const futureBoard = simBoard.map(row => row.slice());
+		const futureCollapsed = new Set(simCollapsed);
+		futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+		futureBoard[futurePos.i][futurePos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+		futureBoard[simPositions.R.i][simPositions.R.j] = '';
+		const futurePositions = {
+		  R: futurePos,
+		  B: { ...simPositions.B }
+		};
+		const nextBlueMoves = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'B');
+		if (nextBlueMoves.length <= 1) futureTrapPenalty -= 5;
+		if (nextBlueMoves.length === 0) futureTrapPenalty -= 15;
+	  }
+
+	  let opponentFutureTrapBonus = 0;
+	  for (const rm of redMovesAfter.slice(0, 2)) {
+		const redPos = { i: rm.i, j: rm.j };
+		const futureBoard = simBoard.map(row => row.slice());
+		const futureCollapsed = new Set(simCollapsed);
+		futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
+		futureBoard[redPos.i][redPos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
+		futureBoard[simPositions.R.i][simPositions.R.j] = '';
+		const futurePositions = {
+		  R: redPos,
+		  B: { ...simPositions.B }
+		};
+		const redEscape = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'R');
+		if (redEscape.length === 0) opponentFutureTrapBonus += 8;
+		else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
+	  }
+
+	  // nové penalizace
+	  const uselessMovePenalty = (blocksOpponent === 0 && winBonus === 0 && centerBonus === 0 && distToRed >= 3) ? -2 : 0;
+
+	  const aiMobility = getValidMovesFrom('B', m.i, m.j).length;
+	  const redMobility = redMovesAfter.length;
+	  const mobilityDiff = aiMobility - redMobility;
+
+	  const riskyZonePenalty = (escapeRoutes <= 1 || surroundingCollapsed >= 3) ? -3 : 0;
+
+	  // penalizace slepé uličky
+	  let deadEndPenalty = 0;
+	  if (aiMobility === 0) {
+		deadEndPenalty = -50;
+	  }
+
+	  let noEscapePenalty = escapeRoutes === 0 ? -10 : 0;
+
+	  const score =
+		value +
+		centerBonus +
+		blocksOpponent +
+		mobilityBonus +
+		lengthPenalty +
+		dangerPenalty +
+		surroundingCollapsed +
+		readabilityPenalty +
+		escapeRoutes +
+		winBonus +
+		preventLossPenalty +
+		futureTrapPenalty +
+		opponentFutureTrapBonus +
+		uselessMovePenalty +
+		1 * mobilityDiff +
+		riskyZonePenalty +
+		counterAttackScore * 0.5 +
+		deadEndPenalty +
+		noEscapePenalty;
+
+
+	   // 📝 Důvod k tahu
+	  const reasonParts = [];
+	  if (value) reasonParts.push(`${value} card`);
+	  if (centerBonus) reasonParts.push(`${centerBonus} centre`);
+	  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks player`);
+	  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} expected direction`);
+	  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
+	  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} lenght of turn`);
+	  if (dangerPenalty) reasonParts.push(`${dangerPenalty} the proximity of the opponent`);
+	  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
+	  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} trap`);
+	  if (winBonus) reasonParts.push('🏆 winner turn');
+	  if (preventLossPenalty) reasonParts.push(`⚠️ deffensive prediction`);
+	  if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
+	  if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
+	  if (opponentFutureTrapBonus) reasonParts.push(`🎯 a threat to the opponent (${opponentFutureTrapBonus})`);
+	  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶  useless move`);
+	  if (mobilityDiff !== 0) {reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in number of moves AI and player`);
+	  if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
+	  if (deadEndPenalty) reasonParts.push(`💀 dead end`);
+	  if (noEscapePenalty) reasonParts.push(`🔒 no escape route`);
 	}
 
-	   // Funkci využívá AI Minimax od 3. tahu v aiMove
-	function decideDepth(board, collapsed, moveCount) {
-	  const bMoves = getValidMoves('B', board, positions);
-	  const numMoves = bMoves.length;
-	  const totalCells = board.length * board[0].length;
-	  const collapsedRatio = collapsed.size / totalCells;
-
-	  // 🔴 1. Kritická situace – zcela málo tahů
-	  if (numMoves <= 2) return 5;
-
-	  // 🟠 2. Obranná situace – málo možností
-	  if (numMoves <= 4) return 4;
-
-	  // 🟡 3. Pokročilá fáze – velká část desky obsazena nebo delší hra
-	  if (collapsedRatio > 0.5 || moveCount > 6) return 3;
-
-	  // 🟢 Výchozí hloubka
-	  return 2;
+	  return {
+		score,
+		reason: reasonParts.join(' + ')
+	  };
 	}
 
 
-// Silnější penalizaci slepých uliček a tahů bez únikových cest
-// Zvýšení penalizace za budoucí pasti
-// Zvýšení penalizace blízkosti soupeře
-// Nové komentáře a důvody pro log
+	function aiMove() {
 
-function heuristicScore(m) {
-  const pos = positions['B'];
-  const val = board[m.i][m.j];
-  const value = parseInt(val) || 0;
+	  if (currentPlayer !== 'B') return;
 
-  const centerBonus = (m.i >= 1 && m.i <= 2 && m.j >= 1 && m.j <= 2) ? 1 : 0;
+	  const moves = getValidMoves('B');
+	  if (moves.length === 0) {
+		checkGameOver();
+		return;
+	  }
 
-  const redMoves = getValidMoves('R');
-  const redTargets = redMoves.map(rm => `${rm.i},${rm.j}`);
-  const blocksOpponent = redTargets.includes(`${m.i},${m.j}`) ? 5 : 0;
+	  const pos = positions['B'];
+	  let bestMove = null;
+	  let bestScore = -Infinity;
+	  let bestReason = '';
 
-  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
-    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
-    return !collapsed.has(`${ni},${nj}`);
-  });
+	  // 🔷 Heuristika – první 2 tahy
+	  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
+		const top = moves
+		  .map(m => {
+		    const { score, reason } = heuristicScore(m);
+		    return { move: m, score, reason };
+		  })
+		  .sort((a, b) => b.score - a.score)[0];
 
-  const readabilityPenalty = (positions.R.i === m.i || positions.R.j === m.j) ? -1 : 0;
-  const escapeRoutes = getValidMovesFrom('B', m.i, m.j).length;
-  const mobilityBonus = neighbors.length;
+		bestMove = top.move;
+		bestScore = top.score;
+		bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
 
-  const lengthPenalty = m.path ? -m.path.length * 0.5 : 0;
-  const distToRed = Math.abs(m.i - positions.R.i) + Math.abs(m.j - positions.R.j);
-  const dangerPenalty = distToRed <= 1 ? -6 : 0; // zvýšeno z -2 na -6
+	  } else {
+		// 🔷 Minimax od 3. tahu
+		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
+		const bMoves = getValidMoves('B', board, positions);
 
-  const surroundingCollapsed = [[1,0],[-1,0],[0,1],[0,-1]].filter(([di,dj]) => {
-    const ni = mod(m.i + di, 4), nj = mod(m.j + dj, 4);
-    return collapsed.has(`${ni},${nj}`);
-  }).length;
+		const topMoves = bMoves
+		  .map(m => ({ move: m, score: heuristicScore(m).score }))
+		  .sort((a, b) => b.score - a.score)
+		  .slice(0, 3);
 
-  const simBoard = board.map(row => row.slice());
-  const simCollapsed = new Set(collapsed);
-  simCollapsed.add(`${pos.i},${pos.j}`);
-  simBoard[m.i][m.j] = simBoard[pos.i][pos.j];
-  simBoard[pos.i][pos.j] = '';
+		for (const { move: m } of topMoves) {
+		  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
+		  const aiMovesAfter = getValidMoves('B', newBoard, newPositions);
+		  const playerMoves = getValidMoves('R', newBoard, newPositions);
 
-  const simPositions = {
-    R: { ...positions.R },
-    B: { i: m.i, j: m.j }
-  };
+		  if (playerMoves.length === 0) {
+		    const winScore = 10000 + depth;
+		    if (winScore > bestScore || bestMove === null) {
+		      bestScore = winScore;
+		      bestMove = m;
+		      bestMove.path = m.path;
+		      bestReason = `🏆 Direct win (${winScore})`;
+		    }
+		    break;
+		  }
 
-  const redMovesAfter = getValidMovesFor(simBoard, simCollapsed, simPositions, 'R');
-  const winBonus = redMovesAfter.length === 0 ? 100 : 0;
+		  if (aiMovesAfter.length === 0) {
+		    const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
+		    if (playerMovesAfter.length === 0) {
+		      const winScore = 1000 + depth;
+		      if (winScore > bestScore || bestMove === null) {
+		        bestScore = winScore;
+		        bestMove = m;
+		        bestMove.path = m.path;
+		        bestReason = `🏆 AI and player without moves– AI is winnet (${winScore})`;
+		      }
+		    } else {
+		      const penaltyScore = -1000 - depth;
+		      if (penaltyScore > bestScore || bestMove === null) {
+		        bestScore = penaltyScore;
+		        bestMove = m;
+		        bestMove.path = m.path;
+		        bestReason = `💀 This move leads to a stalemate.– score = ${penaltyScore}`;
+		      }
+		    }
+		    continue;
+		  }
 
-  let preventLossPenalty = 0;
-  for (const redMove of redMovesAfter) {
-    const redSimBoard = simBoard.map(row => row.slice());
-    const redSimCollapsed = new Set(simCollapsed);
-    redSimCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-    redSimBoard[redMove.i][redMove.j] = redSimBoard[simPositions.R.i][simPositions.R.j];
-    redSimBoard[simPositions.R.i][simPositions.R.j] = '';
+		  const score = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, -Infinity, Infinity);
+		  const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
 
-    const afterRedPositions = {
-      R: { i: redMove.i, j: redMove.j },
-      B: simPositions.B
-    };
+		  if (playerMovesAfter.length === 0) {
+		    const winScore = 10000 + depth;
+		    if (winScore > bestScore || bestMove === null) {
+		      bestScore = winScore;
+		      bestMove = m;
+		      bestMove.path = m.path;
+		      bestReason = `🏆 Direct win (after minimax) – ${winScore}`;
+		    }
+		    break;
+		  }
 
-    const aiMovesAfter = getValidMovesFor(redSimBoard, redSimCollapsed, afterRedPositions, 'B');
-    if (aiMovesAfter.length === 0) {
-      preventLossPenalty = -25;
-      break;
-    }
-  }
+		  if (score > bestScore || bestMove === null) {
+		    const redMoves = getValidMoves('R', newBoard, newPositions);
+		    let aiBlockedAfterResponse = false;
 
-  let counterAttackScore = 0;
-  for (const rMove of redMovesAfter) {
-    const tempBoard = simBoard.map(row => row.slice());
-    const tempCollapsed = new Set(simCollapsed);
-    tempCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-    tempBoard[rMove.i][rMove.j] = tempBoard[simPositions.R.i][simPositions.R.j];
-    tempBoard[simPositions.R.i][simPositions.R.j] = '';
-    const nextPositions = {
-      R: { i: rMove.i, j: rMove.j },
-      B: { ...simPositions.B }
-    };
+		    for (const rMove of redMoves) {
+		      const afterRed = simulateMove(newBoard, newPositions, newCollapsed, 'R', rMove);
+		      const bMovesAfter = getValidMoves('B', afterRed.newBoard, afterRed.newPositions);
+		      if (bMovesAfter.length === 0) {
+		        aiBlockedAfterResponse = true;
+		        break;
+		      }
+		    }
 
-    const blueMovesNext = getValidMovesFor(tempBoard, tempCollapsed, nextPositions, 'B');
-    counterAttackScore = Math.max(counterAttackScore, blueMovesNext.length);
-  }
+		    if (aiBlockedAfterResponse) {
+		      const penalty = -1000 - depth;
+		      bestScore = penalty;
+		      bestMove = m;
+		      bestMove.path = m.path;
+		      bestReason = `💀 Minimax overlooked – AI will be blocked after the player's move (${penalty})`;
+		    } else {
+		      bestScore = score;
+		      bestMove = m;
+		      bestMove.path = m.path;
+		      bestReason = `Minimax score = ${score}`;
+		    }
+		  }
 
-  let futureTrapPenalty = 0;
-  for (const redMove of redMovesAfter.slice(0, 2)) {
-    const futurePos = { i: redMove.i, j: redMove.j };
-    const futureBoard = simBoard.map(row => row.slice());
-    const futureCollapsed = new Set(simCollapsed);
-    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-    futureBoard[futurePos.i][futurePos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
-    futureBoard[simPositions.R.i][simPositions.R.j] = '';
-    const futurePositions = {
-      R: futurePos,
-      B: { ...simPositions.B }
-    };
-    const nextBlueMoves = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'B');
-    if (nextBlueMoves.length <= 1) futureTrapPenalty -= 5;
-    if (nextBlueMoves.length === 0) futureTrapPenalty -= 15;
-  }
+		  if (bestScore >= 1000) break;
+		}
+	  }
 
-  let opponentFutureTrapBonus = 0;
-  for (const rm of redMovesAfter.slice(0, 2)) {
-    const redPos = { i: rm.i, j: rm.j };
-    const futureBoard = simBoard.map(row => row.slice());
-    const futureCollapsed = new Set(simCollapsed);
-    futureCollapsed.add(`${simPositions.R.i},${simPositions.R.j}`);
-    futureBoard[redPos.i][redPos.j] = futureBoard[simPositions.R.i][simPositions.R.j];
-    futureBoard[simPositions.R.i][simPositions.R.j] = '';
-    const futurePositions = {
-      R: redPos,
-      B: { ...simPositions.B }
-    };
-    const redEscape = getValidMovesFor(futureBoard, futureCollapsed, futurePositions, 'R');
-    if (redEscape.length === 0) opponentFutureTrapBonus += 8;
-    else if (redEscape.length <= 1) opponentFutureTrapBonus += 3;
-  }
+	  if (!bestMove) return;
 
-  // nové penalizace
-  const uselessMovePenalty = (blocksOpponent === 0 && winBonus === 0 && centerBonus === 0 && distToRed >= 3) ? -2 : 0;
+		  // 🧠 Proveď tah AI na reálné desce
+		  const key = `${pos.i},${pos.j}`;
+		  collapsed.add(key);
+		  justCollapsedKey = key;
 
-  const aiMobility = getValidMovesFrom('B', m.i, m.j).length;
-  const redMobility = redMovesAfter.length;
-  const mobilityDiff = aiMobility - redMobility;
+		  const fromVal = board[pos.i][pos.j];
+		  const toVal = board[bestMove.i][bestMove.j];
 
-  const riskyZonePenalty = (escapeRoutes <= 1 || surroundingCollapsed >= 3) ? -3 : 0;
+		  collapsedBy[key] = currentPlayer;
+		  board[bestMove.i][bestMove.j] = toVal;
+		  board[pos.i][pos.j] = '';
 
-  // penalizace slepé uličky
-  let deadEndPenalty = 0;
-  if (aiMobility === 0) {
-    deadEndPenalty = -50;
-  }
+		  positions['B'] = { i: bestMove.i, j: bestMove.j };
+		  lastMoveEnd = { i: bestMove.i, j: bestMove.j };
 
-  let noEscapePenalty = escapeRoutes === 0 ? -10 : 0;
+	  // 📌 Ověř skutečný stav po tahu
+	  const playerMovesAfterReal = getValidMoves('R', board, positions);
+	  if (playerMovesAfterReal.length === 0) {
+		bestScore = 10000 + blueAIMoveCount;
+		bestReason = `🏆 Direct win (${bestScore})`;
+	  }
 
-  const score =
-    value +
-    centerBonus +
-    blocksOpponent +
-    mobilityBonus +
-    lengthPenalty +
-    dangerPenalty +
-    surroundingCollapsed +
-    readabilityPenalty +
-    escapeRoutes +
-    winBonus +
-    preventLossPenalty +
-    futureTrapPenalty +
-    opponentFutureTrapBonus +
-    uselessMovePenalty +
-    1 * mobilityDiff +
-    riskyZonePenalty +
-    counterAttackScore * 0.5 +
-    deadEndPenalty +
-    noEscapePenalty;
-
-
-   // 📝 Důvod k tahu
-  const reasonParts = [];
-  if (value) reasonParts.push(`${value} card`);
-  if (centerBonus) reasonParts.push(`${centerBonus} centre`);
-  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks player`);
-  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} expected direction`);
-  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
-  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} lenght of turn`);
-  if (dangerPenalty) reasonParts.push(`${dangerPenalty} the proximity of the opponent`);
-  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
-  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} trap`);
-  if (winBonus) reasonParts.push('🏆 winner turn');
-  if (preventLossPenalty) reasonParts.push(`⚠️ deffensive prediction`);
-  if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
-  if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
-  if (opponentFutureTrapBonus) reasonParts.push(`🎯 a threat to the opponent (${opponentFutureTrapBonus})`);
-  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶  useless move`);
-  if (mobilityDiff !== 0) {reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in number of moves AI and player`);
-  if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
-  if (deadEndPenalty) reasonParts.push(`💀 dead end`);
-  if (noEscapePenalty) reasonParts.push(`🔒 no escape route`);
-}
-
-  return {
-    score,
-    reason: reasonParts.join(' + ')
-  };
-}
+	  // 🔍 Log pouze reálného tahu AI
+	  const pathCoords = bestMove.path
+		? bestMove.path.split('').reduce((acc, dir) => {
+		    const last = acc[acc.length - 1];
+		    const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
+		    const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
+		    acc.push({ i: ni, j: nj });
+		    return acc;
+		  }, [{ i: pos.i, j: pos.j }])
+		: [{ i: pos.i, j: pos.j }, { i: bestMove.i, j: bestMove.j }];
 
 
-function aiMove() {
-
-  if (currentPlayer !== 'B') return;
-
-  const moves = getValidMoves('B');
-  if (moves.length === 0) {
-    checkGameOver();
-    return;
-  }
-
-  const pos = positions['B'];
-  let bestMove = null;
-  let bestScore = -Infinity;
-  let bestReason = '';
-
-  // 🔷 Heuristika – první 2 tahy
-  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
-    const top = moves
-      .map(m => {
-        const { score, reason } = heuristicScore(m);
-        return { move: m, score, reason };
-      })
-      .sort((a, b) => b.score - a.score)[0];
-
-    bestMove = top.move;
-    bestScore = top.score;
-    bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
-
-  } else {
-    // 🔷 Minimax od 3. tahu
-    const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
-    const bMoves = getValidMoves('B', board, positions);
-
-    const topMoves = bMoves
-      .map(m => ({ move: m, score: heuristicScore(m).score }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
-
-    for (const { move: m } of topMoves) {
-      const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
-      const aiMovesAfter = getValidMoves('B', newBoard, newPositions);
-      const playerMoves = getValidMoves('R', newBoard, newPositions);
-
-      if (playerMoves.length === 0) {
-        const winScore = 10000 + depth;
-        if (winScore > bestScore || bestMove === null) {
-          bestScore = winScore;
-          bestMove = m;
-          bestMove.path = m.path;
-          bestReason = `🏆 Direct win (${winScore})`;
-        }
-        break;
-      }
-
-      if (aiMovesAfter.length === 0) {
-        const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
-        if (playerMovesAfter.length === 0) {
-          const winScore = 1000 + depth;
-          if (winScore > bestScore || bestMove === null) {
-            bestScore = winScore;
-            bestMove = m;
-            bestMove.path = m.path;
-            bestReason = `🏆 AI and player without moves– AI is winnet (${winScore})`;
-          }
-        } else {
-          const penaltyScore = -1000 - depth;
-          if (penaltyScore > bestScore || bestMove === null) {
-            bestScore = penaltyScore;
-            bestMove = m;
-            bestMove.path = m.path;
-            bestReason = `💀 This move leads to a stalemate.– score = ${penaltyScore}`;
-          }
-        }
-        continue;
-      }
-
-      const score = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, -Infinity, Infinity);
-      const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
-
-      if (playerMovesAfter.length === 0) {
-        const winScore = 10000 + depth;
-        if (winScore > bestScore || bestMove === null) {
-          bestScore = winScore;
-          bestMove = m;
-          bestMove.path = m.path;
-          bestReason = `🏆 Direct win (after minimax) – ${winScore}`;
-        }
-        break;
-      }
-
-      if (score > bestScore || bestMove === null) {
-        const redMoves = getValidMoves('R', newBoard, newPositions);
-        let aiBlockedAfterResponse = false;
-
-        for (const rMove of redMoves) {
-          const afterRed = simulateMove(newBoard, newPositions, newCollapsed, 'R', rMove);
-          const bMovesAfter = getValidMoves('B', afterRed.newBoard, afterRed.newPositions);
-          if (bMovesAfter.length === 0) {
-            aiBlockedAfterResponse = true;
-            break;
-          }
-        }
-
-        if (aiBlockedAfterResponse) {
-          const penalty = -1000 - depth;
-          bestScore = penalty;
-          bestMove = m;
-          bestMove.path = m.path;
-          bestReason = `💀 Minimax overlooked – AI will be blocked after the player's move (${penalty})`;
-        } else {
-          bestScore = score;
-          bestMove = m;
-          bestMove.path = m.path;
-          bestReason = `Minimax score = ${score}`;
-        }
-      }
-
-      if (bestScore >= 1000) break;
-    }
-  }
-
-  if (!bestMove) return;
-
-	  // 🧠 Proveď tah AI na reálné desce
-	  const key = `${pos.i},${pos.j}`;
-	  collapsed.add(key);
-	  justCollapsedKey = key;
-
-	  const fromVal = board[pos.i][pos.j];
-	  const toVal = board[bestMove.i][bestMove.j];
-
-	  collapsedBy[key] = currentPlayer;
-	  board[bestMove.i][bestMove.j] = toVal;
-	  board[pos.i][pos.j] = '';
-
-	  positions['B'] = { i: bestMove.i, j: bestMove.j };
-	  lastMoveEnd = { i: bestMove.i, j: bestMove.j };
-
-  // 📌 Ověř skutečný stav po tahu
-  const playerMovesAfterReal = getValidMoves('R', board, positions);
-  if (playerMovesAfterReal.length === 0) {
-    bestScore = 10000 + blueAIMoveCount;
-    bestReason = `🏆 Direct win (${bestScore})`;
-  }
-
-  // 🔍 Log pouze reálného tahu AI
-  const pathCoords = bestMove.path
-    ? bestMove.path.split('').reduce((acc, dir) => {
-        const last = acc[acc.length - 1];
-        const delta = dir === 'U' ? [-1, 0] : dir === 'D' ? [1, 0] : dir === 'L' ? [0, -1] : [0, 1];
-        const ni = mod(last.i + delta[0], 4), nj = mod(last.j + delta[1], 4);
-        acc.push({ i: ni, j: nj });
-        return acc;
-      }, [{ i: pos.i, j: pos.j }])
-    : [{ i: pos.i, j: pos.j }, { i: bestMove.i, j: bestMove.j }];
-
-
-// ✅ Ověření, že bestMove byl skutečně proveden
-if (
-  positions['B'].i !== bestMove.i ||
-  positions['B'].j !== bestMove.j ||
-  board[bestMove.i][bestMove.j] !== toVal ||
-  board[pos.i][pos.j] !== ''
-) {
-  console.error('❌ Error: bestMove was not executed correctly!', {
-    očekávanáPozice: { i: bestMove.i, j: bestMove.j },
-    aktuálníPozice: positions['B'],
-    tah: bestMove,
-    fromVal,
-    toVal,
-    boardState: board
-  });
-  return; // zamez zápisu chybného tahu
-}
-
-	  // 📝 Zapisuj pouze skutečný tah
-	  logMove(pos, bestMove, fromVal, toVal, pathCoords, bestScore, bestReason, 'B');
-
-	  currentPlayer = 'R';
-	  blueAIMoveCount++;
-	  updateTurnText();
-
-	  justCollapsedPlayed = false;
-	  renderBoard();
-	  checkGameOver();
+	// ✅ Ověření, že bestMove byl skutečně proveden
+	if (
+	  positions['B'].i !== bestMove.i ||
+	  positions['B'].j !== bestMove.j ||
+	  board[bestMove.i][bestMove.j] !== toVal ||
+	  board[pos.i][pos.j] !== ''
+	) {
+	  console.error('❌ Error: bestMove was not executed correctly!', {
+		očekávanáPozice: { i: bestMove.i, j: bestMove.j },
+		aktuálníPozice: positions['B'],
+		tah: bestMove,
+		fromVal,
+		toVal,
+		boardState: board
+	  });
+	  return; // zamez zápisu chybného tahu
 	}
 
-		document.getElementById('resetBtn').addEventListener('click', createBoard);
-		createBoard();
-		updateStats();
-		
-		starterSelect.addEventListener('change', () => {
-	  createBoard();
-	});
+		  // 📝 Zapisuj pouze skutečný tah
+		  logMove(pos, bestMove, fromVal, toVal, pathCoords, bestScore, bestReason, 'B');
+
+		  currentPlayer = 'R';
+		  blueAIMoveCount++;
+		  updateTurnText();
+
+		  justCollapsedPlayed = false;
+		  renderBoard();
+		  checkGameOver();
+		}
+
+			document.getElementById('resetBtn').addEventListener('click', createBoard);
+			createBoard();
+			updateStats();
+			
+			starterSelect.addEventListener('change', () => {
+		  createBoard();
+		});
 	  </script>
 	</body>
 	</html>
