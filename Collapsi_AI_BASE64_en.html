@@ -2058,6 +2058,25 @@ function getValidMoves(player, b = board, posMap = positions) {
 			console.warn('⚠️ AI by byla zablokována tímto tahem');
 			continue;
 		  }
+		  
+		  	// 🎯 NOVÉ: predikce, že hráč bude zablokován v následujícím tahu
+		  let redCanBeBlocked = true;
+		  for (const rMove of playerMovesAfter) {
+			const redResult = simulateMove(newBoard, newPositions, newCollapsed, 'R', rMove);
+			const bMovesAfterRed = getValidMoves('B', redResult.newBoard, redResult.newPositions);
+			if (bMovesAfterRed.length > 0) {
+			  redCanBeBlocked = false;
+			  break;
+			}
+		  }
+		  if (redCanBeBlocked) {
+			bestScore = 9999;
+			bestMove = m;
+			bestMove.path = m.path;
+			bestReason = '🎯 AI predikuje zablokování hráče (${bestScore})';
+			console.warn('✅ AI odhalila, že zablokuje hráče v dalším kole');
+			break;
+		  }
 
 		  const score = minimax(newBoard, newPositions, newCollapsed, depth - 1, false, -Infinity, Infinity);
 		  console.log(`📊 Tah ${m.i},${m.j} | Minimax skóre: ${score}`);
