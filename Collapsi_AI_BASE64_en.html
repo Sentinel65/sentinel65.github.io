@@ -986,98 +986,94 @@ const cardImages = {
 	}
 
 
-	function getValidMoves(player, b = board, posMap = positions) {
-	  const pos = posMap[player];
-	  if (!pos) return [];
+function getValidMoves(player, b = board, posMap = positions) {
+  const pos = posMap[player];
+  if (!pos) return [];
 
-	  const start = b[pos.i][pos.j];
-	  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
-	  const moves = [];
-	  const rows = board.length;
-	  const cols = board[0].length;
+  const start = b[pos.i][pos.j];
+  const steps = (start === 'R' || start === 'B') ? null : parseInt(start);
+  const moves = [];
+  const rows = board.length;
+  const cols = board[0].length;
+  const opponent = player === 'R' ? 'B' : 'R';
 
-	  function dfs(i, j, rem, seen, path) {
-		if (rem === 0) {
-		  if (i !== pos.i || j !== pos.j) {
-		    if (!seen.has(`${pos.i},${pos.j}`) &&
-		        !(positions.R && positions.R.i === i && positions.R.j === j) &&
-		        !(positions.B && positions.B.i === i && positions.B.j === j)) {
-		      moves.push({ i, j, path });
-		    }
-		  }
-		  return;
-		}
+  function dfs(i, j, rem, seen, path) {
+    if (rem === 0) {
+      if (i !== pos.i || j !== pos.j) {
+        const occupiedByOpponent = positions[opponent]?.i === i && positions[opponent]?.j === j;
+        if (!seen.has(`${pos.i},${pos.j}`) && !occupiedByOpponent) {
+          moves.push({ i, j, path });
+        }
+      }
+      return;
+    }
 
-		for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
-		  const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
-		  if (seen.has(key) || collapsed.has(key)) continue;
-		  const s2 = new Set(seen);
-		  s2.add(key);
-		  dfs(ni, nj, rem - 1, s2, path + d);
-		}
-	  }
+    for (const [di, dj, d] of [[1, 0, 'D'], [-1, 0, 'U'], [0, 1, 'R'], [0, -1, 'L']]) {
+      const ni = mod(i + di, rows), nj = mod(j + dj, cols), key = `${ni},${nj}`;
+      if (seen.has(key) || collapsed.has(key)) continue;
+      const s2 = new Set(seen);
+      s2.add(key);
+      dfs(ni, nj, rem - 1, s2, path + d);
+    }
+  }
 
-	  // aplikováno nové pravidlo prvního tahu ve hře, kdy se může o 1 krok
-	if (steps) {
-	  // ✅ Karta má číselnou hodnotu – klasické DFS podle počtu kroků
-	  dfs(pos.i, pos.j, steps, new Set(), '');
-	} else {
-	  // 👉 První tah z R nebo B: pouze 1 krok ortogonálně (bez rohů)
-	  // ❌ Zakázáno vstoupit na druhého jokera
+  if (steps) {
+    // ✅ Karta má číselnou hodnotu – klasické DFS podle počtu kroků
+    dfs(pos.i, pos.j, steps, new Set(), '');
+  } else {
+    // 👉 První tah z R nebo B: pouze 1 krok ortogonálně (bez rohů)
+    const directions = [
+      [1, 0, 'D'], [-1, 0, 'U'],
+      [0, 1, 'R'], [0, -1, 'L']
+    ];
 
-	  const directions = [
-		[1, 0, 'D'], [-1, 0, 'U'],
-		[0, 1, 'R'], [0, -1, 'L']
-	  ];
+    for (const [di, dj, d] of directions) {
+      const ni = mod(pos.i + di, rows);
+      const nj = mod(pos.j + dj, cols);
+      const key = `${ni},${nj}`;
+      if (collapsed.has(key)) continue;
 
-	  for (const [di, dj, d] of directions) {
-		const ni = mod(pos.i + di, rows);
-		const nj = mod(pos.j + dj, cols);
-		const key = `${ni},${nj}`;
+      const targetValue = board[ni][nj];
+      const isOpponentJoker =
+        (start === 'R' && targetValue === 'B') ||
+        (start === 'B' && targetValue === 'R');
 
-		if (collapsed.has(key)) continue;
+      const occupiedByOpponent = positions[opponent]?.i === ni && positions[opponent]?.j === nj;
 
-		const targetValue = board[ni][nj];
-		const isOpponentJoker =
-		  (start === 'R' && targetValue === 'B') ||
-		  (start === 'B' && targetValue === 'R');
+      if (isOpponentJoker || occupiedByOpponent) continue;
 
-		if (isOpponentJoker) continue;
+      moves.push({ i: ni, j: nj, path: d });
+    }
+  }
 
-		moves.push({ i: ni, j: nj, path: d });
-	  }
-	}
+  // 🧩 Speciální pravidlo pro sólo režim – přidání posledního tahu na 'B'
+  if (soloMode) {
+    const remaining = [];
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        if (!collapsed.has(`${i},${j}`)) remaining.push({ i, j });
+      }
+    }
 
+    if (remaining.length === 2) {
+      const exit = findExitCard();
+      const other = remaining.find(cell => !(cell.i === exit.i && cell.j === exit.j));
+      if (other.i === pos.i && other.j === pos.j) {
+        const dx = Math.abs(pos.i - exit.i);
+        const dy = Math.abs(pos.j - exit.j);
+        const wrapDx = Math.min(dx, rows - dx);
+        const wrapDy = Math.min(dy, cols - dy);
+        const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
 
-	  // 🔄 DODATEK – pokud zůstává pouze aktivní karta a výstupní 'B', přidáme tah na 'B' i bez ohledu na hodnotu
-	  if (soloMode) {
-		const remaining = [];
-		for (let i = 0; i < rows; i++) {
-		  for (let j = 0; j < cols; j++) {
-		    if (!collapsed.has(`${i},${j}`)) remaining.push({ i, j });
-		  }
-		}
+        if (isAdjacent) {
+          moves.push({ i: exit.i, j: exit.j, path: '' }); // prázdná cesta – přechod na B
+        }
+      }
+    }
+  }
 
-		if (remaining.length === 2) {
-		  const exit = findExitCard();
-		  const other = remaining.find(cell => !(cell.i === exit.i && cell.j === exit.j));
-		  if (other.i === pos.i && other.j === pos.j) {
-		    // Jsme na poslední aktivní kartě, přidejme ručně tah na B, pokud je sousední
-		    const dx = Math.abs(pos.i - exit.i);
-		    const dy = Math.abs(pos.j - exit.j);
-		    const wrapDx = Math.min(dx, rows - dx);
-		    const wrapDy = Math.min(dy, cols - dy);
-		    const isAdjacent = (wrapDx === 1 && wrapDy === 0) || (wrapDx === 0 && wrapDy === 1);
-
-		    if (isAdjacent) {
-		      moves.push({ i: exit.i, j: exit.j, path: '' }); // prázdná cesta – speciální případ
-		    }
-		  }
-		}
-	  }
-
-	  return moves;
-	}
+  return moves;
+}
 
 
 		// Proměnné pro grafický efekt rozpadu karty 
@@ -2145,6 +2141,13 @@ const cardImages = {
 
 		  const fromVal = board[pos.i][pos.j];
 		  const toVal = board[bestMove.i][bestMove.j];
+
+          // 🛑 Ověření: cílové pole není obsazeno soupeřem
+          const opponent = 'R';
+          if (positions[opponent]?.i === bestMove.i && positions[opponent]?.j === bestMove.j) {
+          console.warn('❌ AI se pokusila vstoupit na políčko obsazené soupeřem:', bestMove);
+          return; // Neprovedeme tah
+          }
 
 		  collapsedBy[key] = currentPlayer;
 		  board[bestMove.i][bestMove.j] = toVal;
