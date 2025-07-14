@@ -2041,13 +2041,13 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 	  } else {
 		// 🔷 Minimax od 3. tahu
-		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
+		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 4;
 		const bMoves = getValidMoves('B', board, positions);
 
 		const topMoves = bMoves
 		  .map(m => ({ move: m, score: heuristicScore(m).score }))
 		  .sort((a, b) => b.score - a.score)
-		  .slice(0, 3);
+		  .slice(0, 6);
 
 		for (const { move: m } of topMoves) {
 		  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'B', m);
