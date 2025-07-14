@@ -1247,7 +1247,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 		  ? ` | score: <strong style="color:${scoreColor};">${score}</strong>${scoreReason ? ` <em>(${scoreReason})</em>` : ''}`
 		  : '';
 
-	const historyNote = isRed && !soloMode
+	const historyNote = isRed && !soloMode && !isPvP
 	  ? ` <span style="color:darkred;">[↺ player's memory]</span>`
 	  : '';
 
@@ -2019,17 +2019,17 @@ function getValidMoves(player, b = board, posMap = positions) {
 		const top = scoredMoves.sort((a, b) => b.score - a.score)[0];
 		bestMove = top.move;
 		bestScore = top.score;
-		bestReason = `Heuristika skóre = ${top.score.toFixed(1)} (${top.reason})`;
+		bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
 
 	  } else {
 		// Použij Minimax
-		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 5;
+		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 3;
 		console.log(`🧠 AI používá minimax, hloubka: ${depth}`);
 
 		const topMoves = moves
 		  .map(m => ({ move: m, score: heuristicScore(m).score }))
 		  .sort((a, b) => b.score - a.score)
-		  .slice(0, 6);
+		  .slice(0, 5);
 
 		for (const { move: m } of topMoves) {
 		  console.log(`⏳ Testuji tah ${m.i},${m.j}`);
@@ -2053,8 +2053,8 @@ function getValidMoves(player, b = board, posMap = positions) {
 			bestMove = m;
 			bestMove.path = m.path;
 			bestReason = playerMovesAfter.length === 0
-			  ? `🏆 AI i hráč bez tahů – AI vítězí (${bestScore})`
-			  : `💀 AI se zablokuje (${bestScore})`;
+			  ? `🏆 AI & player have no move  – AI wi (${bestScore})`
+			  : `💀 AI will block itself (${bestScore})`;
 			console.warn('⚠️ AI by byla zablokována tímto tahem');
 			continue;
 		  }
@@ -2073,7 +2073,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 			bestScore = 9999;
 			bestMove = m;
 			bestMove.path = m.path;
-			bestReason = '🎯 AI predikuje zablokování hráče (${bestScore})';
+			bestReason = '🎯 AI predicts player blocking (${bestScore})';
 			console.warn('✅ AI odhalila, že zablokuje hráče v dalším kole');
 			break;
 		  }
