@@ -2023,13 +2023,13 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 	  } else {
 		// Použij Minimax
-		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 3;
+		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 4;
 		console.log(`🧠 AI používá minimax, hloubka: ${depth}`);
 
 		const topMoves = moves
 		  .map(m => ({ move: m, score: heuristicScore(m).score }))
 		  .sort((a, b) => b.score - a.score)
-		  .slice(0, 5);
+		  .slice(0, 6);
 
 		for (const { move: m } of topMoves) {
 		  console.log(`⏳ Testuji tah ${m.i},${m.j}`);
@@ -2053,7 +2053,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 			bestMove = m;
 			bestMove.path = m.path;
 			bestReason = playerMovesAfter.length === 0
-			  ? `🏆 AI & player have no move  – AI wi (${bestScore})`
+			  ? `?? AI & player have no move  – AI wi (${bestScore})`
 			  : `💀 AI will block itself (${bestScore})`;
 			console.warn('⚠️ AI by byla zablokována tímto tahem');
 			continue;
