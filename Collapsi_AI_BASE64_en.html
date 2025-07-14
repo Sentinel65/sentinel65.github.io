@@ -1965,25 +1965,25 @@ function getValidMoves(player, b = board, posMap = positions) {
 		noEscapePenalty;
 
 	  const reasonParts = [];
-	  if (value) reasonParts.push(`${value} karta`);
-	  if (centerBonus) reasonParts.push(`${centerBonus} střed`);
-	  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blokuje hráče`);
-	  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} čitelný směr`);
-	  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobilita`);
-	  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} délka cesty`);
-	  if (dangerPenalty) reasonParts.push(`${dangerPenalty} blízkost soupeře`);
-	  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} únikové cesty`);
-	  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} past`);
-	  if (winBonus) reasonParts.push('🏆 vítězný tah');
-	  if (preventLossPenalty) reasonParts.push(`⚠️ obranná predikce`);
-	  if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} protiútok`);
-	  if (futureTrapPenalty) reasonParts.push(`⚠️ AI ohrožena (${futureTrapPenalty})`);
-	  if (opponentFutureTrapBonus) reasonParts.push(`🎯 hrozba pro soupeře (${opponentFutureTrapBonus})`);
-	  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶 zbytečný tah`);
-	  if (mobilityDiff !== 0) reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} rozdíl v počtu tahů AI a hráče`);
-	  if (riskyZonePenalty) reasonParts.push(`🔻 riziková zóna`);
-	  if (deadEndPenalty) reasonParts.push(`💀 slepá ulička`);
-	  if (noEscapePenalty) reasonParts.push(`🔒 žádná úniková cesta`);
+	  if (value) reasonParts.push(`${value} card`);
+	  if (centerBonus) reasonParts.push(`${centerBonus} center`);
+	  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks players`);
+	  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} predictable direction`);
+	  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
+	  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} length of routes`);
+	  if (dangerPenalty) reasonParts.push(`${dangerPenalty} proximity of the opponent`);
+	  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
+	  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} a trap`);
+	  if (winBonus) reasonParts.push('🏆 winner move');
+	  if (preventLossPenalty) reasonParts.push(`⚠️ defensive prediction`);
+	  if (counterAttackScore > 0) reasonParts.push(`🔁 ${counterAttackScore} counterattack`);
+	  if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
+	  if (opponentFutureTrapBonus) reasonParts.push(`🎯 threat to opponents (${opponentFutureTrapBonus})`);
+	  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶 useless move`);
+	  if (mobilityDiff !== 0) reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in the number of moves between AI and player`);
+	  if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
+	  if (deadEndPenalty) reasonParts.push(`💀 dead end`);
+	  if (noEscapePenalty) reasonParts.push(`🔒 no escape route`);
 
 	  return {
 		score,
@@ -2008,7 +2008,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 	  let bestScore = -Infinity;
 	  let bestReason = '';
 
-	  if (aiMode === 'heuristická' || (aiMode === 'kombinovaná' && blueAIMoveCount < 2)) {
+	  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < 2)) {
 		console.log('🔍 AI používá heuristiku (tah č.', blueAIMoveCount + 1, ')');
 		const scoredMoves = moves.map(m => {
 		  const { score, reason } = heuristicScore(m);
