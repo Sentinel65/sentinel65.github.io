@@ -1968,9 +1968,9 @@ function getValidMoves(player, b = board, posMap = positions) {
 	  if (value) reasonParts.push(`${value} card`);
 	  if (centerBonus) reasonParts.push(`${centerBonus} center`);
 	  if (blocksOpponent) reasonParts.push(`${blocksOpponent} blocks players`);
-	  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} predictable direction`);
+	  if (readabilityPenalty) reasonParts.push(`${readabilityPenalty} expected direction`);
 	  if (mobilityBonus) reasonParts.push(`${mobilityBonus} mobility`);
-	  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} length of routes`);
+	  if (lengthPenalty) reasonParts.push(`-${(-lengthPenalty).toFixed(1)} lenght of turn`);
 	  if (dangerPenalty) reasonParts.push(`${dangerPenalty} proximity of the opponent`);
 	  if (escapeRoutes >= 2) reasonParts.push(`${escapeRoutes} escape routes`);
 	  if (surroundingCollapsed >= 3) reasonParts.push(`-${surroundingCollapsed} a trap`);
@@ -1980,7 +1980,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 	  if (futureTrapPenalty) reasonParts.push(`⚠️ AI under threat (${futureTrapPenalty})`);
 	  if (opponentFutureTrapBonus) reasonParts.push(`🎯 threat to opponents (${opponentFutureTrapBonus})`);
 	  if (uselessMovePenalty) reasonParts.push(`${uselessMovePenalty} 😶 useless move`);
-	  if (mobilityDiff !== 0) reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} difference in the number of moves between AI and player`);
+	  if (mobilityDiff !== 0) reasonParts.push(`${mobilityDiff > 0 ? '🟢' : '🔴'} ${mobilityDiff} ddifference in the number of moves AI and player`);
 	  if (riskyZonePenalty) reasonParts.push(`🔻 risk zone`);
 	  if (deadEndPenalty) reasonParts.push(`💀 dead end`);
 	  if (noEscapePenalty) reasonParts.push(`🔒 no escape route`);
