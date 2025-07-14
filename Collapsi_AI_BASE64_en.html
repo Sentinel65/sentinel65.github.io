@@ -2105,7 +2105,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 			bestScore = score;
 			bestMove = m;
 			bestMove.path = m.path;
-			bestReason = `Minimax skóre = ${score}`;
+			bestReason = `Minimax score = ${score}`;
 		  }
 
 		  if (bestScore >= 1000) break;
@@ -2140,7 +2140,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 	  const playerMovesAfter = getValidMoves('R', board, positions);
 	  if (playerMovesAfter.length === 0) {
 		bestScore = 10000 + blueAIMoveCount;
-		bestReason = `🏆 Přímá výhra (${bestScore})`;
+		bestReason = `🏆 Direct win (${bestScore})`;
 	  }
 
 	  const pathCoords = bestMove.path
