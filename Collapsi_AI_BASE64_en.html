@@ -455,10 +455,16 @@ const cardImages = {
 	  const icon = document.getElementById('heuristicSwitchIcon');
 	  icon.src = heuristicIcons[heuristicMoveLimit] || heuristicIcons[0];
 	  icon.alt = `Heuristics ${heuristicMoveLimit}`;
+	  const isDisabled = aiMode === 'heuristics';
+
+      icon.style.opacity = isDisabled ? '0.4' : '1';
+      icon.style.cursor = isDisabled ? 'default' : 'pointer';
+
 	}
 
       document.getElementById('heuristicSwitchIcon').addEventListener('click', () => {	
-	  heuristicMoveLimit = heuristicMoveLimit === 0 ? 2 : heuristicMoveLimit === 2 ? 3 : 0;
+ 	 if (aiMode === 'heuristics') return;
+      heuristicMoveLimit = heuristicMoveLimit === 0 ? 2 : heuristicMoveLimit === 2 ? 3 : 0;
 	  updateHeuristicIcon();
 	  // Záznam do herního logu podle nové hodnoty
 	  if (heuristicMoveLimit === 0) {
