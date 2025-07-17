@@ -454,7 +454,7 @@ const cardImages = {
 	function updateHeuristicIcon() {
 	  const icon = document.getElementById('heuristicSwitchIcon');
 	  icon.src = heuristicIcons[heuristicMoveLimit] || heuristicIcons[0];
-	  icon.alt = `Heuristic ${heuristicMoveLimit}`;
+	  icon.alt = `Heuristics ${heuristicMoveLimit}`;
 	}
 
       document.getElementById('heuristicSwitchIcon').addEventListener('click', () => {	
@@ -465,39 +465,39 @@ const cardImages = {
 		aiUpdateMode = `minimax`;
 		logEvent(`AI mode: minimax`);
 	  } else {
-		aiUpdateMode = `(${heuristicMoveLimit}) moves heuristic → minimax`;
-		logEvent(`AI mode: (${heuristicMoveLimit}) moves heuristic → minimax`);
+		aiUpdateMode = `(${heuristicMoveLimit}) moves heuristics → minimax`;
+		logEvent(`AI mode: (${heuristicMoveLimit}) moves heuristics → minimax`);
 	  }
 	});
 
 
     // Přepínač AI režimu
     aiToggleBtn.addEventListener('click', () => {
-    if (aiMode === 'heuristic') {
+    if (aiMode === 'heuristics') {
       aiMode = 'minimax';
       aiToggleBtn.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAACbpJREFUeJztnV2MVdUVgL+5wIyKTiugrcCAJQVqnxoNfTOpiZoqI/jzpE/9eShSm5g+QZOKtsakj6ZpG6xJExMdKK3RQn3xwUSND4La2oSUsRGpWNOBEWYGTAsOtw/rToWbe/ba55z9d+7dX7JChrv3Pmvvtc45+6z9N4R7FgE3AjcDNwAbgDXAF4ArgSUertlPnAfOAKeBfwLvAYeB14G3gfl4qhUzDGwFfg/MAO0sXmQG2Ats6bR5dJYDjwIniN84gyZTwC5gmWYkH1wBPI48qmI3xKDLHPCzjk2CsAU45rFCWarJB8BdxWarz2XAkwlUNItZnsHD02AV8E4ClctiJ28BK3tasgLrgH8kUKks5eQosLGHPS9hSPl9I/AqcK1WUBcXgDeBV4BDwCTwEdJpPF+yrEFjCRIvWQ2sBzYBt3T+bZUsawqJx0xWUWQV0rEo43XHgR0d5TNuGQN2IjdS2SdB6dfB5cBfSlzkJLCNRIITfc4IsB1pc1v7vI104q35TYnCJ5CAUCYsy4E92NvpV7YF321Z4DngB06qkqnDNqRfZWOzLVphS5EBCK2gs8Bmt/XI1GAzYhPNbh+gxAiesCjkHNn4KTKO3ZPg50UFrMAutp8f++nyILr95ijosz1mkXnCq/oZF+xFt+Ou7kzD6J8VJ8i9/SawApjGbMspuibm2PT8twVRP+OC7ej2vGTkcJ+S+ENykKdJjCBRWZNN9ywkXow+jWtHON1LMQb8AZjtyPPIHMTU8sVgJ2abnkLmb7JJSThPmrH9MXq/66Yx6xs6XyzWILYz2fYmgB8rid4IrLgtptfW3oTyxeRNzLZ9GOC3SqInQmttySzFOs8klC8mv8Bs290t9HfYIZ8a1uAqw2+jCeWLyUHl9w0tYK2SqNJkgkwSaLZb28Ls2QD/cqRMJjya7UZbyPQjE2ccKZMJz5zy+1VDSGfAhDZvMBZV9Q6dLzZGvctOMsz0GdkBBpzsAANO6n2A1ciy83HgK52/l0bUx4azyEDM+8AB4E+dv2Oh2dcYKVIze2IVsBv7yY4pyzyyb8L1LhuoBKp9U3OAO5DdMWIbzrXMIfMuQtMoB3gIfQSryTLfqWNIGuMAdwCfWejTdJnH8zr+LhrhAKsxj7b1m8zgcPm2QiMc4GkLPfpNdjtpOR2jHil8Bo4hn0yLPV8nNT5DPm19fyIa7ZtCIGgruvEngXuRcfehxGUUuA99KHYxFmv1QhD7FfCScv0jwNUB9HDN1YgTmOp2IIAeyfcBjijXvyeADr64D3Pd/h5Ah+QdQOv9axNWUmYUc91mA+gQxQEunj9ft7fcdOrWv+76g+AOUDR/PjtAPam6/iC4A2jLzLIDVJcq6w+MZfqIA8zi9r2d6lQrW1w68Syy7b6z66cQB8jY4/yJ6MMBXvZQZkbw0rau38EbSKcTuB75GpnuyL7O/1Wlyupgl53Ar1bQOXgnEKS36ur0kKqsp7cjnqRaQ1ZdHVy3/jOI01XR2eb6Xu9AJwpWZL+hzP0Vyqu6Ojj59k1ewQp8HdmwuqjMC500Zai6Ojj59k1ewQpoS97bwFOB9Ey+fZNXsCTXAJ9alPsf4EsB9Ey6ffsxDrAd2e1cY4S86SWQuIeWLGsE+NiizAX5N/bbqOcnQAnKjAa65AHgyyXSXwvc71iHsmjt4303MtcGijUaOAS8W6H8d7Ebb/D1BLCVPBqocFuNa9xmUX5sB2jjYTSwTsWKcD2/3xZtbqFJXrIoPwUHqLIb2UA4gBb40cQmMJSCA5xWW6Lk9ftlNPBhzO9xzUhDnTJSJ48G9sAm8PPnjpjSfNopq4jYT4A8GljAIxZl3NoRLd0jhuvEcoA8GmjAJvDzNz5/PWhnIZoCQ74cwDd97QDft8j/nYvSf9ci/fcc65l8+yavoIG/Knm77+iyTwwXeibfvskrWMDtFnl/2iOfTZ+hV2AoO0AsBQt4UclX1Ku3+Wp4waGeybdv8goWoJ1xaJrw8ZSSt1fELTtACUKsDTS9y7XInhY5/KhHHlNdTBG6uvXPawMLmDDksVl3f8CQ/9ke6f9oSL/PcB1X7ZBHA7sYAz7pkX4au7vla4b8vRq6KMKpRehctkUeDexiA3JnziB77TxLubtkDHgOeeQvRNxMC0cujnDaRuhctoXz0cC8ONQ/VW6iImaAL7q8fr+MBg4KeTSwgbhqhzwa2FBcvPe9jQamsFFk7Ov7Jnb9gvcBMg0iO8CAkx1gwEnBAdTDDYNo4QdtQyet7t5JwQE+Vn63WbSRKrcqvydxLG/szzBttm5TN4tehr5ZdJWdSsoSJQ5Qhh9a6HCEz7eLT51RRFfN+G1kKbtvko8D5AMj/JJ8HOBD4HexlYjA08Q9UPL/xH4FgBwU6SJs3BQ5DVznpOV0ku8DLPBtBufYuHFHbWZDYxwA8sGRPmiUA0D/Hh07ixyQFZrGOQDI3P0n6Y/Do88jZwSGOiiyG6N+KXwGmliNHK22GVjX+fvKiPrYcIZLj4/fT8LHx6fuACaq6h06X2yMeqcQB8hEJDvAgJMdYMBpAeeUNMMhFMl4YUT5/b8tpNdqIvVed6YYbTLNXAt9Vkqs79dMfTTbzbWAY0oib5sUZ7yj2e5YC/2c+02OlHGN6cllWkQZOl9MNNtNtoDDSqJvudHFOaZ1cin9FpNblN8Pg3iJKV48T7WNCXxTdb1+6HyxWIu+f/KNAIvQR992hNXdmirr9WPki8FPMNv0FGJ7QCplSnycHA9oEiPIphcmm05cnGGrkrgNPBhG94wDHkK35yWzkoaBE0qGk8DyIOpn6rACfX+GKWBJd8ZHlUxtYI9v7TO10V7nbQp2RV+OvvliG9jmVf1MHWwW2cwiq5Z68rhFAeeRGTqZtBjHbgrdY6ZCrkBCw1ohZ8lOkBLjiE00ux3F4lRVmy+ChSdB/jKIz3bsJ8/eZVvory0LbCO7V65wUpVMGa7BrsO3IL8sU/hlwDslCp9GOiDaBIRMfUaAH9F7m9siOUQF26xE3hm2F2kjEcOdwJqKlcsUsxYJ72oRvl7v/cJ1iNpU5o3Aq8ghy2W4ALwFvAIcRIacjyOfmdoUtEFnGJmFNYbsW/xNZFTvJspPPZ8CbkYf8jeyDniPcl6XJb4cRW5gJ6xE7ujYlcpiJwfxsPx8BFmvV+eM3iz+ZTeeO+PjlO8cZvEv7wN3GuzmlMuRkKLrwyGylJdZYBcWET4fLENGlqYslc3iTqaQcxGT2EJvCRJmnECmGsVunH6VT5AjbsbpMZ5fBR9LmhcB30C+P29AJlOOIU+LpeSpZRrnkHjJKWQHtUlk9u5ryFG58y4v9j+s+zzKXuIu8QAAAABJRU5ErkJggg=='; // ikona M
-      aiToggleBtn.title = 'Actual AI: minimax (heuristic + minimax)';
+      aiToggleBtn.title = 'Actual AI: minimax (heuristics + minimax)';
       updateHeuristicIcon();
     } else {
-      aiMode = 'heuristic';
+      aiMode = 'heuristics';
       aiToggleBtn.src = 'data:image/png;base64,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'; // ikona H
-      aiToggleBtn.title = 'Actual AI: heuristic';
+      aiToggleBtn.title = 'Actual AI: heuristics';
       updateHeuristicIcon();
     }
     blueAIMoveCount = 0; // reset počtu tahů AI
 
 		  // Záznam do herního logu podle nové hodnoty
-	if (aiMode != `heuristic`) {
+	if (aiMode != `heuristics`) {
 		  if (heuristicMoveLimit === 0) {
 			aiUpdateMode = `minimax`;
 			logEvent(`AI mode: minimax`);
 		  } else {
-			aiUpdateMode = `(${heuristicMoveLimit}) moves heuristic → minimax`;
+			aiUpdateMode = `(${heuristicMoveLimit}) moves heuristics → minimax`;
 			logEvent(`AI mode: ${aiUpdateMode}`);
 		  } 
 			} else {
-			aiUpdateMode = `heuristic`;
-			logEvent(`AI mode: heuristic`);
+			aiUpdateMode = `heuristics`;
+			logEvent(`AI mode: heuristics`);
 			}
 	  });
 
@@ -2058,7 +2058,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 	  let bestScore = -Infinity;
 	  let bestReason = '';
 
-	  if (aiMode === 'heuristic' || (aiMode === 'minimax' && blueAIMoveCount < heuristicMoveLimit)) {
+	  if (aiMode === 'heuristics' || (aiMode === 'minimax' && blueAIMoveCount < heuristicMoveLimit)) {
 		console.log('🔍 AI používá heuristiku (tah č.', blueAIMoveCount + 1, ')');
 		const scoredMoves = moves.map(m => {
 		  const { score, reason } = heuristicScore(m);
@@ -2069,7 +2069,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 		const top = scoredMoves.sort((a, b) => b.score - a.score)[0];
 		bestMove = top.move;
 		bestScore = top.score;
-		bestReason = `Heuristic score = ${top.score.toFixed(1)} (${top.reason})`;
+		bestReason = `Heuristics score = ${top.score.toFixed(1)} (${top.reason})`;
 
 	  } else {
 		// Použij Minimax
