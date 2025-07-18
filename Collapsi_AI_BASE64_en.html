@@ -425,15 +425,15 @@ const cardImages = {
     let blueAIMoveCount = 0; // Nová globální proměnná pro sledování kol AI
     let aiEnabled = true; // nebo false, pokud začínáš PvP režimem
     let aiMode = 'minimax'; // výchozí
-    let aiUpdateMode = 'minimax'; // výchozí
+	let aiUpdateMode = '(2) moves heuristics → minimax'; // výchozí
     let isPvP = false;
     let solutionPath = null;  // sem se uloží cesta správného řešení
     let solutionPathExpanded = null;
     let lastMoveEnd = null; // {i, j}
     let playerHistory = []; // paměť hráčových tahů
     let soloMode = false;
-    let remainingKeys = [];
-    let heuristicMoveLimit = 0;
+	let remainingKeys = [];
+	let heuristicMoveLimit = 2;
     const BOARD_SIZE = 3;
     const logEl = document.getElementById('log');
     const turnInd = document.getElementById('turnIndicator');
@@ -1814,8 +1814,8 @@ function getValidMoves(player, b = board, posMap = positions) {
 		  // if (depth === 0) return evaluateBoard(board, positions);
 		  
 		   // Detekce konce hry - zohledňuje hloubku hry a rychlost výhry a zpomalení prohry
-		  if (playerMoves.length === 0) return 1000 + depth;     // čím dřív AI vyhraje, tím líp
-		  if (aiMoves.length === 0) return -1000 - depth;        // čím dřív prohraje, tím hůř
+		  if (playerMoves.length === 0) return 10000 + depth;     // čím dřív AI vyhraje, tím líp
+		  if (aiMoves.length === 0) return -10000 - depth;        // čím dřív prohraje, tím hůř
 		  if (depth === 0) return evaluateBoard(board, positions);
 
 
@@ -1831,8 +1831,20 @@ function getValidMoves(player, b = board, posMap = positions) {
 			return maxEval;
 		  } else {
 			let minEval = Infinity;
-			for (const move of playerMoves) {
-			  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'R', move);
+for (const move of playerMoves) {
+  const { newBoard, newPositions, newCollapsed } = simulateMove(board, positions, collapsed, 'R', move);
+  const aiResponses = getValidMoves('B', newBoard, newPositions);
+
+  if (aiResponses.length === 0) {
+    return -10000 - depth; // ❌ hráč může hned vyhrát
+  }
+  
+    const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
+
+  if (playerMovesAfter.length === 0) {
+    return 10000 + depth; // Přímá výhra
+  }
+
 			  const eval = minimax(newBoard, newPositions, newCollapsed, depth - 1, true, alpha, beta);
 			  minEval = Math.min(minEval, eval);
 			  beta = Math.min(beta, eval);
@@ -1842,7 +1854,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 		  }
 		}
 
-		   // Funkci využívá AI Minimax od 3. tahu v aiMove
+		   // Funkci využívá AI Minimax od nastaveného tahu v aiMove
 		function decideDepth(board, collapsed, moveCount) {
 		  const bMoves = getValidMoves('B', board, positions);
 		  const numMoves = bMoves.length;
@@ -1856,7 +1868,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 		  if (numMoves <= 4) return 4;
 
 		  // 🟡 3. Pokročilá fáze – velká část desky obsazena nebo delší hra
-		  if (collapsedRatio > 0.5 || moveCount > 6) return 3;
+		  if (collapsedRatio > 0.75 || numMoves <= 6) return 6;
 
 		  // 🟢 Výchozí hloubka
 		  return 2;
@@ -2079,13 +2091,13 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 	  } else {
 		// Použij Minimax
-		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 4;
+		const depth = decideDepth(board, collapsed, blueAIMoveCount) ?? 2;
 		console.log(`🧠 AI používá minimax, hloubka: ${depth}`);
 
 		const topMoves = moves
 		  .map(m => ({ move: m, score: heuristicScore(m).score }))
 		  .sort((a, b) => b.score - a.score)
-		  .slice(0, 6);
+		  .slice(0, 3);
 
 		for (const { move: m } of topMoves) {
 		  console.log(`⏳ Testuji tah ${m.i},${m.j}`);
@@ -2105,7 +2117,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 		  const aiMovesAfter = getValidMoves('B', newBoard, newPositions);
 		  if (aiMovesAfter.length === 0) {
 			const playerMovesAfter = getValidMoves('R', newBoard, newPositions);
-			bestScore = playerMovesAfter.length === 0 ? 1000 + depth : -1000 - depth;
+			bestScore = playerMovesAfter.length === 0 ? 10000 + depth : -10000 - depth;
 			bestMove = m;
 			bestMove.path = m.path;
 			bestReason = playerMovesAfter.length === 0
