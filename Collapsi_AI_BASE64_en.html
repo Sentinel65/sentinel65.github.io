@@ -1734,16 +1734,16 @@ function getValidMoves(player, b = board, posMap = positions) {
 		}
 
 
-		function evaluateBoard(board, positions) {
-		  const aiMoves = getValidMoves('B', board, positions).length;
-		  const playerMoves = getValidMoves('R', board, positions).length;
+        function evaluateBoard(board, positions) {
+          const aiMovesCount = getValidMoves('B', board, positions).length;
+          const playerMovesCount = getValidMoves('R', board, positions).length;
 
-		  const aiPos = positions.B;
-		  const redPos = positions.R;
+          const aiPos = positions.B;
+          const redPos = positions.R;
 
-		  // Výhra/prohra
-		  if (playerMoves === 0) return 1000;  // jednoznačná výhra
-		  if (aiMoves === 0) return -1000;    // jednoznačná prohra
+          // Prioritizace vítězství/porážky
+          if (playerMovesCount === 0) return 10000; // vítězství AI
+          if (aiMovesCount === 0) return -10000;    // porážka AI
 
 		  // Bonus za střed
 		  const centerBonus = (aiPos.i >= 1 && aiPos.i <= 2 && aiPos.j >= 1 && aiPos.j <= 2) ? 2 : 0;
