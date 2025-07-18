@@ -1805,6 +1805,10 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 
 		function minimax(board, positions, collapsed, depth, isMaximizing, alpha, beta) {
+		 const evalScore = evaluateBoard(board, positions);
+		  if (Math.abs(evalScore) >= 10000 || depth === 0) {
+			return evalScore;
+		  }
 		  const aiMoves = getValidMoves('B', board, positions);
 		  const playerMoves = getValidMoves('R', board, positions);
 
