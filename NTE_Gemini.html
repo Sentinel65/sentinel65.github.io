@@ -312,7 +312,7 @@
         </div>
 
         <div class="timer" id="timerDisplay">20.0s</div>
-        <button onclick="initGame()">Hra / Reset</button>
+        <button onclick="initGame()">Nová hra</button>
     </div>
 
     <div id="botProgress" style="display:none; margin-top:6px;"></div>
@@ -585,7 +585,7 @@
         document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
         document.getElementById('targetGrid').innerHTML = '';
         document.getElementById('playGrid').innerHTML = '';
-        document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+        document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
     }
 
     function initGame() {
@@ -653,7 +653,7 @@
             document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
         }
         
-        document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+        document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
     }
 
     function generateValidPattern() {
