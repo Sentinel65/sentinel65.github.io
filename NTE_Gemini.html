@@ -315,16 +315,20 @@
     let currentLevel = 1;
     const timeLimits = { 
         1: 15, 
-        2: 25, 
-        3: 35, 
-        4: 45, 
-        5: 50 
+        2: 18, 
+        3: 21, 
+        4: 24, 
+        5: 27,
+		6: 30,
+		7: 33,
+		8: 36,
+		9: 39 
     };
 
     function toggleLevel() {
     // Změna levelu je povolena jen když hra neběží
     if (!gameActive) {
-        currentLevel = currentLevel === 5 ? 1 : currentLevel + 1;
+        currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
         document.getElementById('levelVal').innerText = currentLevel;
         document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
     }
