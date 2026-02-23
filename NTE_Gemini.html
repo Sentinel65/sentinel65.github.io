@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nine Tiles Extreme</title>
+    <title>Extrémní devítka</title>
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -42,7 +42,32 @@
             flex-shrink: 0;
         }
 
-        h1 { font-size: 1.2rem; margin-top: 5px; }
+        /* Úprava nadpisu pro tlačítko nápovědy */
+        h1 { 
+            font-size: 1.2rem; 
+            margin-top: 5px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Styl tlačítka nápovědy */
+        .help-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
 
         .info-panel {
             display: flex;
@@ -115,17 +140,16 @@
             flex-direction: column;
             gap: 10px;
             width: 100%;
-            max-width: 800px; /* Omezení šířky pro PC */
+            max-width: 800px;
             flex-grow: 1;
             align-items: center;
             justify-content: center;
         }
 
-        /* PC Rozložení - Matice blíž k sobě */
         @media (min-width: 768px) {
             .game-container { 
                 flex-direction: row; 
-                gap: 20px; /* Menší mezera mezi mřížkami */
+                gap: 20px; 
                 justify-content: center;
             }
             .board-wrapper {
@@ -200,43 +224,60 @@
             flex-shrink: 0;
         }
 
-        .win-overlay {
+        /* Overlay pro konec hry i nápovědu */
+        .overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.95);
-            display: flex;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            display: none;
+            padding: 20px;
         }
 
-        .win-overlay.active { display: flex; }
+        .overlay.active { display: flex; }
 
         .end-icon { font-size: 5rem; margin-bottom: 10px; }
         .win-message { font-size: 2.5rem; color: var(--highlight); margin-bottom: 5px; text-align: center; }
         .end-subtext { font-size: 1.2rem; margin-bottom: 20px; color: #fff; text-align: center; }
-		
-		/* Definice pulsování */
-	@keyframes pulse {
-		0% { transform: scale(1); }
-		50% { transform: scale(1.2); }
-		100% { transform: scale(1); }
-	}
+        
+        /* Specifické styly pro okno nápovědy */
+        .help-content {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 450px;
+            width: 100%;
+        }
+        .help-content h2 { color: var(--highlight); text-align: center; margin-bottom: 15px; }
+        .help-content p { margin-bottom: 10px; font-size: 0.9rem; line-height: 1.4; }
+        
+        .help-mode-demo { display: flex; gap: 10px; margin: 15px 0; }
+        .demo-box { 
+            flex: 1; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; 
+            text-align: center; border: 1px solid var(--card-border);
+        }
+        .demo-box-title { color: var(--highlight); font-weight: bold; margin: 5px 0; }
+        .demo-box-desc { font-size: 0.75rem; color: #aaa; }
 
-	/* Třída, kterou budeme přidávat k ikoně */
-	.pulse-animation {
-		animation: pulse 1.5s infinite ease-in-out;
-		display: inline-block; /* Důležité, aby transformace fungovala */
-	}
-
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .pulse-animation {
+            animation: pulse 1.5s infinite ease-in-out;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Nine Tiles Extreme</h1>
+        <h1>Extrémní devítka <button class="help-btn" onclick="toggleHelp()">?</button></h1>
     </header>
 
     <div class="info-panel">
@@ -269,7 +310,36 @@
         [ 1x klik = označí ] [ 2x klik = otočí ] [ klik na jinou = prohodí ]
     </div>
 
-    <div class="win-overlay" id="winOverlay">
+    <div class="overlay" id="helpOverlay">
+        <div class="help-content">
+            <h2>Jak hrát?</h2>
+            <p>Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou režimů:</p>
+            
+            <div class="help-mode-demo">
+                <div class="demo-box">
+                    <div style="font-size: 2rem;">💠</div>
+                    <div class="demo-box-title">TVAR</div>
+                    <div class="demo-box-desc">Skládej stejné tvary. Na barvě u tvých karet vůbec nezáleží.</div>
+                </div>
+                <div class="demo-box">
+                    <div style="font-size: 2rem;">🎨</div>
+                    <div class="demo-box-title">BARVA</div>
+                    <div class="demo-box-desc">Skládej stejné barvy. Na tvaru u tvých karet vůbec nezáleží.</div>
+                </div>
+            </div>
+
+            <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Ovládání:</p>
+            <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 20px;">
+                <li><strong>1x klik:</strong> Označí kartu</li>
+                <li><strong>2x klik:</strong> Otočí kartu na druhou stranu</li>
+                <li><strong>Klik jinam:</strong> Prohodí označenou kartu s vybranou</li>
+            </ul>
+
+            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px;">Rozumím, zpět do hry</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="winOverlay">
         <div class="end-icon" id="endIcon">🏆</div>
         <div class="win-message" id="endMessage">HOTOVO!</div>
         <div class="end-subtext" id="finalTime"></div>
@@ -311,87 +381,84 @@
     let startTime = 0;
     let gameActive = false;
     
-    // --- NASTAVENÍ LIMITŮ ZDE ---
     let currentLevel = 1;
     const timeLimits = { 
-        1: 15, 
-        2: 18, 
-        3: 21, 
-        4: 24, 
-        5: 27,
-        6: 30,
-        7: 33,
-        8: 36,
-        9: 39
- 
+        1: 15, 2: 18, 3: 21, 4: 24, 5: 27, 6: 30, 7: 33, 8: 36, 9: 39
     };
 
-    function toggleLevel() {
-    // Změna levelu je povolena jen když hra neběží
-    if (!gameActive) {
-        currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
-        document.getElementById('levelVal').innerText = currentLevel;
-        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    function toggleHelp() {
+        const helpEl = document.getElementById('helpOverlay');
+        if (helpEl.classList.contains('active')) {
+            helpEl.classList.remove('active');
+        } else {
+            helpEl.classList.add('active');
+        }
     }
-	}
+
+    function toggleLevel() {
+        if (!gameActive) {
+            currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
+            document.getElementById('levelVal').innerText = currentLevel;
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        }
+    }
 
     function closeOverlay() {
         document.getElementById('winOverlay').classList.remove('active');
+        document.getElementById('endIcon').classList.remove('pulse-animation');
         document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
         document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
         document.getElementById('targetGrid').innerHTML = '';
         document.getElementById('playGrid').innerHTML = '';
-		document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+        document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
     }
 
-	function initGame() {
-    // POKUD HRA BĚŽÍ, TLAČÍTKO JI NYNÍ ZASTAVÍ
-    if (gameActive) {
-        stopGameAndReset();
-        return;
+    function initGame() {
+        if (gameActive) {
+            stopGameAndReset();
+            return;
+        }
+
+        document.getElementById('winOverlay').classList.remove('active');
+        document.getElementById('helpOverlay').classList.remove('active');
+        selectedIndex = null;
+        gameActive = true;
+        
+        mode = Math.random() > 0.5 ? 'tvar' : 'barva';
+        
+        const modeHTML = mode === 'tvar' 
+            ? '<div class="mode-icon">💠</div><div class="mode-text">Tvar</div>'
+            : '<div class="mode-icon">🎨</div><div class="mode-text">Barva</div>';
+        document.getElementById('modeDisplay').innerHTML = modeHTML;
+
+        targetPattern = generateValidPattern();
+
+        playArea = rawTiles.map(tile => ({
+            ...tile,
+            isFlipped: Math.random() > 0.5
+        }));
+        shuffleArray(playArea);
+
+        renderTargetGrid();
+        renderPlayGrid();
+
+        clearInterval(timerInterval);
+        startTime = Date.now();
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        timerInterval = setInterval(updateTimer, 100);
+        document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
     }
-
-    document.getElementById('winOverlay').classList.remove('active');
-    selectedIndex = null;
-    gameActive = true;
     
-    mode = Math.random() > 0.5 ? 'tvar' : 'barva';
-    
-    const modeHTML = mode === 'tvar' 
-        ? '<div class="mode-icon">💠</div><div class="mode-text">Tvar</div>'
-        : '<div class="mode-icon">🎨</div><div class="mode-text">Barva</div>';
-    document.getElementById('modeDisplay').innerHTML = modeHTML;
-
-    targetPattern = generateValidPattern();
-
-    playArea = rawTiles.map(tile => ({
-        ...tile,
-        isFlipped: Math.random() > 0.5
-    }));
-    shuffleArray(playArea);
-
-    renderTargetGrid();
-    renderPlayGrid();
-
-    clearInterval(timerInterval);
-    startTime = Date.now();
-    document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-    timerInterval = setInterval(updateTimer, 100);
-	document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
-	}
-	
-	function stopGameAndReset() {
-    gameActive = false;
-    clearInterval(timerInterval);
-    
-    // Vyčistíme plochu a vrátíme UI do základního stavu
-    document.getElementById('targetGrid').innerHTML = '';
-    document.getElementById('playGrid').innerHTML = '';
-    document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
-    document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-    document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
-    // Nyní je gameActive = false, takže toggleLevel() bude opět fungovat
-	}
+    function stopGameAndReset() {
+        gameActive = false;
+        clearInterval(timerInterval);
+        
+        document.getElementById('targetGrid').innerHTML = '';
+        document.getElementById('playGrid').innerHTML = '';
+        document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+    }
 
     function generateValidPattern() {
         let valid = false;
@@ -503,32 +570,31 @@
         }
     }
 
-	function endGame(isWin) {
-		gameActive = false;
-		clearInterval(timerInterval);
-		
-		const endIconEl = document.getElementById('endIcon');
-		const winOverlayEl = document.getElementById('winOverlay');
-		
-		// Přidáme pulsování
-		endIconEl.classList.add('pulse-animation');
-		winOverlayEl.classList.add('active');
+    function endGame(isWin) {
+        gameActive = false;
+        clearInterval(timerInterval);
+        
+        const endIconEl = document.getElementById('endIcon');
+        const winOverlayEl = document.getElementById('winOverlay');
+        
+        endIconEl.classList.add('pulse-animation');
+        winOverlayEl.classList.add('active');
 
-		if (isWin) {
-			const elapsed = (Date.now() - startTime) / 1000;
-			endIconEl.innerText = '🏆';
-			document.getElementById('endMessage').innerText = 'Gratuluji!';
-			document.getElementById('endMessage').style.color = "var(--highlight)";
-			document.getElementById('finalTime').innerText = `Level ${currentLevel} tvůj čas: ${elapsed.toFixed(1)}s`;
-			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
-		} else {
-			endIconEl.innerText = '🤔';
-			document.getElementById('endMessage').innerText = 'Čas vypršel!';
-			document.getElementById('endMessage').style.color = "#ff6b6b"; 
-			document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
-			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
-		}
-	}
+        if (isWin) {
+            const elapsed = (Date.now() - startTime) / 1000;
+            endIconEl.innerText = '🏆';
+            document.getElementById('endMessage').innerText = 'Gratuluji!';
+            document.getElementById('endMessage').style.color = "var(--highlight)";
+            document.getElementById('finalTime').innerText = `Level ${currentLevel} tvůj čas: ${elapsed.toFixed(1)}s`;
+            document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+        } else {
+            endIconEl.innerText = '🤔';
+            document.getElementById('endMessage').innerText = 'Čas vypršel!';
+            document.getElementById('endMessage').style.color = "#ff6b6b"; 
+            document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
+            document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+        }
+    }
 
     window.onload = () => {
         closeOverlay();
