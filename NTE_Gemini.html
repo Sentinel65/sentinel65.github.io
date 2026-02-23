@@ -319,10 +319,11 @@
         3: 21, 
         4: 24, 
         5: 27,
-		6: 30,
-		7: 33,
-		8: 36,
-		9: 39 
+        6: 30,
+        7: 33,
+        8: 36,
+        9: 39
+ 
     };
 
     function toggleLevel() {
@@ -518,13 +519,13 @@
 			endIconEl.innerText = '🏆';
 			document.getElementById('endMessage').innerText = 'Gratuluji!';
 			document.getElementById('endMessage').style.color = "var(--highlight)";
-			document.getElementById('finalTime').innerText = `Čas: ${elapsed.toFixed(1)}s`;
+			document.getElementById('finalTime').innerText = `Level ${currentLevel} tvůj čas: ${elapsed.toFixed(1)}s`;
 			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
 		} else {
 			endIconEl.innerText = '🤔';
 			document.getElementById('endMessage').innerText = 'Čas vypršel!';
 			document.getElementById('endMessage').style.color = "#ff6b6b"; 
-			document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje pod ${timeLimits[currentLevel]}s.`;
+			document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
 			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
 		}
 	}
