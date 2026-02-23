@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nine Tiles Extreme</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #ffffff;
+            --accent: #e94560;
+            --card-bg: #16213e;
+            --card-border: #0f3460;
+            --highlight: #ffea00;
+            --level-color: #4ecca3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden; 
+            padding: 5px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 5px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        h1 { font-size: 1.2rem; margin-top: 5px; }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 5px 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+            gap: 5px;
+        }
+
+        .mode-display, .level-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-border);
+            border-radius: 8px;
+            padding: 5px;
+            min-width: 55px;
+        }
+
+        .level-display { cursor: pointer; border: 1px solid transparent; }
+        .level-display:active { transform: scale(0.95); }
+
+        .mode-icon, .level-val {
+            font-size: 1.4rem;
+            line-height: 1;
+            font-weight: bold;
+        }
+
+        .level-val { color: var(--level-color); }
+
+        .mode-text, .level-text {
+            font-size: 0.55rem;
+            font-weight: bold;
+            color: #ccc;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .timer {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--highlight);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 800px; /* Omezení šířky pro PC */
+            flex-grow: 1;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* PC Rozložení - Matice blíž k sobě */
+        @media (min-width: 768px) {
+            .game-container { 
+                flex-direction: row; 
+                gap: 20px; /* Menší mezera mezi mřížkami */
+                justify-content: center;
+            }
+            .board-wrapper {
+                width: auto;
+            }
+        }
+
+        .board-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board-title { margin-bottom: 5px; font-size: 0.85rem; color: #ccc; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            aspect-ratio: 1 / 1;
+            background-color: var(--card-border);
+            border-radius: 10px;
+            padding: 6px;
+        }
+
+        .target-grid { width: 32vmin; max-width: 160px; gap: 4px; }
+        .play-grid { width: 62vmin; max-width: 330px; gap: 6px; }
+
+        .card {
+            background-color: white;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            user-select: none;
+            position: relative;
+        }
+
+        .target-grid .card { font-size: 1.5rem; border-radius: 4px; cursor: default; }
+        .play-grid .card { font-size: 2.8rem; }
+
+        .card.selected {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 3px var(--highlight);
+            z-index: 10;
+        }
+
+        .card-side-indicator {
+            position: absolute;
+            bottom: 2px;
+            right: 3px;
+            font-size: 0.5rem;
+            color: rgba(0,0,0,0.5);
+            font-weight: bold;
+        }
+        
+        .symbol-wrapper svg {
+            width: 70%; 
+            height: 70%;
+            fill: currentColor;
+            display: block; 
+            margin: auto; 
+        }
+
+        .instructions {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #ff0;
+            margin-top: 5px;
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        .win-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .win-overlay.active { display: flex; }
+
+        .end-icon { font-size: 5rem; margin-bottom: 10px; }
+        .win-message { font-size: 2.5rem; color: var(--highlight); margin-bottom: 5px; text-align: center; }
+        .end-subtext { font-size: 1.2rem; margin-bottom: 20px; color: #fff; text-align: center; }
+		
+		/* Definice pulsování */
+	@keyframes pulse {
+		0% { transform: scale(1); }
+		50% { transform: scale(1.2); }
+		100% { transform: scale(1); }
+	}
+
+	/* Třída, kterou budeme přidávat k ikoně */
+	.pulse-animation {
+		animation: pulse 1.5s infinite ease-in-out;
+		display: inline-block; /* Důležité, aby transformace fungovala */
+	}
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Nine Tiles Extreme</h1>
+    </header>
+
+    <div class="info-panel">
+        <div class="mode-display" id="modeDisplay">
+            <div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>
+        </div>
+        
+        <div class="level-display" id="levelBtn" onclick="toggleLevel()">
+            <div class="level-val" id="levelVal">1</div>
+            <div class="level-text">Level</div>
+        </div>
+
+        <div class="timer" id="timerDisplay">20.0s</div>
+        <button onclick="initGame()">Hra / Reset</button>
+    </div>
+
+    <div class="game-container">
+        <div class="board-wrapper">
+            <div class="board-title">Vzor</div>
+            <div class="grid target-grid" id="targetGrid"></div>
+        </div>
+
+        <div class="board-wrapper">
+            <div class="board-title">Tvé karty</div>
+            <div class="grid play-grid" id="playGrid"></div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        [ 1x klik = označí ] [ 2x klik = otočí ] [ klik na jinou = prohodí ]
+    </div>
+
+    <div class="win-overlay" id="winOverlay">
+        <div class="end-icon" id="endIcon">🏆</div>
+        <div class="win-message" id="endMessage">HOTOVO!</div>
+        <div class="end-subtext" id="finalTime"></div>
+        <button onclick="closeOverlay()" style="font-size: 1.2rem; padding: 12px 24px;">Zpět na výběr levelu</button>
+    </div>
+
+<script>
+    const colorMap = {
+        'o': '#ff8c00', 'f': '#800080', 'r': '#e6192B',
+        'm': '#005b96', 'z': '#228b22', 's': '#808080'
+    };
+
+    const shapeMap = {
+        '2': `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34"/></svg>`,
+        '3': `<svg viewBox="0 0 100 100"><polygon points="50,18 85,82 15,82"/></svg>`,
+        '4': `<svg viewBox="0 0 100 100"><rect x="22" y="22" width="56" height="56"/></svg>`,
+        '5': `<svg viewBox="0 0 100 100"><polygon points="50,16 84,40 71,82 29,82 16,40"/></svg>`,
+        '6': `<svg viewBox="0 0 100 100"><polygon points="50,14 82,32 82,68 50,86 18,68 18,32"/></svg>`,
+        '7': `<svg viewBox="0 0 100 100"><polygon points="50,14 61,40 88,40 66,57 75,84 50,68 25,84 34,57 12,40 39,40"/></svg>`
+    };
+
+    const rawTiles = [
+        { id: 0, s0: { s: '3', c: 'o' }, s1: { s: '5', c: 'f' } },
+        { id: 1, s0: { s: '3', c: 'o' }, s1: { s: '6', c: 'r' } },
+        { id: 2, s0: { s: '2', c: 'f' }, s1: { s: '7', c: 's' } },
+        { id: 3, s0: { s: '3', c: 'm' }, s1: { s: '5', c: 'z' } },
+        { id: 4, s0: { s: '4', c: 'r' }, s1: { s: '6', c: 's' } },
+        { id: 5, s0: { s: '4', c: 'm' }, s1: { s: '7', c: 'f' } },
+        { id: 6, s0: { s: '4', c: 'z' }, s1: { s: '5', c: 'o' } },
+        { id: 7, s0: { s: '2', c: 's' }, s1: { s: '6', c: 'z' } },
+        { id: 8, s0: { s: '3', c: 'r' }, s1: { s: '7', c: 'm' } }
+    ];
+
+    let mode = '';
+    let targetPattern = [];
+    let playArea = [];
+    let selectedIndex = null;
+    let timerInterval = null;
+    let startTime = 0;
+    let gameActive = false;
+    
+    // --- NASTAVENÍ LIMITŮ ZDE ---
+    let currentLevel = 1;
+    const timeLimits = { 
+        1: 15, 
+        2: 25, 
+        3: 35, 
+        4: 45, 
+        5: 50 
+    };
+
+    function toggleLevel() {
+    // Změna levelu je povolena jen když hra neběží
+    if (!gameActive) {
+        currentLevel = currentLevel === 5 ? 1 : currentLevel + 1;
+        document.getElementById('levelVal').innerText = currentLevel;
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    }
+	}
+
+    function closeOverlay() {
+        document.getElementById('winOverlay').classList.remove('active');
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
+        document.getElementById('targetGrid').innerHTML = '';
+        document.getElementById('playGrid').innerHTML = '';
+		document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+    }
+
+	function initGame() {
+    // POKUD HRA BĚŽÍ, TLAČÍTKO JI NYNÍ ZASTAVÍ
+    if (gameActive) {
+        stopGameAndReset();
+        return;
+    }
+
+    document.getElementById('winOverlay').classList.remove('active');
+    selectedIndex = null;
+    gameActive = true;
+    
+    mode = Math.random() > 0.5 ? 'tvar' : 'barva';
+    
+    const modeHTML = mode === 'tvar' 
+        ? '<div class="mode-icon">💠</div><div class="mode-text">Tvar</div>'
+        : '<div class="mode-icon">🎨</div><div class="mode-text">Barva</div>';
+    document.getElementById('modeDisplay').innerHTML = modeHTML;
+
+    targetPattern = generateValidPattern();
+
+    playArea = rawTiles.map(tile => ({
+        ...tile,
+        isFlipped: Math.random() > 0.5
+    }));
+    shuffleArray(playArea);
+
+    renderTargetGrid();
+    renderPlayGrid();
+
+    clearInterval(timerInterval);
+    startTime = Date.now();
+    document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    timerInterval = setInterval(updateTimer, 100);
+	document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
+	}
+	
+	function stopGameAndReset() {
+    gameActive = false;
+    clearInterval(timerInterval);
+    
+    // Vyčistíme plochu a vrátíme UI do základního stavu
+    document.getElementById('targetGrid').innerHTML = '';
+    document.getElementById('playGrid').innerHTML = '';
+    document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
+    document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+    // Nyní je gameActive = false, takže toggleLevel() bude opět fungovat
+	}
+
+    function generateValidPattern() {
+        let valid = false;
+        let generated = [];
+        while (!valid) {
+            generated = [];
+            let shapeCounts = {};
+            let colorCounts = {};
+            valid = true;
+            for (let i = 0; i < 9; i++) {
+                let side = Math.random() > 0.5 ? rawTiles[i].s0 : rawTiles[i].s1;
+                generated.push(side);
+                shapeCounts[side.s] = (shapeCounts[side.s] || 0) + 1;
+                colorCounts[side.c] = (colorCounts[side.c] || 0) + 1;
+            }
+            for (let key in shapeCounts) { if (shapeCounts[key] > 2) valid = false; }
+            for (let key in colorCounts) { if (colorCounts[key] > 2) valid = false; }
+        }
+        shuffleArray(generated);
+        return generated;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function createCardElement(sideData, isSelected, sideIndicator) {
+        const div = document.createElement('div');
+        div.className = 'card' + (isSelected ? ' selected' : '');
+        if (!sideData) return div;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'symbol-wrapper';
+        wrapper.style.color = colorMap[sideData.c];
+        wrapper.innerHTML = shapeMap[sideData.s];
+        div.appendChild(wrapper);
+        if (sideIndicator !== undefined) {
+            const ind = document.createElement('div');
+            ind.className = 'card-side-indicator';
+            ind.innerText = sideIndicator === 0 ? 'L' : 'R';
+            div.appendChild(ind);
+        }
+        return div;
+    }
+
+    function renderTargetGrid() {
+        const grid = document.getElementById('targetGrid');
+        grid.innerHTML = '';
+        targetPattern.forEach(item => {
+            grid.appendChild(createCardElement(item, false));
+        });
+    }
+
+    function renderPlayGrid() {
+        const grid = document.getElementById('playGrid');
+        grid.innerHTML = '';
+        playArea.forEach((tile, index) => {
+            const currentSideData = tile.isFlipped ? tile.s1 : tile.s0;
+            const sideInd = tile.isFlipped ? 1 : 0;
+            const isSelected = index === selectedIndex;
+            const cardEl = createCardElement(currentSideData, isSelected, sideInd);
+            cardEl.addEventListener('click', () => handleTileClick(index));
+            grid.appendChild(cardEl);
+        });
+    }
+
+    function handleTileClick(index) {
+        if (!gameActive) return;
+        if (selectedIndex === null) {
+            selectedIndex = index;
+        } else if (selectedIndex === index) {
+            playArea[index].isFlipped = !playArea[index].isFlipped;
+            selectedIndex = null;
+        } else {
+            let temp = playArea[selectedIndex];
+            playArea[selectedIndex] = playArea[index];
+            playArea[index] = temp;
+            selectedIndex = null;
+        }
+        renderPlayGrid();
+        checkWinCondition();
+    }
+
+    function checkWinCondition() {
+        let isWin = true;
+        for (let i = 0; i < 9; i++) {
+            const currentSideData = playArea[i].isFlipped ? playArea[i].s1 : playArea[i].s0;
+            const targetData = targetPattern[i];
+            if (mode === 'tvar') {
+                if (currentSideData.s !== targetData.s) isWin = false;
+            } else {
+                if (currentSideData.c !== targetData.c) isWin = false;
+            }
+        }
+        if (isWin) endGame(true);
+    }
+
+    function updateTimer() {
+        if (!gameActive) return;
+        const elapsed = (Date.now() - startTime) / 1000;
+        const remaining = timeLimits[currentLevel] - elapsed;
+        if (remaining <= 0) {
+            document.getElementById('timerDisplay').innerText = '0.0s';
+            endGame(false);
+        } else {
+            document.getElementById('timerDisplay').innerText = remaining.toFixed(1) + 's';
+        }
+    }
+
+	function endGame(isWin) {
+		gameActive = false;
+		clearInterval(timerInterval);
+		
+		const endIconEl = document.getElementById('endIcon');
+		const winOverlayEl = document.getElementById('winOverlay');
+		
+		// Přidáme pulsování
+		endIconEl.classList.add('pulse-animation');
+		winOverlayEl.classList.add('active');
+
+		if (isWin) {
+			const elapsed = (Date.now() - startTime) / 1000;
+			endIconEl.innerText = '🏆';
+			document.getElementById('endMessage').innerText = 'Gratuluji!';
+			document.getElementById('endMessage').style.color = "var(--highlight)";
+			document.getElementById('finalTime').innerText = `Čas: ${elapsed.toFixed(1)}s`;
+			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+		} else {
+			endIconEl.innerText = '🤔';
+			document.getElementById('endMessage').innerText = 'Čas vypršel!';
+			document.getElementById('endMessage').style.color = "#ff6b6b"; 
+			document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje pod ${timeLimits[currentLevel]}s.`;
+			document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+		}
+	}
+
+    window.onload = () => {
+        closeOverlay();
+    };
+</script>
+</body>
+</html>
