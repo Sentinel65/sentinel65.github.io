@@ -797,11 +797,11 @@
 
             if (playerWon) {
                 document.getElementById('endMessage').innerText = "Gratuluji";
-                document.getElementById('finalTime').innerText = `Tvůj čas: ${playerTime.toFixed(1)} s`;
+                document.getElementById('finalTime').innerText = `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
                 endIconEl.innerText = "🏆";
             } else {
                 document.getElementById('endMessage').innerText = "Bot vyhrál";
-                document.getElementById('finalTime').innerText = `Jeho čas: ${botFinishTime.toFixed(1)} s`;
+                document.getElementById('finalTime').innerText = `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
                 endIconEl.innerText = "🤔";
             }
             return;
@@ -810,11 +810,11 @@
         // SOLO režim
         if (isWin) {
             endIconEl.innerText = '🏆';
-            document.getElementById('endMessage').innerText = 'Gratuluji!';
-            document.getElementById('finalTime').innerText = `Tvůj čas: ${playerTime.toFixed(1)}s`;
+            document.getElementById('endMessage').innerText = 'Gratuluji';
+            document.getElementById('finalTime').innerText = `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
         } else {
             endIconEl.innerText = '🤔';
-            document.getElementById('endMessage').innerText = 'Čas vypršel!';
+            document.getElementById('endMessage').innerText = 'Čas vypršel';
             document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
         }
     }
