@@ -42,7 +42,6 @@
             flex-shrink: 0;
         }
 
-        /* Úprava nadpisu pro tlačítko nápovědy */
         h1 { 
             font-size: 1.2rem; 
             margin-top: 5px; 
@@ -52,7 +51,6 @@
             gap: 10px;
         }
 
-        /* Styl tlačítka nápovědy */
         .help-btn {
             background: var(--accent);
             color: white;
@@ -95,8 +93,8 @@
             min-width: 55px;
         }
 
-        .level-display { cursor: pointer; border: 1px solid transparent; }
-        .level-display:active { transform: scale(0.95); }
+        .level-display, #gameModeBtn { cursor: pointer; border: 1px solid transparent; }
+        .level-display:active, #gameModeBtn:active { transform: scale(0.95); }
 
         .mode-icon, .level-val {
             font-size: 1.4rem;
@@ -224,7 +222,6 @@
             flex-shrink: 0;
         }
 
-        /* Overlay pro konec hry i nápovědu */
         .overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -243,7 +240,6 @@
         .win-message { font-size: 2.5rem; color: var(--highlight); margin-bottom: 5px; text-align: center; }
         .end-subtext { font-size: 1.2rem; margin-bottom: 20px; color: #fff; text-align: center; }
         
-        /* Specifické styly pro okno nápovědy */
         .help-content {
             background: var(--card-bg);
             border: 2px solid var(--card-border);
@@ -272,6 +268,22 @@
             animation: pulse 1.5s infinite ease-in-out;
             display: inline-block;
         }
+
+        .bot-progress {
+            display: flex;
+            gap: 4px;
+        }
+
+        .bot-square {
+            width: 10px;
+            height: 10px;
+            background: #444;
+            border-radius: 2px;
+        }
+
+        .bot-square.done {
+            background: #4ecca3;
+        }
     </style>
 </head>
 <body>
@@ -286,13 +298,24 @@
         </div>
         
         <div class="level-display" id="levelBtn" onclick="toggleLevel()">
-            <div class="level-val" id="levelVal">1</div>
+            <div class="level-val" id="levelVal">3</div>
             <div class="level-text">Level</div>
+        </div>
+        <div class="level-display" id="levelBtnBot" onclick="toggleBotLevel()">
+            <div class="level-val" id="botLevelVal">5</div>
+            <div class="level-text">LEVEL</div>
+        </div>
+
+        <div class="mode-display" id="gameModeBtn" onclick="toggleGameMode()">
+            <div class="mode-icon" id="gameModeIcon">👤</div>
+            <div class="mode-text" id="gameModeText">Solo</div>
         </div>
 
         <div class="timer" id="timerDisplay">20.0s</div>
         <button onclick="initGame()">Hra / Reset</button>
     </div>
+
+    <div id="botProgress" style="display:none; margin-top:6px;"></div>
 
     <div class="game-container">
         <div class="board-wrapper">
@@ -328,6 +351,12 @@
                 </div>
             </div>
 
+            <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Herní režimy:</p>
+            <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 15px;">
+                <li>👤 <strong>Solo mód:</strong> 9 levelů - hra na čas [1 = nejkratší, 9 = nejdelší]</li>
+                <li>🖥️ <strong>Hra proti PC:</strong> 8 levelů x AI [1 = nejsilnější, 9 = nejslabší]</li>
+            </ul>
+
             <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Ovládání:</p>
             <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 20px;">
                 <li><strong>1x klik:</strong> Označí kartu</li>
@@ -347,6 +376,138 @@
     </div>
 
 <script>
+    let gameMode = "solo"; // solo | bot
+    let botSolvedCount = 0;
+    let botInterval = null;
+    let botFinishTime = 0;
+    let botLevel = 5; // 1 = nejsilnější, 8 = nejslabší
+
+    const botSkillMultiplier = {
+        1: 0.7,   // velmi rychlý
+        2: 1.0,
+        3: 1.3,
+        4: 1.6,
+        5: 1.9,
+        6: 2.2,
+        7: 2.5,
+        8: 2.8    // velmi pomalý
+    };
+
+    function updateLevelButtons() {
+        if (gameMode === "solo") {
+            document.getElementById("levelBtn").style.display = "flex";       
+            document.getElementById("levelBtnBot").style.display = "none";   
+        } else {
+            document.getElementById("levelBtn").style.display = "none";      
+            document.getElementById("levelBtnBot").style.display = "flex";   
+        }
+    }
+
+    function evaluateDifficulty() {
+        let wrongPlace = 0;
+        let wrongFlip = 0;
+
+        for (let i = 0; i < 9; i++) {
+            const tile = playArea[i];
+            const currentSide = tile.isFlipped ? tile.s1 : tile.s0;
+            const otherSide = tile.isFlipped ? tile.s0 : tile.s1;
+            const target = targetPattern[i];
+
+            if (mode === "tvar") {
+                if (currentSide.s !== target.s) {
+                    if (otherSide.s === target.s) {
+                        wrongFlip++;
+                    } else {
+                        wrongPlace++;
+                    }
+                }
+            } else {
+                if (currentSide.c !== target.c) {
+                    if (otherSide.c === target.c) {
+                        wrongFlip++;
+                    } else {
+                        wrongPlace++;
+                    }
+                }
+            }
+        }
+
+        return { wrongPlace, wrongFlip };
+    }
+
+    function startBotSimulation() {
+        if (botSolvedCount === 9) {
+            clearInterval(botInterval);
+            if (gameActive) {
+                endGame(false);   // BOT vyhrál
+            }
+        }
+
+        const container = document.getElementById("botProgress");
+        container.style.display = "flex";
+        container.className = "bot-progress";
+        container.innerHTML = "";
+        botSolvedCount = 0;
+
+        for (let i = 0; i < 9; i++) {
+            const sq = document.createElement("div");
+            sq.className = "bot-square";
+            container.appendChild(sq);
+        }
+
+        const diff = evaluateDifficulty();
+
+        botFinishTime = 
+            diff.wrongPlace * 1.8 + 
+            diff.wrongFlip * 0.6 + 
+            (Math.random() * 1.2);
+
+        botFinishTime *= botSkillMultiplier[botLevel];
+        botFinishTime += Math.random() * 1.6;  
+
+        if (botFinishTime < 1.2) botFinishTime = 1.2;
+        if (botFinishTime > 25) botFinishTime = 25;
+
+        const stepTime = (botFinishTime * 1000) / 9;
+
+        clearInterval(botInterval);
+        botInterval = setInterval(() => {
+            const squares = container.children;
+
+            if (botSolvedCount < 9) {
+                squares[botSolvedCount].classList.add("done");
+                botSolvedCount++;
+            }
+
+            if (botSolvedCount === 9) {
+                clearInterval(botInterval);
+                if (gameActive) {
+                    endGame(false); 
+                }
+            }
+        }, stepTime);
+    }
+
+    function toggleGameMode() {
+        if (gameActive) return;
+
+        if (gameMode === "solo") {
+            gameMode = "bot";
+            document.getElementById('gameModeIcon').innerText = "🖥️";
+            document.getElementById('gameModeText').innerText = "Bot";
+            // Přepnutí časovače pro Bot mód
+            document.getElementById('timerDisplay').innerText = "0.0s"; 
+        } else {
+            gameMode = "solo";
+            document.getElementById('gameModeIcon').innerText = "👤";
+            document.getElementById('gameModeText').innerText = "Solo";
+            // Přepnutí časovače pro Solo mód
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        }
+
+        updateLevelButtons(); 
+    }
+
     const colorMap = {
         'o': '#ff8c00', 'f': '#800080', 'r': '#e6192B',
         'm': '#005b96', 'z': '#228b22', 's': '#808080'
@@ -381,7 +542,7 @@
     let startTime = 0;
     let gameActive = false;
     
-    let currentLevel = 1;
+    let currentLevel = 3; 
     const timeLimits = { 
         1: 15, 2: 18, 3: 21, 4: 24, 5: 27, 6: 30, 7: 33, 8: 36, 9: 39
     };
@@ -403,10 +564,24 @@
         }
     }
 
+    function toggleBotLevel() {
+        if (gameActive) return;
+        botLevel++;
+        if (botLevel > 8) botLevel = 1; 
+        document.getElementById("botLevelVal").innerText = botLevel;
+    }
+
     function closeOverlay() {
         document.getElementById('winOverlay').classList.remove('active');
         document.getElementById('endIcon').classList.remove('pulse-animation');
-        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        
+        // Zohlednění vybraného módu pro časovač při zavření overlaye
+        if (gameMode === "bot") {
+            document.getElementById('timerDisplay').innerText = '0.0s';
+        } else {
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        }
+        
         document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
         document.getElementById('targetGrid').innerHTML = '';
         document.getElementById('playGrid').innerHTML = '';
@@ -414,8 +589,11 @@
     }
 
     function initGame() {
+        botSolvedCount = 0;
         if (gameActive) {
             stopGameAndReset();
+            document.getElementById("botProgress").style.display = "none";
+            clearInterval(botInterval);
             return;
         }
 
@@ -444,8 +622,19 @@
 
         clearInterval(timerInterval);
         startTime = Date.now();
-        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        
+        // Správný text časovače podle režimu těsně po startu
+        if (gameMode === "bot") {
+            document.getElementById('timerDisplay').innerText = '0.0s';
+        } else {
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        }
+        
         timerInterval = setInterval(updateTimer, 100);
+        
+        if (gameMode === "bot") {
+            startBotSimulation();
+        }
         document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
     }
     
@@ -456,7 +645,14 @@
         document.getElementById('targetGrid').innerHTML = '';
         document.getElementById('playGrid').innerHTML = '';
         document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
-        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        
+        // Správný reset časovače podle módu
+        if (gameMode === "bot") {
+            document.getElementById('timerDisplay').innerText = '0.0s';
+        } else {
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        }
+        
         document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
     }
 
@@ -560,8 +756,16 @@
 
     function updateTimer() {
         if (!gameActive) return;
+
         const elapsed = (Date.now() - startTime) / 1000;
+
+        if (gameMode === "bot") {
+            document.getElementById('timerDisplay').innerText = elapsed.toFixed(1) + "s";
+            return;
+        }
+
         const remaining = timeLimits[currentLevel] - elapsed;
+
         if (remaining <= 0) {
             document.getElementById('timerDisplay').innerText = '0.0s';
             endGame(false);
@@ -571,32 +775,52 @@
     }
 
     function endGame(isWin) {
+        if (!gameActive) return;
+
         gameActive = false;
+
         clearInterval(timerInterval);
-        
+        clearInterval(botInterval);
+
+        document.getElementById("botProgress").style.display = "none";
+
+        const playerTime = (Date.now() - startTime) / 1000;
+
         const endIconEl = document.getElementById('endIcon');
         const winOverlayEl = document.getElementById('winOverlay');
-        
-        endIconEl.classList.add('pulse-animation');
-        winOverlayEl.classList.add('active');
 
+        winOverlayEl.classList.add('active');
+        endIconEl.classList.add('pulse-animation');
+
+        if (gameMode === "bot") {
+            const playerWon = isWin && playerTime <= botFinishTime;
+
+            if (playerWon) {
+                document.getElementById('endMessage').innerText = "Gratuluji";
+                document.getElementById('finalTime').innerText = `Tvůj čas: ${playerTime.toFixed(1)} s`;
+                endIconEl.innerText = "🏆";
+            } else {
+                document.getElementById('endMessage').innerText = "Bot vyhrál";
+                document.getElementById('finalTime').innerText = `Jeho čas: ${botFinishTime.toFixed(1)} s`;
+                endIconEl.innerText = "🤔";
+            }
+            return;
+        }
+
+        // SOLO režim
         if (isWin) {
-            const elapsed = (Date.now() - startTime) / 1000;
             endIconEl.innerText = '🏆';
             document.getElementById('endMessage').innerText = 'Gratuluji!';
-            document.getElementById('endMessage').style.color = "var(--highlight)";
-            document.getElementById('finalTime').innerText = `Level ${currentLevel} tvůj čas: ${elapsed.toFixed(1)}s`;
-            document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
+            document.getElementById('finalTime').innerText = `Tvůj čas: ${playerTime.toFixed(1)}s`;
         } else {
             endIconEl.innerText = '🤔';
             document.getElementById('endMessage').innerText = 'Čas vypršel!';
-            document.getElementById('endMessage').style.color = "#ff6b6b"; 
             document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
-            document.querySelector("button[onclick='initGame()']").innerText = "Hra / Reset";
         }
     }
 
     window.onload = () => {
+        updateLevelButtons();
         closeOverlay();
     };
 </script>
