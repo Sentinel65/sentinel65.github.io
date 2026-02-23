@@ -617,11 +617,28 @@
 
         targetPattern = generateValidPattern();
 
-        playArea = rawTiles.map(tile => ({
+        playArea = generateValidPlayArea();
+        
+        function generateValidPlayArea() {
+
+    while (true) {
+
+        let arr = rawTiles.map(tile => ({
             ...tile,
             isFlipped: Math.random() > 0.5
         }));
-        shuffleArray(playArea);
+
+        shuffleArray(arr);
+
+        const visibleSides = arr.map(t =>
+            t.isFlipped ? t.s1 : t.s0
+        );
+
+        if (isValidSideSet(visibleSides)) {
+            return arr;
+        }
+    }
+}
 
         renderTargetGrid();
         renderPlayGrid();
@@ -662,26 +679,46 @@
         document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
     }
 
-    function generateValidPattern() {
-        let valid = false;
-        let generated = [];
-        while (!valid) {
-            generated = [];
-            let shapeCounts = {};
-            let colorCounts = {};
-            valid = true;
-            for (let i = 0; i < 9; i++) {
-                let side = Math.random() > 0.5 ? rawTiles[i].s0 : rawTiles[i].s1;
-                generated.push(side);
-                shapeCounts[side.s] = (shapeCounts[side.s] || 0) + 1;
-                colorCounts[side.c] = (colorCounts[side.c] || 0) + 1;
-            }
-            for (let key in shapeCounts) { if (shapeCounts[key] > 2) valid = false; }
-            for (let key in colorCounts) { if (colorCounts[key] > 2) valid = false; }
-        }
-        shuffleArray(generated);
-        return generated;
+function isValidSideSet(sides) {
+
+    const shapeCounts = {};
+    const colorCounts = {};
+
+    for (let i = 0; i < sides.length; i++) {
+
+        const s = sides[i].s;
+        const c = sides[i].c;
+
+        shapeCounts[s] = (shapeCounts[s] || 0) + 1;
+        colorCounts[c] = (colorCounts[c] || 0) + 1;
+
+        if (shapeCounts[s] > 2) return false;
+        if (colorCounts[c] > 2) return false;
     }
+
+    return true;
+}
+
+function generateValidPattern() {
+
+    while (true) {
+
+        const generated = [];
+
+        for (let i = 0; i < 9; i++) {
+            const side =
+                Math.random() > 0.5 ? rawTiles[i].s0 : rawTiles[i].s1;
+
+            generated.push(side);
+        }
+
+        if (isValidSideSet(generated)) {
+
+            shuffleArray(generated);
+            return generated;
+        }
+    }
+}
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
