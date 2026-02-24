@@ -144,22 +144,16 @@
             justify-content: center;
         }
 
-        @media (min-width: 768px) {
-            .game-container { 
-                flex-direction: row; 
-                gap: 20px; 
-                justify-content: center;
-            }
-            .board-wrapper {
-                width: auto;
-            }
-        }
-
+		
         .board-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
+		.board-wrapper:first-child .board-title {
+			color: var(--highlight);
+		}
 
         .board-title { margin-bottom: 5px; font-size: 0.85rem; color: #ccc; }
 
@@ -175,6 +169,11 @@
         .target-grid { width: 32vmin; max-width: 160px; gap: 4px; }
         .play-grid { width: 62vmin; max-width: 330px; gap: 6px; }
 
+		.target-highlight {
+			box-shadow: 0 0 0 4px #ffea00;
+			transform: scale(1.05);
+		}
+
         .card {
             background-color: white;
             border-radius: 6px;
@@ -189,6 +188,28 @@
 
         .target-grid .card { font-size: 1.5rem; border-radius: 4px; cursor: default; }
         .play-grid .card { font-size: 2.8rem; }
+
+
+		.target-highlight-hover {
+			box-shadow: 0 0 0 2px rgba(255,234,0,0.6);
+		}
+
+		.target-highlight-strong {
+			box-shadow: 0 0 0 4px #ffea00;
+			transform: scale(1.06);
+		}
+
+
+		.card-wrong {
+			box-shadow: 0 0 0 4px #ff4d4d;
+			animation: wrongPulse 0.6s ease-in-out 2;
+		}
+
+		@keyframes wrongPulse {
+			0%   { transform: scale(1); }
+			50%  { transform: scale(0.92); }
+			100% { transform: scale(1); }
+		}
 
         .card.selected {
             transform: scale(0.92);
@@ -387,7 +408,22 @@
     let botInterval = null;
     let botFinishTime = 0;
     let botLevel = 5; // 1 = nejsilnější, 8 = nejslabší
+    let mode = '';
+    let targetPattern = [];
+    let playArea = [];
+    let selectedIndex = null;
+    let timerInterval = null;
+    let startTime = 0;
+    let gameActive = false;
+	let hoverIndex = null;
+	
+	// definice levelů solo režimu
+    let currentLevel = 3; 
+    const timeLimits = { 
+        1: 15, 2: 18, 3: 21, 4: 24, 5: 27, 6: 30, 7: 33, 8: 36, 9: 39
+    };
 
+	// definice levelů bota
     const botSkillMultiplier = {
         1: 0.7,   // velmi rychlý
         2: 1.0,
@@ -399,6 +435,67 @@
         8: 2.8    // velmi pomalý
     };
 
+
+	function highlightWrongCards() {
+
+		const grid = document.getElementById("playGrid");
+		const cards = grid.children;
+
+		for (let i = 0; i < 9; i++) {
+
+			const currentSide = playArea[i].isFlipped
+				? playArea[i].s1
+				: playArea[i].s0;
+
+			const target = targetPattern[i];
+
+			let correct = true;
+
+			if (mode === "tvar") {
+				if (currentSide.s !== target.s) correct = false;
+			} else {
+				if (currentSide.c !== target.c) correct = false;
+			}
+
+			if (!correct) {
+				cards[i].classList.add("card-wrong");
+			}
+		}
+	}
+
+
+	function autoFixWrongFlips() {
+
+		for (let i = 0; i < 9; i++) {
+
+			const tile = playArea[i];
+
+			const currentSide = tile.isFlipped ? tile.s1 : tile.s0;
+			const otherSide   = tile.isFlipped ? tile.s0 : tile.s1;
+
+			const target = targetPattern[i];
+
+			let shouldFlip = false;
+
+			if (mode === "tvar") {
+				if (currentSide.s !== target.s && otherSide.s === target.s) {
+					shouldFlip = true;
+				}
+			} else {
+				if (currentSide.c !== target.c && otherSide.c === target.c) {
+					shouldFlip = true;
+				}
+			}
+
+			if (shouldFlip) {
+				tile.isFlipped = !tile.isFlipped;
+			}
+		}
+
+		renderPlayGrid();
+	}
+	
+
     function updateLevelButtons() {
         if (gameMode === "solo") {
             document.getElementById("levelBtn").style.display = "flex";       
@@ -408,6 +505,7 @@
             document.getElementById("levelBtnBot").style.display = "flex";   
         }
     }
+
 
     function evaluateDifficulty() {
         let wrongPlace = 0;
@@ -437,9 +535,9 @@
                 }
             }
         }
-
         return { wrongPlace, wrongFlip };
     }
+
 
     function startBotSimulation() {
         if (botSolvedCount === 9) {
@@ -494,9 +592,9 @@
         }, stepTime);
     }
 
+
     function toggleGameMode() {
         if (gameActive) return;
-
         if (gameMode === "solo") {
             gameMode = "bot";
             document.getElementById('gameModeIcon').innerText = "🖥️";
@@ -510,9 +608,9 @@
             // Přepnutí časovače pro Solo mód
             document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
         }
-
         updateLevelButtons(); 
     }
+
 
     const colorMap = {
         'o': '#ff8c00', 'f': '#800080', 'r': '#e6192B',
@@ -540,18 +638,6 @@
         { id: 8, s0: { s: '3', c: 'r' }, s1: { s: '7', c: 'm' } }
     ];
 
-    let mode = '';
-    let targetPattern = [];
-    let playArea = [];
-    let selectedIndex = null;
-    let timerInterval = null;
-    let startTime = 0;
-    let gameActive = false;
-    
-    let currentLevel = 3; 
-    const timeLimits = { 
-        1: 15, 2: 18, 3: 21, 4: 24, 5: 27, 6: 30, 7: 33, 8: 36, 9: 39
-    };
 
     function toggleHelp() {
         const helpEl = document.getElementById('helpOverlay');
@@ -562,6 +648,7 @@
         }
     }
 
+
     function toggleLevel() {
         if (!gameActive) {
             currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
@@ -570,6 +657,7 @@
         }
     }
 
+
     function toggleBotLevel() {
         if (gameActive) return;
         botLevel++;
@@ -577,24 +665,24 @@
         document.getElementById("botLevelVal").innerText = botLevel;
     }
 
-    function closeOverlay() {
-        document.getElementById('winOverlay').classList.remove('active');
-        document.getElementById('endIcon').classList.remove('pulse-animation');
-        
-        // Zohlednění vybraného módu pro časovač při zavření overlaye
-        if (gameMode === "bot") {
-            document.getElementById('timerDisplay').innerText = '0.0s';
-        } else {
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-        }
-        
-        document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
-        document.getElementById('targetGrid').innerHTML = '';
-        document.getElementById('playGrid').innerHTML = '';
-        document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
-    }
+
+	function closeOverlay() {
+		document.getElementById('winOverlay').classList.remove('active');
+		document.getElementById('endIcon').classList.remove('pulse-animation');
+
+		// pouze reset UI stavů
+		document.getElementById('timerDisplay').innerText =
+			gameMode === "bot"
+			? "0.0s"
+			: timeLimits[currentLevel].toFixed(1) + 's';
+
+		document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+	}
+
 
     function initGame() {
+		document.querySelectorAll(".card-wrong")
+		.forEach(el => el.classList.remove("card-wrong"));
         botSolvedCount = 0;
         if (gameActive) {
             stopGameAndReset();
@@ -616,24 +704,19 @@
         document.getElementById('modeDisplay').innerHTML = modeHTML;
 
         targetPattern = generateValidPattern();
-
         playArea = generateValidPlayArea();
         
-        function generateValidPlayArea() {
 
-    while (true) {
-
+    function generateValidPlayArea() {
+		while (true) {
         let arr = rawTiles.map(tile => ({
             ...tile,
             isFlipped: Math.random() > 0.5
         }));
-
         shuffleArray(arr);
-
         const visibleSides = arr.map(t =>
             t.isFlipped ? t.s1 : t.s0
         );
-
         if (isValidSideSet(visibleSides)) {
             return arr;
         }
@@ -661,7 +744,8 @@
         document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
     }
     
-    function stopGameAndReset() {
+ 
+	function stopGameAndReset() {
         gameActive = false;
         clearInterval(timerInterval);
         
@@ -679,7 +763,8 @@
         document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
     }
 
-function isValidSideSet(sides) {
+
+	function isValidSideSet(sides) {
 
     const shapeCounts = {};
     const colorCounts = {};
@@ -695,30 +780,25 @@ function isValidSideSet(sides) {
         if (shapeCounts[s] > 2) return false;
         if (colorCounts[c] > 2) return false;
     }
-
     return true;
 }
 
-function generateValidPattern() {
 
-    while (true) {
-
+	function generateValidPattern() {
+		while (true) {
         const generated = [];
-
         for (let i = 0; i < 9; i++) {
             const side =
                 Math.random() > 0.5 ? rawTiles[i].s0 : rawTiles[i].s1;
-
             generated.push(side);
         }
-
         if (isValidSideSet(generated)) {
-
             shuffleArray(generated);
             return generated;
         }
     }
 }
+
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -726,6 +806,7 @@ function generateValidPattern() {
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
+
 
     function createCardElement(sideData, isSelected, sideIndicator) {
         const div = document.createElement('div');
@@ -745,13 +826,25 @@ function generateValidPattern() {
         return div;
     }
 
-    function renderTargetGrid() {
-        const grid = document.getElementById('targetGrid');
-        grid.innerHTML = '';
-        targetPattern.forEach(item => {
-            grid.appendChild(createCardElement(item, false));
-        });
-    }
+
+	function renderTargetGrid() {
+		const grid = document.getElementById('targetGrid');
+		grid.innerHTML = '';
+
+		targetPattern.forEach((item, index) => {
+
+			const el = createCardElement(item, false);
+
+			if (index === selectedIndex) {
+				el.classList.add("target-highlight-strong");
+			} else if (index === hoverIndex) {
+				el.classList.add("target-highlight-hover");
+			}
+
+			grid.appendChild(el);
+		});
+	}
+
 
     function renderPlayGrid() {
         const grid = document.getElementById('playGrid');
@@ -762,26 +855,41 @@ function generateValidPattern() {
             const isSelected = index === selectedIndex;
             const cardEl = createCardElement(currentSideData, isSelected, sideInd);
             cardEl.addEventListener('click', () => handleTileClick(index));
+			cardEl.addEventListener('mouseenter', () => {
+			hoverIndex = index;
+			renderTargetGrid();
+		});
+
+			cardEl.addEventListener('mouseleave', () => {
+				hoverIndex = null;
+				renderTargetGrid();
+		});
             grid.appendChild(cardEl);
         });
     }
 
-    function handleTileClick(index) {
-        if (!gameActive) return;
-        if (selectedIndex === null) {
-            selectedIndex = index;
-        } else if (selectedIndex === index) {
-            playArea[index].isFlipped = !playArea[index].isFlipped;
-            selectedIndex = null;
-        } else {
-            let temp = playArea[selectedIndex];
-            playArea[selectedIndex] = playArea[index];
-            playArea[index] = temp;
-            selectedIndex = null;
-        }
-        renderPlayGrid();
-        checkWinCondition();
-    }
+
+	function handleTileClick(index) {
+		if (!gameActive) return;
+
+		if (selectedIndex === null) {
+			selectedIndex = index;
+		} else if (selectedIndex === index) {
+			playArea[index].isFlipped = !playArea[index].isFlipped;
+			selectedIndex = null;
+		} else {
+			let temp = playArea[selectedIndex];
+			playArea[selectedIndex] = playArea[index];
+			playArea[index] = temp;
+			selectedIndex = null;
+		}
+
+		renderPlayGrid();
+		renderTargetGrid();   // ← DOPLNIT
+
+		checkWinCondition();
+	}
+
 
     function checkWinCondition() {
         let isWin = true;
@@ -797,18 +905,16 @@ function generateValidPattern() {
         if (isWin) endGame(true);
     }
 
+
     function updateTimer() {
         if (!gameActive) return;
-
         const elapsed = (Date.now() - startTime) / 1000;
-
         if (gameMode === "bot") {
             document.getElementById('timerDisplay').innerText = elapsed.toFixed(1) + "s";
             return;
         }
 
         const remaining = timeLimits[currentLevel] - elapsed;
-
         if (remaining <= 0) {
             document.getElementById('timerDisplay').innerText = '0.0s';
             endGame(false);
@@ -816,6 +922,7 @@ function generateValidPattern() {
             document.getElementById('timerDisplay').innerText = remaining.toFixed(1) + 's';
         }
     }
+
 
     function endGame(isWin) {
         if (!gameActive) return;
@@ -828,13 +935,13 @@ function generateValidPattern() {
         document.getElementById("botProgress").style.display = "none";
 
         const playerTime = (Date.now() - startTime) / 1000;
-
         const endIconEl = document.getElementById('endIcon');
         const winOverlayEl = document.getElementById('winOverlay');
 
         winOverlayEl.classList.add('active');
         endIconEl.classList.add('pulse-animation');
 
+		 // BOT režim
         if (gameMode === "bot") {
             const playerWon = isWin && playerTime <= botFinishTime;
 
@@ -846,19 +953,21 @@ function generateValidPattern() {
                 document.getElementById('endMessage').innerText = "Bot vyhrál";
                 document.getElementById('finalTime').innerText = `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
                 endIconEl.innerText = "🤔";
+				highlightWrongCards();
             }
             return;
         }
 
-        // SOLO režim
-        if (isWin) {
-            endIconEl.innerText = '🏆';
-            document.getElementById('endMessage').innerText = 'Gratuluji';
-            document.getElementById('finalTime').innerText = `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
-        } else {
-            endIconEl.innerText = '🤔';
-            document.getElementById('endMessage').innerText = 'Čas vypršel';
-            document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
+			// SOLO režim
+			if (isWin) {
+				endIconEl.innerText = '🏆';
+				document.getElementById('endMessage').innerText = 'Gratuluji';
+				document.getElementById('finalTime').innerText = `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
+			} else {
+				endIconEl.innerText = '🤔';
+				document.getElementById('endMessage').innerText = 'Čas vypršel';
+				document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
+				highlightWrongCards();
         }
     }
 
