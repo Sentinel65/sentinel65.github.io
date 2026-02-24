@@ -8,7 +8,7 @@
         :root {
             --bg-color: #1a1a2e;
             --text-color: #ffffff;
-            --accent: #e94560;
+            --accent: #e94560;highlightWrongCards()
             --card-bg: #16213e;
             --card-border: #0f3460;
             --highlight: #ffea00;
@@ -51,21 +51,26 @@
             gap: 10px;
         }
 
-        .help-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-        }
+    .help-btn {
+        background: transparent; /* Odstraní barvu pozadí */
+        color: white;           /* Ikona zůstane bílá */
+        border: none;
+        border-radius: 50%;
+        width: 24px;            /* Mírně zvětšeno pro lepší klikatelnost, když chybí plocha */
+        height: 24px;
+        font-size: 1.1rem;      /* Ikona bude o něco výraznější */
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        transition: opacity 0.2s; /* Jemný efekt při najetí */
+    }
+
+    .help-btn:hover {
+        opacity: 0.7;           /* Zpětná vazba při najetí myší */
+    }
 
         .info-panel {
             display: flex;
@@ -290,8 +295,8 @@
         }
 
         .bot-square {
-            width: 10px;
-            height: 10px;
+            width: 20px;
+            height: 20px;
             background: #444;
             border-radius: 2px;
         }
@@ -304,7 +309,7 @@
 <body>
 
     <header>
-        <h1>Extrémní devítka <button class="help-btn" onclick="toggleHelp()">?</button></h1>
+        <h1><button id="soundBtn" onclick="toggleSound()" class="help-btn">🔊</button>Extrémní devítka <button class="help-btn" onclick="toggleHelp()">💡</button></h1>
     </header>
 
     <div class="info-panel">
@@ -409,7 +414,7 @@
     let timerInterval = null;
     let startTime = 0;
     let gameActive = false;
-	let hoverIndex = null;
+    let soundEnabled = localStorage.getItem('soundEnabled') !== 'false'; // (Vrací true, pokud v paměti není 'false')
 	
 	// definice levelů solo režimu
     let currentLevel = 3; 
@@ -429,6 +434,78 @@
         8: 2.8    // velmi pomalý
     };
 
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        
+        // Uložení do paměti prohlížeče
+        localStorage.setItem('soundEnabled', soundEnabled);
+        
+        const btn = document.getElementById('soundBtn');
+        btn.innerText = soundEnabled ? '🔊' : '🔈';
+        
+        if (soundEnabled) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playSound(600, 'sine', 0.1, 0.05);
+        }
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(freq, type, duration, vol) {
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);const playFailSound = () => {
+        playSound(200, 'sawtooth', 0.3, 0.1); 
+        setTimeout(() => playSound(150, 'sawtooth', 0.6, 0.1), 200);
+    };
+
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    // Konkrétní zvuky
+    const playClickSound = () => playSound(600, 'sine', 0.1, 0.1);    // Klik karty
+    const playWinSound = () => {
+        if (!soundEnabled) return;                                    // Vítězná fanfára
+        playSound(523.25, 'square', 0.2, 0.1); 
+        setTimeout(() => playSound(659.25, 'square', 0.5, 0.1), 150);
+    };
+    const playFailSound = () => {
+        if (!soundEnabled) return;                                    // Fanfára př prohře nebo vypršení času
+        // První tón je trochu vyšší (ale stále nižší než u výhry)
+        playSound(440, 'square', 0.2, 0.1); 
+        // Druhý tón je hlubší a klesající
+        setTimeout(() => playSound(349.23, 'square', 0.6, 0.1), 150);
+    }; 
+
+
+
+
+
+    function generateValidPlayArea() {
+		while (true) {
+        let arr = rawTiles.map(tile => ({
+            ...tile,
+            isFlipped: Math.random() > 0.5
+        }));
+        shuffleArray(arr);
+        const visibleSides = arr.map(t =>
+            t.isFlipped ? t.s1 : t.s0
+        );
+        if (isValidSideSet(visibleSides)) {
+            return arr;
+        }
+    }
+}
 
 	function highlightWrongCards() {
 
@@ -455,46 +532,6 @@
 				cards[i].classList.add("card-wrong");
 			}
 		}
-	}
-
-
-	function autoFixWrongFlips() {
-
-		for (let i = 0; i < 9; i++) {
-
-			const tile = playArea[i];
-
-			const currentSide = tile.isFlipped ? tile.s1 : tile.s0;
-			const otherSide   = tile.isFlipped ? tile.s0 : tile.s1;
-
-			const target = targetPattern[i];
-
-			let shouldFlip = false;
-
-			if (mode === "tvar") {
-				if (currentSide.s !== target.s && otherSide.s === target.s) {
-					shouldFlip = true;
-				}
-			} else {
-				if (currentSide.c !== target.c && otherSide.c === target.c) {
-					shouldFlip = true;
-				}
-			}
-
-			if (shouldFlip) {
-				tile.isFlipped = !tile.isFlipped;
-			}
-		}
-
-		renderPlayGrid();
-	}
-	
-
-	function clearHoverHighlights() {
-		const grid = document.getElementById('targetGrid');
-		grid.querySelectorAll('.target-highlight').forEach(el => {
-			el.classList.remove('target-highlight');
-		});
 	}
 
 
@@ -542,32 +579,23 @@
 
 
     function startBotSimulation() {
-        if (botSolvedCount === 9) {
-            clearInterval(botInterval);
-            if (gameActive) {
-                endGame(false);   // BOT vyhrál
-            }
-        }
-
+        // 1. Schovat/ukázat progress bar a resetovat počítadlo
         const container = document.getElementById("botProgress");
         container.style.display = "flex";
         container.className = "bot-progress";
         container.innerHTML = "";
         botSolvedCount = 0;
 
+        // 2. Vykreslit prázdné čtverečky bota
         for (let i = 0; i < 9; i++) {
             const sq = document.createElement("div");
             sq.className = "bot-square";
             container.appendChild(sq);
         }
 
+        // 3. Vypočítat čas (tady to máš v pořádku)
         const diff = evaluateDifficulty();
-
-        botFinishTime = 
-            diff.wrongPlace * 1.8 + 
-            diff.wrongFlip * 0.6 + 
-            (Math.random() * 1.2);
-
+        botFinishTime = diff.wrongPlace * 1.8 + diff.wrongFlip * 0.6 + (Math.random() * 1.2);
         botFinishTime *= botSkillMultiplier[botLevel];
         botFinishTime += Math.random() * 1.6;  
 
@@ -576,6 +604,7 @@
 
         const stepTime = (botFinishTime * 1000) / 9;
 
+        // 4. Samotný interval (tady se děje všechna práce)
         clearInterval(botInterval);
         botInterval = setInterval(() => {
             const squares = container.children;
@@ -585,10 +614,11 @@
                 botSolvedCount++;
             }
 
+            // Tady je ta hlavní kontrola konce
             if (botSolvedCount === 9) {
                 clearInterval(botInterval);
                 if (gameActive) {
-                    endGame(false); 
+                    endGame(false); // Bot dokončil všech 9 kroků dřív než hráč
                 }
             }
         }, stepTime);
@@ -683,6 +713,10 @@
 
 
     function initGame() {
+        // Probuzení AudioContextu, pokud je uspaný (řeší varování v konzoli)
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
 		document.querySelectorAll(".card-wrong")
 		.forEach(el => el.classList.remove("card-wrong"));
         botSolvedCount = 0;
@@ -708,22 +742,6 @@
         targetPattern = generateValidPattern();
         playArea = generateValidPlayArea();
         
-
-    function generateValidPlayArea() {
-		while (true) {
-        let arr = rawTiles.map(tile => ({
-            ...tile,
-            isFlipped: Math.random() > 0.5
-        }));
-        shuffleArray(arr);
-        const visibleSides = arr.map(t =>
-            t.isFlipped ? t.s1 : t.s0
-        );
-        if (isValidSideSet(visibleSides)) {
-            return arr;
-        }
-    }
-}
 
         renderTargetGrid();
         renderPlayGrid();
@@ -855,15 +873,6 @@
             const isSelected = index === selectedIndex;
             const cardEl = createCardElement(currentSideData, isSelected, sideInd);
             cardEl.addEventListener('click', () => handleTileClick(index));
-			cardEl.addEventListener('mouseenter', () => {
-			hoverIndex = index;
-			renderTargetGrid();
-		});
-
-			cardEl.addEventListener('mouseleave', () => {
-				hoverIndex = null;
-				renderTargetGrid();
-		});
             grid.appendChild(cardEl);
         });
     }
@@ -956,10 +965,12 @@
             const playerWon = isWin && playerTime <= botFinishTime;
 
             if (playerWon) {
+                playWinSound();
                 document.getElementById('endMessage').innerText = "Gratuluji";
                 document.getElementById('finalTime').innerText = `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
                 endIconEl.innerText = "🏆";
             } else {
+                playFailSound();
                 document.getElementById('endMessage').innerText = "Bot vyhrál";
                 document.getElementById('finalTime').innerText = `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
                 endIconEl.innerText = "🤔";
@@ -970,10 +981,12 @@
 
 			// SOLO režim
 			if (isWin) {
+                playWinSound();
 				endIconEl.innerText = '🏆';
 				document.getElementById('endMessage').innerText = 'Gratuluji';
 				document.getElementById('finalTime').innerText = `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
 			} else {
+                playFailSound();
 				endIconEl.innerText = '🤔';
 				document.getElementById('endMessage').innerText = 'Čas vypršel';
 				document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
@@ -984,6 +997,8 @@
     window.onload = () => {
         updateLevelButtons();
         closeOverlay();
+        // Nastavení správné ikony zvuku podle uložené hodnoty
+        document.getElementById('soundBtn').innerText = soundEnabled ? '🔊' : '🔈';
     };
 </script>
 </body>
