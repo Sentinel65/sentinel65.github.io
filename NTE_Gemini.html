@@ -169,10 +169,7 @@
         .target-grid { width: 32vmin; max-width: 160px; gap: 4px; }
         .play-grid { width: 62vmin; max-width: 330px; gap: 6px; }
 
-		.target-highlight {
-			box-shadow: 0 0 0 4px #ffea00;
-			transform: scale(1.05);
-		}
+
 
         .card {
             background-color: white;
@@ -190,9 +187,6 @@
         .play-grid .card { font-size: 2.8rem; }
 
 
-		.target-highlight-hover {
-			box-shadow: 0 0 0 2px rgba(255,234,0,0.6);
-		}
 
 		.target-highlight-strong {
 			box-shadow: 0 0 0 4px #ffea00;
@@ -495,6 +489,14 @@
 		renderPlayGrid();
 	}
 	
+
+	function clearHoverHighlights() {
+		const grid = document.getElementById('targetGrid');
+		grid.querySelectorAll('.target-highlight').forEach(el => {
+			el.classList.remove('target-highlight');
+		});
+	}
+
 
     function updateLevelButtons() {
         if (gameMode === "solo") {
@@ -837,8 +839,6 @@
 
 			if (index === selectedIndex) {
 				el.classList.add("target-highlight-strong");
-			} else if (index === hoverIndex) {
-				el.classList.add("target-highlight-hover");
 			}
 
 			grid.appendChild(el);
@@ -926,13 +926,23 @@
 
     function endGame(isWin) {
         if (!gameActive) return;
-
+	
         gameActive = false;
-
         clearInterval(timerInterval);
-        clearInterval(botInterval);
-
+        clearInterval(botInterval);	
         document.getElementById("botProgress").style.display = "none";
+		
+		
+		// RESET označené karty v hrací i vzorové mřížce
+		selectedIndex = null;
+		renderPlayGrid();     // odstraní .selected z hrací mřížky
+
+		// odstraní žluté highlighty z cílové mřížky
+		const targetCards = document.querySelectorAll('#targetGrid .card');
+		targetCards.forEach(card => card.classList.remove('target-highlight-strong'));
+
+		renderTargetGrid();   // přerenderuje cílovou mřížku bez zvýraznění
+
 
         const playerTime = (Date.now() - startTime) / 1000;
         const endIconEl = document.getElementById('endIcon');
