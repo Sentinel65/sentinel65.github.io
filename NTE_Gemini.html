@@ -490,18 +490,38 @@
 
     // Konkrétní zvuky
     const playClickSound = () => playSound(600, 'sine', 0.1, 0.1);    // Klik karty
-    const playWinSound = () => {
-        if (!soundEnabled) return;                                    // Vítězná fanfára
-        playSound(523.25, 'square', 0.2, 0.1); 
-        setTimeout(() => playSound(659.25, 'square', 0.5, 0.1), 150);
+    const playWinSound = () => {                                      // Fanfára při výhře
+        if (!soundEnabled) return;
+
+        // 1. tón (základní - nota C4)
+        playSound(261.63, 'sawtooth', 0.2, 0.1); 
+        
+        // 2. tón (vyšší - nota E4, po 150ms)
+        setTimeout(() => {
+            playSound(329.63, 'sawtooth', 0.2, 0.1);
+        }, 200);
+
+        // 3. tón (nejvyšší - nota G4, po 300ms)
+        setTimeout(() => {
+            playSound(392.00, 'sawtooth', 0.6, 0.1);
+        }, 300);
     };
-    const playFailSound = () => {
-        if (!soundEnabled) return;                                    // Fanfára př prohře nebo vypršení času
-        // První tón je trochu vyšší (ale stále nižší než u výhry)
-        playSound(440, 'square', 0.2, 0.1); 
-        // Druhý tón je hlubší a klesající
-        setTimeout(() => playSound(349.23, 'square', 0.6, 0.1), 150);
-    }; 
+    const playFailSound = () => {                                     // Fanfára při prohře nebo vypršení času
+        if (!soundEnabled) return;
+
+        // 1. tón (středně hluboký)
+        playSound(220, 'sawtooth', 0.2, 0.1); 
+        
+        // 2. tón (hlubší, po 150ms)
+        setTimeout(() => {
+            playSound(164.81, 'sawtooth', 0.2, 0.1);
+        }, 200);
+
+        // 3. tón (nejhlubší, po 300ms)
+        setTimeout(() => {
+            playSound(110, 'sawtooth', 0.6, 0.1);
+        }, 300);
+    };
 
 
 
