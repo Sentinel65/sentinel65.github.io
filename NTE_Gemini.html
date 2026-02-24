@@ -51,26 +51,42 @@
             gap: 10px;
         }
 
-    .help-btn {
-        background: transparent; /* Odstraní barvu pozadí */
-        color: white;           /* Ikona zůstane bílá */
-        border: none;
-        border-radius: 50%;
-        width: 24px;            /* Mírně zvětšeno pro lepší klikatelnost, když chybí plocha */
-        height: 24px;
-        font-size: 1.1rem;      /* Ikona bude o něco výraznější */
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 0;
-        transition: opacity 0.2s; /* Jemný efekt při najetí */
-    }
+        .help-btn, #soundBtn {
+            background: transparent;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            
+            /* KLÍČOVÉ OPRAVY PRO MOBILY: */
+            -webkit-tap-highlight-color: transparent; /* Odstraní barevný čtverec při dotyku */
+            outline: none;                            /* Odstraní modrý obrys po kliknutí */
+            user-select: none;                        /* Zabrání nechtěnému označení textu (ikony) */
+            
+            transition: opacity 0.2s;
+        }
 
-    .help-btn:hover {
-        opacity: 0.7;           /* Zpětná vazba při najetí myší */
-    }
+        /* Na mobilu hover obvykle nefunguje dobře, 
+           takže ho necháme jen pro zařízení s myší */
+        @media (hover: hover) {
+            .help-btn:hover, #soundBtn:hover {
+                opacity: 0.7;
+            }
+        }
+
+        /* Volitelný efekt aktivního stisku pro mobil */
+        .help-btn:active, #soundBtn:active {
+            opacity: 0.5;
+            transform: scale(0.9); /* Tlačítko se při dotyku lehce zmenší */
+        }
 
         .info-panel {
             display: flex;
