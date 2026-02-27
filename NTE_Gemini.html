@@ -8,11 +8,14 @@
         :root {
             --bg-color: #1a1a2e;
             --text-color: #ffffff;
-            --accent: #e94560;highlightWrongCards()
+            --accent: #e94560;
             --card-bg: #16213e;
             --card-border: #0f3460;
             --highlight: #ffea00;
             --level-color: #4ecca3;
+            --ui-font-big: 1.5rem;
+            --ui-font-small: 0.55rem;
+            --ui-font-weight: bold;
         }
 
         .disabled {
@@ -125,7 +128,7 @@
         .level-display:active, #gameModeBtn:active { transform: scale(0.95); }
 
         .mode-icon, .level-val {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             line-height: 1;
             font-weight: bold;
         }
@@ -140,13 +143,7 @@
             text-transform: uppercase;
         }
 
-        .timer {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--highlight);
-            min-width: 60px;
-            text-align: center;
-        }
+
 
         button {
             background-color: var(--accent);
@@ -197,6 +194,30 @@
         .target-grid { width: 32vmin; max-width: 160px; gap: 4px; }
         .play-grid { width: 62vmin; max-width: 330px; gap: 6px; }
 
+        .timer {
+            color: var(--highlight);
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            display: inline-block;
+            min-width: 60px;
+            transition: color 0.3s ease;
+
+            /* KLÍČOVÉ */
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
+
+
+        /* Třídy mění už jen barvu */
+        .timer-win {
+            color: #4CAF50 !important;  /* Zelená */
+        }
+
+        .timer-fail {
+            color: #ff4d4d !important;  /* Červená */
+            text-shadow: 0 0 2px rgba(255,77,77,0.8);
+        }
 
 
         .card {
@@ -356,7 +377,7 @@
         </div>
 
         <div class="mode-display" id="gameModeBtn" onclick="toggleGameMode()">
-            <div class="mode-icon" id="gameModeIcon">⏳</div>
+            <div class="mode-icon" id="gameModeIcon">⌛</div>
             <div class="mode-text" id="gameModeText">Solo</div>
         </div>
 
@@ -402,7 +423,7 @@
 
             <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Herní režimy:</p>
             <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 15px;">
-                <li>⏳ <strong>Solo:</strong> Odpočet času [1 = nejkratší]</li>
+                <li>⌛ <strong>Solo:</strong> Odpočet času [1 = nejkratší]</li>
                 <li>🖥️ <strong>AI:</strong> hra proti AI [1 = nejsilnější]</li>
                 <li>⏱️ <strong>Time:</strong> Měří čas bez limitu</li>
                             
@@ -440,7 +461,8 @@
     let startTime = 0;
     let gameActive = false;
     let soundEnabled = localStorage.getItem('soundEnabled') !== 'false'; // (Vrací true, pokud v paměti není 'false')
-	
+	let lastFinalTime = "0.0";
+
 	// definice levelů solo režimu
     let currentLevel = 3; 
     const timeLimits = { 
@@ -730,7 +752,7 @@
     } else {
         // Změna zpět na SOLO
         gameMode = "solo";
-        document.getElementById('gameModeIcon').innerText = "⏳";
+        document.getElementById('gameModeIcon').innerText = "⌛";
         document.getElementById('gameModeText').innerText = "Solo";
         // Zobrazení času podle limitu daného levelu (za předpokladu, že používáš currentLevel)
         document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
@@ -796,16 +818,38 @@
 
 
 	function closeOverlay() {
+    // 1. Zavření oken
     document.getElementById('winOverlay').classList.remove('active');
     document.getElementById('endIcon').classList.remove('pulse-animation');
 
     const timerEl = document.getElementById('timerDisplay');
+    const endMessageEl = document.getElementById('endMessage');
+    const endMessage = endMessageEl ? endMessageEl.innerText : "";
 
-    if (gameMode === "solo") {
-        timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
-    } else {
-        // bot + time
+    // 2. POJISTKA: Pokud pole playArea neexistuje (např. při startu stránky), 
+    // ukončíme funkci dříve, než začneme barvit.
+    if (!playArea || playArea.length === 0) {
+        // Nastavíme jen výchozí čas a text tlačítka
+        if (gameMode === "solo") {
+            timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        } else {
+            timerEl.innerText = "0.0s";
+        }
+        document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+        return; 
+    }
+
+    // 3. Logika barvení a výsledného času (jen po dohrané hře)
+    timerEl.classList.remove('timer-win', 'timer-fail');
+
+    if (endMessage === "Gratuluji") {
+        highlightAllCorrectCards(); 
+        timerEl.innerText = lastFinalTime + "s";
+        timerEl.classList.add('timer-win');
+    } else if (endMessage === "Čas vypršel" || endMessage === "Bot vyhrál") {
+        highlightWrongCards();
         timerEl.innerText = "0.0s";
+        timerEl.classList.add('timer-fail');
     }
 
     document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
@@ -858,6 +902,8 @@
     
     // Nastavení textu před prvním tiknutím intervalu
     const timerEl = document.getElementById('timerDisplay');
+    // Reset barvy časovače na žlutou
+    timerEl.classList.remove('timer-win', 'timer-fail');   // timerDisplay bude mít opět svou default žlutou barvu z CSS
     if (gameMode === "bot" || gameMode === "time") {
         timerEl.innerText = '0.0s';
     } else {
@@ -1071,6 +1117,7 @@ function endGame(isWin) {
     renderTargetGrid();
 
     const playerTime = (Date.now() - startTime) / 1000;
+    lastFinalTime = playerTime.toFixed(1); // Uložíme si čas pro pozdější zobrazenít playerTime = (Date.now() - startTime) / 1000;
     const endIconEl = document.getElementById('endIcon');
     const winOverlayEl = document.getElementById('winOverlay');
 
