@@ -15,6 +15,13 @@
             --level-color: #4ecca3;
         }
 
+        .disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -343,7 +350,7 @@
         </div>
 
         <div class="mode-display" id="gameModeBtn" onclick="toggleGameMode()">
-            <div class="mode-icon" id="gameModeIcon">👤</div>
+            <div class="mode-icon" id="gameModeIcon">⏳</div>
             <div class="mode-text" id="gameModeText">Solo</div>
         </div>
 
@@ -389,13 +396,9 @@
 
             <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Herní režimy:</p>
             <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 15px;">
-                <li>👤 <strong>Solo:</strong> 9 levelů - hra na čas</li>
-                    
-                           <dd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1 = nejkratší, 9 = nejdelší]</dd>
-                     
-                <li>🖥️ <strong>AI:</strong> 8 levelů x AI</li>
-                      
-                             <dd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1 = nejsilnější, 9 = nejslabší]</dd>
+                <li>⏳ <strong>Solo:</strong> Odpočet času [1 = nejkratší]</li>
+                <li>🖥️ <strong>AI:</strong> hra proti AI [1 = nejsilnější]</li>
+                <li>⏱️ <strong>Time:</strong> Měří čas bez limitu</li>
                             
             </ul>
 
@@ -572,14 +575,26 @@
 
 
     function updateLevelButtons() {
-        if (gameMode === "solo") {
-            document.getElementById("levelBtn").style.display = "flex";       
-            document.getElementById("levelBtnBot").style.display = "none";   
-        } else {
-            document.getElementById("levelBtn").style.display = "none";      
-            document.getElementById("levelBtnBot").style.display = "flex";   
-        }
+    const levelBtnSolo = document.getElementById("levelBtn");
+    const levelBtnBot = document.getElementById("levelBtnBot");
+
+    if (gameMode === "solo") {
+        levelBtnSolo.style.display = "flex";       
+        levelBtnBot.style.display = "none";
+        levelBtnSolo.classList.remove("disabled"); // Ujistíme se, že je aktivní
+        
+    } else if (gameMode === "bot") {
+        levelBtnSolo.style.display = "none";      
+        levelBtnBot.style.display = "flex";
+        levelBtnBot.classList.remove("disabled");  // Ujistíme se, že je aktivní
+        
+    } else if (gameMode === "time") {
+        // Zobrazíme klasické Solo tlačítko, ale deaktivujeme ho
+        levelBtnSolo.style.display = "flex";
+        levelBtnBot.style.display = "none";
+        levelBtnSolo.classList.add("disabled");    // Tlačítko zešedne a nelze na něj kliknout
     }
+}
 
 
     function evaluateDifficulty() {
@@ -661,23 +676,35 @@
     }
 
 
-    function toggleGameMode() {
-        if (gameActive) return;
-        if (gameMode === "solo") {
-            gameMode = "bot";
-            document.getElementById('gameModeIcon').innerText = "🖥️";
-            document.getElementById('gameModeText').innerText = "Bot";
-            // Přepnutí časovače pro Bot mód
-            document.getElementById('timerDisplay').innerText = "0.0s"; 
-        } else {
-            gameMode = "solo";
-            document.getElementById('gameModeIcon').innerText = "👤";
-            document.getElementById('gameModeText').innerText = "Solo";
-            // Přepnutí časovače pro Solo mód
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-        }
-        updateLevelButtons(); 
+   function toggleGameMode() {
+    if (gameActive) return;
+
+    if (gameMode === "solo") {
+        // Změna na BOT
+        gameMode = "bot";
+        document.getElementById('gameModeIcon').innerText = "🖥️";
+        document.getElementById('gameModeText').innerText = "Bot";
+        document.getElementById('timerDisplay').innerText = "0.0s"; 
+        
+    } else if (gameMode === "bot") {
+        // Změna na TIME
+        gameMode = "time";
+        document.getElementById('gameModeIcon').innerText = "⏱️";
+        document.getElementById('gameModeText').innerText = "Time";
+        document.getElementById('timerDisplay').innerText = "0.0s"; 
+        
+    } else {
+        // Změna zpět na SOLO
+        gameMode = "solo";
+        document.getElementById('gameModeIcon').innerText = "⏳";
+        document.getElementById('gameModeText').innerText = "Solo";
+        // Zobrazení času podle limitu daného levelu (za předpokladu, že používáš currentLevel)
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
     }
+    
+    updateLevelButtons(); 
+}
+
 
 
     const colorMap = {
@@ -735,89 +762,107 @@
 
 
 	function closeOverlay() {
-		document.getElementById('winOverlay').classList.remove('active');
-		document.getElementById('endIcon').classList.remove('pulse-animation');
+    document.getElementById('winOverlay').classList.remove('active');
+    document.getElementById('endIcon').classList.remove('pulse-animation');
 
-		// pouze reset UI stavů
-		document.getElementById('timerDisplay').innerText =
-			gameMode === "bot"
-			? "0.0s"
-			: timeLimits[currentLevel].toFixed(1) + 's';
+    const timerEl = document.getElementById('timerDisplay');
 
-		document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
-	}
+    if (gameMode === "solo") {
+        timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    } else {
+        // bot + time
+        timerEl.innerText = "0.0s";
+    }
+
+    document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+}
 
 
     function initGame() {
-        // Probuzení AudioContextu, pokud je uspaný (řeší varování v konzoli)
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-		document.querySelectorAll(".card-wrong")
-		.forEach(el => el.classList.remove("card-wrong"));
-        botSolvedCount = 0;
-        if (gameActive) {
-            stopGameAndReset();
-            document.getElementById("botProgress").style.display = "none";
-            clearInterval(botInterval);
-            return;
-        }
-
-        document.getElementById('winOverlay').classList.remove('active');
-        document.getElementById('helpOverlay').classList.remove('active');
-        selectedIndex = null;
-        gameActive = true;
-        
-        mode = Math.random() > 0.5 ? 'tvar' : 'barva';
-        
-        const modeHTML = mode === 'tvar' 
-            ? '<div class="mode-icon">💠</div><div class="mode-text">Tvar</div>'
-            : '<div class="mode-icon">🎨</div><div class="mode-text">Barva</div>';
-        document.getElementById('modeDisplay').innerHTML = modeHTML;
-
-        targetPattern = generateValidPattern();
-        playArea = generateValidPlayArea();
-        
-
-        renderTargetGrid();
-        renderPlayGrid();
-
-        clearInterval(timerInterval);
-        startTime = Date.now();
-        
-        // Správný text časovače podle režimu těsně po startu
-        if (gameMode === "bot") {
-            document.getElementById('timerDisplay').innerText = '0.0s';
-        } else {
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-        }
-        
-        timerInterval = setInterval(updateTimer, 100);
-        
-        if (gameMode === "bot") {
-            startBotSimulation();
-        }
-        document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
+    // Probuzení AudioContextu pro zvuky
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
     }
+
+    // Vyčištění vizuálních chyb z minulé hry
+    document.querySelectorAll(".card-wrong").forEach(el => el.classList.remove("card-wrong"));
+    botSolvedCount = 0;
+
+    // Pokud hra běží, tlačítko funguje jako "Zrušit"
+    if (gameActive) {
+        stopGameAndReset();
+        document.getElementById("botProgress").style.display = "none";
+        clearInterval(botInterval);
+        clearInterval(timerInterval);
+        return;
+    }
+
+    // Reset overlayů a stavu
+    document.getElementById('winOverlay').classList.remove('active');
+    document.getElementById('helpOverlay').classList.remove('active');
+    selectedIndex = null;
+    gameActive = true;
+    
+    // Náhodný výběr režimu (Tvar vs Barva)
+    mode = Math.random() > 0.5 ? 'tvar' : 'barva';
+    const modeHTML = mode === 'tvar' 
+        ? '<div class="mode-icon">💠</div><div class="mode-text">Tvar</div>'
+        : '<div class="mode-icon">🎨</div><div class="mode-text">Barva</div>';
+    document.getElementById('modeDisplay').innerHTML = modeHTML;
+
+    // Generování hracích ploch
+    targetPattern = generateValidPattern();
+    playArea = generateValidPlayArea();
+
+    renderTargetGrid();
+    renderPlayGrid();
+
+    // ČASOVAČ - Logika startu
+    clearInterval(timerInterval);
+    startTime = Date.now();
+    
+    // Nastavení textu před prvním tiknutím intervalu
+    const timerEl = document.getElementById('timerDisplay');
+    if (gameMode === "bot" || gameMode === "time") {
+        timerEl.innerText = '0.0s';
+    } else {
+        // Režim SOLO
+        timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+    }
+    
+    // Spuštění ticku každých 100ms
+    timerInterval = setInterval(updateTimer, 100);
+    
+    // Start bota, pokud jsme v bot módu
+    if (gameMode === "bot") {
+        startBotSimulation();
+    }
+
+    // Změna textu hlavního tlačítka
+    document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
+}
     
  
 	function stopGameAndReset() {
-        gameActive = false;
-        clearInterval(timerInterval);
-        
-        document.getElementById('targetGrid').innerHTML = '';
-        document.getElementById('playGrid').innerHTML = '';
-        document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
-        
-        // Správný reset časovače podle módu
-        if (gameMode === "bot") {
-            document.getElementById('timerDisplay').innerText = '0.0s';
-        } else {
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
-        }
-        
-        document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+    gameActive = false;
+    clearInterval(timerInterval);
+    if (typeof botInterval !== 'undefined') clearInterval(botInterval); // Pro jistotu zastavit i bota
+    
+    document.getElementById('targetGrid').innerHTML = '';
+    document.getElementById('playGrid').innerHTML = '';
+    document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
+    
+    // Správný reset časovače podle módu
+    if (gameMode === "bot" || gameMode === "time") {
+        // V těchto módech vracíme na nulu
+        document.getElementById('timerDisplay').innerText = '0.0s';
+    } else {
+        // V Solo módu vracíme výchozí limit levelu
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
     }
+    
+    document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+}
 
 
 	function isValidSideSet(sides) {
@@ -952,83 +997,114 @@
 
 
     function updateTimer() {
-        if (!gameActive) return;
-        const elapsed = (Date.now() - startTime) / 1000;
-        if (gameMode === "bot") {
-            document.getElementById('timerDisplay').innerText = elapsed.toFixed(1) + "s";
-            return;
-        }
+    if (!gameActive) return;
 
-        const remaining = timeLimits[currentLevel] - elapsed;
-        if (remaining <= 0) {
-            document.getElementById('timerDisplay').innerText = '0.0s';
-            endGame(false);
-        } else {
-            document.getElementById('timerDisplay').innerText = remaining.toFixed(1) + 's';
-        }
+    const elapsed = (Date.now() - startTime) / 1000;
+
+    // Režimy, které počítají čas od 0 nahoru
+    if (gameMode === "bot" || gameMode === "time") {
+        document.getElementById('timerDisplay').innerText = elapsed.toFixed(1) + "s";
+        return; 
     }
 
-
-    function endGame(isWin) {
-        if (!gameActive) return;
-	
-        gameActive = false;
+    // Režim SOLO - odpočet dolů
+    const remaining = timeLimits[currentLevel] - elapsed;
+    if (remaining <= 0) {
+        document.getElementById('timerDisplay').innerText = '0.0s';
         clearInterval(timerInterval);
-        clearInterval(botInterval);	
-        document.getElementById("botProgress").style.display = "none";
-		
-		
-		// RESET označené karty v hrací i vzorové mřížce
-		selectedIndex = null;
-		renderPlayGrid();     // odstraní .selected z hrací mřížky
-
-		// odstraní žluté highlighty z cílové mřížky
-		const targetCards = document.querySelectorAll('#targetGrid .card');
-		targetCards.forEach(card => card.classList.remove('target-highlight-strong'));
-
-		renderTargetGrid();   // přerenderuje cílovou mřížku bez zvýraznění
-
-
-        const playerTime = (Date.now() - startTime) / 1000;
-        const endIconEl = document.getElementById('endIcon');
-        const winOverlayEl = document.getElementById('winOverlay');
-
-        winOverlayEl.classList.add('active');
-        endIconEl.classList.add('pulse-animation');
-
-		 // BOT režim
-        if (gameMode === "bot") {
-            const playerWon = isWin && playerTime <= botFinishTime;
-
-            if (playerWon) {
-                playWinSound();
-                document.getElementById('endMessage').innerText = "Gratuluji";
-                document.getElementById('finalTime').innerText = `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
-                endIconEl.innerText = "🏆";
-            } else {
-                playFailSound();
-                document.getElementById('endMessage').innerText = "Bot vyhrál";
-                document.getElementById('finalTime').innerText = `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
-                endIconEl.innerText = "🤔";
-				highlightWrongCards();
-            }
-            return;
-        }
-
-			// SOLO režim
-			if (isWin) {
-                playWinSound();
-				endIconEl.innerText = '🏆';
-				document.getElementById('endMessage').innerText = 'Gratuluji';
-				document.getElementById('finalTime').innerText = `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
-			} else {
-                playFailSound();
-				endIconEl.innerText = '🤔';
-				document.getElementById('endMessage').innerText = 'Čas vypršel';
-				document.getElementById('finalTime').innerText = `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]}s.`;
-				highlightWrongCards();
-        }
+        endGame(false); // Prohra na čas
+    } else {
+        document.getElementById('timerDisplay').innerText = remaining.toFixed(1) + 's';
     }
+}
+
+
+function endGame(isWin) {
+    if (!gameActive) return;
+
+    gameActive = false;
+    clearInterval(timerInterval);
+    clearInterval(botInterval);	
+    document.getElementById("botProgress").style.display = "none";
+
+    // RESET označené karty v hrací i vzorové mřížce
+    selectedIndex = null;
+    renderPlayGrid();
+
+    const targetCards = document.querySelectorAll('#targetGrid .card');
+    targetCards.forEach(card => card.classList.remove('target-highlight-strong'));
+    renderTargetGrid();
+
+    const playerTime = (Date.now() - startTime) / 1000;
+    const endIconEl = document.getElementById('endIcon');
+    const winOverlayEl = document.getElementById('winOverlay');
+
+    winOverlayEl.classList.add('active');
+    endIconEl.classList.add('pulse-animation');
+
+
+    // ================= BOT režim =================
+    if (gameMode === "bot") {
+
+        const playerWon = isWin && playerTime <= botFinishTime;
+
+        if (playerWon) {
+            playWinSound();
+            document.getElementById('endMessage').innerText = "Gratuluji";
+            document.getElementById('finalTime').innerText =
+                `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
+            endIconEl.innerText = "🏆";
+        } else {
+            playFailSound();
+            document.getElementById('endMessage').innerText = "Bot vyhrál";
+            document.getElementById('finalTime').innerText =
+                `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
+            endIconEl.innerText = "🤔";
+            highlightWrongCards();
+        }
+        return;
+    }
+
+
+    // ================= TIME režim =================
+    if (gameMode === "time") {
+
+        if (isWin) {
+            playWinSound();
+            endIconEl.innerText = '🏆';
+            document.getElementById('endMessage').innerText = 'Gratuluji';
+            document.getElementById('finalTime').innerText =
+                `Tvůj čas: ${playerTime.toFixed(1)} s`;
+        } else {
+            // TIME mód prakticky nemá fail,
+            // ale necháváme fallback
+            playFailSound();
+            endIconEl.innerText = '🤔';
+            document.getElementById('endMessage').innerText = 'Nedokončeno';
+            document.getElementById('finalTime').innerText =
+                `Aktuální čas: ${playerTime.toFixed(1)} s`;
+        }
+        return;
+    }
+
+
+    // ================= SOLO režim =================
+    if (isWin) {
+        playWinSound();
+        endIconEl.innerText = '🏆';
+        document.getElementById('endMessage').innerText = 'Gratuluji';
+        document.getElementById('finalTime').innerText =
+            `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
+    } else {
+        playFailSound();
+        endIconEl.innerText = '🤔';
+        document.getElementById('endMessage').innerText = 'Čas vypršel';
+        document.getElementById('finalTime').innerText =
+            `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]} s.`;
+        highlightWrongCards();
+    }
+}
+
 
     window.onload = () => {
         updateLevelButtons();
