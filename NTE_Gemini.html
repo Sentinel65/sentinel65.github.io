@@ -843,12 +843,25 @@
     timerEl.classList.remove('timer-win', 'timer-fail');
 
     if (endMessage === "Gratuluji") {
+        // VÝHRA (Zelená)
         highlightAllCorrectCards(); 
         timerEl.innerText = lastFinalTime + "s";
         timerEl.classList.add('timer-win');
+        
     } else if (endMessage === "Čas vypršel" || endMessage === "Bot vyhrál") {
+        // PROHRA (Červená)
         highlightWrongCards();
-        timerEl.innerText = "0.0s";
+        
+        // --- NOVÁ LOGIKA PRO ČAS NA ZÁKLADĚ REŽIMU ---
+        if (gameMode === "bot") {
+            // Pokud jsi hrál proti botovi, ukáže se jeho cílový čas
+            // (předpokládám, že proměnná se u tebe jmenuje botFinishTime)
+            timerEl.innerText = botFinishTime.toFixed(1) + "s";
+        } else {
+            // Pro režimy Solo a Time se ukáže 0.0s
+            timerEl.innerText = "0.0s";
+        }
+        
         timerEl.classList.add('timer-fail');
     }
 
