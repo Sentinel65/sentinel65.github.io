@@ -222,8 +222,14 @@
 		}
 
 
+        .card-correct {
+			box-shadow: 0 0 0 4px #388E3C !important;
+			animation: wrongPulse 0.6s ease-in-out 2;
+
+        }
+
 		.card-wrong {
-			box-shadow: 0 0 0 4px #ff4d4d;
+			box-shadow: 0 0 0 4px #ff4d4d !important;
 			animation: wrongPulse 0.6s ease-in-out 2;
 		}
 
@@ -396,9 +402,9 @@
 
             <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Herní režimy:</p>
             <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 15px;">
-                <li>⏳ <strong>SOLO:</strong> Odpočet času [1 = nejkratší]</li>
-                <li>🖥️ <strong>BOT:</strong> hra proti AI [1 = nejsilnější]</li>
-                <li>⏱️ <strong>TIME:</strong> Měří čas bez limitu</li>
+                <li>⏳ <strong>Solo:</strong> Odpočet času [1 = nejkratší]</li>
+                <li>🖥️ <strong>AI:</strong> hra proti AI [1 = nejsilnější]</li>
+                <li>⏱️ <strong>Time:</strong> Měří čas bez limitu</li>
                             
             </ul>
 
@@ -417,7 +423,7 @@
         <div class="end-icon" id="endIcon">🏆</div>
         <div class="win-message" id="endMessage">HOTOVO!</div>
         <div class="end-subtext" id="finalTime"></div>
-        <button onclick="closeOverlay()" style="font-size: 1.2rem; padding: 12px 24px;">Zpět na výběr levelu</button>
+        <button onclick="closeOverlay()" style="font-size: 1.2rem; padding: 12px 24px;">Zpět na výběr hry</button>
     </div>
 
 <script>
@@ -470,6 +476,7 @@
     }
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
 
     function playSound(freq, type, duration, vol) {
         const oscillator = audioCtx.createOscillator();
@@ -527,9 +534,6 @@
     };
 
 
-
-
-
     function generateValidPlayArea() {
 		while (true) {
         let arr = rawTiles.map(tile => ({
@@ -546,6 +550,36 @@
     }
 }
 
+
+    // Po úspěšném ukončení a kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
+    function highlightAllCorrectCards() {
+    const grid = document.getElementById("playGrid");
+    const cards = grid.children;
+
+    for (let i = 0; i < 9; i++) {
+        const currentSide = playArea[i].isFlipped
+            ? playArea[i].s1
+            : playArea[i].s0;
+
+        const target = targetPattern[i];
+        let isMatch = false;
+
+        if (mode === "tvar") {
+            // V režimu tvar kontrolujeme shodu symbolu
+            if (currentSide.s === target.s) isMatch = true;
+        } else {
+            // V režimu barva kontrolujeme shodu barvy
+            if (currentSide.c === target.c) isMatch = true;
+        }
+
+        if (isMatch) {
+            cards[i].classList.add("card-correct");
+        }
+    }
+}
+
+
+    // Po neúspěšném ukončení a kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
 	function highlightWrongCards() {
 
 		const grid = document.getElementById("playGrid");
@@ -785,6 +819,7 @@
     }
 
     // Vyčištění vizuálních chyb z minulé hry
+    document.querySelectorAll(".card-correct").forEach(el => el.classList.remove("card-correct"));
     document.querySelectorAll(".card-wrong").forEach(el => el.classList.remove("card-wrong"));
     botSolvedCount = 0;
 
@@ -1054,13 +1089,14 @@ function endGame(isWin) {
             document.getElementById('finalTime').innerText =
                 `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
             endIconEl.innerText = "🏆";
+            highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
         } else {
             playFailSound();
             document.getElementById('endMessage').innerText = "Bot vyhrál";
             document.getElementById('finalTime').innerText =
                 `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
             endIconEl.innerText = "🤔";
-            highlightWrongCards();
+            highlightWrongCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
         }
         return;
     }
@@ -1075,6 +1111,7 @@ function endGame(isWin) {
             document.getElementById('endMessage').innerText = 'Gratuluji';
             document.getElementById('finalTime').innerText =
                 `Tvůj čas: ${playerTime.toFixed(1)} s`;
+            highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
         } else {
             // TIME mód prakticky nemá fail,
             // ale necháváme fallback
@@ -1095,13 +1132,14 @@ function endGame(isWin) {
         document.getElementById('endMessage').innerText = 'Gratuluji';
         document.getElementById('finalTime').innerText =
             `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
+        highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
     } else {
         playFailSound();
         endIconEl.innerText = '🤔';
         document.getElementById('endMessage').innerText = 'Čas vypršel';
         document.getElementById('finalTime').innerText =
             `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]} s.`;
-        highlightWrongCards();
+        highlightWrongCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
     }
 }
 
