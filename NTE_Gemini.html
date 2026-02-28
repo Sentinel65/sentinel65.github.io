@@ -16,6 +16,7 @@
             --ui-font-big: 1.5rem;
             --ui-font-small: 0.55rem;
             --ui-font-weight: bold;
+            --card-select: #00bfff; 
         }
 
         .disabled {
@@ -143,6 +144,19 @@
             text-transform: uppercase;
         }
 
+        /* Zvýraznění karty, na kterou hráč klikne */
+        .card.selected {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 4px var(--card-select) !important; /* Modrý rámeček */
+            z-index: 10;
+        }
+
+        /* Zvýraznění cílové karty (pokud se používá pro nápovědu/cíl) */
+        .target-highlight-strong {
+            box-shadow: 0 0 0 4px var(--card-select) !important; /* Modrý rámeček */
+            transform: scale(1.06);
+            z-index: 5;
+        }
 
 
         button {
@@ -292,16 +306,18 @@
             flex-shrink: 0;
         }
 
-        .overlay {
+.overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.95);
             display: none;
             flex-direction: column;
-            justify-content: center;
+            /* Změna: justify-content na flex-start + padding zajistí, 
+               že na malých displejích začne obsah nahoře a půjde odrolovat */
+            justify-content: center; 
             align-items: center;
             z-index: 100;
-            padding: 20px;
+            padding: 10px; /* Menší padding pro více místa na mobilu */
         }
 
         .overlay.active { display: flex; }
@@ -317,18 +333,43 @@
             padding: 20px;
             max-width: 450px;
             width: 100%;
+            
+            /* KLÍČOVÉ ÚPRAVY PRO RESPONZIVITU: */
+            max-height: 90vh;        /* Maximálně 90% výšky okna */
+            overflow-y: auto;        /* Zapne svislý posuvník při přetečení */
+            scrollbar-width: thin;   /* Elegantnější scrollbar (Firefox) */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
+
+        /* Vylepšení vzhledu posuvníku pro Chrome/Safari/Edge */
+        .help-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .help-content::-webkit-scrollbar-thumb {
+            background: var(--card-border);
+            border-radius: 10px;
+        }
+
         .help-content h2 { color: var(--highlight); text-align: center; margin-bottom: 15px; }
         .help-content p { margin-bottom: 10px; font-size: 0.9rem; line-height: 1.4; }
         
-        .help-mode-demo { display: flex; gap: 10px; margin: 15px 0; }
+        .help-mode-demo { 
+            display: flex; 
+            gap: 10px; 
+            margin: 15px 0; 
+            flex-shrink: 0; /* Zabrání smáčknutí boxů při nedostatku místa */
+        }
+
         .demo-box { 
-            flex: 1; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; 
-            text-align: center; border: 1px solid var(--card-border);
+            flex: 1; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 8px; 
+            padding: 10px; 
+            text-align: center; 
+            border: 1px solid var(--card-border);
         }
         .demo-box-title { color: var(--highlight); font-weight: bold; margin: 5px 0; }
         .demo-box-desc { font-size: 0.75rem; color: #aaa; }
-
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
@@ -368,7 +409,7 @@
         </div>
         
         <div class="level-display" id="levelBtn" onclick="toggleLevel()">
-            <div class="level-val" id="levelVal">3</div>
+            <div class="level-val" id="levelVal">5</div>
             <div class="level-text">Level</div>
         </div>
         <div class="level-display" id="levelBtnBot" onclick="toggleBotLevel()">
@@ -412,31 +453,60 @@
                 <div class="demo-box">
                     <div style="font-size: 2rem;">💠</div>
                     <div class="demo-box-title">TVAR</div>
-                    <div class="demo-box-desc">Skládej stejné tvary. Na barvě u tvých karet nezáleží.</div>
+                    <div class="demo-box-desc">Skládej stejné tvary. Na barvě nezáleží.</div>
                 </div>
                 <div class="demo-box">
                     <div style="font-size: 2rem;">🎨</div>
                     <div class="demo-box-title">BARVA</div>
-                    <div class="demo-box-desc">Skládej stejné barvy. Na tvaru u tvých karet nezáleží.</div>
+                    <div class="demo-box-desc">Skládej stejné barvy. Na tvaru nezáleží.</div>
                 </div>
             </div>
 
-            <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Herní režimy:</p>
-            <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 15px;">
-                <li>⌛ <strong>Solo:</strong> Odpočet času [1 = nejkratší]</li>
-                <li>🖥️ <strong>AI:</strong> hra proti AI [1 = nejsilnější]</li>
-                <li>⏱️ <strong>Time:</strong> Měří čas bez limitu</li>
-                            
-            </ul>
+            <div >
 
-            <p style="color: var(--highlight); font-weight: bold; margin-top: 15px;">Ovládání:</p>
-            <ul style="margin-left: 20px; font-size: 0.85rem; margin-bottom: 20px;">
-                <li><strong>1x klik:</strong> Označí kartu</li>
-                <li><strong>2x klik:</strong> Otočí kartu na druhou stranu</li>
-                <li><strong>Klik jinam:</strong> Prohodí označenou kartu s vybranou</li>
-            </ul>
+            <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; display: flex; gap: 15px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Režimy:</p>
+                    <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
+                        <li>⌛ <strong>SOLO:</strong> Odpočet času</li>
+                        <li>🖥️ <strong>BOT:</strong> Hra proti AI</li>
+                        <li>⏱️ <strong>TIME:</strong> Neomezená časomíra</li>
+                    </ul>
+                </div>
+                <div style="flex: 1;">
+                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Ovládání:</p>
+                    <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
+                        <li><strong>1x klik:</strong> Označit kartu</li>
+                        <li><strong>2x klik:</strong> Otočit kartu</li>
+                        <li><strong>Klik na jinou kartu:</strong> Prohodit s označenou kartou</li>
+                    </ul>
+                </div>
+            </div>
+                
+                <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.9rem; text-align: center; margin: 0 0 12px 0;">Barevná signalizace:</p>
+                    <div style="font-size: 0.8rem; margin-bottom: 8px;">
+                        <strong style="color: white;">BĚHEM HRY:</strong>
+                    </div>
+                    <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
+                        <li><span style="color: var(--card-select); font-weight: 900;">Modrý okraj karty:</span> Právě označená karta.</li>
+                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá statická časomíra:</span> Časový limit zvoleného levelu (SOLO).</li>
+                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá běžící časomíra:</span> Probíhající hra.</li>
+                    </ul>
+                    
+                    <div style="font-size: 0.8rem; margin: 12px 0 8px 0;">
+                        <strong style="color: white;">VYHODNOCENÍ UKONČENÉ HRY:</strong>
+                    </div>
+                    <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
+                        <li><span style="color: #4CAF50; font-weight: 900;">Zelená statická časomíra:</span> Výhra! Zobrazuje tvůj dosažený čas (BOT/TIME) nebo čas zbývající do vypršení limitu (SOLO).</li>
+                        <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Zobrazuje správné umístění karet dle vzoru.</li>
+                        <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.0s (SOLO/TIME) nebo čas BOTA.</li>
+                        <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</li>
+                    </ul>
+                </div>
+            </div>
 
-            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px;">Rozumím, zpět do hry</button>
+            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px; margin-top: 5px;">Rozumím, zpět do hry</button>
         </div>
     </div>
 
@@ -464,7 +534,7 @@
 	let lastFinalTime = "0.0";
 
 	// definice levelů solo režimu
-    let currentLevel = 3; 
+    let currentLevel = 5; 
     const timeLimits = { 
         1: 15, 2: 18, 3: 21, 4: 24, 5: 27, 6: 30, 7: 33, 8: 36, 9: 39
     };
