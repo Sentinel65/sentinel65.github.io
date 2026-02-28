@@ -757,7 +757,7 @@
         // Zobrazení času podle limitu daného levelu (za předpokladu, že používáš currentLevel)
         document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
     }
-    
+    resetVisuals();
     updateLevelButtons(); 
 }
 
@@ -805,6 +805,7 @@
             currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
             document.getElementById('levelVal').innerText = currentLevel;
             document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+            resetVisuals();
         }
     }
 
@@ -814,6 +815,7 @@
         botLevel++;
         if (botLevel > 8) botLevel = 1; 
         document.getElementById("botLevelVal").innerText = botLevel;
+        resetVisuals();
     }
 
 
@@ -866,6 +868,28 @@
     }
 
     document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
+}
+
+
+function resetVisuals() {
+    // 1. Reset časomíry (odstranění zelené/červené barvy)
+    const timerEl = document.getElementById('timerDisplay');
+    if (timerEl) {
+        timerEl.classList.remove('timer-win', 'timer-fail');
+        
+        // Okamžitá aktualizace čísla na displeji podle nově zvoleného režimu/levelu
+        if (gameMode === "solo") {
+            timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        } else {
+            timerEl.innerText = "0.0s";
+        }
+    }
+
+    // 2. Očištění karet v hrací matici od barev výhry/prohry
+    const coloredCards = document.querySelectorAll('.card-correct, .card-wrong');
+    coloredCards.forEach(card => {
+        card.classList.remove('card-correct', 'card-wrong');
+    });
 }
 
 
@@ -1191,14 +1215,14 @@ function endGame(isWin) {
         endIconEl.innerText = '🏆';
         document.getElementById('endMessage').innerText = 'Gratuluji';
         document.getElementById('finalTime').innerText =
-            `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
+            `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
         highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
     } else {
         playFailSound();
         endIconEl.innerText = '🤔';
         document.getElementById('endMessage').innerText = 'Čas vypršel';
         document.getElementById('finalTime').innerText =
-            `Level ${currentLevel} vyžaduje čas pod ${timeLimits[currentLevel]} s.`;
+            `Level ${currentLevel} limit ${timeLimits[currentLevel]}.0s překročen.`;
         highlightWrongCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
     }
 }
