@@ -426,7 +426,7 @@
         <button onclick="initGame()">Nová hra</button>
     </div>
 
-    <div id="botProgress" style="display:none; margin-top:6px;"></div>
+<div id="botProgress" style="display:none; margin-top: 10px; margin-bottom: 20px;"></div>
 
     <div class="game-container">
         <div class="board-wrapper">
@@ -502,6 +502,21 @@
                         <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Zobrazuje správné umístění karet dle vzoru.</li>
                         <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.0s (SOLO) nebo čas BOTA.</li>
                         <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</li>
+                        <li style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+                        <span style="color: #4ecca3; font-weight: bold;">Režim BOT (ukázka):</span>
+                        <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center;">
+                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 6px; text-align: center;">Zelená značí správně umístěné karty bota (4/9).</div>
+                    </li>
                     </ul>
                 </div>
             </div>
@@ -942,46 +957,49 @@
 
 
 function resetVisuals() {
-    // 1. Reset časomíry (odstranění zelené/červené barvy)
+    // 1. Časomíra
     const timerEl = document.getElementById('timerDisplay');
     if (timerEl) {
         timerEl.classList.remove('timer-win', 'timer-fail');
-        
-        // Okamžitá aktualizace čísla na displeji podle nově zvoleného režimu/levelu
-        if (gameMode === "solo") {
-            timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
-        } else {
-            timerEl.innerText = "0.0s";
-        }
+        timerEl.innerText = (gameMode === "solo") ? timeLimits[currentLevel].toFixed(1) + 's' : "0.0s";
     }
 
-    // 2. Očištění karet v hrací matici od barev výhry/prohry
-    const coloredCards = document.querySelectorAll('.card-correct, .card-wrong');
-    coloredCards.forEach(card => {
+    // 2. Karty
+    document.querySelectorAll('.card').forEach(card => {
         card.classList.remove('card-correct', 'card-wrong');
     });
+
+    // 3. Progress Bar - SCHOVAT VŽDY při resetu
+    const botBarContainer = document.getElementById("botProgress");
+    const botBarInner = document.getElementById("botProgressBar");
+
+    if (botBarInner) {
+        botBarInner.style.width = "0%";
+    }
+    if (botBarContainer) {
+        // Bar při resetu (změna v menu) schováme úplně, 
+        // i kdybychom byli v režimu BOT. Zapne ho až start hry.
+        botBarContainer.style.display = "none";
+    }
 }
 
 
-    function initGame() {
-    // Probuzení AudioContextu pro zvuky
+
+ function initGame() {
+    // 1. Probuzení AudioContextu
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
-    }
+    } // <--- TATO ZÁVORKA TI CHYBĚLA
 
-    // Vyčištění vizuálních chyb z minulé hry
-    document.querySelectorAll(".card-correct").forEach(el => el.classList.remove("card-correct"));
-    document.querySelectorAll(".card-wrong").forEach(el => el.classList.remove("card-wrong"));
-    botSolvedCount = 0;
-
-    // Pokud hra běží, tlačítko funguje jako "Zrušit"
+    // 2. Pokud hra běží, tlačítko funguje jako "Zrušit"
     if (gameActive) {
         stopGameAndReset();
-        document.getElementById("botProgress").style.display = "none";
-        clearInterval(botInterval);
-        clearInterval(timerInterval);
         return;
     }
+
+    // 3. Reset vizuálů (vyčistí bar, karty i časomíru)
+    resetVisuals();
+    botSolvedCount = 0;
 
     // Reset overlayů a stavu
     document.getElementById('winOverlay').classList.remove('active');
@@ -999,34 +1017,28 @@ function resetVisuals() {
     // Generování hracích ploch
     targetPattern = generateValidPattern();
     playArea = generateValidPlayArea();
-
     renderTargetGrid();
     renderPlayGrid();
 
-    // ČASOVAČ - Logika startu
+    // ČASOVAČ
     clearInterval(timerInterval);
     startTime = Date.now();
     
-    // Nastavení textu před prvním tiknutím intervalu
     const timerEl = document.getElementById('timerDisplay');
-    // Reset barvy časovače na žlutou
-    timerEl.classList.remove('timer-win', 'timer-fail');   // timerDisplay bude mít opět svou default žlutou barvu z CSS
+    timerEl.classList.remove('timer-win', 'timer-fail');
+    
     if (gameMode === "bot" || gameMode === "time") {
         timerEl.innerText = '0.0s';
     } else {
-        // Režim SOLO
         timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
     }
     
-    // Spuštění ticku každých 100ms
     timerInterval = setInterval(updateTimer, 100);
     
-    // Start bota, pokud jsme v bot módu
     if (gameMode === "bot") {
         startBotSimulation();
     }
 
-    // Změna textu hlavního tlačítka
     document.querySelector("button[onclick='initGame()']").innerText = "Zrušit hru";
 }
     
@@ -1039,6 +1051,9 @@ function resetVisuals() {
     document.getElementById('targetGrid').innerHTML = '';
     document.getElementById('playGrid').innerHTML = '';
     document.getElementById('modeDisplay').innerHTML = '<div class="mode-icon" style="font-size:0.8rem; padding:6px 0;">--</div>';
+
+    // ZAVOLÁME RESET, který schová progress bar i barvy
+    resetVisuals();
     
     // Správný reset časovače podle módu
     if (gameMode === "bot" || gameMode === "time") {
@@ -1213,7 +1228,7 @@ function endGame(isWin) {
     gameActive = false;
     clearInterval(timerInterval);
     clearInterval(botInterval);	
-    document.getElementById("botProgress").style.display = "none";
+    //document.getElementById("botProgress").style.display = "none";    //nechá svíti progress bar v režimu BOT pro vyhodnocení hry
 
     // RESET označené karty v hrací i vzorové mřížce
     selectedIndex = null;
