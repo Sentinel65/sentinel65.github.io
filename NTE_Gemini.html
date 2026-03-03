@@ -444,86 +444,105 @@
         [ 1x klik = označí ] [ 2x klik = otočí ] [ klik na jinou = prohodí ]
     </div>
 
-    <div class="overlay" id="helpOverlay">
-        <div class="help-content">
-            <h2>Jak hrát?</h2>
-            <p>Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou režimů:</p>
-            
-            <div class="help-mode-demo">
-                <div class="demo-box">
-                    <div style="font-size: 2rem;">💠</div>
-                    <div class="demo-box-title">TVAR</div>
-                    <div class="demo-box-desc">Skládej stejné tvary. Na barvě nezáleží.</div>
-                </div>
-                <div class="demo-box">
-                    <div style="font-size: 2rem;">🎨</div>
-                    <div class="demo-box-title">BARVA</div>
-                    <div class="demo-box-desc">Skládej stejné barvy. Na tvaru nezáleží.</div>
-                </div>
+<div class="overlay" id="helpOverlay">
+    <div class="help-content">
+        <h2>Jak hrát?</h2>
+        <p>Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou režimů:</p>
+        
+        <div class="help-mode-demo">
+            <div class="demo-box">
+                <div style="font-size: 2rem;">💠</div>
+                <div class="demo-box-title">TVAR</div>
+                <div class="demo-box-desc">Skládej stejné tvary. Na barvě nezáleží.</div>
             </div>
-
-            <div >
-
-            <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; display: flex; gap: 15px; margin-bottom: 15px;">
-                <div style="flex: 1;">
-                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Režimy:</p>
-                    <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
-                        <li>⌛ <strong>SOLO:</strong> Odpočet času</li>
-                        <li>🖥️ <strong>BOT:</strong> Hra proti AI</li>
-                        <li>⏱️ <strong>TIME:</strong> Neomezená časomíra</li>
-                    </ul>
-                </div>
-                <div style="flex: 1;">
-                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Ovládání:</p>
-                    <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
-                        <li><strong>1x klik:</strong> Označit kartu</li>
-                        <li><strong>2x klik:</strong> Otočit kartu</li>
-                        <li><strong>Klik na jinou kartu:</strong> Prohodit s označenou kartou</li>
-                    </ul>
-                </div>
+            <div class="demo-box">
+                <div style="font-size: 2rem;">🎨</div>
+                <div class="demo-box-title">BARVA</div>
+                <div class="demo-box-desc">Skládej stejné barvy. Na tvaru nezáleží.</div>
             </div>
-                
-                <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-                <p style="color: var(--highlight); font-weight: bold; font-size: 0.9rem; text-align: center; margin: 0 0 12px 0;">Barevná signalizace:</p>
-                    <div style="font-size: 0.8rem; margin-bottom: 8px;">
-                        <strong style="color: white;">BĚHEM HRY:</strong>
-                    </div>
-                    <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
-                        <li><span style="color: var(--card-select); font-weight: 900;">Modrý okraj karty:</span> Právě označená karta.</li>
-                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá statická časomíra:</span> Časový limit zvoleného levelu (SOLO).</li>
-                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá běžící časomíra:</span> Probíhající hra.</li>
-                    </ul>
-                    
-                    <div style="font-size: 0.8rem; margin: 12px 0 8px 0;">
-                        <strong style="color: white;">VYHODNOCENÍ UKONČENÉ HRY:</strong>
-                    </div>
-                    <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
-                        <li><span style="color: #4CAF50; font-weight: 900;">Zelená statická časomíra:</span> Výhra! Zobrazuje tvůj dosažený čas (BOT/TIME) nebo čas zbývající do vypršení limitu (SOLO).</li>
-                        <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Zobrazuje správné umístění karet dle vzoru.</li>
-                        <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.0s (SOLO) nebo čas BOTA.</li>
-                        <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</li>
-                        <li style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
-                        <span style="color: #4ecca3; font-weight: bold;">Režim BOT (ukázka):</span>
-                        <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center;">
-                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
-                            <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
-                        </div>
-                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 6px; text-align: center;">Zelená značí správně umístěné karty bota (4/9).</div>
-                    </li>
-                    </ul>
-                </div>
-            </div>
-
-            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px; margin-top: 5px;">Rozumím, zpět do hry</button>
         </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="margin-bottom: 12px;">
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">Na kartách je 6 druhů tvarů:</p>
+                <div style="display: flex; justify-content: space-around; align-items: center; height: 30px;">
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34"/></svg></div>
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><polygon points="50,18 85,82 15,82"/></svg></div>
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><rect x="22" y="22" width="56" height="56"/></svg></div>
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><polygon points="50,16 84,40 71,82 29,82 16,40"/></svg></div>
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><polygon points="50,14 82,32 82,68 50,86 18,68 18,32"/></svg></div>
+                    <div style="width: 19px; height: 19px; fill: none; stroke: white; stroke-width: 7;"><svg viewBox="0 0 100 100"><polygon points="50,14 61,40 88,40 66,57 75,84 50,68 25,84 34,57 12,40 39,40"/></svg></div>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">Na kartách je 6 druhů barev:</p>
+                <div style="display: flex; justify-content: space-around; align-items: center; height: 30px;">
+                    <div style="width: 23px; height: 23px; fill: #ff8c00;"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34"/></svg></div>
+                    <div style="width: 23px; height: 23px; fill: #800080;"><svg viewBox="0 0 100 100"><polygon points="50,18 85,82 15,82"/></svg></div>
+                    <div style="width: 23px; height: 23px; fill: #e6192B;"><svg viewBox="0 0 100 100"><rect x="22" y="22" width="56" height="56"/></svg></div>
+                    <div style="width: 23px; height: 23px; fill: #005b96;"><svg viewBox="0 0 100 100"><polygon points="50,16 84,40 71,82 29,82 16,40"/></svg></div>
+                    <div style="width: 23px; height: 23px; fill: #228b22;"><svg viewBox="0 0 100 100"><polygon points="50,14 82,32 82,68 50,86 18,68 18,32"/></svg></div>
+                    <div style="width: 23px; height: 23px; fill: #808080;"><svg viewBox="0 0 100 100"><polygon points="50,14 61,40 88,40 66,57 75,84 50,68 25,84 34,57 12,40 39,40"/></svg></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+            <div style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">Režimy:</p>
+                <ul style="list-style: none; font-size: 0.75rem; color: #ccc; padding-left: 5px;">
+                    <li style="margin-bottom: 4px;">⌛ <strong>SOLO:</strong> Časový limit - [LEVEL 1] nejkratší</li>
+                    <li style="margin-bottom: 4px;">🖥️ <strong>BOT:</strong> Hra proti AI - [LEVEL 1] nejrychlejší</li>
+                    <li>⏱️ <strong>TIME:</strong> Neomezená časomíra - trénink</li>
+                </ul>
+            </div>
+            <div>
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">Ovládání:</p>
+                <ul style="list-style: none; font-size: 0.75rem; color: #ccc; padding-left: 5px;">
+                    <li style="margin-bottom: 4px;"><strong>1x klik:</strong> Označit kartu</li>
+                    <li style="margin-bottom: 4px;"><strong>2x klik:</strong> Otočit kartu</li>
+                    <li><strong>Klik na jinou kartu:</strong> Prohodit s označenou kartou</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+            <p style="color: var(--highlight); font-weight: bold; font-size: 0.9rem; text-align: center; margin: 0 0 12px 0;">Barevná signalizace:</p>
+            <div style="font-size: 0.8rem; margin-bottom: 8px; color: white;">BĚHEM HRY:</div>
+            <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
+                <li><span style="color: var(--card-select); font-weight: 900;">Modrý okraj karty:</span> Právě označená karta.</li>
+                <li><span style="color: var(--highlight); font-weight: 900;">Žlutá statická časomíra:</span> Časový limit levelu (SOLO).</li>
+                <li><span style="color: var(--highlight); font-weight: 900;">Žlutá běžící časomíra:</span> Probíhající hra.</li>
+            </ul>
+            
+            <div style="font-size: 0.8rem; margin: 12px 0 8px 0; color: white;">VYHODNOCENÍ UKONČENÉ HRY:</div>
+            <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
+                <li><span style="color: #4CAF50; font-weight: 900;">Zelená statická časomíra:</span> Výhra! Zobrazuje tvůj dosažený čas (BOT/TIME) nebo čas zbývající do vypršení limitu (SOLO)</li>
+                <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Označuje správné umístění karet dle vzoru.</li>
+                <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.0s (SOLO) nebo čas (BOT).</li>
+                <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Označuje nesprávně umístěné karty oproti vzoru. </li>
+                <li style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+                    <span style="color: #4ecca3; font-weight: bold;">Režim BOT:</span>
+                    <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center;">
+                        <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                        <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
+                    </div>
+                    <div style="font-size: 0.65rem; color: #aaa; margin-top: 6px; text-align: center;">Zelená značí správně umístěné karty bota (4/9).</div>
+                </li>
+            </ul>
+        </div>
+
+        <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px; margin-top: 5px;">Rozumím, zpět do hry</button>
     </div>
+</div>
 
     <div class="overlay" id="winOverlay">
         <div class="end-icon" id="endIcon">🏆</div>
