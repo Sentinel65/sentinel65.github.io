@@ -422,12 +422,31 @@
             font-size: 0.85rem;
         }
 
-        /* Nastavení pevných šířek sloupců (celkem 100%) */
-        #statsOverlay th:nth-child(1), #statsOverlay td:nth-child(1) { width: 15%; text-align: center; } /* Režim */
-        #statsOverlay th:nth-child(2), #statsOverlay td:nth-child(2) { width: 15%; text-align: right; }  /* Swapy */
-        #statsOverlay th:nth-child(3), #statsOverlay td:nth-child(3) { width: 15%; text-align: right; }  /* Flipy */
-        #statsOverlay th:nth-child(4), #statsOverlay td:nth-child(4) { width: 20%; text-align: right; padding-right: 10px; } /* Celkem */
-        #statsOverlay th:nth-child(5), #statsOverlay td:nth-child(5) { width: 35%; text-align: right; }  /* Čas */
+        /* Sjednocení šířek sloupců S, F a Index pro obě tabulky */
+        #statsColor th:nth-child(2), #statsColor td:nth-child(2), /* Sloupec S */
+        #statsColor th:nth-child(3), #statsColor td:nth-child(3), /* Sloupec F */
+        #statsColor th:nth-child(4), #statsColor td:nth-child(4), /* Sloupec Index */
+        #statsShape th:nth-child(2), #statsShape td:nth-child(2),
+        #statsShape th:nth-child(3), #statsShape td:nth-child(3),
+        #statsShape th:nth-child(4), #statsShape td:nth-child(4) {
+            width: 60px;          /* Pevná šířka pro všechny tři sloupce */
+            text-align: right;    /* Zarovnání doprava */
+            padding-right: 10px;  /* Stejná mezera od pravé hrany sloupce */
+        }
+
+        /* Ostatní sloupce pro symetrii */
+        #statsColor th:nth-child(1), #statsShape th:nth-child(1) { width: 40px; }  /* R */
+        #statsColor th:nth-child(5), #statsShape th:nth-child(5) { width: 80px; }  /* Čas */
+
+        /* Zarovnání hlaviček tabulky stejně jako u dat */
+        #statsOverlay th {
+            text-align: right;
+            padding-right: 10px;
+        }
+        #statsOverlay th:first-child {
+            text-align: center;
+            padding-right: 0;
+        }
 
         #statsOverlay th {
             color: var(--highlight);
@@ -518,7 +537,7 @@
                     </table>
                 </div>
 
-                <hr style="border: 0; border-top: 1px solid #444; margin: 25px 0; display: block;">
+                <hr style="border: 0; border-top: 0px solid #444; margin: 25px 0; display: block;">
 
                 <div class="stats-column">
                     <h4 style="color: var(--card-select); margin-bottom: 20px; text-align: center; margin-top: 10px;">💠 TVAR</h4>
@@ -538,7 +557,7 @@
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid #333;">
+        <div style="display: flex; gap: 10px; padding-top: 10px; border-top: 0px solid #333;">
             <button onclick="toggleStats()" style="flex: 1; padding: 12px; cursor: pointer;">Zpět</button>
             <button onclick="clearStats()" style="flex: 1; padding: 12px; background: #444; font-size: 0.7rem; cursor: pointer;">Smazat</button>
         </div>
@@ -751,29 +770,41 @@
 
     // Funkce pro uložení výsledku
     function saveGameResult(type, time) {
-    // Penalizace: každý úkon přidá 0.5s k výslednému skóre
-    // Vzorec: Čistý čas + (počet pohybů * 0.5)
-    const movePenalty = 0.5;
-    const totalScore = parseFloat(time) + ((currentSwaps + currentFlips) * movePenalty);
+        const movePenalty = 0.5;
+        const totalScore = parseFloat(time) + ((currentSwaps + currentFlips) * movePenalty);
 
-    const newEntry = {
-        mode: modeMap[gameMode] || 'S',
-        swaps: currentSwaps,
-        flips: currentFlips,
-        time: parseFloat(time),
-        score: totalScore // Toto je teď naše hlavní hodnota pro řazení
-    };
+        const newEntry = {
+            mode: (typeof modeMap !== 'undefined' && modeMap[gameMode]) ? modeMap[gameMode] : 'S',
+            swaps: currentSwaps,
+            flips: currentFlips,
+            time: parseFloat(time),
+            score: totalScore
+        };
 
-    let allStats = JSON.parse(localStorage.getItem('extreme9Stats')) || { color: [], shape: [] };
-    
-    allStats[type].push(newEntry);
-    
-    // Řadíme vzestupně podle výsledného skóre (nižší je lepší)
-    allStats[type].sort((a, b) => a.score - b.score);
-    
-    allStats[type] = allStats[type].slice(0, 10);
-    localStorage.setItem('extreme9Stats', JSON.stringify(allStats));
-}
+        let allStats = JSON.parse(localStorage.getItem('extreme9Stats')) || { color: [], shape: [] };
+        if (!allStats[type]) allStats[type] = [];
+
+        // --- NOVÉ: Zjistíme, jestli se výsledek vejde do TOP 10 ---
+        let isTop10 = false;
+        if (allStats[type].length < 10) {
+            isTop10 = true; // Tabulka ještě není plná
+        } else {
+            const worstScore = allStats[type][9].score; // Skóre 10. místa
+            if (totalScore < worstScore) {
+                isTop10 = true; // Porazili jsme posledního
+            }
+        }
+
+        // Uložíme a seřadíme (zbytek zůstává stejný)
+        allStats[type].push(newEntry);
+        allStats[type].sort((a, b) => a.score - b.score);
+        allStats[type] = allStats[type].slice(0, 10);
+        
+        localStorage.setItem('extreme9Stats', JSON.stringify(allStats));
+
+        // Vrátíme informaci o tom, jestli to byl rekord
+        return isTop10; 
+    }
 
 
     // Funkce pro vykreslení tabulky
@@ -799,8 +830,8 @@
             
             row.innerHTML = `
                 <td style="text-align:center; font-weight:bold;">${entry.mode}</td>
-                <td style="text-align:right;">${entry.swaps}</td>
-                <td style="text-align:right;">${entry.flips}</td>
+                <td style="text-align:right; padding-right:10px;">${entry.swaps}</td>
+                <td style="text-align:right; padding-right:10px;">${entry.flips}</td>
                 <td style="text-align:right; font-weight:bold; color:var(--highlight); padding-right:10px;">${entry.score.toFixed(1)}</td>
                 <td style="text-align:right; font-family:monospace; color:#aaa;">${entry.time.toFixed(1)}s</td>
             `;
@@ -819,6 +850,58 @@
         }
     }
 
+
+    function showRecordNotification(isTop10) {
+    const toast = document.createElement('div');
+    // --- Základní pozicování ---
+    toast.style.position = 'fixed';
+    toast.style.top = '30px'; // Trochu níže od okraje
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%) translateY(-20px)'; // Startovní pozice pro animaci
+    
+    // --- NOVÉ: Rozměry a vzhled ---
+    toast.style.minWidth = '350px'; // Minimální šířka (bude delší)
+    toast.style.maxWidth = '90%';   // Pojistka pro malé mobily
+    toast.style.padding = '16px 30px'; // Větší vnitřní okraje
+    
+    toast.style.borderRadius = '10px';
+    toast.style.color = 'white';
+    toast.style.fontWeight = 'bold';
+    toast.style.fontSize = '0.90rem'; // Mírně zvětšené písmo
+    toast.style.zIndex = '9999';
+    toast.style.boxShadow = '0 6px 20px rgba(0,0,0,0.6)';
+    toast.style.textAlign = 'center';
+    
+    // --- Animace nástupu ---
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+    // --- Obsah a barva podle výsledku ---
+    if (isTop10) {
+        // Zelený gradient pro úspěch
+        toast.style.background = 'linear-gradient(135deg, #4ecca3, #2d926f)';
+        toast.innerHTML = '🏆 Paráda! Zapsáno do TOP 10.';
+    } else {
+        // Červený gradient pro neúspěch
+        toast.style.background = 'linear-gradient(135deg, #e74c3c, #af2c1d)';
+        toast.innerHTML = '🐌 Bohužel! Výsledek nestačí na TOP 10';
+    }
+
+    document.body.appendChild(toast);
+
+    // Krátké zpoždění pro spuštění animace nástupu
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)'; // Dojede na konečnou pozici
+    }, 10);
+
+    // Po 4 vteřinách štítek plynule zmizí (prodlouženo, protože je víc textu ke čtení)
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-20px)'; // Odjede nahoru
+        setTimeout(() => toast.remove(), 500); // Odstraní element z HTML
+    }, 4000);
+}
 
 
 
@@ -1444,34 +1527,41 @@
 
 
     function checkWinCondition() {
-        let isWin = true;
-        for (let i = 0; i < 9; i++) {
-            const currentSideData = playArea[i].isFlipped ? playArea[i].s1 : playArea[i].s0;
-            const targetData = targetPattern[i];
-            
-            if (mode === 'tvar') {
-                if (currentSideData.s !== targetData.s) isWin = false;
-            } else {
-                if (currentSideData.c !== targetData.c) isWin = false;
-            }
-        }
-
-        if (isWin) {
-            // POKUS o uložení statistik - pokud selže, hra se i tak ukončí
-            try {
-                const finalTime = (Date.now() - startTime) / 1000;
-                const statType = (mode === 'tvar') ? 'shape' : 'color';
-                
-                // Voláme ukládání (ověř si, že máš funkci saveGameResult vloženou ve skriptu)
-                saveGameResult(statType, finalTime);
-            } catch (error) {
-                console.error("Chyba při ukládání statistik. Hra se ale ukončí normálně. Detail:", error);
-            }
-            
-            // STANDARDNÍ UKONČENÍ HRY se zavolá VŽDY
-            endGame(true);
+    let isWin = true;
+    for (let i = 0; i < 9; i++) {
+        const currentSideData = playArea[i].isFlipped ? playArea[i].s1 : playArea[i].s0;
+        const targetData = targetPattern[i];
+        
+        if (mode === 'tvar') {
+            if (currentSideData.s !== targetData.s) isWin = false;
+        } else {
+            if (currentSideData.c !== targetData.c) isWin = false;
         }
     }
+
+    if (isWin) {
+        // POKUS o uložení statistik - pokud selže, hra se i tak ukončí
+        try {
+            const finalTime = (Date.now() - startTime) / 1000;
+            const statType = (mode === 'tvar') ? 'shape' : 'color';
+            
+            // 1. Voláme ukládání a zjistíme, jestli se výsledek dostal do TOP 10
+            const isTop10 = saveGameResult(statType, finalTime);
+            
+            // 2. Vykreslíme tabulku na pozadí, aby byla po otevření aktuální
+            if (typeof renderStats === 'function') renderStats();
+            
+            // 3. Zobrazíme hráči vizuální upozornění (zde se uplatní i tvůj soundEnabled z localStorage)
+            if (typeof showRecordNotification === 'function') showRecordNotification(isTop10);
+            
+        } catch (error) {
+            console.error("Chyba při ukládání statistik. Hra se ale ukončí normálně. Detail:", error);
+        }
+        
+        // STANDARDNÍ UKONČENÍ HRY se zavolá VŽDY
+        endGame(true);
+    }
+}
 
 
 
