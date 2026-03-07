@@ -114,6 +114,7 @@
             gap: 5px;
         }
 
+        /* Sjednocený styl pro obě tlačítka */
         .mode-display, .level-display {
             display: flex;
             flex-direction: column;
@@ -121,28 +122,85 @@
             justify-content: center;
             background: var(--card-border);
             border-radius: 8px;
+            
+            /* FIXNÍ ROZMĚRY - uprav si podle potřeby, aby se ti tam text vešel */
+            width: 60px;           /* Pevná šířka místo min-width */
+            height: 60px;          /* Pevná výška zajistí stejné pozadí */
+            
             padding: 5px;
-            min-width: 55px;
+            box-sizing: border-box; /* Zaručí, že padding nezvětší celkové rozměry */
+            border: 1px solid transparent; /* Aby i rámeček byl v základu stejný */
         }
 
-        .level-display, #gameModeBtn { cursor: pointer; border: 1px solid transparent; }
-        .level-display:active, #gameModeBtn:active { transform: scale(0.95); }
+        /* Interakce (zůstávají stejné, ale sjednocené pod třídy) */
+        .mode-display:active, .level-display:active { 
+            transform: scale(0.95); 
+        }
 
-        .mode-icon, .level-val {
-            font-size: 1.5rem;
+        /* Ikona a číslo levelu - teď už s rozdílnou velikostí pro optickou rovnováhu */
+        .mode-icon {
+            font-size: 1.0rem;      /* Menší ikona */
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .level-val {
+            font-size: 1.5rem;      /* Větší číslo */
             line-height: 1;
             font-weight: bold;
+            color: var(--level-color);
         }
 
-        .level-val { color: var(--level-color); }
-
-        .mode-text, .level-text {
+        /* Spodní texty (SOLO, TIME, LEVEL...) */
+        .mode-text {
             font-size: 0.55rem;
             font-weight: bold;
             color: #ccc;
-            margin-top: 2px;
+            margin-top: 7px;        /* Mezera mezi ikonou/číslem a popiskem */
+            
             text-transform: uppercase;
         }
+
+        .level-text {
+            font-size: 0.55rem;
+            font-weight: bold;
+            color: #ccc;
+            margin-top: 1px;        /* Mezera mezi ikonou/číslem a popiskem */
+            text-transform: uppercase;
+        }
+
+
+        /* Třída pro hlavní tlačítko (Nová hra / Zrušit) */
+        .main-action-btn {
+            /* Resetuje to, co mu vnutily globální styly pro 'button' */
+            background-color: var(--accent); !important; 
+            color: inherit !important;
+            border: 1px solid transparent !important;
+            padding: 5px !important;
+            font-size: inherit !important;
+            cursor: pointer;
+            
+            /* Vlastnosti, aby to vypadalo jako LEVEL a REŽIM */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px !important;
+            
+            /* Výška MUSÍ být stejná jako u ostatních */
+            height: 60px;
+            
+            /* Šířka - uprav podle toho, kolik tam potřebuješ mít textu */
+            width: 60px; /* Nebo min-width: 100px, pokud se to nevejde */
+            box-sizing: border-box;
+        }
+
+        /* Animace kliknutí pro hlavní tlačítko */
+        .main-action-btn:active {
+            transform: scale(0.95);
+        }
+
+
 
         /* Zvýraznění karty, na kterou hráč klikne */
         .card.selected {
@@ -158,19 +216,6 @@
             z-index: 5;
         }
 
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        button:active { transform: scale(0.95); }
 
         .game-container {
             display: flex;
@@ -305,6 +350,21 @@
             padding-bottom: 5px;
             flex-shrink: 0;
         }
+
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        button:active { transform: scale(0.95); }
+
 
         .overlay {
             position: fixed;
@@ -459,6 +519,9 @@
             padding: 4px 0;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
+
+
+
     </style>
 </head>
 <body>
@@ -486,8 +549,8 @@
             <div class="mode-text" id="gameModeText">Solo</div>
         </div>
 
-        <div class="timer" id="timerDisplay">20.0s</div>
-        <button onclick="initGame()">Nová hra</button>
+        <div class="timer" id="timerDisplay">20.00s</div>
+        <button class="main-action-btn" onclick="initGame()"><span class="mode-text">Nová hra/span></button>
     </div>
 
 <div id="botProgress" style="display:none; margin-top: 10px; margin-bottom: 20px;"></div>
@@ -624,7 +687,7 @@
                     <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
                         <li><span style="color: #4CAF50; font-weight: 900;">Zelená statická časomíra:</span> Výhra! Zobrazuje tvůj dosažený čas (BOT/TIME) nebo čas zbývající do vypršení limitu (SOLO).</li>
                         <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Zobrazuje správné umístění karet dle vzoru.</li>
-                        <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.0s (SOLO) nebo čas BOTA.</li>
+                        <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.00s (SOLO) nebo čas BOTA.</li>
                         <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</li>
                         <li style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
                         <span style="color: #4ecca3; font-weight: bold;">Režim BOT (ukázka):</span>
@@ -723,7 +786,7 @@
     let startTime = 0;
     let gameActive = false;
     let soundEnabled = localStorage.getItem('soundEnabled') !== 'false'; // (Vrací true, pokud v paměti není 'false')
-	let lastFinalTime = "0.0";
+	let lastFinalTime = "0.00";
     let currentSwaps = 0;
     let currentFlips = 0;   // Nezapomeň tyto dvě proměnné vynulovat v funkci initGame()!
 
@@ -770,47 +833,54 @@
 
     // Funkce pro uložení výsledku
     function saveGameResult(type, time) {
-        const movePenalty = 0.5;
-        const totalScore = parseFloat(time) + ((currentSwaps + currentFlips) * movePenalty);
+    const movePenalty = 0.5;
+    const totalScore = Math.round((parseFloat(time) + ((currentSwaps + currentFlips) * movePenalty)) * 1000) / 1000;
 
-        const newEntry = {
-            mode: (typeof modeMap !== 'undefined' && modeMap[gameMode]) ? modeMap[gameMode] : 'S',
-            swaps: currentSwaps,
-            flips: currentFlips,
-            time: parseFloat(time),
-            score: totalScore
-        };
+    const newEntry = {
+        mode: (typeof modeMap !== 'undefined' && modeMap[gameMode]) ? modeMap[gameMode] : 'S',
+        swaps: currentSwaps,
+        flips: currentFlips,
+        time: time,
+        score: totalScore,
+        timestamp: Date.now()
+    };
 
-        let allStats = JSON.parse(localStorage.getItem('extreme9Stats')) || { color: [], shape: [] };
-        if (!allStats[type]) allStats[type] = [];
+    let allStats = JSON.parse(localStorage.getItem('extreme9Stats')) || { color: [], shape: [] };
+    if (!allStats[type]) allStats[type] = [];
 
-        // --- NOVÉ: Zjistíme, jestli se výsledek vejde do TOP 10 ---
-        let isTop10 = false;
-        if (allStats[type].length < 10) {
-            isTop10 = true; // Tabulka ještě není plná
-        } else {
-            const worstScore = allStats[type][9].score; // Skóre 10. místa
-            if (totalScore < worstScore) {
-                isTop10 = true; // Porazili jsme posledního
-            }
-        }
+    // 1. Nejdřív zjistíme, jestli je to rekord (Top 10)
+    let isTop10 = false;
+    if (allStats[type].length < 10 || totalScore < allStats[type][allStats[type].length - 1].score) {
+        isTop10 = true;
+    }
 
-        // Uložíme a seřadíme (zbytek zůstává stejný)
+    // 2. Pokud je to Top 10, uložíme data i "zelenou značku"
+    if (isTop10) {
         allStats[type].push(newEntry);
         allStats[type].sort((a, b) => a.score - b.score);
         allStats[type] = allStats[type].slice(0, 10);
         
+        // TADY JE TA ZMĚNA: Značku ukládáme jen při zápisu do tabulky
+        localStorage.setItem('extreme9LastWin', newEntry.timestamp);
         localStorage.setItem('extreme9Stats', JSON.stringify(allStats));
-
-        // Vrátíme informaci o tom, jestli to byl rekord
-        return isTop10; 
+        
+        console.log("Nový rekord zapsán a nasvícen:", newEntry);
+    } else {
+        console.log("Výhra, ale nebyl to rekord. V tabulce zůstává svítit předchozí úspěch.");
     }
+
+    return isTop10; 
+}
 
 
     // Funkce pro vykreslení tabulky
     function renderStats() {
     const allStats = JSON.parse(localStorage.getItem('extreme9Stats')) || { color: [], shape: [] };
     const tables = [{ key: 'color', id: 'statsColor' }, { key: 'shape', id: 'statsShape' }];
+    const now = Date.now(); 
+
+    // Načteme timestamp úplně poslední hry a převedeme na číslo pro přesné porovnání
+    const lastWinTimestamp = Number(localStorage.getItem('extreme9LastWin'));
 
     tables.forEach(tableInfo => {
         const tbody = document.querySelector(`#${tableInfo.id} tbody`);
@@ -826,14 +896,27 @@
 
         data.forEach((entry, index) => {
             const row = document.createElement('tr');
-            if (index === 0) row.style.color = "#ffd700"; 
+            
+            // --- KLÍČOVÁ ZMĚNA ---
+            // Zelená bude jen pokud se timestamp PŘESNĚ shoduje s poslední výhrou
+            // poslední záznam v TOP 0 bude svítit do té doby, dokud ho neřepíše jiný rekord do TOP 10
+            const isLatestWin = entry.timestamp && 
+                               (Number(entry.timestamp) === lastWinTimestamp);
+            
+            const timeColor = isLatestWin ? "#90ee90" : "#aaa";
+            const timeWeight = isLatestWin ? "bold" : "normal";
+
+            // Zlatá pro první místo zůstává
+            if (index === 0) row.style.color = "#ffd700";
             
             row.innerHTML = `
                 <td style="text-align:center; font-weight:bold;">${entry.mode}</td>
                 <td style="text-align:right; padding-right:10px;">${entry.swaps}</td>
                 <td style="text-align:right; padding-right:10px;">${entry.flips}</td>
-                <td style="text-align:right; font-weight:bold; color:var(--highlight); padding-right:10px;">${entry.score.toFixed(1)}</td>
-                <td style="text-align:right; font-family:monospace; color:#aaa;">${entry.time.toFixed(1)}s</td>
+                <td style="text-align:right; font-weight:bold; color:var(--highlight); padding-right:10px;">${entry.score.toFixed(2)}</td>
+                <td style="text-align:right; font-family:monospace; color:${timeColor}; font-weight:${timeWeight}; padding-right:10px;">
+                    ${entry.time.toFixed(2)}s
+                </td>
             `;
             tbody.appendChild(row);
         });
@@ -1163,14 +1246,14 @@
             gameMode = "bot";
             document.getElementById('gameModeIcon').innerText = "🖥️";
             document.getElementById('gameModeText').innerText = "Bot";
-            document.getElementById('timerDisplay').innerText = "0.0s"; 
+            document.getElementById('timerDisplay').innerText = "0.00s"; 
             
         } else if (gameMode === "bot") {
             // Změna na TIME
             gameMode = "time";
             document.getElementById('gameModeIcon').innerText = "⏱️";
             document.getElementById('gameModeText').innerText = "Time";
-            document.getElementById('timerDisplay').innerText = "0.0s"; 
+            document.getElementById('timerDisplay').innerText = "0.00s"; 
             
         } else {
             // Změna zpět na SOLO
@@ -1178,7 +1261,7 @@
             document.getElementById('gameModeIcon').innerText = "⌛";
             document.getElementById('gameModeText').innerText = "Solo";
             // Zobrazení času podle limitu daného levelu (za předpokladu, že používáš currentLevel)
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(2) + 's';
         }
         resetVisuals();
         updateLevelButtons(); 
@@ -1227,7 +1310,7 @@
         if (!gameActive) {
             currentLevel = currentLevel === 9 ? 1 : currentLevel + 1;
             document.getElementById('levelVal').innerText = currentLevel;
-            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+            document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(2) + 's';
             resetVisuals();
         }
     }
@@ -1256,9 +1339,9 @@
     if (!playArea || playArea.length === 0) {
         // Nastavíme jen výchozí čas a text tlačítka
         if (gameMode === "solo") {
-            timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+            timerEl.innerText = timeLimits[currentLevel].toFixed(2) + 's';
         } else {
-            timerEl.innerText = "0.0s";
+            timerEl.innerText = "0.00s";
         }
         document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
         return; 
@@ -1281,10 +1364,10 @@
         if (gameMode === "bot") {
             // Pokud jsi hrál proti botovi, ukáže se jeho cílový čas
             // (předpokládám, že proměnná se u tebe jmenuje botFinishTime)
-            timerEl.innerText = botFinishTime.toFixed(1) + "s";
+            timerEl.innerText = botFinishTime.toFixed(2) + "s";
         } else {
-            // Pro režimy Solo a Time se ukáže 0.0s
-            timerEl.innerText = "0.0s";
+            // Pro režimy Solo a Time se ukáže 0.00s
+            timerEl.innerText = "0.00s";
         }
         
         timerEl.classList.add('timer-fail');
@@ -1299,7 +1382,7 @@
         const timerEl = document.getElementById('timerDisplay');
         if (timerEl) {
             timerEl.classList.remove('timer-win', 'timer-fail');
-            timerEl.innerText = (gameMode === "solo") ? timeLimits[currentLevel].toFixed(1) + 's' : "0.0s";
+            timerEl.innerText = (gameMode === "solo") ? timeLimits[currentLevel].toFixed(2) + 's' : "0.00s";
         }
 
         // 2. Karty
@@ -1368,9 +1451,9 @@
         timerEl.classList.remove('timer-win', 'timer-fail');
         
         if (gameMode === "bot" || gameMode === "time") {
-            timerEl.innerText = '0.0s';
+            timerEl.innerText = '0.00s';
         } else {
-            timerEl.innerText = timeLimits[currentLevel].toFixed(1) + 's';
+            timerEl.innerText = timeLimits[currentLevel].toFixed(2) + 's';
         }
         
         timerInterval = setInterval(updateTimer, 100);
@@ -1398,10 +1481,10 @@
     // Správný reset časovače podle módu
     if (gameMode === "bot" || gameMode === "time") {
         // V těchto módech vracíme na nulu
-        document.getElementById('timerDisplay').innerText = '0.0s';
+        document.getElementById('timerDisplay').innerText = '0.00s';
     } else {
         // V Solo módu vracíme výchozí limit levelu
-        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(1) + 's';
+        document.getElementById('timerDisplay').innerText = timeLimits[currentLevel].toFixed(2) + 's';
     }
     
     document.querySelector("button[onclick='initGame()']").innerText = "Nová hra";
@@ -1540,25 +1623,27 @@
     }
 
     if (isWin) {
-        // POKUS o uložení statistik - pokud selže, hra se i tak ukončí
+        clearInterval(timerInterval); // Okamžitě zastavíme odpočet
+        const finalTimeRaw = (Date.now() - startTime) / 1000;
+        
+        // --- OPRAVA: Pevné zaokrouhlení na 2 desetinná místa jako číslo ---
+        const finalTime = Number(finalTimeRaw.toFixed(2)); 
+
+        const timerDisp = document.getElementById('timerDisplay');
+        if (timerDisp) timerDisp.innerText = finalTime.toFixed(2) + "s";
+
         try {
-            const finalTime = (Date.now() - startTime) / 1000;
             const statType = (mode === 'tvar') ? 'shape' : 'color';
-            
-            // 1. Voláme ukládání a zjistíme, jestli se výsledek dostal do TOP 10
+            // Do ukládání už jde oříznutý čas
             const isTop10 = saveGameResult(statType, finalTime);
             
-            // 2. Vykreslíme tabulku na pozadí, aby byla po otevření aktuální
             if (typeof renderStats === 'function') renderStats();
-            
-            // 3. Zobrazíme hráči vizuální upozornění (zde se uplatní i tvůj soundEnabled z localStorage)
             if (typeof showRecordNotification === 'function') showRecordNotification(isTop10);
             
         } catch (error) {
             console.error("Chyba při ukládání statistik. Hra se ale ukončí normálně. Detail:", error);
         }
         
-        // STANDARDNÍ UKONČENÍ HRY se zavolá VŽDY
         endGame(true);
     }
 }
@@ -1571,47 +1656,53 @@
 
     const elapsed = (Date.now() - startTime) / 1000;
 
-    // Režimy, které počítají čas od 0 nahoru
+    // Režimy, které počítají čas od 0 nahoru (BOT, TIME)
     if (gameMode === "bot" || gameMode === "time") {
-        document.getElementById('timerDisplay').innerText = elapsed.toFixed(1) + "s";
+        document.getElementById('timerDisplay').innerText = elapsed.toFixed(2) + "s";
         return; 
     }
 
     // Režim SOLO - odpočet dolů
     const remaining = timeLimits[currentLevel] - elapsed;
+    
     if (remaining <= 0) {
-        document.getElementById('timerDisplay').innerText = '0.0s';
+        document.getElementById('timerDisplay').innerText = '0.00s'; // Sjednoceno na 2 místa
         clearInterval(timerInterval);
         endGame(false); // Prohra na čas
     } else {
-        document.getElementById('timerDisplay').innerText = remaining.toFixed(1) + 's';
+        // Zobrazení zbývajícího času na dvě desetinná místa
+        document.getElementById('timerDisplay').innerText = remaining.toFixed(2) + 's';
     }
 }
 
 
     function endGame(isWin) {
-        if (!gameActive) return;
+    if (!gameActive) return;
 
-        gameActive = false;
-        clearInterval(timerInterval);
-        clearInterval(botInterval);	
-        //document.getElementById("botProgress").style.display = "none";    //nechá svíti progress bar v režimu BOT pro vyhodnocení hry
+    gameActive = false;
+    clearInterval(timerInterval);
+    clearInterval(botInterval);	
 
-        // RESET označené karty v hrací i vzorové mřížce
-        selectedIndex = null;
-        renderPlayGrid();
+    selectedIndex = null;
+    renderPlayGrid();
 
-        const targetCards = document.querySelectorAll('#targetGrid .card');
-        targetCards.forEach(card => card.classList.remove('target-highlight-strong'));
-        renderTargetGrid();
+    const targetCards = document.querySelectorAll('#targetGrid .card');
+    targetCards.forEach(card => card.classList.remove('target-highlight-strong'));
+    renderTargetGrid();
 
-        const playerTime = (Date.now() - startTime) / 1000;
-        lastFinalTime = playerTime.toFixed(1); // Uložíme si čas pro pozdější zobrazenít playerTime = (Date.now() - startTime) / 1000;
-        const endIconEl = document.getElementById('endIcon');
-        const winOverlayEl = document.getElementById('winOverlay');
+    // --- OPRAVA: Nebudeme znovu volat Date.now() ---
+    // Čas vezmeme rovnou z displeje, který už byl v checkWinCondition přesně zmražen
+    const timerText = document.getElementById('timerDisplay').innerText.replace('s', '');
+    const playerTime = parseFloat(timerText) || 0;
+    lastFinalTime = playerTime.toFixed(2); 
 
-        winOverlayEl.classList.add('active');
-        endIconEl.classList.add('pulse-animation');
+    const endIconEl = document.getElementById('endIcon');
+    const winOverlayEl = document.getElementById('winOverlay');
+
+    winOverlayEl.classList.add('active');
+    endIconEl.classList.add('pulse-animation');
+
+    // ... (Zbytek funkce s if (gameMode === "bot") atd. zůstává naprosto stejný) ...
 
 
         // ================= BOT režim =================
@@ -1623,14 +1714,14 @@
                 playWinSound();
                 document.getElementById('endMessage').innerText = "Gratuluji";
                 document.getElementById('finalTime').innerText =
-                    `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(1)} s`;
+                    `Level ${botLevel} - tvůj čas: ${playerTime.toFixed(2)} s`;
                 endIconEl.innerText = "🏆";
                 highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
             } else {
                 playFailSound();
                 document.getElementById('endMessage').innerText = "Bot vyhrál";
                 document.getElementById('finalTime').innerText =
-                    `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(1)} s`;
+                    `Level ${botLevel} - jeho čas: ${botFinishTime.toFixed(2)} s`;
                 endIconEl.innerText = "🤔";
                 highlightWrongCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
             }
@@ -1646,7 +1737,7 @@
                 endIconEl.innerText = '🏆';
                 document.getElementById('endMessage').innerText = 'Gratuluji';
                 document.getElementById('finalTime').innerText =
-                    `Tvůj čas: ${playerTime.toFixed(1)} s`;
+                    `Tvůj čas: ${playerTime.toFixed(2)} s`;
                 highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
             } else {
                 // TIME mód prakticky nemá fail,
@@ -1655,7 +1746,7 @@
                 endIconEl.innerText = '🤔';
                 document.getElementById('endMessage').innerText = 'Nedokončeno';
                 document.getElementById('finalTime').innerText =
-                    `Aktuální čas: ${playerTime.toFixed(1)} s`;
+                    `Aktuální čas: ${playerTime.toFixed(2)} s`;
             }
             return;
         }
@@ -1667,14 +1758,14 @@
             endIconEl.innerText = '🏆';
             document.getElementById('endMessage').innerText = 'Gratuluji';
             document.getElementById('finalTime').innerText =
-                `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(1)}s`;
+                `Level ${currentLevel} - tvůj čas: ${playerTime.toFixed(2)}s`;
             highlightAllCorrectCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty zeleně
         } else {
             playFailSound();
             endIconEl.innerText = '🤔';
             document.getElementById('endMessage').innerText = 'Čas vypršel';
             document.getElementById('finalTime').innerText =
-                `Level ${currentLevel} limit ${timeLimits[currentLevel]}.0s vyčerpán.`;
+                `Level ${currentLevel} limit ${timeLimits[currentLevel]}.00s vyčerpán.`;
             highlightWrongCards(); // <--- po kliknutí na tlačítko "Zpět na výběr hry" označí karty, které nesouhlasí se vzorem červeně
         }
     }
