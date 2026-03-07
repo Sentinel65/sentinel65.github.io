@@ -577,7 +577,7 @@
         
         <span onclick="toggleStats()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #888; line-height: 1;">&times;</span>
 
-        <h2>Statistiky hry</h2>
+        <h2>Statistiky výher</h2>
         <p style="font-size: 0.8rem; color: #ddd; margin-bottom: 15px; background: rgba(78, 204, 163, 0.1); padding: 8px; border-radius: 5px; border-left: 3px solid #4ecca3;">
     <strong>Pořadí:</strong> Rozhoduje nejnižší <strong>Index</strong> (Tvůj čas + 0.5s za každý úkon swaps nebo flips).
 </p>
@@ -741,7 +741,11 @@
                     </li>
                     <li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
-                        <span>V každé tabulce je zobrazeno <strong>10 nejlepšch</strong> výsledků.</span>
+                        <span>V každé tabulce je zobrazeno <strong>10 nejlepších</strong> výsledků.</span>
+                    </li>
+                    <li style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span> 
+                        <span>Poslední zápis v tabulce TOP 10 je označen <strong ><span style="color: #90ee90;">zelenou barvou </span></strong>času.</span>
                     </li>
                 </ul>
             </div>
@@ -899,7 +903,7 @@
             
             // --- KLÍČOVÁ ZMĚNA ---
             // Zelená bude jen pokud se timestamp PŘESNĚ shoduje s poslední výhrou
-            // poslední záznam v TOP 0 bude svítit do té doby, dokud ho neřepíše jiný rekord do TOP 10
+            // poslední záznam v TOP 0 bude svítit do té doby, dokud ho nepřepíše jiný rekord do TOP 10
             const isLatestWin = entry.timestamp && 
                                (Number(entry.timestamp) === lastWinTimestamp);
             
