@@ -513,12 +513,17 @@
             border-bottom: 2px solid #444;
             padding-bottom: 5px;
             font-family: sans-serif; /* Záhlaví může zůstat normálním písmem */
+            padding: 4px 6px;
+			line-height: 1.4;
         }
 
         #statsOverlay td {
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 4px 6px;
+			line-height: 1.4;
         }
+		.stats-tables-wrapper{
+		display:block !important;
+		}
 
 
 
@@ -573,7 +578,7 @@
 
 
 <div class="overlay" id="statsOverlay">
-    <div class="help-content" style="max-width: 500px; position: relative; display: flex; flex-direction: column; max-height: 85vh;">
+    <div id="statsCaptureArea" class="help-content" style="max-width: 500px; position: relative; display: flex; flex-direction: column; max-height: 85vh;">
         
         <span onclick="toggleStats()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #888; line-height: 1;">&times;</span>
 
@@ -622,6 +627,9 @@
 
         <div style="display: flex; gap: 10px; padding-top: 10px; border-top: 0px solid #333;">
             <button onclick="toggleStats()" style="flex: 1; padding: 12px; cursor: pointer;">Zpět</button>
+			<button onclick="downloadStatsVanilla()" data-i18n="saveImgBtn" style="flex: 1; padding: 12px; background: #444;  cursor: pointer;">
+    <span>&#10148;</span>    
+</button>
             <button onclick="clearStats()" style="flex: 1; padding: 12px; background: #444; font-size: 0.7rem; cursor: pointer;">Smazat</button>
         </div>
     </div>
@@ -747,6 +755,14 @@
                         <span>✅</span> 
                         <span>Poslední zápis v tabulce TOP 10 je označen <strong ><span style="color: #90ee90;">zelenou barvou </span></strong>času.</span>
                     </li>
+					<li style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span> 
+                        <span><strong >Tlačítko &#10148;</strong> uloží screenshot statistik.</span>
+                    </li>
+					<li style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span> 
+                        <span><strong >Tlačítko "Smazat"</strong> vymaže data statistik.</span>
+                    </li>                    
                 </ul>
             </div>
 
@@ -811,6 +827,193 @@
         7: 2.5,
         8: 2.8    // velmi pomalý
     };
+
+
+
+
+// ======================================================
+// GENEROVÁNÍ TABULKY STATISTIKY DO OBRÁZKU PRO SDÍLENÍ
+// ======================================================
+
+function downloadStatsVanilla() {
+    // -----------------------------------------
+    // 1. Timestamp pro název souboru
+    // -----------------------------------------
+    const now = new Date();
+    const timestamp = now.getFullYear()
+                    + ("0"+(now.getMonth()+1)).slice(-2)
+                    + ("0"+now.getDate()).slice(-2)
+                    + "_"
+                    + ("0"+now.getHours()).slice(-2)
+                    + ("0"+now.getMinutes()).slice(-2)
+                    + ("0"+now.getSeconds()).slice(-2);
+    const fileName = `NineTiles_Stats_${timestamp}.png`;
+
+    const target = document.getElementById('statsCaptureArea');
+    if (!target) return;
+
+    // -----------------------------------------
+    // 2. Klonujeme DOM (originál necháme nedotčený)
+    // -----------------------------------------
+    const clone = target.cloneNode(true);
+
+    // -----------------------------------------
+    // 2b. Přidání čar do tabulek
+    // -----------------------------------------
+    const tables = clone.querySelectorAll("table");
+    tables.forEach(table => {
+        // silná čára pod hlavičkou
+        const headerCells = table.querySelectorAll("thead th");
+        headerCells.forEach(th => {
+            th.style.borderBottom = "2px solid #444";
+            th.style.paddingBottom = "6px";
+        });
+        // tenké čáry mezi řádky
+        const rows = table.querySelectorAll("tbody tr");
+        rows.forEach(tr => {
+            tr.style.borderBottom = "1px solid rgba(255,255,255,0.5)";
+        });
+    });
+
+    // -----------------------------------------
+    // 3. Zapíšeme skutečné CSS barvy a fonty přímo do elementů
+    // -----------------------------------------
+    const originalElements = target.querySelectorAll('*');
+    const clonedElements = clone.querySelectorAll('*');
+
+    originalElements.forEach((el, i) => {
+        const style = getComputedStyle(el);
+        const cloneEl = clonedElements[i];
+
+        cloneEl.style.color = style.color;
+        cloneEl.style.backgroundColor = style.backgroundColor;
+        cloneEl.style.borderColor = style.borderColor;
+
+        cloneEl.style.fontFamily = style.fontFamily;
+        cloneEl.style.fontSize = style.fontSize;
+        cloneEl.style.fontVariantNumeric = "tabular-nums";
+    });
+
+    // -----------------------------------------
+    // 4. Proměnné CSS (barvy)
+    // -----------------------------------------
+    const rootStyle = getComputedStyle(document.documentElement);
+    const cardSelectColor = rootStyle.getPropertyValue('--card-select').trim() || '#4ecca3';
+    const highlightColor = rootStyle.getPropertyValue('--highlight').trim() || '#ffd166';
+
+    // -----------------------------------------
+    // 5. Získání CSS stylů
+    // -----------------------------------------
+    let cssStyles = "";
+    for (const sheet of document.styleSheets) {
+        try {
+            const rules = sheet.cssRules;
+            if (!rules) continue;
+            for (const rule of rules) {
+                if (rule.cssText.includes('url(') && rule.cssText.includes('http')) continue;
+                cssStyles += rule.cssText;
+            }
+        } catch (e) {}
+    }
+
+    // -----------------------------------------
+    // 6. Otevření scrollu
+    // -----------------------------------------
+    const scrollArea = target.querySelector('.stats-scroll-area');
+    let originalOverflow = "", originalMaxHeight = "";
+    if (scrollArea) {
+        originalOverflow = scrollArea.style.overflow;
+        originalMaxHeight = scrollArea.style.maxHeight;
+        scrollArea.style.overflow = "visible";
+        scrollArea.style.maxHeight = "none";
+    }
+
+    const width = target.scrollWidth;
+    const height = target.scrollHeight;
+
+    if (scrollArea) {
+        scrollArea.style.overflow = originalOverflow;
+        scrollArea.style.maxHeight = originalMaxHeight;
+    }
+
+    const htmlContent = new XMLSerializer().serializeToString(clone);
+
+    // -----------------------------------------
+    // 7. SVG export
+    // -----------------------------------------
+    const svgData = `
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="${width}" height="${height}">
+      <foreignObject width="100%" height="100%">
+        <div xmlns="http://www.w3.org/1999/xhtml">
+          <style>
+            ${cssStyles}
+
+            :root{
+              --card-select:${cardSelectColor};
+              --highlight:${highlightColor};
+            }
+
+            #statsCaptureArea{
+              display:flex!important;
+              flex-direction:column!important;
+              max-height:none!important;
+              height:auto!important;
+              width:${width}px!important;
+              margin:0!important;
+              background:#1a1a1a!important;
+            }
+
+            /* Vycentrování tabulek pod sebou */
+            #statsCaptureArea .stats-tables-wrapper {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              gap: 25px !important;
+              width: 100% !important;
+            }
+
+            .stats-scroll-area{
+              overflow:visible!important;
+              height:auto!important;
+            }
+          </style>
+
+          ${htmlContent}
+        </div>
+      </foreignObject>
+    </svg>
+    `;
+
+    // -----------------------------------------
+    // 8. Canvas render s optimalizací pro menší PNG
+    // -----------------------------------------
+    const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+
+    const scale =  2;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    img.onload = function () {
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0);
+
+        const pngUrl = canvas.toDataURL("image/png");
+
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = pngUrl;
+        link.click();
+    };
+
+    img.src = "data:image/svg+xml;base64," + svgBase64;
+}
+
 
 
 
