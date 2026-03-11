@@ -640,19 +640,19 @@
     <div class="overlay" id="helpOverlay">
         <div class="help-content" style="max-width: 500px; position: relative; display: flex; flex-direction: column; max-height: 85vh;">
 <span onclick="toggleHelp()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #888; line-height: 1;">&times;</span>
-            <h2>Jak hrát?</h2>
-            <p>Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou režimů:</p>
+            <h2 data-i18n="titleHelp">Jak hrát?</h2>
+            <p data-i18n="titleNoticeHelp">Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou typů:</p>
             
             <div class="help-mode-demo">
                 <div class="demo-box">
                     <div style="font-size: 2rem;">💠</div>
                     <div class="demo-box-title" data-i18n="shapeModeHelp">TVAR</div>
-                    <div class="demo-box-desc">Skládej stejné tvary. Na barvě nezáleží.</div>
+                    <div class="demo-box-desc" data-i18n="modeShapeHelp">Skládej stejné tvary. Na barvě nezáleží.</div>
                 </div>
                 <div class="demo-box">
                     <div style="font-size: 2rem;">🎨</div>
                     <div class="demo-box-title" data-i18n="colorModeHelp">BARVA</div>
-                    <div class="demo-box-desc">Skládej stejné barvy. Na tvaru nezáleží.</div>
+                    <div class="demo-box-desc" data-i18n="modeColorHelp">Skládej stejné barvy. Na tvaru nezáleží.</div>
                 </div>
             </div>
 
@@ -660,44 +660,44 @@
 
             <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; display: flex; gap: 15px; margin-bottom: 15px;">
                 <div style="flex: 1;">
-                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Režimy:</p>
+                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;" data-i18n="modeGameHelp">Režimy:</p>
                     <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
-                        <li>⌛ <strong>SOLO:</strong> Odpočet času</li>
-                        <li>🖥️ <strong>BOT:</strong> Hra proti AI</li>
-                        <li>⏱️ <strong>TIME:</strong> Neomezená časomíra</li>
+                        <li>⌛ <strong>SOLO:</strong> <span data-i18n="modeSoloTextHelp">Odpočet času</span></li>
+                        <li>🖥️ <strong>BOT:</strong> <span data-i18n="modeBotTextHelp">Hra proti AI</span></li>
+                        <li>⏱️ <strong>TIME:</strong> <span data-i18n="modeTimeTextHelp">Neomezená časomíra</span></li>
                     </ul>
                 </div>
                 <div style="flex: 1;">
-                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;">Ovládání:</p>
+                    <p style="color: var(--highlight); font-weight: bold; font-size: 0.85rem;" data-i18n="modeControlstHelp">Ovládání:</p>
                     <ul style="list-style: none; font-size: 0.75rem; color: #ccc;">
-                        <li><strong>1x klik:</strong> Označit kartu</li>
-                        <li><strong>2x klik:</strong> Otočit kartu</li>
-                        <li><strong>Klik na jinou kartu:</strong> Prohodit s označenou kartou</li>
+                        <li><strong><span data-i18n="modeControlsClick1Help">1x klik:</span></strong> <span data-i18n="modeControlsText1Help">Označit kartu</span></li>
+                        <li><strong><span data-i18n="modeControlsClick2Help">2x klik:</span></strong> <span data-i18n="modeControlsText2Help">Otočit kartu</span></li>
+                        <li><strong><span data-i18n="modeControlsClick3Help">Klik na jinou kartu:</span></strong> <span data-i18n="modeControlsText3Help">Prohodit s označenou kartou</span></li>
                     </ul>
                 </div>
             </div>
                 
                 <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-                <p style="color: var(--highlight); font-weight: bold; font-size: 0.9rem; text-align: center; margin: 0 0 12px 0;">Barevná signalizace:</p>
+                <p style="color: var(--highlight); font-weight: bold; font-size: 0.9rem; text-align: center; margin: 0 0 12px 0;" data-i18n="colorCodeHelp">Barevné označení:</p>
                     <div style="font-size: 0.8rem; margin-bottom: 8px;">
-                        <strong style="color: white;">BĚHEM HRY:</strong>
+                        <strong style="color: white;" data-i18n="colorCode1Help">BĚHEM HRY:</strong>
                     </div>
                     <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
-                        <li><span style="color: var(--card-select); font-weight: 900;">Modrý okraj karty:</span> Právě označená karta.</li>
-                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá statická časomíra:</span> Časový limit zvoleného levelu (SOLO).</li>
-                        <li><span style="color: var(--highlight); font-weight: 900;">Žlutá běžící časomíra:</span> Probíhající hra.</li>
+                        <li><span style="color: var(--card-select); font-weight: 900;" data-i18n="colorCode2Help">Modrý okraj karty:</span> <span data-i18n="colorCode3Help">Právě označená karta.</span></li>
+                        <li><span style="color: var(--highlight); font-weight: 900;" data-i18n="colorCode4Help">Žlutá statická časomíra:</span> <span data-i18n="colorCode5Help">Časový limit zvoleného levelu (SOLO).</span></li>
+                        <li><span style="color: var(--highlight); font-weight: 900;" data-i18n="colorCode6Help">Žlutá běžící časomíra:</span> <span data-i18n="colorCode7Help">Probíhající hra.</span></li>
                     </ul>
                     
                     <div style="font-size: 0.8rem; margin: 12px 0 8px 0;">
-                        <strong style="color: white;">VYHODNOCENÍ UKONČENÉ HRY:</strong>
+                        <strong style="color: white;" data-i18n="colorCode8Help">VYHODNOCENÍ UKONČENÉ HRY:</strong>
                     </div>
                     <ul style="list-style: none; font-size: 0.75rem; color: #ddd;">
-                        <li><span style="color: #4CAF50; font-weight: 900;">Zelená statická časomíra:</span> Výhra! Zobrazuje tvůj dosažený čas.</li>
-                        <li><span style="color: #4CAF50; font-weight: 900;">Zelený okraj všech karet:</span> Výhra! Zobrazuje správné umístění karet dle vzoru.</li>
-                        <li><span style="color: #ff4d4d; font-weight: 900;">Červená statická časomíra:</span> Prohra. Čas 0.00s (SOLO) nebo čas BOTA.</li>
-                        <li><span style="color: #ff4d4d; font-weight: 900;">Červený okraj karet:</span> Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</li>
+                        <li><span style="color: #4CAF50; font-weight: 900;" data-i18n="colorCode9Help">Zelená statická časomíra:</span> <span data-i18n="colorCode10Help">Výhra! Zobrazuje tvůj dosažený čas.</span></li>
+                        <li><span style="color: #4CAF50; font-weight: 900;" data-i18n="colorCode11Help">Zelený okraj všech karet:</span> <span data-i18n="colorCode12Help">Výhra! Zobrazuje správné umístění karet dle vzoru.</span></li>
+                        <li><span style="color: #ff4d4d; font-weight: 900;" data-i18n="colorCode13Help">Červená statická časomíra:</span> <span data-i18n="colorCode14Help">Prohra. Čas 0.00s (SOLO) nebo čas BOTA.</span></li>
+                        <li><span style="color: #ff4d4d; font-weight: 900;" data-i18n="colorCode15Help">Červený okraj karet:</span> <span data-i18n="colorCode16Help">Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.</span></li>
                         <li style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
-                        <span style="color: #4ecca3; font-weight: bold;">Režim BOT (ukázka):</span>
+                        <span style="color: #4ecca3; font-weight: bold;" data-i18n="colorCode17Help">Režim BOT (ukázka):</span>
                         <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center;">
                             <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
                             <div style="width: 18px; height: 18px; background: #4ecca3; border-radius: 2px;"></div>
@@ -709,7 +709,7 @@
                             <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
                             <div style="width: 18px; height: 18px; background: #444; border-radius: 2px;"></div>
                         </div>
-                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 6px; text-align: center;">Zelená značí správně umístěné karty bota (4/9).</div>
+                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 6px; text-align: center;" data-i18n="colorCode18Help">Zelená značí správně umístěné karty bota (4/9).</div>
                     </li>
                     </ul>
                 </div>
@@ -718,16 +718,16 @@
 
 
             <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="color: var(--highlight); font-size: 0.95rem; margin-top: 0; text-align: center; border-bottom: 1px solid #444; padding-bottom: 8px;">
+                <h3 style="color: var(--highlight); font-size: 0.95rem; margin-top: 0; text-align: center; border-bottom: 1px solid #444; padding-bottom: 8px;" data-i18n="statisticTitleHelp">
                     STATISTIKY - jak se počítá pořadí
                 </h3>
                 
                 <p style="font-size: 0.8rem; color: #ddd; line-height: 1.5; margin: 12px 0;">
-                    V tabulce statistik nerozhoduje jen čistý čas, ale tzv. <strong>Index efektivity</strong>. Tento model vyvažuje vliv náhody při generování karet.
+                    <span  data-i18n="statisticText1Help">V tabulce statistik nerozhoduje jen čistý čas, ale tzv. </span><strong><span  data-i18n="statisticText2Help">Index efektivity</span></strong>. <span  data-i18n="statisticText3Help">Tento model vyvažuje vliv náhody při generování karet.</span>
                 </p>
 
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; text-align: center; margin: 15px 0; border: 1px dashed #555;">
-                    <span style="font-size: 0.85rem; color: #aaa;">VZOREC PRO VÝPOČET:</span><br>
+                    <span style="font-size: 0.85rem; color: #aaa;"  data-i18n="statisticText4Help">VZOREC PRO VÝPOČET:</span><br>
                     <span style="font-size: 0.95rem; color: #4ecca3; display: block; margin-top: 8px; font-weight: bold;">
                         Index = (T + ((S + F) x 0.5)) / E
                     </span>
@@ -735,57 +735,57 @@
 
                 <ul style="list-style: none; font-size: 0.75rem; color: #ccc; padding: 0; margin: 0;">
                     <li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
-                        <span>✅</span> 
-                        <span><strong>Spravedlnost:</strong> každý úkon (prohození nebo otočení karty) přidá k tvému času 0.5s penalizaci.</span>
+						<span>✅</span> 
+						<span data-i18n="bulletsText1Help">Spravedlnost: každý úkon (prohození nebo otočení karty) přidá k tvému času 0.5s penalizaci.</span>
+					</li>
+                    <li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span>
+						<span data-i18n="bulletsText2Help">Index efektivity měří tvou schopnost řešit problémy pod tlakem. Zatímco čas (T) a tahy (S+F) měří tvou rychlost, proměnná E měří náročnost úkolu.</span>
                     </li>
                     <li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
-                        <span>✅</span> 
-                        <span><strong>Index efektivity</strong> měří tvou schopnost řešit problémy pod tlakem. Zatímco čas (T) a tahy (S+F) měří tvou rychlost, proměnná E měří náročnost úkolu.</span>
+                        <span>✅</span>
+						<span data-i18n="bulletsText3Help">Proměnná E je číslo, které udává rozdíl správně a nesprávně umístěných kartiček po vygenerování hry.</span>
                     </li>
-                    <li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
-                        <span>✅</span> 
-                        <span><strong>Proměnná E</strong> je číslo, které udává rozdíl správně a nesprávně umístěných kartiček po vygenerování hry.</span>
+                    <li style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span>
+						<span data-i18n="bulletsText4Help">Cíl: dosáhnout co nejnižšího výsledného čísla (Indexu).</span>
+                    </li>
+                    <li style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span>✅</span>
+						<span data-i18n="bulletsText5Help">	V každé tabulce je zobrazeno 10 nejlepších výsledků.</span>
                     </li>
                     <li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
-                        <span><strong>Cíl:</strong> dosáhnout co nejnižšího výsledného čísla (Indexu).</span>
-                    </li>
-                    <li style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span>✅</span> 
-                        <span>V každé tabulce je zobrazeno <strong>10 nejlepších</strong> výsledků.</span>
-                    </li>
-                    <li style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span>✅</span> 
-                        <span>Poslední zápis v tabulce TOP 10 je označen <strong ><span style="color: #90ee90;">zelenou barvou </span></strong>času.</span>
+                        <span data-i18n="bulletsText6Help">Poslední zápis v tabulce TOP 10 je označen</span> <span style="color: #90ee90;" data-i18n="bulletsText7Help">zelenou barvou času.</span>
                     </li>
 					<li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
-                        <span><strong >Tlačítko &#10148;</strong> uloží screenshot statistik.</span>
+                        <span data-i18n="bulletsText8Help">Tlačítko "Uložit" uloží screenshot statistik.</span>
                     </li>
 					<li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
-                        <span><strong >Tlačítko "Smazat"</strong> vymaže data statistik.</span>
+                        <span data-i18n="bulletsText9Help">Tlačítko "Smazat" vymaže data statistik.</span>
                     </li>                    
                 </ul>
             </div>
 
             <div style="background: rgba(0,0,0,0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.05); margin-top: 10px;">
-                <h4 style="font-size: 0.8rem; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; text-align: center;">
+                <h4 style="font-size: 0.8rem; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; text-align: center;" data-i18n="headerNameHelp">
                     Vysvětlivky hlavičky statistik
                 </h4>
                 
                 <div style="font-size: 0.8rem; line-height: 1.4; color: #ddd; font-family: sans-serif;">
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">R</strong> <span style="color: #666;">—</span> Režim (S-SOLO / B-BOT / T-TIME)</div>
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">S</strong> <span style="color: #666;">—</span> Počet prohození (swaps)</div>
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">F</strong> <span style="color: #666;">—</span> Počet otočení (flips)</div>
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">E</strong> <span style="color: #666;">—</span> Proměnná E pro výpočet Indexu</div>
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">Index</strong> <span style="color: #666;">—</span> Výsledné hodnocení (pořadí)</div>
-                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">Čas</strong> <span style="color: #666;">—</span> Tvůj dosažený čas (zelený)</div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">R</strong> <span data-i18n="headerText1Help"> — Režim (S-SOLO / B-BOT / T-TIME)</span></div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">S</strong> <span data-i18n="headerText2Help"> — Počet prohození (swaps)</span></div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">F</strong> <span data-i18n="headerText3Help"> — Počet otočení (flips)</span></div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;">E</strong> <span data-i18n="headerText4Help"> — Proměnná E pro výpočet Indexu</span></div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;" >Index</strong> <span data-i18n="headerText5Help"> — Výsledné hodnocení (pořadí)</span></div>
+                    <div><strong style="color: var(--highlight); width: 55px; display: inline-block;" data-i18n="headerText6Help">Čas</strong> <span data-i18n="headerText7Help"> — — Tvůj dosažený čas (zelený)</span></div>
                 </div>
             </div>
 
 
-            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px; margin-top: 5px;">Rozumím, zpět do hry</button>
+            <button onclick="toggleHelp()" style="width: 100%; font-size: 1rem; padding: 12px; margin-top: 5px;" data-i18n="backToGameOption">Rozumím, zpět do hry</button>
         </div>
     </div>
 
@@ -793,7 +793,7 @@
         <div class="end-icon" id="endIcon">🏆</div>
         <div class="win-message" id="endMessage">HOTOVO!</div>
         <div class="end-subtext" id="finalTime"></div>
-        <button onclick="closeOverlay()" style="font-size: 1.2rem; padding: 12px 24px;" data-i18n="backToGameOption">Zpět na výběr hry</button>
+        <button onclick="closeOverlay()" style="font-size: 1.2rem; padding: 12px 24px;">Zpět na výběr hry</button>
     </div>
 
 <script>
@@ -842,6 +842,62 @@ let currentLang = localStorage.getItem('nineTilesLang') || 'cs';
 // 2. Slovník pro dynamické texty (výhry, prohry, časy)
 const translations = {
     cs: {
+		headerText7Help: "— Tvůj dosažený čas (zelený)",
+		headerText6Help: "Čas",
+		headerText5Help: "— Výsledné hodnocení (pořadí)",
+		headerText4Help: "— Proměnná E pro výpočet Indexu",
+		headerText3Help: "— Počet otočení (flips)",
+		headerText2Help: "— Počet prohození (swaps)",
+		headerText1Help: "— Režim (S-SOLO / B-BOT / T-TIME)",
+		headerNameHelp: "Vysvětlivky hlavičky statistik",
+		bulletsText9Help: "Tlačítko 'Smazat' vymaže data statistik.",
+		bulletsText8Help: "Tlačítko 'Uložit' uloží screenshot statistik.",
+		bulletsText7Help: "zelenou barvou času.",
+		bulletsText6Help: "Poslední zápis v tabulce TOP 10 je označen",
+		bulletsText5Help: "V každé tabulce je zobrazeno 10 nejlepších výsledků.",
+		bulletsText4Help: "Cíl: dosáhnout co nejnižšího výsledného čísla (Indexu).",
+		bulletsText3Help: "Proměnná E je číslo, které udává rozdíl správně a nesprávně umístěných kartiček po vygenerování hry.",
+		bulletsText2Help: "Index efektivity měří tvou schopnost řešit problémy pod tlakem. Zatímco čas (T) a tahy (S+F) měří tvou rychlost, proměnná E měří náročnost úkolu.",
+		bulletsText1Help: "Spravedlnost: každý úkon (prohození nebo otočení karty) přidá k tvému času 0.5s penalizaci.",
+		statisticText4Help: "VZOREC PRO VÝPOČET:",
+		statisticText3Help: "Tento model vyvažuje vliv náhody při generování karet",
+		statisticText2Help: "Index efektivity.",
+		statisticText1Help: "V tabulce statistik nerozhoduje jen čistý čas, ale tzv.",
+		statisticTitleHelp: "STATISTIKY - jak se počítá pořadí",
+		colorCode18Help: "Zelená značí správně umístěné karty bota (4/9).",
+		colorCode17Help: "Režim BOT (ukázka):",
+		colorCode16Help: "Prohra. Zobrazuje nesprávné umístění karet oproti vzoru.",
+		colorCode15Help: "Červený okraj karet:",
+		colorCode14Help: "Prohra. Čas 0.00s (SOLO) nebo čas BOTA.",
+		colorCode13Help: "Červená statická časomíra:",
+		colorCode12Help: "Výhra! Zobrazuje správné umístění karet dle vzoru.",
+		colorCode11Help: "Zelený okraj všech karet:",
+		colorCode10Help: "Výhra! Zobrazuje tvůj dosažený čas.",	
+		colorCode9Help: "Zelená statická časomíra:",
+		colorCode8Help: "VYHODNOCENÍ UKONČENÉ HRY:",
+		colorCode7Help: "Probíhající hra",
+		colorCode6Help: "Žlutá běžící časomíra:",
+		colorCode5Help: "Časový limit zvoleného levelu (SOLO)",
+		colorCode4Help: "Žlutá statická časomíra:",
+		colorCode3Help: "Právě označená karta",
+		colorCode2Help: "Modrý okraj karty:",
+		colorCode1Help: "BĚHEM HRY:",
+		colorCodeHelp: "Barevné označení",
+		modeControlsText3Help: "Prohodit s označenou kartou",
+		modeControlsText2Help: "Otočit kartu",
+		modeControlsText1Help: "Označit kartu",
+		modeControlsClick3Help: "Klik na jinou kartu:",
+		modeControlsClick2Help: "2x klik:",
+		modeControlsClick1Help: "1x klik:",
+		modeControlstHelp: "Ovládání",
+		modeTimeTextHelp: "Neomezená časomíra",
+		modeBotTextHelp: "Hra proti AI",
+		modeSoloTextHelp: "Odpočet času",
+		modeGameHelp: "Režim hry",
+		modeShapeHelp: "Skládej stejné tvary. Na barvě nezáleží.",
+		modeColorHelp: "Skládej stejné barvy. Na tvaru nezáleží.",
+		titleNoticeHelp: "Přeskládej svých 9 karet tak, aby odpovídaly zobrazenému vzoru. Hra ti náhodně určí jeden ze dvou typů:",
+		titleHelp: "Jak hrát?",
 		recordsStats: "žádné záznamy",
         notificationStats: "O pořadí rozhoduje nejnižší Index = (Čas + ((S + F) x 0.5)) / E.",	
         nameWinStats: "Statistiky výher",
@@ -876,6 +932,62 @@ const translations = {
         colorMode: "Barva"
     },
     en: {
+		headerText7Help: "— Your achieved time (green)",
+		headerText6Help: "Time",
+		headerText5Help: "— Final evaluation (ranking)",
+		headerText4Help: "— Variable E for calculating the Index",
+		headerText3Help: "— Number of flips",
+		headerText2Help: "— Number of swaps",	
+		headerText1Help: "— Mode (S-SOLO / B-BOT / T-TIME)",
+		headerNameHelp: "Statistics table",	
+		bulletsText9Help: "The 'Delete' button deletes the statistics data.",
+		bulletsText8Help: "The 'Save' button saves the statistics screenshot.",	
+		bulletsText7Help: "green color of time.",
+		bulletsText6Help: "The last entry in the TOP 10 table is marked",
+		bulletsText5Help: "Each table shows the top 10 results.",
+		bulletsText4Help: "Goal: to achieve the lowest possible final number (Index).",
+		bulletsText3Help: "Variable E is a number that indicates the difference between correctly and incorrectly placed cards after the game has been generated.",
+		bulletsText2Help: "The efficiency index measures your ability to solve problems under pressure. While time (T) and moves (S+F) measure your speed, the E variable measures the difficulty of the task.",
+		bulletsText1Help: "Fairness: Each action (swapping or turning a card) adds a 0.5-second penalty to your time.",	
+		statisticText4Help: "CALCULATION FORMULA:",
+		statisticText3Help: "This model balances the influence of chance in card generation.",
+		statisticText2Help: "Effectiveness index.",
+		statisticText1Help: "The statistics table is not determined solely by net time, but also by the so-called",
+		statisticTitleHelp: "STATISTICS - how the ranking is calculated",	
+		colorCode18Help: "Green indicates correctly placed bot cards (4/9).",
+		colorCode17Help: "BOT mode (example):",
+		colorCode16Help: "Loss. Shows incorrect placement of cards compared to the pattern.",
+		colorCode15Help: "Red border on cards:",
+		colorCode14Help: "Loss. Time 0.00s (SOLO) or BOT time.",
+		colorCode13Help: "Red static timer:",
+		colorCode12Help: "Win! Shows the correct placement of cards according to the pattern.",
+		colorCode11Help: "Green border on all cards:",
+		colorCode10Help: "You won! It shows your achieved time.",	
+		colorCode9Help: "Green static timer:",
+		colorCode8Help: "EVALUATION OF THE COMPLETED GAME:",
+		colorCode7Help: "Ongoing game",
+		colorCode6Help: "Yellow running timer:",
+		colorCode5Help: "Time limit for the selected level (SOLO)",
+		colorCode4Help: "Yellow static timer:",
+		colorCode3Help: "Currently selected card",
+		colorCode2Help: "Blue border on the card:",
+		colorCode1Help: "DURING THE GAME:",
+		colorCodeHelp: "Color coding",
+		modeControlsText3Help: "Swap with marked card",
+		modeControlsText2Help: "Flip card",
+		modeControlsText1Help: "Mark card",
+		modeControlsClick3Help: "Click on another card:",
+		modeControlsClick2Help: "2x click:",
+		modeControlsClick1Help: "1x click:",	
+		modeControlstHelp: "Controls",
+		modeTimeTextHelp: "Unlimited timer",
+		modeBotTextHelp: "Playing against AI",
+		modeSoloTextHelp: "Countdown",	
+		modeGameHelp: "Game mode",	
+		modeShapeHelp: "Match identical shapes. Color does not matter.",
+		modeColorHelp: "Match identical colors. Shape does not matter.",
+		titleNoticeHelp: "Rearrange your 9 cards to match the pattern shown. The game will randomly assign you one of two types:",
+		titleHelp: "How to play?",
 		recordsStats: "no records",
         notificationStats: "The order is determined by the lowest Index = (Time + ((S + F) x 0.5)) / E.",
         nameWinStats: "Winning statistics",
@@ -1356,7 +1468,45 @@ function renderStats() {
 
     if (isTop10) {
     toast.style.background = 'linear-gradient(135deg, #4ecca3, #2d926f)';
-    toast.innerHTML = `<div style="font-weight:bold;">${t.notificationTOP10Yes}</div>`;
+    if (entry) {
+        toast.innerHTML = `
+        <div style="
+            margin-top:10px;
+            display:grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1.5fr 1.5fr;
+            gap:4px;
+            font-size:0.85rem;
+            font-weight:normal;
+            text-align:center;
+        ">
+            <!-- HLAVIČKA -->
+            <div style="grid-column:1/-1; font-weight:bold; margin-bottom:4px;">
+                ${t.notificationTOP10Yes}
+            </div>
+
+            <!-- RANK -->
+            ${rank ? `
+            <div style="grid-column:1/-1; margin-bottom:6px;">
+                ${t.notificationTOP10NoToast} <b>${rank}.</b>
+            </div>` : ""}
+
+            <!-- HLAVIČKY SLOUPCŮ -->
+            <div style="opacity:0.8">R</div>
+            <div style="opacity:0.8">S</div>
+            <div style="opacity:0.8">F</div>
+            <div style="opacity:0.8">E</div>
+            <div style="opacity:0.8">Index</div>
+            <div style="opacity:0.8">${t.columnTimeStats}</div>
+
+            <!-- DATA -->
+            <div>${entry.mode}</div>
+            <div>${entry.swaps}</div>
+            <div>${entry.flips}</div>
+            <div>${entry.errors}</div>
+            <div style="color:#ffd166;font-weight:bold">${entry.score.toFixed(2)}</div>
+            <div style="font-family:monospace">${Number(entry.time).toFixed(2)}s</div>
+        </div>`;
+    } 
 } else {
     toast.style.background = 'linear-gradient(135deg, #e74c3c, #af2c1d)';
 
