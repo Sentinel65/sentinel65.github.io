@@ -748,7 +748,7 @@
                     </li>
                     <li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span>
-						<span data-i18n="bulletsText4Help">Cíl: dosáhnout co nejnižšího výsledného čísla (Indexu).</span>
+						<span data-i18n="bulletsText4Help">O pořadí rozhodují kriteria: 1. nejnižší index, 2. nejnižší čas, 3. vyšší promenná E.</span>
                     </li>
                     <li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span>
@@ -756,7 +756,7 @@
                     </li>
                     <li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
-                        <span data-i18n="bulletsText6Help">Poslední zápis v tabulce TOP 10 je označen</span> <span style="color: #90ee90;" data-i18n="bulletsText7Help">zelenou barvou času.</span>
+                        <div><span data-i18n="bulletsText6Help">Poslední zápis v tabulce TOP 10 je označen </span> <span style="color: #90ee90;" data-i18n="bulletsText7Help">zelenou barvou času.</span></div>
                     </li>
 					<li style="display: flex; align-items: flex-start; gap: 8px;">
                         <span>✅</span> 
@@ -855,7 +855,7 @@ const translations = {
 		bulletsText7Help: "zelenou barvou času.",
 		bulletsText6Help: "Poslední zápis v tabulce TOP 10 je označen",
 		bulletsText5Help: "V každé tabulce je zobrazeno 10 nejlepších výsledků.",
-		bulletsText4Help: "Cíl: dosáhnout co nejnižšího výsledného čísla (Indexu).",
+		bulletsText4Help: "O pořadí rozhodují kriteria: 1. nejnižší index, 2. nejnižší čas, 3. vyšší promenná E.",
 		bulletsText3Help: "Proměnná E je číslo, které udává rozdíl správně a nesprávně umístěných kartiček po vygenerování hry.",
 		bulletsText2Help: "Index efektivity měří tvou schopnost řešit problémy pod tlakem. Zatímco čas (T) a tahy (S+F) měří tvou rychlost, proměnná E měří náročnost úkolu.",
 		bulletsText1Help: "Spravedlnost: každý úkon (prohození nebo otočení karty) přidá k tvému času 0.5s penalizaci.",
@@ -945,7 +945,7 @@ const translations = {
 		bulletsText7Help: "green color of time.",
 		bulletsText6Help: "The last entry in the TOP 10 table is marked",
 		bulletsText5Help: "Each table shows the top 10 results.",
-		bulletsText4Help: "Goal: to achieve the lowest possible final number (Index).",
+		bulletsText4Help: "The order is determined by the following criteria: 1. lowest index, 2. lowest time, 3. higher variable E.",
 		bulletsText3Help: "Variable E is a number that indicates the difference between correctly and incorrectly placed cards after the game has been generated.",
 		bulletsText2Help: "The efficiency index measures your ability to solve problems under pressure. While time (T) and moves (S+F) measure your speed, the E variable measures the difficulty of the task.",
 		bulletsText1Help: "Fairness: Each action (swapping or turning a card) adds a 0.5-second penalty to your time.",	
@@ -1343,8 +1343,19 @@ function downloadStatsVanilla() {
     if (isTop10) {
         allStats[type].push(newEntry);
         
-        // Seřadíme od nejmenšího Indexu po největší
-        allStats[type].sort((a, b) => a.score - b.score);
+        // --- NOVÉ CHYTRÉ ŘAZENÍ ---
+        allStats[type].sort((a, b) => {
+            if (a.score === b.score) {
+                if (a.time === b.time) {
+                    // 3. kritérium: při shodě času vyhrává těžší los (více počátečních chyb)
+                    return b.errors - a.errors; 
+                }
+                // 2. kritérium: při shodě indexu vyhrává lepší (nižší) čas
+                return a.time - b.time; 
+            }
+            // 1. hlavní kritérium: nejnižší index vyhrává
+            return a.score - b.score; 
+        });
         
         // Ponecháme jen nejlepších 10
         allStats[type] = allStats[type].slice(0, 10);
@@ -1354,15 +1365,31 @@ function downloadStatsVanilla() {
         
         console.log("Nový spravedlivý rekord zapsán:", newEntry);
     } else {
-    console.log("Výhra, ale index " + efficiencyIndex + " nestačil na Top 10.");
-}
-	// vypočítáme hypotetické umístění
-    const rank =
-        allStats[type].filter(e => e.score < efficiencyIndex).length + 1;
+        console.log("Výhra, ale index " + efficiencyIndex + " nestačil na Top 10.");
+    }
+
+    // --- OPRAVENÝ VÝPOČET RANKU ---
+    let rank;
+    if (isTop10) {
+        // Pokud je v TOP 10, najdeme jeho skutečnou, fyzickou pozici v už seřazeném poli
+        // indexOf vrátí pozici (0 až 9), takže přičteme 1 pro lidské pořadí (1 až 10)
+        rank = allStats[type].indexOf(newEntry) + 1;
+    } else {
+        // Pokud je mimo TOP 10, spočítáme hypotetické umístění včetně nových pravidel pro shodu
+        rank = allStats[type].filter(e => {
+            if (e.score === efficiencyIndex) return e.time < newEntry.time;
+            return e.score < efficiencyIndex;
+        }).length + 1;
+    }
 
     // zobrazíme notifikaci
     showRecordNotification(isTop10, newEntry, rank);
-    return isTop10; 
+    
+    // --- KLÍČOVÉ: Nezapomeňte vracet objekt s daty, jak jsme nastavovali minule! ---
+    return {
+        isTop10: isTop10,
+        gameData: newEntry
+    };
 }
 
 
