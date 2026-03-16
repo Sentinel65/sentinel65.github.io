@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Desková hra Six</title>
+    <style>
+        body { font-family: sans-serif; background: #eef2f3; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: none; overflow: hidden; height: 100vh; }
+        #game-container { width: 100%; max-width: 900px; display: flex; flex-direction: row; height: 100%; box-sizing: border-box; padding: 10px; gap: 10px; }
+        #main-area { flex: 2; display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+        #debug-log { flex: 1; max-width: 250px; background: #2d3436; color: #00ff00; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; overflow-y: auto; }
+        #canvas-wrapper { flex: 1; background: #dfe6e9; border-radius: 8px; position: relative; overflow: hidden; border: 2px solid #b2bec3; }
+        canvas { display: block; width: 100%; height: 100%; cursor: move; }
+        .ui-top {
+    position: relative;
+    display: flex;
+    justify-content: left;   /* vycentruje status */
+    align-items: left;
+    margin-bottom: 5px;
+}
+
+/* text uprostřed */
+#status {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* fáze vpravo */
+#phase-text {
+    position: absolute;
+    right: 0;
+    font-weight: bold;
+}
+
+
+        .inventory {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-bottom: 5px;
+            gap: 10px;
+        }
+
+.inventory-hex {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.inventory-hex svg {
+    width: 100%;
+    height: 100%;
+}
+
+.inventory-hex text {
+    font-size: 20px;
+    font-weight: bold;
+    fill: white;
+    dominant-baseline: middle;
+    text-anchor: middle;
+}
+
+
+        .stone-counter {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            clip-path: polygon(
+                25% 0%, 75% 0%,
+                100% 50%,
+                75% 100%, 25% 100%,
+                0% 50%
+            );
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 20px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .red-stone {
+            background: #d63031;
+        }
+
+        .black-stone {
+            background: #2d3436;
+        }
+
+        .stone-number {
+            position: relative;
+            z-index: 2;
+        }
+
+        .start-select {
+            padding: 4px 6px;
+            border-radius: 4px;
+            flex: 1;
+            max-width: 220px;
+        }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 5px; }
+        button { padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; background: #0984e3; }
+        #btnRestart { background: #d63031; }
+        #btnCenter { background: #636e72; }
+        #btnHelp { background: #f39c12; }
+        .red { color: #d63031; } .black { color: #2d3436; }
+        
+        
+        /* Styly pro vyskakovací okno (Modal) */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5vh auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            line-height: 1.5;
+            color: #2d3436;
+        }
+        .modal-content h2, .modal-content h3 { color: #0984e3; margin-top: 20px; margin-bottom: 10px; }
+        .modal-content h2 { margin-top: 0; }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: #d63031; }
+        
+        /* Responzivita pro menší displeje */
+        @media (max-width: 700px) { 
+            #game-container { 
+                flex-direction: column; 
+            } 
+            #debug-log { 
+                max-width: 100%; 
+                height: 120px;
+                flex: none;
+            } 
+            .controls { 
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .controls button {
+                padding: 8px 2px;
+                font-size: 12px;
+            }
+            .inventory {
+                gap: 6px;
+            }
+            .stone-counter {
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+            }
+        }
+</style>
+
+</head>
+<body>
+
+
+
+<div id="game-container">
+    <div id="main-area">
+        <div class="ui-top">
+            <span id="status" >Tah: Červený</span>
+            <span id="phase-text" style="font-weight: bold;">Fáze 1</span>
+        </div>
+        <div class="inventory">
+
+    <div class="inventory-hex">
+        <svg viewBox="-30 -30 60 60">
+            <polygon id="red-hex" 
+                     points="
+                        24.7,-14.25
+                        24.7,14.25
+                        0,28.5
+                        -24.7,14.25
+                        -24.7,-14.25
+                        0,-28.5
+                     "
+                     fill="#d63031" stroke="white" stroke-width="2"/>
+            <text id="red-count" x="0" y="0">20</text>
+        </svg>
+    </div>
+
+    <select id="startPlayerMode" class="start-select">
+        <option value="pvp_red">PvP (červený)</option>
+        <option value="pvp_black">PvP (černý)</option>
+        <option value="pvp_alt">PvP (střídavě)</option>
+        <option value="human">AI (hráč)</option>
+        <option value="ai">AI (AI)</option>
+        <option value="ai_alt">AI (střídavě)</option>
+    </select>
+
+    <div class="inventory-hex">
+        <svg viewBox="-30 -30 60 60">
+            <polygon id="black-hex" 
+                     points="
+                        24.7,-14.25
+                        24.7,14.25
+                        0,28.5
+                        -24.7,14.25
+                        -24.7,-14.25
+                        0,-28.5
+                     "
+                     fill="#2d3436" stroke="white" stroke-width="2"/>
+            <text id="black-count" x="0" y="0">20</text>
+        </svg>
+    </div>
+
+</div>
+
+
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="controls">
+            <button id="btnRestart">Nová hra</button>
+            <button id="btnHelp">💡</button>
+            <button id="btnCenter">Vycentrovat</button>
+        </div>
+    </div>
+    <div id="debug-log">
+    <div style="padding: 5px; color: #aaa; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+        <span>LOG TAHŮ:</span>
+        <button id="btnCopyLog" style="background: #27ae60; font-size: 10px; padding: 2px 8px; width: auto;">Kopírovat</button>
+    </div>
+    <div id="log-content" style="padding: 5px;"></div>
+</div>
+</div>
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeHelp">&times;</span>
+        <h2>Desková hra Six</h2>
+        <p><strong>Hra s kameny pro 2 nebo 4 hráče od 8 let.</strong><br>
+        Autor: Steffen Mühlhäuser, překlad: Bruce Murphy</p>
+
+        <h3>Herní komponenty</h3>
+        <p>21 červených kamenů, 21 černých kamenů</p>
+
+        <h3>Cíl hry</h3>
+        <p>Tři vítězné formace, nazývané „sixes“, jsou: <strong>trojúhelník, kruh a řada</strong>. Každá z nich je tvořena šesti kameny.</p>
+        <p>Cílem hry je vytvořit jednu z těchto formací pomocí vlastních kamenů a zároveň zabránit soupeři, aby udělal to samé.</p>
+
+        <h3>Příprava hry</h3>
+        <p>Každý hráč si vezme 20 kamenů jedné barvy. Zbývající dva kameny se položí vedle sebe do středu hrací plochy jako počáteční uspořádání. Vyberte hráče, který začne.</p>
+
+        <h3>Průběh hry</h3>
+        <p>Každý hráč postupně pokládá jeden ze svých kamenů na stůl tak, aby se alespoň jednou stranou dotýkal některého z již položených kamenů.</p>
+        <p>Aby se vyrovnala výhoda prvního hráče, <strong>první položený kámen se nesmí přímo dotýkat jeho startovacího kamene</strong>. Červený hráč má tedy k dispozici tři možné pozice znázorněné jako první tah hry.</p>
+        <p>Uzavřený kruh je vždy považován za vítězné uspořádání, bez ohledu na to, zda obklopuje jeden z vlastních kamenů hráče, kámen soupeře, nebo je prázdný.</p>
+
+        <h3>Konec hry (Fáze 1)</h3>
+        <p>Hráč, kterému se jako prvnímu podaří vytvořit jednu ze šesti vítězných formací ve své barvě, vyhrává hru.</p>
+        <p>Pokud hráči umístili všechny kameny, aniž by se některému z nich podařilo vytvořit šestici, hra pokračuje do druhého kola.</p>
+
+        <h3>Druhé kolo (Fáze 2)</h3>
+        <p>Cíl hry, tedy vytvořit jednu ze tří vítězných formací, zůstává nezměněn. V každém tahu: hráč odstraní jeden ze svých kamenů z hrací plochy a umístí jej na <strong>nové místo</strong>. Je povoleno odstranit kámen, který je zcela obklíčen.</p>
+
+        <h3>Zajetí</h3>
+        <p>Kameny, které jsou odděleny odstraněním jiného kamene od hlavní skupiny kamenů na hrací ploše jsou považovány za zajaté a odkládají se stranou. To platí jak pro jednotlivé kameny, tak pro celé skupiny.</p>
+        <p>Pokud je hrací plocha odstraněním kamene rozdělena na větší a menší skupinu, je za zajatou považována <strong>menší skupina</strong>.</p>
+        <p>Pokud je hrací plocha rozdělena na dvě stejné skupiny, hráč který provedl odstranění si vybere, která skupina bude zajata. Odstraněný kámen se umístí až po dokončení zajetí a spočítání.</p>
+
+        <h3>Konečný konec hry</h3>
+        <p>Hra končí, jakmile některý z hráčů vytvoří jednu ze tří vítězných formací nebo jeho soupeř má ve hře méně než šest kamenů (takže již nemůže vytvořit šestici).</p>
+    </div>
+</div>
+
+<script>
+const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+
+class SixGame {
+    constructor(canvas) {
+        this.mode = ''; // jen jednou, vybereš výchozí režim
+        this.waitingForCaptureChoice = false;
+        this.pendingCaptureGroups = null;
+        this.redFirstMove = true;
+        this.blackFirstMove = true;
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.resizeObserver = new ResizeObserver(() => this.resize());
+        this.resizeObserver.observe(this.canvas.parentElement);
+        this.camX = 0; 
+        this.camY = 0;
+        this.isDragging = false;
+        this.dragStart = { x: 0, y: 0 };
+        this.lastMoveKey = null;
+        this.selectedKey = null;
+        this.winningFormation = null; // Pro zvýraznění vítěze
+        this.hexSize = 30;
+        
+        // Sledování historie startů pro režim "Střídavě"
+        this.lastStarter = 'ai'; 
+
+        window.addEventListener('resize', () => this.resize());
+        this.canvas.addEventListener('pointerdown', (e) => this.onDown(e));
+        window.addEventListener('pointermove', (e) => this.onMove(e));
+        window.addEventListener('pointerup', (e) => this.onUp(e));
+        
+        document.getElementById('btnRestart').addEventListener('click', () => this.reset());
+        document.getElementById('btnCenter').addEventListener('click', () => this.centerOnKey(this.lastMoveKey));
+        
+        // Nové tlačítko pro kopírování logu v hlavičce
+        const btnCopy = document.getElementById('btnCopyLog');
+        if (btnCopy) {
+            btnCopy.addEventListener('click', () => this.copyLog());
+        }
+        
+        this.reset();
+    }
+
+
+    log(msg) {
+        const logContent = document.getElementById('log-content');
+        if (!logContent) return;
+        const entry = document.createElement('div');
+        entry.textContent = `> ${msg}`;
+        logContent.prepend(entry); // Přidá nový záznam nahoru
+    }
+
+
+    copyLog() {
+        const logContent = Array.from(document.querySelectorAll('#log-content div'))
+            .map(div => div.textContent.replace('> ', ''))
+            .reverse()
+            .join('\n');
+        
+        navigator.clipboard.writeText(logContent).then(() => {
+            // Vizualizace úspěšného kopírování na tlačítku
+            const btn = document.getElementById('btnCopyLog');
+            const originalText = btn.textContent;
+            btn.textContent = 'Hotovo!';
+            setTimeout(() => btn.textContent = originalText, 1500);
+        });
+    }
+
+    resize() {
+    const parent = this.canvas.parentElement;
+
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+        this.canvas.width = w;
+        this.canvas.height = h;
+    }
+
+    this.hexSize = 30;
+    this.draw();
+}
+
+    reset() {
+    this.centerOnKey(this.lastMoveKey);
+
+    // Načíst aktuální režim ze selectu
+    this.gameMode = document.getElementById('startPlayerMode').value;
+
+    this.board = new Map();
+    this.winningFormation = null;
+    this.gameOver = false;
+    this.redLeft = 20;
+    this.blackLeft = 20;
+    this.redTotal = 21;
+    this.blackTotal = 21;
+    this.phase = 1;
+    this.selectedKey = null;
+
+    // Základní kameny
+    this.board.set("0,0", "red");
+    this.board.set("1,0", "black");
+    this.redFirstMove = true;
+    this.blackFirstMove = true;
+
+    // Nastavit počátečního hráče podle režimu
+    if (this.gameMode === 'pvp_red') {
+        this.currentPlayer = 'red';
+
+    } else if (this.gameMode === 'pvp_black') {
+        this.currentPlayer = 'black';
+
+    } else if (this.gameMode === 'pvp_alt') {
+        // střídání v PvP
+        this.currentPlayer = (this.lastStarter === 'red') ? 'black' : 'red';
+
+    } else if (this.gameMode === 'human') {
+        // hráč vs AI – začíná hráč
+        this.currentPlayer = 'red';
+
+    } else if (this.gameMode === 'ai') {
+        // hráč vs AI – začíná AI
+        this.currentPlayer = 'black';
+
+    } else if (this.gameMode === 'ai_alt') {
+        // střídání v PvAI
+        this.currentPlayer = (this.lastStarter === 'red') ? 'black' : 'red';
+    }
+
+    // uložit startéra pro příště
+    this.lastStarter = this.currentPlayer;
+    this.lastMoveKey = this.currentPlayer === 'red' ? "0,0" : "1,0";
+
+    // vymazat log
+    const logElement = document.getElementById('log-content');
+    if (logElement) logElement.innerHTML = '';
+
+    // text do logu
+    if (this.gameMode.startsWith('pvp')) {
+        this.log(`Hra spuštěna – začíná ${this.currentPlayer === 'red' ? 'Červený hráč' : 'Černý hráč'}`);
+    } else {
+        this.log(`Hra spuštěna – začíná ${this.currentPlayer === 'red' ? 'Hráč' : 'AI'}`);
+    }
+
+    this.resize();
+    this.centerOnKey("0,0");
+    this.updateUI();
+    this.draw();
+
+    // PvAI režimy: human, ai, ai_alt
+    const isPvAI = (
+        this.gameMode === 'human' ||
+        this.gameMode === 'ai' ||
+        this.gameMode === 'ai_alt'
+    );
+
+    // Pokud začíná AI (černý) a režim je PvAI
+    if (this.currentPlayer === 'black' && !this.gameOver && isPvAI) {
+        setTimeout(() => {
+            if (!this.gameOver && this.currentPlayer === 'black') {
+                this.aiMove();
+            }
+        }, 600);
+    }
+}
+
+
+
+
+    centerOnKey(key) {
+        if (!key) return;
+        const [q, r] = key.split(',').map(Number);
+        this.camX = 0; this.camY = 0;
+        const p = this.hexToPixel(q, r);
+        this.camX = (this.canvas.width / 2) - p.x;
+        this.camY = (this.canvas.height / 2) - p.y;
+        this.draw();
+    }
+
+    checkWin(color, lastKey) {
+    if (!lastKey) return null;
+    const [q, r] = lastKey.split(',').map(Number);
+
+    // 1. LINIE
+    for (let d = 0; d < 3; d++) {
+        let formation = [lastKey];
+        const dir = DIRS[d];
+        // Kontrola obou směrů v dané linii
+        for (let i = 1; i < 6; i++) {
+            const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+            if (this.board.get(k) === color) formation.push(k); else break;
+        }
+        for (let i = 1; i < 6; i++) {
+            const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+            if (this.board.get(k) === color) formation.push(k); else break;
+        }
+        if (formation.length >= 6) return formation.slice(0, 6);
+    }
+
+    // 2. KRUH
+    const checkPoints = [lastKey, ...DIRS.map(d => `${q+d[0]},${r+d[1]}`)];
+    for (let cp of checkPoints) {
+        const [cq, cr] = cp.split(',').map(Number);
+        let formation = [];
+        for (let d = 0; d < 6; d++) {
+            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
+            if (this.board.get(k) === color) formation.push(k);
+        }
+        if (formation.length === 6) return formation;
+    }
+
+    // 3. TROJÚHELNÍK (Opraveno: kontroluje obě orientace)
+    // Definujeme 6 možných trojúhelníků, kterých může být aktuální kámen součástí
+    const triangleOffsets = [
+        // Orientace "špička dolů"
+        [[0,1],[1,0],[1,1],[0,2],[1,2]],
+        [[0,-1],[-1,0],[-1,-1],[0,-2],[-1,-2]],
+        [[1,-1],[1,0],[0,-1],[2,-2],[2,-1]],
+        // Orientace "špička nahoru"
+        [[1,0],[0,-1],[1,-1],[2,-1],[2,0]],
+        [[-1,0],[0,1],[-1,1],[-2,1],[-2,0]],
+        [[0,1],[1,1],[1,0],[0,2],[1,2]]
+    ];
+
+    // Procházíme všech 6 možných trojúhelníků, které tento kámen může tvořit
+    // (jako vrchol, střed nebo základna)
+    // Ale jednodušší je zkusit kámen jako "kotevní bod" pro různé relativní pozice:
+    const triDetect = [
+        [[1,0],[0,1],[1,1],[2,0],[2,1]], // vodorovný
+        [[0,1],[-1,1],[-1,2],[0,2],[-1,3]], // diagonální
+        // ... toto je složité na výčet. Použijeme raději algoritmus "Skenování okolí"
+    ];
+
+    // Robustní detekce trojúhelníku (strana 3 kameny):
+    // Trojúhelník je definován jako 3 kameny v řadě, 2 nad nimi, 1 nad nimi.
+    const directions = DIRS;
+    for (let i = 0; i < 6; i++) {
+        const d1 = directions[i];
+        const d2 = directions[(i + 1) % 6];
+        
+        // Zkusíme kámen jako jeden z rohů trojúhelníku
+        let f = [lastKey];
+        const steps = [
+            d1, [d1[0]*2, d1[1]*2], // základna
+            d2, [d2[0]*2, d2[1]*2], // druhá strana
+            [d1[0]+d2[0], d1[1]+d2[1]] // vnitřek/vrchol
+        ];
+        
+        if (steps.every(s => {
+            const k = `${q+s[0]},${r+s[1]}`;
+            if (this.board.get(k) === color) { f.push(k); return true; }
+            return false;
+        })) return f;
+    }
+
+    return null;
+}
+
+
+
+    placeStone(q, r) {
+        const key = `${q},${r}`;
+        if (this.board.has(key) || this.gameOver) return;
+        if (!DIRS.some(d => this.board.has(`${q+d[0]},${r+d[1]}`))) return;
+
+        // --- OPRAVA: Pravidlo prvního tahu ---
+        const isFirstMove =
+    (this.currentPlayer === 'red' && this.redFirstMove) ||
+    (this.currentPlayer === 'black' && this.blackFirstMove);
+
+if (isFirstMove) { // Hráč právě pokládá svůj první kámen (po startovním)
+            const startKey = (this.currentPlayer === 'red') ? "0,0" : "1,0";
+            const [sq, sr] = startKey.split(',').map(Number);
+            const isNeighbor = DIRS.some(d => (sq + d[0] === q && sr + d[1] === r));
+            
+            if (isNeighbor) {
+
+                if (this.currentPlayer === 'red') this.log("CHYBA: První tah nesmí sousedit se startem!");
+                return; // Zablokuje tah
+            }
+        }
+        // --- Konec opravy ---
+
+        this.board.set(key, this.currentPlayer);
+        this.lastMoveKey = key;
+        if (this.currentPlayer === 'red') this.redLeft--; else this.blackLeft--;
+        this.log(`${this.currentPlayer}: Položil ${key}`);
+        if (this.currentPlayer === 'red') this.redFirstMove = false;
+else this.blackFirstMove = false;
+        this.afterAction();
+    }
+
+
+    moveStone(from, to) {
+    const color = this.board.get(from);
+    this.board.delete(from); // Kámen zvedneme - na desce je teď díra
+
+    // 1. Zjistíme stav skupin ve chvíli, kdy kámen chybí
+    const groups = this.getGroups(this.board);
+
+    if (groups.length > 1) {
+        // Určíme maximální velikost
+        const maxSize = Math.max(...groups.map(g => g.length));
+        const largestGroups = groups.filter(g => g.length === maxSize);
+
+        let survivingGroup;
+
+        // 2. Logika přežití
+        if (largestGroups.length > 1) {
+            // REMÍZA: Přežije ta z největších skupin, ke které se hráč PRÁVĚ PŘIPOJUJE
+            // Zkontrolujeme sousedství pole 'to' se všemi největšími skupinami
+            survivingGroup = largestGroups.find(group => 
+                group.some(key => {
+                    const [gq, gr] = key.split(',').map(Number);
+                    const [tq, tr] = to.split(',').map(Number);
+                    // Je pole 'to' sousedem nějakého kamene v této skupině?
+                    return DIRS.some(d => (gq + d[0] === tq) && (gr + d[1] === tr));
+                })
+            );
+            
+            // Pojistka: pokud by se nepřipojil k žádné, vezmeme první
+            if (!survivingGroup) survivingGroup = largestGroups[0];
+            this.log("Souboj titánů! Zachránil jsi vybranou skupinu.");
+        } else {
+            // AUTOMATIKA: Přežije prostě ta jediná největší
+            survivingGroup = largestGroups[0];
+        }
+
+        // --- Příprava proměnných pro logování zajatých kamenů ---
+        let capturedRed = 0;
+        let capturedBlack = 0;
+
+        // 3. EXEKUCE: Smažeme všechny skupiny, které nejsou 'survivingGroup'
+        groups.forEach(group => {
+            if (group !== survivingGroup) {
+                group.forEach(key => {
+                    const c = this.board.get(key);
+                    // Započítáme smazaný kámen a odečteme ho z celkového počtu
+                    if (c === 'red') {
+                        capturedRed++;
+                        this.redTotal--;
+                    } else if (c === 'black') {
+                        capturedBlack++;
+                        this.blackTotal--;
+                    }
+                    // Fyzické smazání z desky
+                    this.board.delete(key);
+                });
+            }
+        });
+
+        // --- Zápis do logu, pokud byly nějaké kameny smazány ---
+        if (capturedRed > 0 || capturedBlack > 0) {
+            let logMsg = `Zajato! Smazáno: `;
+            let parts = [];
+            if (capturedRed > 0) parts.push(`${capturedRed}x Červený`);
+            if (capturedBlack > 0) parts.push(`${capturedBlack}x Černý`);
+            logMsg += parts.join(', ');
+            this.log(logMsg);
+        }
+    }
+
+    // 4. Teprve teď položíme kámen na cílové místo
+    this.board.set(to, color);
+
+    // 5. Reset výběru a posun tahu
+    this.selectedKey = null;
+    this.log(`${color}: Přesun ${from}->${to}`);
+    this.lastMoveKey = to;
+    this.afterAction();
+}
+
+
+
+
+    getGroups(boardMap) {
+        const groups = []; const visited = new Set();
+        for (let [key] of boardMap) {
+            if (visited.has(key)) continue;
+            const group = [], q = [key]; visited.add(key);
+            while(q.length > 0) {
+                const curr = q.shift(); group.push(curr);
+                const [cq, cr] = curr.split(',').map(Number);
+                DIRS.forEach(d => {
+                    const nk = `${cq+d[0]},${cr+d[1]}`;
+                    if (boardMap.has(nk) && !visited.has(nk)) { visited.add(nk); q.push(nk); }
+                });
+            }
+            groups.push(group);
+        }
+        return groups;
+    }
+
+    afterAction() {
+    // 1. Zjistíme, kdo spadl pod 6 kamenů
+    const redLost = this.redTotal < 6;
+    const blackLost = this.blackTotal < 6;
+
+    // --- KONTROLA VYŘAZENÍ ---
+    if (redLost && blackLost) {
+        // Vzácná situace: Oba mají méně než 6. Vyhrává ten, kdo právě táhl!
+        this.gameOver = true;
+        this.log("KONEC: Oba hráči mají méně než 6 kamenů!");
+        this.log(`KONEC: Vítěz ${this.currentPlayer} (soupeř už nemůže hrát)`);
+    } else if (redLost) {
+        this.gameOver = true;
+        this.currentPlayer = 'black'; // Přepneme na černého, aby ho UI ukázalo jako vítěze
+        this.log("KONEC: Červený má méně než 6 kamenů");
+        this.log(`KONEC: Vítěz black`);
+    } else if (blackLost) {
+        this.gameOver = true;
+        this.currentPlayer = 'red'; // Přepneme na červeného, aby ho UI ukázalo jako vítěze
+        this.log("KONEC: Černý má méně než 6 kamenů");
+        this.log(`KONEC: Vítěz red`);
+    } else {
+        // --- KONTROLA VÝHRY FORMACÍ (pokud nikdo nebyl vyřazen) ---
+        const winResult = this.checkWin(this.currentPlayer, this.lastMoveKey);
+        
+        if (winResult) { 
+            this.gameOver = true;
+            this.winningFormation = winResult; 
+            this.log(`KONEC: Vítěz ${this.currentPlayer}`);
+        } else {
+            // --- POKRAČOVÁNÍ HRY A STŘÍDÁNÍ TAHŮ ---
+            this.currentPlayer = (this.currentPlayer === 'red') ? 'black' : 'red';
+
+            if (this.redLeft === 0 && this.blackLeft === 0 && this.phase === 1) {
+                this.phase = 2; 
+                this.log("Zahájena Fáze 2");
+            }
+        }
+    }
+    this.centerOnKey(this.lastMoveKey);
+    this.updateUI();
+    this.draw();
+
+    // --- AUTOMATICKÝ TAH AI ---
+    if (!this.gameOver) {
+        const isPvAI =
+            this.gameMode === 'human' ||
+            this.gameMode === 'ai' ||
+            this.gameMode === 'ai_alt';
+
+        if (isPvAI && this.currentPlayer === 'black') {
+            setTimeout(() => { 
+                this.aiMove(); 
+                if (this.centerOnKey) this.centerOnKey(this.lastMoveKey);
+            }, 600);
+        }
+    }
+}
+
+
+
+
+    aiMove() {
+    if (this.gameOver || this.currentPlayer !== 'black') return;
+
+    if (this.phase === 1) {
+        let moves = this.getValidPlacements();
+        
+        // Aplikace pravidla pro první položený kámen AI (nesmí se dotýkat 1,0)
+        if (this.blackLeft === 19) {
+            moves = moves.filter(m => {
+                // Kontrola sousedství se startovním kamenem black "1,0"
+                return !DIRS.some(d => (1 + d[0] === m.q && 0 + d[1] === m.r));
+            });
+        }
+
+        if (moves.length > 0) {
+            // AI vybere první dostupný platný tah
+            this.placeStone(moves[0].q, moves[0].r);
+        }
+    } else {
+        // Fáze 2: Přesun
+        let stones = []; 
+        for (let [k,v] of this.board) if (v === 'black') stones.push(k);
+        
+        for (let s of stones) {
+
+    let targets = this.getValidMoveTargets(s);
+
+    // odstraníme stejné pole
+    targets = targets.filter(t => t !== s);
+
+    if (targets.length) {
+
+        const target = targets[0];
+
+        this.moveStone(s, target);
+
+        return;
+            }
+        }
+    }
+}
+
+
+
+    getValidPlacements() {
+        const moves = []; 
+        const seen = new Set();
+        
+        // Zjistíme, kolik kamenů už hráč položil (pro kontrolu 1. tahu)
+        const count = (this.currentPlayer === 'red') ? this.redLeft : this.blackLeft;
+        const startKey = (this.currentPlayer === 'red') ? "0,0" : "1,0";
+        const [sq, sr] = startKey.split(',').map(Number);
+
+        for (let [key] of this.board) {
+            const [q, r] = key.split(',').map(Number);
+            DIRS.forEach(d => {
+                const nq = q + d[0];
+                const nr = r + d[1];
+                const nk = `${nq},${nr}`;
+
+                if (!this.board.has(nk) && !seen.has(nk)) {
+                    // --- LOGIKA PRAVIDLA PRVNÍHO TAHU ---
+                    const isFirstMove =
+    (this.currentPlayer === 'red' && this.redFirstMove) ||
+    (this.currentPlayer === 'black' && this.blackFirstMove);
+
+if (isFirstMove) {
+                        const isNeighborOfStart = DIRS.some(sd => (sq + sd[0] === nq && sr + sd[1] === nr));
+                        if (isNeighborOfStart) return; // Toto pole nenabídneme
+                    }
+                    // ------------------------------------
+
+                    seen.add(nk); 
+                    moves.push({q: nq, r: nr});
+                }
+            });
+        }
+        return moves;
+    }
+
+
+
+    getValidMoveTargets(fromKey) {
+    // 1. Simulace: Jak vypadá deska, když kámen zvedneme
+    const tempBoard = new Map(this.board);
+    tempBoard.delete(fromKey);
+
+    // 2. Najdeme všechny zbývající skupiny
+    const groups = this.getGroups(tempBoard);
+    if (groups.length === 0) return [];
+
+    // 3. Určíme maximální velikost mezi skupinami
+    const maxSize = Math.max(...groups.map(g => g.length));
+    
+    // 4. Vybereme pouze ty skupiny, které mají tuto maximální velikost
+    // (Pokud je jedna největší, bude v poli jedna. Pokud je jich víc stejných, budou tam všechny.)
+    const largestGroups = groups.filter(g => g.length === maxSize);
+
+    const targets = [];
+    const seen = new Set();
+
+    // 5. Hinty generujeme POUZE pro kameny v těchto největších skupinách
+    largestGroups.forEach(group => {
+        group.forEach(key => {
+            const [q, r] = key.split(',').map(Number);
+
+            DIRS.forEach(d => {
+                const nKey = `${q + d[0]},${r + d[1]}`;
+
+                // Pole musí být prázdné a nesmí to být původní místo (aby se hráč musel pohnout)
+                if (!tempBoard.has(nKey) && !seen.has(nKey) && nKey !== fromKey) {
+                    seen.add(nKey);
+                    targets.push(nKey);
+                }
+            });
+        });
+    });
+
+    console.log(`Nalezeno bezpečných cílů: ${targets.length} (maxSize: ${maxSize})`);
+    return targets;
+}
+
+
+
+    hexToPixel(q, r) {
+        return { 
+            x: this.hexSize * Math.sqrt(3) * (q + r / 2) + this.canvas.width / 2 + this.camX, 
+            y: this.hexSize * 3 / 2 * r + this.canvas.height / 2 + this.camY 
+        };
+    }
+    pixelToHex(px, py) {
+        const x = px - this.canvas.width / 2 - this.camX, y = py - this.canvas.height / 2 - this.camY;
+        const q = (Math.sqrt(3)/3 * x - 1/3 * y) / this.hexSize, r = (2/3 * y) / this.hexSize;
+        let rq = Math.round(q), rr = Math.round(r), rs = Math.round(-q-r);
+        const dq = Math.abs(rq - q), dr = Math.abs(rr - r), ds = Math.abs(rs - (-q-r));
+        if (dq > dr && dq > ds) rq = -rr-rs; else if (dr > ds) rr = -rq-rs;
+        return { q: rq, r: rr };
+    }
+
+    onDown(e) { this.isDragging = true; this.dragStart = { x: e.clientX, y: e.clientY }; this.totalDragDist = 0; }
+    onMove(e) {
+        if (!this.isDragging) return;
+        const dx = e.clientX - this.dragStart.x, dy = e.clientY - this.dragStart.y;
+        this.camX += dx; this.camY += dy; this.totalDragDist += Math.sqrt(dx*dx+dy*dy);
+        this.dragStart = { x: e.clientX, y: e.clientY }; this.draw();
+    }
+
+    onUp(e) {
+// Uprav část ve své funkci onUp, kde se vybírá kámen (this.selectedKey = key)
+
+    // 1. Vyřešení výběru při zajetí (výběr skupiny, která přežije)
+    if (this.waitingForCaptureChoice) {
+        const rect = this.canvas.getBoundingClientRect();
+        const hex = this.pixelToHex(e.clientX - rect.left, e.clientY - rect.top);
+        const key = `${hex.q},${hex.r}`; // Definice pro capture choice
+
+        for (let group of this.pendingCaptureGroups) {
+            if (group.includes(key)) {
+                this.applyCapture(group); // Použijeme tvou/mou pomocnou funkci
+                this.waitingForCaptureChoice = false;
+                this.pendingCaptureGroups = null;
+                this.afterAction();
+                return;
+            }
+        }
+        return;
+    }
+
+    // 2. Kontrola tažení vs kliknutí
+    this.isDragging = false;
+    if (this.totalDragDist < 10 && !this.gameOver) {
+        const rect = this.canvas.getBoundingClientRect();
+        const hex = this.pixelToHex(e.clientX - rect.left, e.clientY - rect.top);
+        
+        // ZDE DEFINUJEME 'key' PRO CELÝ ZBYTEK FUNKCE
+        const key = `${hex.q},${hex.r}`; 
+
+        if (this.phase === 1) {
+            // Fáze 1: Pokládání
+            this.placeStone(hex.q, hex.r);
+        } else {
+            // Fáze 2: Přesun
+            const clickedColor = this.board.get(key);
+
+            // A) Výběr/Zvednutí vlastního kamene
+            if (clickedColor === this.currentPlayer) {
+                this.selectedKey = key;
+                this.log(`Vybrán kámen ${this.currentPlayer} na ${key}`);
+                
+                // Vizuální simulace rozpadu (pro draw())
+                const tempBoard = new Map(this.board);
+                tempBoard.delete(key);
+                this.visualGroups = this.getGroups(tempBoard);
+            } 
+            // B) Položení zvednutého kamene na prázdné pole
+            else if (this.selectedKey && !this.board.has(key)) {
+                const validTargets = this.getValidMoveTargets(this.selectedKey);
+                if (validTargets.includes(key)) {
+                    this.moveStone(this.selectedKey, key);
+                    this.visualGroups = null; // Reset po tahu
+                }
+            }
+        }
+        this.draw();
+    }
+}
+
+    updateUI() {
+        document.getElementById('red-count').textContent = this.phase === 1 ? this.redLeft : this.redTotal;
+        document.getElementById('black-count').textContent = this.phase === 1 ? this.blackLeft : this.blackTotal;
+        document.getElementById('phase-text').textContent = `Fáze ${this.phase}`;
+        const s = document.getElementById('status');
+        if (this.gameOver) s.textContent = `Vítěz: ${this.currentPlayer.toUpperCase()}`;
+        else s.textContent = `Na tahu: ${this.currentPlayer === 'red' ? 'Červený' : 'Černý'}`;
+    }
+
+    draw() {
+    // 1. Reset a vyčištění plátna
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 2. Příprava skupin pro vizuální odlišení (pouze ve Fázi 2, když je vybrán kámen)
+    let visualGroups = [];
+    if (this.phase === 2 && this.selectedKey) {
+        const tempBoard = new Map(this.board);
+        tempBoard.delete(this.selectedKey);
+        visualGroups = this.getGroups(tempBoard);
+    }
+
+    // 3. Nápověda pro tahy (tečky)
+    if (!this.gameOver) {
+        let hints = [];
+        if (this.phase === 1) {
+            hints = this.getValidPlacements();
+        } else if (this.selectedKey) {
+            hints = this.getValidMoveTargets(this.selectedKey).map(key => {
+                const parts = key.split(',');
+                return { q: parseInt(parts[0]), r: parseInt(parts[1]) };
+            });
+        }
+
+        hints.forEach(h => {
+            this.drawHex(this.hexToPixel(h.q, h.r), null, true, false, false, false);
+        });
+    }
+
+    // 4. Vykreslení kamenů na desce
+    this.board.forEach((color, key) => {
+        const parts = key.split(',');
+        const q = parseInt(parts[0]);
+        const r = parseInt(parts[1]);
+        
+        const isWinning = this.winningFormation && this.winningFormation.includes(key);
+        let finalColor = isWinning ? "#f39c12" : color;
+        
+        // --- LOGIKA PRO ZVÝRAZNĚNÍ ROZDĚLENÝCH SKUPIN ---
+        let groupHighlightColor = null;
+        if (visualGroups.length > 1 && key !== this.selectedKey) {
+            const gIndex = visualGroups.findIndex(g => g.includes(key));
+            if (gIndex !== -1) {
+                // Definujeme jasné barvy pro odlišení skupin (např. azurová, purpurová, žlutá)
+                const groupColors = ['#00FBFF', '#FF00FF', '#FFFF00', '#00FF00'];
+                groupHighlightColor = groupColors[gIndex % groupColors.length];
+            }
+        }
+
+        this.drawHex(
+            this.hexToPixel(q, r), 
+            finalColor, 
+            false, 
+            key === this.lastMoveKey, 
+            key === this.selectedKey,
+            isWinning,
+            groupHighlightColor // <--- NOVÝ PARAMETR
+        );
+    });
+}
+
+    drawHex(center, color, isHint, isLastMove, isSelected, isWinning, groupHighlightColor = null) {
+    const p = center; // Alias pro p.x a p.y, aby tvůj kód zůstal čitelný
+    
+    // 1. DEFINICE CESTY HEXAGONU
+    this.ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i - Math.PI / 6;
+        this.ctx.lineTo(
+            p.x + this.hexSize * 0.95 * Math.cos(a),
+            p.y + this.hexSize * 0.95 * Math.sin(a)
+        );
+    }
+    this.ctx.closePath();
+
+    // 2. PŘÍPAD PRO NÁPOVĚDU (HINT)
+    // 2. PŘÍPAD PRO NÁPOVĚDU (HINT)
+    if (isHint) {
+    if (this.currentPlayer === 'red') {
+        // Červená nápověda - bez obrysu
+        this.ctx.fillStyle = 'rgba(214, 48, 49, 0.25)'; // Mírně zvýšena sytost (z 0.15 na 0.25)
+    } else {
+        // Tmavá nápověda pro černého - bez obrysu
+        // Použijeme barvu kamene s vyšším krytím, aby na šedi vynikla
+        this.ctx.fillStyle = 'rgba(45, 52, 54, 0.4)';  // Sytější tmavá, aby byla bez linky čitelná
+    }
+    
+    this.ctx.fill();
+    // Stroke (obrys) je smazán
+    return;
+    }
+
+    // 3. VÝPLŇ KAMENE (Standardní nebo Vítězný)
+    this.ctx.fillStyle = isWinning 
+        ? '#f39c12' 
+        : (isSelected ? '#fdcb6e' : (color === 'red' ? '#d63031' : '#2d3436'));
+    this.ctx.fill();
+
+    // 4. ZVÝRAZNĚNÍ ROZDĚLENÉ SKUPINY (Nové pravidlo: Větší bere)
+    // Toto nakreslíme jako první silný obrys pod ten standardní
+    if (groupHighlightColor) {
+        this.ctx.save();
+        this.ctx.strokeStyle = groupHighlightColor;
+        this.ctx.lineWidth = 5; // Pořádně silná čára pro viditelnost skupiny
+        this.ctx.lineJoin = 'round';
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
+    // 5. STANDARDNÍ OBVOD KAMENE
+    if (isLastMove) {
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.5;
+    } else {
+        this.ctx.strokeStyle = '#ffffff33';
+        this.ctx.lineWidth = 1;
+    }
+    this.ctx.stroke();
+
+    // 6. TEČKA POSLEDNÍHO TAHU
+    if (isLastMove) {
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fill();
+    }
+}
+
+
+}    // Zde končí třída SixGame
+
+window.onload = () => new SixGame(document.getElementById('gameCanvas'));
+// Ovladač pro okno Nápovědy
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById("helpModal");
+    const btnHelp = document.getElementById("btnHelp");
+    const spanClose = document.getElementById("closeHelp");
+
+    // Otevření
+    btnHelp.addEventListener('click', () => {
+        modal.style.display = "block";
+    });
+
+    // Zavření křížkem
+    spanClose.addEventListener('click', () => {
+        modal.style.display = "none";
+    });
+
+    // Zavření kliknutím mimo okno
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+});
+
+</script>
+</body>
+</html>
