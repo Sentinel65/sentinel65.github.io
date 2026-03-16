@@ -287,7 +287,7 @@
         <p>Pokud je hrací plocha rozdělena na dvě stejné skupiny, hráč který provedl odstranění si vybere, která skupina bude zajata. Odstraněný kámen se umístí až po dokončení zajetí a spočítání.</p>
 
         <h3>Konečný konec hry</h3>
-        <p>Hra končí, jakmile některý z hráčů vytvoří jednu ze tří vítězných formací nebo jeho soupeř má ve hře méně než šest kamenů (takže již nemůže vytvořit šestici).</p>
+        <p>Hra končí, jakmile některý z hráčů vytvoří jednu ze tří vítězných formací nebo jeho soupeř má ve hře méně než šest kamenů (takže již nemůže vytvořit šestici). Pokud nastane situace, kdy po zajetí skupiny kamenů mají oba hráči méně než 6 kamenů, prohrává ten, který je na tahu.</p>
     </div>
 </div>
 
@@ -313,6 +313,7 @@ class SixGame {
         this.selectedKey = null;
         this.winningFormation = null; // Pro zvýraznění vítěze
         this.hexSize = 30;
+		this.debug = false;
         
         // Sledování historie startů pro režim "Střídavě"
         this.lastStarter = 'ai'; 
@@ -335,13 +336,110 @@ class SixGame {
     }
 
 
-    log(msg) {
-        const logContent = document.getElementById('log-content');
-        if (!logContent) return;
-        const entry = document.createElement('div');
-        entry.textContent = `> ${msg}`;
-        logContent.prepend(entry); // Přidá nový záznam nahoru
+
+	analyzeGroups(boardState, selectedKey = null, logOnlyIfSplit = true) {
+    // 1. Dočasně odebereme vybraný kámen
+    const tempBoard = new Map(boardState);
+    if (selectedKey) tempBoard.delete(selectedKey);
+
+    const groups = this.getGroups(tempBoard);
+
+    // 2. Pokud se nevytvořily nové skupiny (1 skupina nebo stejný počet jako předtím), nic nelogujeme
+    if (logOnlyIfSplit && groups.length <= 1) {
+        return { groups, stats: [], winner: null };
     }
+
+    const groupColors = ['#00FBFF', '#FF00FF', '#FFFF00', '#00FF00'];
+    const groupColorNames = ['Azurová', 'Purpurová', 'Žlutá', 'Zelená'];
+
+    let stats = [];
+
+    groups.forEach((group, index) => {
+        let red = 0;
+        let black = 0;
+
+        group.forEach(k => {
+            const c = boardState.get(k);
+            if (c === 'red') red++;
+            if (c === 'black') black++;
+        });
+
+        const color = groupColors[index % groupColors.length];
+        const colorName = groupColorNames[index % groupColorNames.length];
+
+        stats.push({
+            index,
+            size: group.length,
+            red,
+            black,
+            color,
+            colorName,
+            group
+        });
+
+        if (!logOnlyIfSplit || groups.length > 1) {
+            this.log(
+                `${colorName} skupina: ${group.length} kamenů (Červený ${red}, Černý ${black})`,
+                color
+            );
+        }
+    });
+
+    // 3. Najdeme největší skupiny
+    const maxSize = Math.max(...stats.map(g => g.size));
+    const largest = stats.filter(g => g.size === maxSize);
+
+    let winner = null;
+
+    if (largest.length === 1) {
+        winner = largest[0];
+        if (!logOnlyIfSplit || groups.length > 1) {
+            this.log(
+                `Přežije ${winner.colorName.toLowerCase()} skupina (${winner.size} kamenů)`,
+                winner.color
+            );
+        }
+    } else if (groups.length > 1) {
+        // pouze pokud došlo k rozdělení
+        this.log(
+            "Remíza největších skupin – přežije skupina, ke které připojíš přesunutý kámen"
+        );
+    }
+
+    return { groups, stats, winner };
+}
+
+
+
+    log(msg, color = null) {
+
+    const logContent = document.getElementById('log-content');
+    if (!logContent) return;
+
+    const entry = document.createElement('div');
+
+    if (color) {
+        entry.innerHTML =
+            `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span> ${msg}`;
+    } else {
+        entry.textContent = `> ${msg}`;
+    }
+
+    logContent.prepend(entry);
+}
+
+
+colorDot(color) {
+    return `<span style="
+        display:inline-block;
+        width:10px;
+        height:10px;
+        border-radius:50%;
+        background:${color};
+        margin-right:6px;
+        border:1px solid #444;
+    "></span>`;
+}
 
 
     copyLog() {
@@ -646,8 +744,8 @@ else this.blackFirstMove = false;
         if (capturedRed > 0 || capturedBlack > 0) {
             let logMsg = `Zajato! Smazáno: `;
             let parts = [];
-            if (capturedRed > 0) parts.push(`${capturedRed}x Červený`);
-            if (capturedBlack > 0) parts.push(`${capturedBlack}x Černý`);
+            if (capturedRed > 0) parts.push(`Červený ${capturedRed}`);
+            if (capturedBlack > 0) parts.push(`Černý  ${capturedBlack}`);
             logMsg += parts.join(', ');
             this.log(logMsg);
         }
@@ -694,7 +792,7 @@ else this.blackFirstMove = false;
         // Vzácná situace: Oba mají méně než 6. Vyhrává ten, kdo právě táhl!
         this.gameOver = true;
         this.log("KONEC: Oba hráči mají méně než 6 kamenů!");
-        this.log(`KONEC: Vítěz ${this.currentPlayer} (soupeř už nemůže hrát)`);
+        this.log(`KONEC: Vítěz ${this.currentPlayer} (hráč, který poslední provedl tah)`);
     } else if (redLost) {
         this.gameOver = true;
         this.currentPlayer = 'black'; // Přepneme na černého, aby ho UI ukázalo jako vítěze
@@ -864,7 +962,9 @@ if (isFirstMove) {
         });
     });
 
+    if (this.debug) {
     console.log(`Nalezeno bezpečných cílů: ${targets.length} (maxSize: ${maxSize})`);
+}
     return targets;
 }
 
@@ -932,14 +1032,15 @@ if (isFirstMove) {
 
             // A) Výběr/Zvednutí vlastního kamene
             if (clickedColor === this.currentPlayer) {
-                this.selectedKey = key;
-                this.log(`Vybrán kámen ${this.currentPlayer} na ${key}`);
-                
-                // Vizuální simulace rozpadu (pro draw())
-                const tempBoard = new Map(this.board);
-                tempBoard.delete(key);
-                this.visualGroups = this.getGroups(tempBoard);
-            } 
+    this.selectedKey = key;
+    this.log(`Vybrán kámen ${this.currentPlayer} na ${key}`);
+
+    // Log skupin jen pokud dojde k rozdělení
+    const analysis = this.analyzeGroups(this.board, key, true);
+
+    this.visualGroups = analysis.stats; // pro draw()
+}
+		
             // B) Položení zvednutého kamene na prázdné pole
             else if (this.selectedKey && !this.board.has(key)) {
                 const validTargets = this.getValidMoveTargets(this.selectedKey);
