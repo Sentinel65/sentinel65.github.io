@@ -1142,13 +1142,10 @@ evaluateBoard(state) {
             }
         });
 
-        // Kontrola hrozby rozdělení (prevence vyzobávání)
-        // Simulujeme, co se stane, když zmizí náš nejslabší článek
-        score += this.evaluateStructuralIntegrity(board, "black");
-        score -= this.evaluateStructuralIntegrity(board, "red");
+       
     }
 
-    score += this.scoreFormations(board);
+
     return score;
 }
 
@@ -1211,44 +1208,9 @@ getMaxLineLengthForStone(board, key, color) {
     return maxLength;
 }
 
-scoreFormations(board) {
-    let score = 0;
 
-    for (let [key, color] of board) {
-        const multiplier = (color === "black") ? 1 : -1;
-        const lineLen = this.getMaxLineLengthForStone(board, key, color);
 
-        if (lineLen === 2) {
-            score += 10 * multiplier;
-        } else if (lineLen === 3) {
-            score += 50 * multiplier;
-        } else if (lineLen === 4) {
-            score += 500 * multiplier;
-        } else if (lineLen === 5) {
-            if (this.phase === 1) {
-                // Ve fázi 1 je pětka skvělá a bezpečná
-                score += 20000 * multiplier; // místo 5000
-            } else {
-                // VE FÁZI 2: Musíme zjistit, jestli ta řada není past
-                // Najdeme všechny kameny této konkrétní řady (předpokládám pomocnou funkci)
-                const lineStones = this.getLineStones(board, key, color);
-                const bridgeCount = this.countBridgesForLine(board, lineStones);
 
-                if (bridgeCount <= 2) {
-                    // Pokud je řada připojená jen slabě, penalizujeme ji (vlastní pětka je risk, soupeřova je past)
-                    // Pro black (multiplier 1) to skóre sníží, pro red (multiplier -1) ho zvýší
-                    score += (500 - 2000) * multiplier; 
-                } else {
-                    // Pokud je dobře podepřená, stále má vysokou hodnotu
-                    score += 2000 * multiplier;
-                }
-            }
-        } else if (lineLen >= 6) {
-            score += 1000000 * multiplier;
-        }
-    }
-    return score;
-}
 
 // Pomocná funkce pro spočítání "mostů" (kolik jiných kamenů drží tuto řadu u úlu)
 countBridgesForLine(board, lineStones) {
@@ -1448,9 +1410,7 @@ minimax(state, depth, alpha, beta, maximizingPlayer) {
 
 
 
-findLineThreat4(player) {
-    const board = this.board;
-
+findLineThreat4OnBoard(player, board) {
     for (let [key, color] of board) {
         if (color !== player) continue;
 
@@ -1463,7 +1423,6 @@ findLineThreat4(player) {
             let fq = q, fr = r;
             let bq = q, br = r;
 
-            // dopředu
             for (let i = 1; i < 6; i++) {
                 const k = `${q + dir[0]*i},${r + dir[1]*i}`;
                 if (board.get(k) === player) {
@@ -1473,7 +1432,6 @@ findLineThreat4(player) {
                 } else break;
             }
 
-            // dozadu
             for (let i = 1; i < 6; i++) {
                 const k = `${q - dir[0]*i},${r - dir[1]*i}`;
                 if (board.get(k) === player) {
@@ -1495,6 +1453,14 @@ findLineThreat4(player) {
 
     return null;
 }
+
+
+
+findLineThreat4(player) {
+    return this.findLineThreat4OnBoard(player, this.board);
+}
+
+
 
 
 
@@ -1614,36 +1580,6 @@ findImmediateWin(player, state) {
 
 
 
-findImmediateRing(player, board) {
-    for (let [center] of board) {
-        const [cq, cr] = center.split(',').map(Number);
-
-        let stones = 0;
-        let empty = null;
-
-        for (let d = 0; d < 6; d++) {
-            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
-            const s = board.get(k);
-
-            if (s === player) stones++;
-            else if (!s) {
-                if (empty === null) empty = k;
-                else { empty = null; break; } // více než 1 díra → není 5/6
-            } else {
-                empty = null;
-                break;
-            }
-        }
-
-        if (stones === 5 && empty) {
-            return { type: "place", key: empty };
-        }
-    }
-
-    return null;
-}
-
-
 
 findThreat(player, length, state) {
     const moves = this.getAllMoves(player, state);
@@ -1757,24 +1693,253 @@ findTriangleThreat(player, state) {
 
 
 
+// Hex vzdálenost mezi dvěma poli
+distanceToLast(move, lastKey) {
+    if (!lastKey) return 0;
+    const [lq, lr] = lastKey.split(',').map(Number);
+    const targetKey = move.type === "place" ? move.key : move.to;
+    const [q, r] = targetKey.split(',').map(Number);
+    const dq = q - lq;
+    const dr = r - lr;
+    const ds = -dq - dr;
+    return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+}
 
+// Detekce hrozby 4 v řadě na libovolné desce
+findLineThreat4OnBoard(player, board) {
+    for (let [key, color] of board) {
+        if (color !== player) continue;
 
-    aiMove() {
-    if (this.gameOver || this.currentPlayer !== "black") return;
-	
-    // SNÍŽENÍ HLOUBKY PRO FÁZI 2
-    let depth = this.aiDepth; 
-    if (this.phase === 2) {
-        depth = 2; // Pokud se to stále seká, dej 1
+        const [q, r] = key.split(',').map(Number);
+
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+
+            let stones = [key];
+            let fq = q, fr = r;
+            let bq = q, br = r;
+
+            // dopředu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    fq = q + dir[0]*i;
+                    fr = r + dir[1]*i;
+                } else break;
+            }
+
+            // dozadu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    bq = q - dir[0]*i;
+                    br = r - dir[1]*i;
+                } else break;
+            }
+
+            if (stones.length === 4) {
+                const end1 = `${fq + dir[0]},${fr + dir[1]}`;
+                if (!board.get(end1)) return { type: "place", key: end1 };
+
+                const end2 = `${bq - dir[0]},${br - dir[1]}`;
+                if (!board.get(end2)) return { type: "place", key: end2 };
+            }
+        }
     }
 
+    return null;
+}
+
+// Wrapper pro aktuální desku
+findLineThreat4(player) {
+    return this.findLineThreat4OnBoard(player, this.board);
+}
+
+// Okamžitá výhra kruhem (5/6 kolem libovolného středu)
+findImmediateRing(player, board) {
+    for (let [center] of board) {
+        const [cq, cr] = center.split(',').map(Number);
+
+        let stones = 0;
+        let empty = null;
+
+        for (let d = 0; d < 6; d++) {
+            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
+            const s = board.get(k);
+
+            if (s === player) stones++;
+            else if (!s) {
+                if (empty === null) empty = k;
+                else { empty = null; break; }
+            } else {
+                empty = null;
+                break;
+            }
+        }
+
+        if (stones === 5 && empty) {
+            return { type: "place", key: empty };
+        }
+    }
+
+    return null;
+}
+
+
+
+evaluateBoard(state, player) {
+    const board = state.board;
+    const opponent = (player === "black" ? "red" : "black");
+
+    if (this.checkWinFull(board, player)) return 10000;
+    if (this.checkWinFull(board, opponent)) return -10000;
+
+    let score = 0;
+
+    if (this.findLineThreat4OnBoard(player, board)) score += 200;
+    if (this.findLineThreat4OnBoard(opponent, board)) score -= 200;
+
+    if (this.findThreat(player, 5, state)) score += 300;
+    if (this.findThreat(opponent, 5, state)) score -= 300;
+
+    if (this.findTriangleThreat(player, state)) score += 150;
+    if (this.findTriangleThreat(opponent, state)) score -= 150;
+
+    if (this.findImmediateRing(player, board)) score += 150;
+    if (this.findImmediateRing(opponent, board)) score -= 150;
+
+    return score;
+}
+
+
+
+
+
+evaluateMoveHeuristic(move, state, player) {
+    const opponent = (player === "black" ? "red" : "black");
+    const sim = this.simulateMove(state, move, player);
+    const board = sim.board;
+
+    let score = 0;
+
+    // 1) Okamžitá výhra
+    if (this.checkWinFull(board, player)) score += 5000;
+
+    // 2) Tah, po kterém soupeř vyhrává → velká penalizace
+    if (this.checkWinFull(board, opponent)) score -= 4000;
+
+    // 3) Hrozba 4 v řadě (moje i soupeřova)
+    if (this.findLineThreat4OnBoard(player, board)) score += 800;
+    if (this.findLineThreat4OnBoard(opponent, board)) score += 900; // blokace je ještě důležitější
+
+    // 4) Hrozba 5 v řadě (moje i soupeřova)
+    if (this.findThreat(player, 5, sim)) score += 1200;
+    if (this.findThreat(opponent, 5, sim)) score += 1300;
+
+    // 5) Trojúhelník
+    if (this.findTriangleThreat(player, sim)) score += 600;
+    if (this.findTriangleThreat(opponent, sim)) score += 700;
+
+    // 6) Kruh
+    if (this.findImmediateRing(player, board)) score += 600;
+    if (this.findImmediateRing(opponent, board)) score += 700;
+
+    // 7) Prodlužování vlastní linie (3‑v‑řadě → 4‑v‑řadě)
+    const my3 = this.findThreat(player, 3, sim);
+    if (my3) score += 300;
+
+    // 8) Blokování soupeřovy 3‑v‑řadě
+    const opp3 = this.findThreat(opponent, 3, sim);
+    if (opp3) score += 350;
+
+    // 9) Prodlužování vlastní 4‑v‑řadě (→ výhra)
+    const my4 = this.findThreat(player, 4, sim);
+    if (my4) score += 600;
+
+    // 10) Blokování soupeřovy 4‑v‑řadě
+    const opp4 = this.findThreat(opponent, 4, sim);
+    if (opp4) score += 700;
+
+
+    // 11) Lokální hra – blízko posledního tahu soupeře
+    score -= this.distanceToLast(move, this.lastMoveKey) * 12;
+
+    // 12) Blízkost vlastních kamenů
+    const targetKey = move.type === "place" ? move.key : move.to;
+    const [q, r] = targetKey.split(',').map(Number);
+
+    let neighbors = 0;
+    for (let d = 0; d < 6; d++) {
+        const k = `${q + DIRS[d][0]},${r + DIRS[d][1]}`;
+        if (board.get(k) === player) neighbors++;
+    }
+    score += neighbors * 40;
+
+    if (neighbors === 0) score -= 80;
+
+
+    return score;
+}
+
+
+
+
+
+
+aiMove() {
+    if (this.gameOver || this.currentPlayer !== "black") return;
+
+    const opponent = "red";
+
+    // ---------------- FÁZE 1 – BEZ MINIMAXU ----------------
+    if (this.phase === 1) {
+        const state = this.cloneState();
+
+        const getTargetFromMove = (move) =>
+            move ? (move.type === "place" ? move.key : move.to) : null;
+
+        // 1) OKAMŽITÁ VÝHRA
+        const winNow = this.findImmediateWin("black", state);
+        if (winNow) return this.playAIMove(winNow);
+
+        const winRing = this.findImmediateRing("black", state.board);
+        if (winRing) return this.playAIMove({ type: "place", key: winRing.key });
+
+        const winTri = this.findTriangleThreat("black", state);
+        if (winTri) return this.playAIMove({ type: "place", key: winTri.key });
+
+        // 2) OKAMŽITÁ BLOKACE SOUPEŘE
+        const enemyWin = this.findImmediateWin(opponent, state);
+        if (enemyWin) return this.playAIMove(enemyWin);
+
+        const threat4 = this.findLineThreat4(opponent);
+        if (threat4) return this.playAIMove({ type: "place", key: threat4.key });
+
+        const triThreat = this.findTriangleThreat(opponent, state);
+        if (triThreat) return this.playAIMove({ type: "place", key: triThreat.key });
+
+        const ringThreat = this.findRingThreat(opponent);
+        if (ringThreat) return this.playAIMove({ type: "place", key: ringThreat.key });
+
+        // 3) HEURISTICKÉ ŘAZENÍ TAHŮ
+        let moves = this.getAllMoves("black", state);
+
+        moves.sort((a, b) =>
+            this.evaluateMoveHeuristic(b, state, "black") -
+            this.evaluateMoveHeuristic(a, state, "black")
+        );
+
+        // 4) VYBER NEJLEPŠÍ TAH
+        return this.playAIMove(moves[0]);
+    }
+
+    // ---------------- FÁZE 2 – S MINIMAXEM ----------------
     const state = this.cloneState();
 
-    // --- POMOCNÉ FUNKCE ---
-    const getTargetFromMove = (move) => {
-        if (!move) return null;
-        return move.type === "place" ? move.key : move.to;
-    };
+    const getTargetFromMove = (move) =>
+        move ? (move.type === "place" ? move.key : move.to) : null;
 
     const getMoveForTarget = (targetKey) => {
         if (!targetKey) return null;
@@ -1783,49 +1948,40 @@ findTriangleThreat(player, state) {
         return moves.find(m => m.to === targetKey) || null;
     };
 
-    // 1) OKAMŽITÁ VÝHRA AI
+    // 1) Okamžitá výhra AI
     const winNow = this.findImmediateWin("black", state);
     if (winNow) return this.playAIMove(winNow);
 
-    // 1.5) OKAMŽITÝ KRUH AI
-    const winRingKey = this.findImmediateRing("black", state.board)?.key;
-    if (winRingKey) {
-        const m = getMoveForTarget(winRingKey);
+    // 1.5) Okamžitý kruh AI
+    const winRing = this.findImmediateRing("black", state.board);
+    if (winRing) {
+        const m = getMoveForTarget(winRing.key);
         if (m) return this.playAIMove(m);
     }
 
-    // 2) BLOKOVÁNÍ OKAMŽITÉ VÝHRY SOUPEŘE
-    const enemyWin = this.findImmediateWin("red", state);
-
+    // 2) Blokování okamžité výhry soupeře
+    const enemyWin = this.findImmediateWin(opponent, state);
     if (enemyWin) {
         const target = getTargetFromMove(enemyWin);
 
-        // 1) pokus – přímo bloknout cílové pole
         let blockMove = getMoveForTarget(target);
         if (blockMove) return this.playAIMove(blockMove);
 
-        // 2) fallback – zkus jakýkoliv tah, který zabrání výhře
         const allMoves = this.getAllMoves("black", state);
-
         for (const m of allMoves) {
             const sim = this.simulateMove(state, m, "black");
-
-            const stillWin =
-                this.checkWinFull(sim.board, "red");
-
-            if (!stillWin) {
+            if (!this.checkWinFull(sim.board, opponent)) {
                 return this.playAIMove(m);
             }
         }
     }
 
-
-    // Ostatní hrozby (4 v řadě, trojúhelník...)
+    // 3) Kritické hrozby soupeře
     const criticalThreats = [
-        this.findLineThreat4("red")?.key,
-        this.findTriangleThreat("red", state)?.key,
-        this.findRingThreat("red")?.key,
-        getTargetFromMove(this.findThreat("red", 5, state))
+        this.findLineThreat4(opponent)?.key,
+        this.findTriangleThreat(opponent, state)?.key,
+        this.findRingThreat(opponent)?.key,
+        getTargetFromMove(this.findThreat(opponent, 5, state))
     ];
 
     for (const threatKey of criticalThreats) {
@@ -1835,57 +1991,30 @@ findTriangleThreat(player, state) {
         }
     }
 
-    // ... (předchozí části funkce aiMove zůstávají stejné) ...
+    // 4) MINIMAX – výběr nejlepšího tahu
+    let moves = this.getAllMoves("black", state);
+    if (!moves.length) return;
 
-// 7) MINIMAX - ROZHODOVÁNÍ O NEJLEPŠÍM TAHU
-let moves = this.getAllMoves("black", state);
-if (!moves.length) return;
+    // FÁZE 2 – omezit na top 20 tahů
+    moves.sort((a, b) =>
+        this.evaluateMoveHeuristic(b, state, "black") -
+        this.evaluateMoveHeuristic(a, state, "black")
+    );
+    moves = moves.slice(0, 20);
 
-// --- DŮLEŽITÁ ÚPRAVA PRO RYCHLOST ---
-// Ve Fázi 2 snížíme hloubku, aby se hra nezasekla (branching factor je příliš vysoký)
-let currentDepth = this.aiDepth; 
-if (this.phase === 2) {
-    currentDepth = 1; // Pokud je to stále pomalé, změňte na 1
-}
+    let bestScore = -Infinity;
+    let bestMove = moves[0];
 
-let bestScore = -Infinity;
-let bestMove = moves[0];
-let moveCount = 0; // Pro sledování postupu v konzoli
-
-for (const move of moves) {
-    moveCount++;
-    // Každých 50 prověřených tahů vypíšeme info do konzole, abychom viděli, že AI žije
-    if (moveCount % 50 === 0) console.log(`AI analyzuje tah ${moveCount} z ${moves.length}...`);
-
-    let scorePenalty = 0;
-
-    // --- SEBEVRAŽEDNÁ POJISTKA (FÁZE 2) ---
-    if (state.phase === 2 && move.type === "move") {
-        const boardWithoutStone = new Map(state.board);
-        boardWithoutStone.delete(move.from);
-        
-        if (
-    this.checkWinGeneric(boardWithoutStone, "red", move.from) ||
-    this.checkWinFull(boardWithoutStone, "red")
-    ) {
-        scorePenalty -= 50000;
-    }
+    for (const move of moves) {
+        const newState = this.simulateMove(state, move, "black");
+        const score = this.minimax(newState, 2 - 1, false);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
+        }
     }
 
-    const newState = this.simulateMove(state, move, "black");
-
-    // TADY POUŽÍVÁME currentDepth MÍSTO this.aiDepth
-    const score = this.minimax(newState, currentDepth - 1, false) + scorePenalty;
-    
-    if (score > bestScore) {
-        bestScore = score;
-        bestMove = move;
-    }
-}
-
-console.log("AI vybrala nejlepší tah.");
-this.playAIMove(bestMove);
-
+    this.playAIMove(bestMove);
 }
 
 
