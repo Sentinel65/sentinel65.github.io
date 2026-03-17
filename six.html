@@ -1410,6 +1410,45 @@ minimax(state, depth, alpha, beta, maximizingPlayer) {
 
 
 
+
+
+
+
+findThreat(player, length, state) {
+    const moves = this.getAllMoves(player, state);
+
+    for (const move of moves) {
+        const newState = this.simulateMove(state, move, player);
+        const board = newState.board;
+        const key = move.type === "place" ? move.key : move.to;
+        const [q, r] = key.split(',').map(Number);
+
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+            let count = 1;
+
+            // dopředu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+                if (board.get(k) === player) count++;
+                else break;
+            }
+
+            // dozadu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+                if (board.get(k) === player) count++;
+                else break;
+            }
+
+            if (count >= length) return move;
+        }
+    }
+
+    return null;
+}
+
+
 findLineThreat4OnBoard(player, board) {
     for (let [key, color] of board) {
         if (color !== player) continue;
@@ -1418,11 +1457,11 @@ findLineThreat4OnBoard(player, board) {
 
         for (let d = 0; d < 3; d++) {
             const dir = DIRS[d];
-
             let stones = [key];
             let fq = q, fr = r;
             let bq = q, br = r;
 
+            // dopředu
             for (let i = 1; i < 6; i++) {
                 const k = `${q + dir[0]*i},${r + dir[1]*i}`;
                 if (board.get(k) === player) {
@@ -1432,6 +1471,7 @@ findLineThreat4OnBoard(player, board) {
                 } else break;
             }
 
+            // dozadu
             for (let i = 1; i < 6; i++) {
                 const k = `${q - dir[0]*i},${r - dir[1]*i}`;
                 if (board.get(k) === player) {
@@ -1441,7 +1481,7 @@ findLineThreat4OnBoard(player, board) {
                 } else break;
             }
 
-            if (stones.length === 4) {
+            if (stones.length >= 4) {
                 const end1 = `${fq + dir[0]},${fr + dir[1]}`;
                 if (!board.get(end1)) return { type: "place", key: end1 };
 
@@ -1456,12 +1496,30 @@ findLineThreat4OnBoard(player, board) {
 
 
 
+
 findLineThreat4(player) {
     return this.findLineThreat4OnBoard(player, this.board);
 }
 
 
 
+findImmediateWin(player, state) {
+    const moves = this.getAllMoves(player, state);
+
+    for (const move of moves) {
+        const newState = this.simulateMove(state, move, player);
+        const lastKey = move.type === "place" ? move.key : move.to;
+        
+        // ZMĚNA: Používáme rovnou tvou hlavní vyhodnocovací funkci
+        if (
+            this.checkWinGeneric(newState.board, player, lastKey) ||
+            this.checkWinFull(newState.board, player)
+        ) {
+            return move; 
+        }
+    }
+    return null;
+}
 
 
 
@@ -1560,45 +1618,8 @@ playAIMove(move) {
 
 
 
-findImmediateWin(player, state) {
-    const moves = this.getAllMoves(player, state);
-
-    for (const move of moves) {
-        const newState = this.simulateMove(state, move, player);
-        const lastKey = move.type === "place" ? move.key : move.to;
-        
-        // ZMĚNA: Používáme rovnou tvou hlavní vyhodnocovací funkci
-        if (
-            this.checkWinGeneric(newState.board, player, lastKey) ||
-            this.checkWinFull(newState.board, player)
-        ) {
-            return move; 
-        }
-    }
-    return null;
-}
 
 
-
-
-findThreat(player, length, state) {
-    const moves = this.getAllMoves(player, state);
-
-    for (const move of moves) {
-        const newState = this.simulateMove(state, move, player);
-        const board = newState.board;
-
-        for (let [key, color] of board) {
-            if (color !== player) continue;
-
-            const line = this.getMaxLineLengthForStone(board, key, player);
-            if (line >= length) {
-                return move; // move už obsahuje key nebo from/to
-            }
-        }
-    }
-    return null;
-}
 
 
 
