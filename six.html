@@ -458,10 +458,11 @@ class SixGame {
         this.dragStart = { x: 0, y: 0 };
         this.lastMoveKey = null;
         this.selectedKey = null;
+        this.lastRemovedKey = null; // Zobrazení pole, odkud hráč odebere kámen
         this.winningFormation = null; // Pro zvýraznění vítěze
         this.hexSize = 30;
 		this.debug = false;
-        this.aiDepth = 3; // můžeš zkusit 2–4 podle výkonu
+        this.aiDepth = 4; // můžeš zkusit 2–4 podle výkonu
 		document.getElementById('btnRestart').addEventListener('click', () => this.reset());
 		document.getElementById('btnCenter').addEventListener('click', () => this.centerOnKey(this.lastMoveKey));
 		
@@ -492,6 +493,9 @@ class SixGame {
         
         this.reset();
     }
+
+
+// ---------------- ULOŽENÍ A NAČTENÍ STAVU HRY ----------------
 
 
 saveGame() {
@@ -530,7 +534,7 @@ loadGame() {
         alert("Nenašel jsem žádnou uloženou hru!");
         return;
     }
-
+    this.reset()
     const s = JSON.parse(savedData);
 
     // 1. Obnova stavových proměnných
@@ -581,6 +585,1441 @@ loadGame() {
         setTimeout(() => this.aiMove(), 600);
     }
 }
+
+
+
+// ---------------- ZÁKLADNÍ FUNKCE ----------------
+
+// Hex vzdálenost mezi dvěma poli
+distanceToLast(move, lastKey) {
+    if (!lastKey) return 0;
+    const [lq, lr] = lastKey.split(',').map(Number);
+    const targetKey = move.type === "place" ? move.key : move.to;
+    const [q, r] = targetKey.split(',').map(Number);
+    const dq = q - lq;
+    const dr = r - lr;
+    const ds = -dq - dr;
+    return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+}
+
+
+// Univerzální hex vzdálenost mezi dvěma souřadnicemi (stringy "q,r")
+getDistance(key1, key2) {
+    if (!key1 || !key2) return 0;
+    const [q1, r1] = key1.split(',').map(Number);
+    const [q2, r2] = key2.split(',').map(Number);
+    const dq = q1 - q2;
+    const dr = r1 - r2;
+    // Tvoje logika ds = -dq - dr
+    return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(-dq - dr));
+}
+
+
+getValidPlacementsForState(state, player) {
+    const moves = [];
+    const seen = new Set();
+
+    const startKey = (player === 'red') ? "0,0" : "1,0";
+    const [sq, sr] = startKey.split(',').map(Number);
+
+    const isFirstMove =
+        (player === 'red' && this.redFirstMove) ||
+        (player === 'black' && this.blackFirstMove);
+
+    for (let [key] of state.board) {
+        const [q, r] = key.split(',').map(Number);
+
+        DIRS.forEach(d => {
+            const nq = q + d[0];
+            const nr = r + d[1];
+            const nk = `${nq},${nr}`;
+
+            if (!state.board.has(nk) && !seen.has(nk)) {
+
+                if (isFirstMove) {
+                    const isNeighborOfStart = DIRS.some(sd => (sq + sd[0] === nq && sr + sd[1] === nr));
+                    if (isNeighborOfStart) return;
+                }
+
+                seen.add(nk);
+                moves.push({ q: nq, r: nr });
+            }
+        });
+    }
+
+    return moves;
+}
+
+
+
+getValidMoveTargetsForState(fromKey, state) {
+    const tempBoard = new Map(state.board);
+    tempBoard.delete(fromKey);
+
+    const groups = this.getGroups(tempBoard);
+    if (groups.length === 0) return [];
+
+    const maxSize = Math.max(...groups.map(g => g.length));
+    const largestGroups = groups.filter(g => g.length === maxSize);
+
+    const targets = [];
+    const seen = new Set();
+
+    largestGroups.forEach(group => {
+        group.forEach(key => {
+            const [q, r] = key.split(',').map(Number);
+
+            DIRS.forEach(d => {
+                const nKey = `${q + d[0]},${r + d[1]}`;
+
+                if (!tempBoard.has(nKey) && !seen.has(nKey) && nKey !== fromKey) {
+                    seen.add(nKey);
+                    targets.push(nKey);
+                }
+            });
+        });
+    });
+
+    return targets;
+}
+
+
+findGroupsAfterMove(board) {
+    const groups = [];
+    const visited = new Set();
+    const keys = Array.from(board.keys());
+
+    for (const key of keys) {
+        if (visited.has(key)) continue;
+
+        // Začínáme hledat novou skupinu (Flood Fill / BFS)
+        const group = [];
+        const queue = [key];
+        visited.add(key);
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            group.push(current);
+
+            const neighbors = this.getNeighbors(current);
+            for (const nKey of neighbors) {
+                if (board.has(nKey) && !visited.has(nKey)) {
+                    visited.add(nKey);
+                    queue.push(nKey);
+                }
+            }
+        }
+        groups.push(group);
+    }
+    return groups;
+}
+
+
+placeStone(q, r) {
+        const key = `${q},${r}`;
+        if (this.board.has(key) || this.gameOver) return;
+        if (!DIRS.some(d => this.board.has(`${q+d[0]},${r+d[1]}`))) return;
+
+        // --- OPRAVA: Pravidlo prvního tahu ---
+        const isFirstMove =
+    (this.currentPlayer === 'red' && this.redFirstMove) ||
+    (this.currentPlayer === 'black' && this.blackFirstMove);
+
+if (isFirstMove) { // Hráč právě pokládá svůj první kámen (po startovním)
+            const startKey = (this.currentPlayer === 'red') ? "0,0" : "1,0";
+            const [sq, sr] = startKey.split(',').map(Number);
+            const isNeighbor = DIRS.some(d => (sq + d[0] === q && sr + d[1] === r));
+            
+            if (isNeighbor) {
+
+                if (this.currentPlayer === 'red') this.log("CHYBA: První tah nesmí sousedit se startem!");
+                return; // Zablokuje tah
+            }
+        }
+        // --- Konec opravy ---
+
+        this.board.set(key, this.currentPlayer);
+        this.lastRemovedKey = null; // Po položení kamene už stará díra nikoho nezajímá
+        this.lastMoveKey = key;
+        if (this.currentPlayer === 'red') this.redLeft--; else this.blackLeft--;
+        this.log(`${this.currentPlayer}: Položil ${key}`);
+        if (this.currentPlayer === 'red') this.redFirstMove = false;
+else this.blackFirstMove = false;
+        this.afterAction();
+    }
+
+
+
+    moveStone(from, to) {
+    const color = this.board.get(from);
+    this.board.delete(from); // Kámen zvedneme - na desce je teď díra
+    this.lastRemovedKey = from; // (Zapamatujeme si prázdné pole)
+    this.board.delete(from);
+
+    // 1. Zjistíme stav skupin ve chvíli, kdy kámen chybí
+    const groups = this.getGroups(this.board);
+
+    if (groups.length > 1) {
+        // Určíme maximální velikost
+        const maxSize = Math.max(...groups.map(g => g.length));
+        const largestGroups = groups.filter(g => g.length === maxSize);
+
+        let survivingGroup;
+
+        // 2. Logika přežití
+        if (largestGroups.length > 1) {
+            // REMÍZA: Přežije ta z největších skupin, ke které se hráč PRÁVĚ PŘIPOJUJE
+            // Zkontrolujeme sousedství pole 'to' se všemi největšími skupinami
+            survivingGroup = largestGroups.find(group => 
+                group.some(key => {
+                    const [gq, gr] = key.split(',').map(Number);
+                    const [tq, tr] = to.split(',').map(Number);
+                    // Je pole 'to' sousedem nějakého kamene v této skupině?
+                    return DIRS.some(d => (gq + d[0] === tq) && (gr + d[1] === tr));
+                })
+            );
+            
+            // Pojistka: pokud by se nepřipojil k žádné, vezmeme první
+            if (!survivingGroup) survivingGroup = largestGroups[0];
+            this.log("Souboj titánů! Zachránil jsi vybranou skupinu.");
+        } else {
+            // AUTOMATIKA: Přežije prostě ta jediná největší
+            survivingGroup = largestGroups[0];
+        }
+
+        // --- Příprava proměnných pro logování zajatých kamenů ---
+        let capturedRed = 0;
+        let capturedBlack = 0;
+
+        // 3. EXEKUCE: Smažeme všechny skupiny, které nejsou 'survivingGroup'
+        groups.forEach(group => {
+            if (group !== survivingGroup) {
+                group.forEach(key => {
+                    const c = this.board.get(key);
+                    // Započítáme smazaný kámen a odečteme ho z celkového počtu
+                    if (c === 'red') {
+                        capturedRed++;
+                        this.redTotal--;
+                    } else if (c === 'black') {
+                        capturedBlack++;
+                        this.blackTotal--;
+                    }
+                    // Fyzické smazání z desky
+                    this.board.delete(key);
+                });
+            }
+        });
+
+        // --- Zápis do logu, pokud byly nějaké kameny smazány ---
+        if (capturedRed > 0 || capturedBlack > 0) {
+            let logMsg = `Zajato! Smazáno: `;
+            let parts = [];
+            if (capturedRed > 0) parts.push(`Červený ${capturedRed}`);
+            if (capturedBlack > 0) parts.push(`Černý ${capturedBlack}`);
+            logMsg += parts.join(', ');
+            this.log(`⚔️ ${logMsg}`, "#ff4757");
+        }
+    }
+
+    // 4. Teprve teď položíme kámen na cílové místo
+    this.board.set(to, color);
+
+    // 5. Reset výběru a posun tahu
+    this.selectedKey = null;
+    this.log(`${color}: Přesun ${from}->${to}`);
+    this.lastMoveKey = to;
+    this.afterAction();
+}
+
+
+// 1. Získá seznam kamenů v dané linii (směru) od konkrétního pole
+getLine(board, q, r, d) {
+    const color = board.get(`${q},${r}`);
+    if (!color) return [];
+    
+    let formation = [`${q},${r}`];
+    const dir = DIRS[d]; // DIRS už máš definované globálně
+
+    // Směr vpřed
+    for (let i = 1; i < 6; i++) {
+        const k = `${q + dir[0] * i},${r + dir[1] * i}`;
+        if (board.get(k) === color) formation.push(k);
+        else break;
+    }
+    // Směr vzad
+    for (let i = 1; i < 6; i++) {
+        const k = `${q - dir[0] * i},${r - dir[1] * i}`;
+        if (board.get(k) === color) formation.push(k);
+        else break;
+    }
+    return formation;
+}
+
+// 2. Najde, zda existuje řada dané délky pro konkrétního hráče
+findLineThreat(player, board, length) {
+    for (let [key, p] of board) {
+        if (p !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+        for (let d = 0; d < 3; d++) { // Směry 0, 1, 2 stačí pro pokrytí všech os
+            let stones = this.getLine(board, q, r, d);
+            if (stones.length >= length) return true;
+        }
+    }
+    return false;
+}
+
+// 3. Najde prázdná pole sousedící s herním plánem (pro simulaci AI)
+// Přejmenováno, aby to odpovídalo volání v aiMove
+getRandomEmptyNeighbor(board) {
+    const emptyNeighbors = new Set();
+    for (let key of board.keys()) {
+        const [q, r] = key.split(',').map(Number);
+        for (let [dq, dr] of DIRS) {
+            const neighborKey = `${q + dq},${r + dr}`;
+            if (!board.has(neighborKey)) {
+                emptyNeighbors.add(neighborKey);
+            }
+        }
+    }
+    const candidates = Array.from(emptyNeighbors);
+    if (candidates.length === 0) return null;
+    
+    // Tady je ten důležitý krok: vybrat náhodně JEDEN cíl
+    return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// ---------------- SIMULACE A STAV ----------------
+
+cloneState() {
+    return {
+        board: new Map(this.board),
+        redTotal: this.redTotal,
+        blackTotal: this.blackTotal,
+        phase: this.phase
+    };
+}
+
+
+// AI: Simulace tahu
+simulateMove(state, move, player) {
+    // 1. Vytvoříme hlubokou kopii desky
+    const nextBoard = new Map(state.board);
+    let nextBlackTotal = state.blackTotal;
+    let nextRedTotal = state.redTotal;
+
+    // 2. Provedeme pohyb v simulaci
+    if (move.type === "place") {
+        nextBoard.set(move.key, player);
+        if (player === "black") nextBlackTotal++; else nextRedTotal++;
+    } else {
+        nextBoard.delete(move.from);
+        nextBoard.set(move.to, player);
+    }
+
+    // 3. Kontrola rozdělení úlu (pouze ve Fázi 2)
+    if (state.phase === 2) {
+        const groups = this.findGroupsAfterMove(nextBoard);
+        if (groups.length > 1) {
+            // Najdeme největší skupinu (ta přežije)
+            // Poznámka: Pokud jsou stejně velké, v reálné hře rozhoduje počet barev, 
+            // ale pro AI stačí toto zjednodušení:
+            groups.sort((a, b) => b.length - a.length);
+            const survivors = new Set(groups[0]);
+
+            // Vymažeme kameny, které nejsou v přeživší skupině a aktualizujeme počty
+            for (let [key, color] of nextBoard) {
+                if (!survivors.has(key)) {
+                    nextBoard.delete(key);
+                    if (color === "black") nextBlackTotal--; else nextRedTotal--;
+                }
+            }
+        }
+    }
+
+    return {
+        board: nextBoard,
+        blackTotal: nextBlackTotal,
+        redTotal: nextRedTotal,
+        phase: state.phase
+        // ... sem můžeš přidat další stavové proměnné pokud je potřebuješ
+    };
+}
+
+
+getAllMoves(player, state) {
+    const moves = [];
+
+    // --- FÁZE 1: POKLÁDÁNÍ ---
+    if (state.phase === 1) {
+        const placements = this.getValidPlacementsForState(state, player);
+
+        placements.forEach(p => {
+            moves.push({
+                type: "place",
+                key: `${p.q},${p.r}`
+            });
+        });
+
+        return moves;
+    }
+
+    // --- FÁZE 2: PŘESUN ---
+    for (let [key, color] of state.board) {
+        if (color !== player) continue;
+
+        const targets = this.getValidMoveTargetsForState(key, state);
+
+        targets.forEach(t => {
+            moves.push({
+                type: "move",
+                from: key,
+                to: t
+            });
+        });
+    }
+
+    return moves;
+}
+
+
+
+
+// ---------------- DETEKCE VÝHER A HROZEB ----------------
+
+
+checkWinGeneric(board, color, lastKey) {
+    if (!lastKey) return null;
+    const [q, r] = lastKey.split(',').map(Number);
+
+    // 1. LINIE
+    for (let d = 0; d < 3; d++) {
+        let formation = [lastKey];
+        const dir = DIRS[d];
+
+        for (let i = 1; i < 6; i++) {
+            const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+            if (board.get(k) === color) formation.push(k);
+            else break;
+        }
+        for (let i = 1; i < 6; i++) {
+            const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+            if (board.get(k) === color) formation.push(k);
+            else break;
+        }
+
+        if (formation.length >= 6) return formation;
+    }
+
+    // 2. KRUH – přesně jako v checkWin()
+    const checkPoints = [lastKey, ...DIRS.map(d => `${q+d[0]},${r+d[1]}`)];
+    for (let cp of checkPoints) {
+        const [cq, cr] = cp.split(',').map(Number);
+        let formation = [];
+        for (let d = 0; d < 6; d++) {
+            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
+            if (board.get(k) === color) formation.push(k);
+        }
+        if (formation.length === 6) return formation;
+    }
+    // 3. TROJÚHELNÍK (Opraveno: kontroluje obě orientace)
+    // Definujeme 6 možných trojúhelníků, kterých může být aktuální kámen součástí
+    const triangleOffsets = [
+        // Orientace "špička dolů"
+        [[0,1],[1,0],[1,1],[0,2],[1,2]],
+        [[0,-1],[-1,0],[-1,-1],[0,-2],[-1,-2]],
+        [[1,-1],[1,0],[0,-1],[2,-2],[2,-1]],
+        // Orientace "špička nahoru"
+        [[1,0],[0,-1],[1,-1],[2,-1],[2,0]],
+        [[-1,0],[0,1],[-1,1],[-2,1],[-2,0]],
+        [[0,1],[1,1],[1,0],[0,2],[1,2]]
+    ];
+
+    // Procházíme všech 6 možných trojúhelníků, které tento kámen může tvořit
+    // (jako vrchol, střed nebo základna)
+    // Ale jednodušší je zkusit kámen jako "kotevní bod" pro různé relativní pozice:
+    const triDetect = [
+        [[1,0],[0,1],[1,1],[2,0],[2,1]], // vodorovný
+        [[0,1],[-1,1],[-1,2],[0,2],[-1,3]], // diagonální
+        // ... toto je složité na výčet. Použijeme raději algoritmus "Skenování okolí"
+    ];
+
+    // Robustní detekce trojúhelníku (strana 3 kameny):
+    // Trojúhelník je definován jako 3 kameny v řadě, 2 nad nimi, 1 nad nimi.
+    const directions = DIRS;
+    for (let i = 0; i < 6; i++) {
+        const d1 = directions[i];
+        const d2 = directions[(i + 1) % 6];
+        
+        // Zkusíme kámen jako jeden z rohů trojúhelníku
+        let f = [lastKey];
+        const steps = [
+            d1, [d1[0]*2, d1[1]*2], // základna
+            d2, [d2[0]*2, d2[1]*2], // druhá strana
+            [d1[0]+d2[0], d1[1]+d2[1]] // vnitřek/vrchol
+        ];
+        
+        if (steps.every(s => {
+            const k = `${q+s[0]},${r+s[1]}`;
+            if (board.get(k) === color) { f.push(k); return true; }
+            return false;
+        })) return f;
+    }
+
+    return null;
+}
+
+
+checkWinFull(board, color) {
+    for (let [key, c] of board) {
+        if (c !== color) continue;
+        const res = this.checkWinGeneric(board, color, key);
+        if (res) return res;
+    }
+    return null;
+}
+
+
+    checkWin(color, lastKey) {
+    return this.checkWinGeneric(this.board, color, lastKey);
+}
+
+
+findImmediateWin(player, state) {
+    const moves = this.getAllMoves(player, state);
+
+    for (const move of moves) {
+        const newState = this.simulateMove(state, move, player);
+        const lastKey = move.type === "place" ? move.key : move.to;
+        
+        // ZMĚNA: Používáme rovnou tvou hlavní vyhodnocovací funkci
+        if (
+            this.checkWinGeneric(newState.board, player, lastKey) ||
+            this.checkWinFull(newState.board, player)
+        ) {
+            return move; 
+        }
+    }
+    return null;
+}
+
+
+
+findImmediateRing(player, board) {
+    for (let [center] of board) {
+        const [cq, cr] = center.split(',').map(Number);
+
+        let stones = 0;
+        let empty = null;
+
+        for (let d = 0; d < 6; d++) {
+            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
+            const s = board.get(k);
+
+            if (s === player) stones++;
+            else if (!s) {
+                if (empty === null) empty = k;
+                else { empty = null; break; } // více než 1 díra → není 5/6
+            } else {
+                empty = null;
+                break;
+            }
+        }
+
+        if (stones === 5 && empty) {
+            return { type: "place", key: empty };
+        }
+    }
+
+    return null;
+}
+
+
+
+findTriangleThreat(player, state) {
+    const board = state.board;
+
+    // Trojúhelník má 6 pozic relativně k "originu"
+    const triShapes = [
+        [[0,0],[1,0],[2,0],[0,1],[1,1],[0,2]],
+        [[0,0],[-1,0],[-2,0],[0,-1],[-1,-1],[0,-2]],
+        [[0,0],[1,-1],[2,-2],[1,0],[2,-1],[0,-1]],
+        [[0,0],[-1,1],[-2,2],[-1,0],[-2,1],[0,1]],
+        [[0,0],[0,1],[0,2],[1,0],[1,1],[2,1]],
+        [[0,0],[0,-1],[0,-2],[-1,0],[-1,-1],[-2,-1]]
+    ];
+
+    // Pro každý kámen hráče zkusíme, zda by mohl být součástí trojúhelníku
+    for (let [key, c] of board) {
+        if (c !== player) continue;
+
+        const [q0, r0] = key.split(',').map(Number);
+
+        for (const shape of triShapes) {
+            let filled = 0;
+            let empty = [];
+            let blocked = false;
+
+            for (const [dq, dr] of shape) {
+                const k = `${q0 + dq},${r0 + dr}`;
+                const stone = board.get(k);
+
+                if (stone === player) filled++;
+                else if (!stone) empty.push(k);
+                else { blocked = true; break; }
+            }
+
+            if (blocked) continue;
+
+            // 5/6 → kritická hrozba
+            if (filled === 5 && empty.length === 1) {
+                return { type: "place", key: empty[0], priority: 1 };
+            }
+
+            // 4/6 → velká hrozba
+            if (filled === 4 && empty.length === 2) {
+                return { type: "place", key: empty[0], priority: 2 };
+            }
+        }
+    }
+
+    return null;
+}
+
+
+
+// Detekce hrozby 4 v řadě na libovolné desce
+findLineThreat4OnBoard(player, board) {
+    let bestThreat = null; // Zde si uložíme polouzavřenou hrozbu jako zálohu
+
+    for (let [key, color] of board) {
+        if (color !== player) continue;
+
+        const [q, r] = key.split(',').map(Number);
+
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+
+            let stones = [key];
+            let fq = q, fr = r;
+            let bq = q, br = r;
+
+            // dopředu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    fq = q + dir[0]*i;
+                    fr = r + dir[1]*i;
+                } else break;
+            }
+
+            // dozadu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    bq = q - dir[0]*i;
+                    br = r - dir[1]*i;
+                } else break;
+            }
+
+            if (stones.length >= 4) {
+                const end1 = `${fq + dir[0]},${fr + dir[1]}`;
+                const end2 = `${bq - dir[0]},${br - dir[1]}`;
+
+                const free1 = !board.get(end1);
+                const free2 = !board.get(end2);
+
+                // OTEVŘENÁ 4 (nejvyšší priorita)
+                if (free1 && free2) {
+                    // Našli jsme kritickou hrozbu, okamžitě ukončujeme hledání a vracíme!
+                    return { key: end1, priority: "open" };
+                }
+
+                // POLOUZAVŘENÁ 4 (nižší priorita)
+                if ((free1 || free2) && !bestThreat) {
+                    // Uložíme si ji do zálohy, ale prohledáváme desku dál
+                    bestThreat = { key: free1 ? end1 : end2, priority: "semi" };
+                }
+            }
+        }
+    }
+
+    return bestThreat; // Vrátí polouzavřenou (pokud byla nalezena) nebo null
+}
+
+
+
+
+findLineThreat4(player) {
+    const board = this.board;
+
+    for (let [key, color] of board) {
+        if (color !== player) continue;
+
+        const [q, r] = key.split(',').map(Number);
+
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+
+            let stones = [key];
+            let fq = q, fr = r;
+            let bq = q, br = r;
+
+            // dopředu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    fq = q + dir[0]*i;
+                    fr = r + dir[1]*i;
+                } else break;
+            }
+
+            // dozadu
+            for (let i = 1; i < 6; i++) {
+                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+                if (board.get(k) === player) {
+                    stones.push(k);
+                    bq = q - dir[0]*i;
+                    br = r - dir[1]*i;
+                } else break;
+            }
+
+            if (stones.length === 4) {
+                const end1 = `${fq + dir[0]},${fr + dir[1]}`;
+                if (!board.get(end1)) return { type: "place", key: end1 };
+
+                const end2 = `${bq - dir[0]},${br - dir[1]}`;
+                if (!board.get(end2)) return { type: "place", key: end2 };
+            }
+        }
+    }
+
+    return null;
+}
+
+
+
+findThreat(player, length, state) {
+    const moves = this.getAllMoves(player, state);
+
+    for (const move of moves) {
+        const newState = this.simulateMove(state, move, player);
+        const board = newState.board;
+
+        for (let [key, color] of board) {
+            if (color !== player) continue;
+
+            const line = this.getMaxLineLengthForStone(board, key, player);
+            if (line >= length) {
+                return move; // move už obsahuje key nebo from/to
+            }
+        }
+    }
+    return null;
+}
+
+
+
+
+getMaxLineLengthForStone(board, key, color) {
+    const [q, r] = key.split(',').map(Number);
+    let maxLength = 1;
+
+    for (let d = 0; d < 3; d++) {
+        let length = 1;
+        const dir = DIRS[d];
+        for (let i = 1; i < 6; i++) {
+            if (board.get(`${q + dir[0]*i},${r + dir[1]*i}`) === color) length++;
+            else break;
+        }
+        for (let i = 1; i < 6; i++) {
+            if (board.get(`${q - dir[0]*i},${r - dir[1]*i}`) === color) length++;
+            else break;
+        }
+        if (length > maxLength) maxLength = length;
+    }
+    return maxLength;
+}
+
+
+
+evaluateMoveHeuristic(move, state, player) {
+    const opponent = (player === "black" ? "red" : "black");
+	
+	// Simulace stavu PO provedení tahu
+    const sim = this.simulateMove(state, move, player);
+    const nextBoard = sim.board;
+    let score = 0;
+    const board = state.board;
+	
+	// Po simulaci tahu
+	if (this.findTriangleThreat(opponent, sim)?.priority === 1) {
+		return -100000;
+	}
+	
+	// 🔥 NOVÉ – BROKEN LINE
+	if (this.findBrokenLineThreat(opponent, nextBoard)) {
+		return -40000;
+	}
+    
+	// --- 1. SIMULACE OŘEZÁVÁNÍ A STRATEGICKÉHO DĚLENÍ (TRIMMING & SPLITTING) ---
+if (move.type === "move" && state.phase === 2) {
+    const tempBoard = new Map(board);
+    tempBoard.delete(move.from);
+    tempBoard.set(move.to, player);
+
+    const groups = this.findGroupsAfterMove(tempBoard);
+    
+    if (groups.length > 1) {
+        // Seřadíme skupiny podle velikosti (největší přežije)
+        groups.sort((a, b) => b.length - a.length);
+        const survivors = new Set(groups[0]);
+        
+        let capturedOpponentCount = 0;
+        let capturedMyCount = 0;
+        let opponentGroupsSplit = 0;
+
+        // Projdeme všechny skupiny, které nepřežily (odpadnou)
+        for (let i = 1; i < groups.length; i++) {
+            const group = groups[i];
+            let hasOpponent = false;
+            
+            group.forEach(key => {
+                const color = tempBoard.get(key);
+                if (color === opponent) {
+                    capturedOpponentCount++;
+                    hasOpponent = true;
+                } else if (color === player) {
+                    capturedMyCount++;
+                }
+            });
+            if (hasOpponent) opponentGroupsSplit++;
+        }
+
+        // A) Bonus za skutečné zajetí soupeře (ostré oříznutí)
+        if (capturedOpponentCount > 0) {
+            // Každý uříznutý kámen soupeře je super, ale odečteme vlastní ztráty
+            score += (capturedOpponentCount * 3000) - (capturedMyCount * 1000);
+        }
+
+        // B) Bonus za "Rozděl a panuj" (strategické štěpení)
+        // I když nic neodpadne, rozdělení soupeře na více malých ostrůvků je výhodné
+        if (opponentGroupsSplit > 0) {
+            score += opponentGroupsSplit * 1500;
+        }
+        
+        // C) Penalizace za sebevražedné odříznutí sebe sama
+        if (capturedMyCount > capturedOpponentCount) {
+            score -= 5000;
+        }
+    }
+}
+	
+	
+	
+    // --- 1. TEST PŘIŠPENDLENÍ (FÁZE 2) ---
+    if (move.type === "move") {
+    const tempBoardAfterPick = new Map(board);
+    tempBoardAfterPick.delete(move.from);
+
+    // OKAMŽITÁ PROHRA
+    if (this.canOpponentWinNext(tempBoardAfterPick, opponent)) {
+        return -100000;
+    }
+
+    // NOVÉ: vznik trojúhelníku
+    if (this.findTriangleThreat(opponent, { board: tempBoardAfterPick })?.priority === 1) {
+        return -100000;
+    }
+}
+    
+    
+
+    // --- 2. ABSOLUTNÍ VÝHRA/PROHRA ---
+    if (this.checkWinFull(nextBoard, player)) return 100000;
+    if (this.canOpponentWinNext(nextBoard, opponent)) return -80000;
+
+    // --- 3. OFENZIVA (Moje hrozby) ---
+    // Používáme countLines pro přesnější bodování více hrozeb najednou
+    const my5 = this.countLines(player, nextBoard, 5);
+    const my4 = this.countLines(player, nextBoard, 4);
+    const my3 = this.countLines(player, nextBoard, 3);
+    
+    score += my5 * 5000;
+    score += my4 * 1000;
+    score += my3 * 200; // Motivace tvořit základ útoku
+    
+    if (this.findTriangleThreat(player, sim)) score += 800;
+    if (this.findImmediateRing(player, nextBoard)) score += 800;
+
+    // --- 4. AGRESIVNÍ PREVENCE (Hluboká obrana) ---
+    const opp5 = this.countLines(opponent, nextBoard, 5);
+    const opp4 = this.countLines(opponent, nextBoard, 4);
+    const opp3 = this.countLines(opponent, nextBoard, 3);
+
+    score -= opp5 * 30000; // Kritická obrana
+    score -= opp4 * 12000; // Silná prevence vidliček
+    score -= opp3 * 3000;  // Hluboká obrana - nenechat soupeře ani rozjet trojku
+    
+    // Pokud existuje otevřená 4 (váha v countLines je 10), skóre se propadne
+    if (opp4 >= 10) score -= 50000; 
+    else if (opp4 > 0) score -= 10000; // Obyčejná (blokovaná) 4
+
+    // Otevřená 3 je nebezpečnější než zavřená 4!
+    if (opp3 >= 5) score -= 8000;
+
+    const triThreat = this.findTriangleThreat(opponent, sim);
+	if (triThreat) {
+		if (triThreat.priority === 1) score -= 40000; // KRITICKÁ 5/6
+		else score -= 15000; // 4/6
+	}
+    if (this.findImmediateRing(opponent, nextBoard)) score -= 10000;
+
+    // --- 5. STRUKTURÁLNÍ INTEGRITA (Prevence vyzobávání) ---
+    // Bonus za to, když kámen pokládáme k vlastním (vytváříme kompaktní blok)
+    const myNeighbors = this.countFriendlyNeighbors(move.to || move, player, nextBoard);
+    if (myNeighbors === 0) {
+        score -= 1500; // Osamocený kámen je v budoucnu "na odstřel"
+    } else {
+        score += myNeighbors * 400; // Čím více sousedů, tím pevnější skupina
+    }
+
+    // --- 6. LOGIKA FÁZE 2 (Vlastní bezpečí) ---
+    if (move.type === "move") {
+        const stonesBefore = Array.from(board.values()).filter(c => c === player).length;
+        const stonesAfter = Array.from(nextBoard.values()).filter(c => c === player).length;
+        
+        // Pokud AI po svém vlastním tahu ztratila kámen rozpojením
+        if (stonesAfter < stonesBefore) return -90000;
+
+        // Kontrola, zda po přesunu nevznikla díra v obraně jinde
+        const boardWithoutStone = new Map(state.board);
+        boardWithoutStone.delete(move.from);
+        if (this.findLineThreat(opponent, boardWithoutStone, 5)) {
+            score -= 20000;
+        }
+    }
+
+    // --- 7. POZIČNÍ DOPLNĚK ---
+    score -= this.distanceToLast(move, this.lastMoveKey) * 5;
+    
+    return score;
+}
+
+
+
+
+evaluateMoveHeuristicPhase2(move, boardAfterMove, player, opponent) {
+
+    // 🔥 NOVÉ – zákaz útěku mimo hru
+    if (this.getDistance(move.to, "0,0") > 6) {
+        return -50000;
+    }    
+
+    let score = 0;
+
+    // 1. KONTROLA VÝHRY (Absolutní priorita)
+    if (this.checkWinFull(boardAfterMove, player)) {
+        return 1000000; 
+    }
+
+    // --- [VYLEPŠENÍ 1] POJISTKA PROTI SEBEVRAŽEDNÉMU ROZDĚLENÍ ---
+    // Simulujeme stav, kdy AI kámen jen ZVEDNE, ale ještě nepoloží.
+    // Používáme aktuální stav boardu ze state.
+    const boardBeforeMove = new Map(boardAfterMove);
+
+    // vrátíme kámen zpět na původní místo (protože boardAfterMove už je PO tahu)
+    boardBeforeMove.set(move.from, player);
+    boardBeforeMove.delete(move.to);
+
+    // simulace zvednutí
+    const boardAfterLift = new Map(boardBeforeMove);
+    boardAfterLift.delete(move.from);
+
+    boardAfterLift.delete(move.from);
+    
+    // Pokud zvednutím kamene AI rozdělí desku na víc kusů, je to kritické oslabení
+    if (this.getGroups(boardAfterLift).length > 1) {
+        score -= 8000; // Masivní penalizace - AI se nesmí sama rozříznout!
+    }
+
+    // 2. TVORBA HROZEB (Útok)
+    if (this.findLineThreat4OnBoard(player, boardAfterMove)) score += 5000;
+    if (this.findTriangleThreat(player, { board: boardAfterMove })) score += 3000;
+
+    // 3. KONEKTIVITA (Soudržnost formace)
+    const newNeighbors = this.getNeighbors(move.to);
+    let friendlyNeighbors = 0;
+    let enemyNeighbors = 0;
+
+    newNeighbors.forEach(nKey => {
+        const color = boardAfterMove.get(nKey);
+        if (color === player) friendlyNeighbors++;
+        if (color === opponent) enemyNeighbors++;
+    });
+
+    // --- [VYLEPŠENÍ 2] ÚTĚK Z OHROŽENÍ (Pud sebezáchovy) ---
+    // Zjistíme, kolik přátelských sousedů měl kámen na PŮVODNÍ pozici
+    let oldFriendlyNeighbors = 0;
+    this.getNeighbors(move.from).forEach(nKey => {
+    if (boardBeforeMove.get(nKey) === player) oldFriendlyNeighbors++;
+    });
+    
+    // Pokud byl kámen v izolaci (jen 1 soused) a teď jich bude mít víc, je to skvělý únik
+    if (oldFriendlyNeighbors === 1 && friendlyNeighbors > 1) {
+        score += 800; // Bonus za záchranu ohroženého kamene
+    }
+
+    // Standardní bonusy za soudržnost
+    score += friendlyNeighbors * 250; 
+    score += enemyNeighbors * 50;
+
+    // 4. PENALIZACE ZA OSLABENÍ (Díry ve vlastní formaci)
+    // Pokud jsme sebrali kámen ze silného shluku, penalizujeme to
+    score -= oldFriendlyNeighbors * 150;
+
+    // --- [VYLEPŠENÍ 3] PŘÍSNĚJŠÍ CENTRALIZACE ---
+    const distFromCenterOld = this.getDistance(move.from, "0,0");
+    const distFromCenterNew = this.getDistance(move.to, "0,0");
+    
+    // Bonus za pohyb směrem do aktivního centra
+    if (distFromCenterNew < distFromCenterOld) {
+        score += 100; 
+    }
+    
+    // Tvrdá penalizace za toulání se příliš daleko (snadný terč pro ořez)
+    if (distFromCenterNew > 6) {
+        score -= distFromCenterNew * 150;
+    }
+
+    return score;
+}
+
+
+
+countLines(player, board, length) {
+    let score = 0;
+    const checked = new Set(); 
+
+    for (let [key, color] of board) {
+        if (color !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+        
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+            let line = [key];
+            
+            // Najdeme celou linii v daném směru
+            for (let i = 1; i < 6; i++) {
+                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
+                if (board.get(k) === player) line.push(k); else break;
+            }
+            for (let i = 1; i < 6; i++) {
+                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
+                if (board.get(k) === player) line.push(k); else break;
+            }
+
+            if (line.length >= length) {
+                const lineKey = line.sort().join('|');
+                if (checked.has(lineKey)) continue;
+                checked.add(lineKey);
+
+                // --- TEST VOLNÝCH KONCŮ ---
+                let openEnds = 0;
+                const sortedLine = line.map(k => k.split(',').map(Number)).sort((a, b) => a[0] !== b[0] ? a[0]-b[0] : a[1]-b[1]);
+                
+                const first = sortedLine[0];
+                const last = sortedLine[sortedLine.length-1];
+                
+                const prevKey = `${first[0] - dir[0]},${first[1] - dir[1]}`;
+                const nextKey = `${last[0] + dir[0]},${last[1] + dir[1]}`;
+                
+                if (!board.has(prevKey)) openEnds++;
+                if (!board.has(nextKey)) openEnds++;
+
+                // Bodování podle nebezpečnosti (váhy pro heuristiku)
+                if (length === 4 && openEnds === 2) score += 10; // Smrtelná hrozba
+                else if (length === 4 && openEnds === 1) score += 2; 
+                else if (length === 3 && openEnds === 2) score += 5; // Zárodek vidličky
+                else score += 1;
+            }
+        }
+    }
+    return score;
+}
+
+
+
+
+countFriendlyNeighbors(posKey, player, board) {
+    // Pokud je posKey objekt (tah typu move), vezmeme cílovou souřadnici
+    const key = typeof posKey === 'string' ? posKey : posKey.to;
+    if (!key) return 0;
+
+    const [q, r] = key.split(',').map(Number);
+    let count = 0;
+    for (let [dq, dr] of DIRS) {
+        if (board.get(`${q + dq},${r + dr}`) === player) {
+            count++;
+        }
+    }
+    return count;
+}
+
+
+findBrokenLineThreat(player, board) {
+    let bestThreat = null;
+
+    for (let [key, color] of board) {
+        if (color !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+
+        for (let d = 0; d < 3; d++) {
+            const dir = DIRS[d];
+
+            // Posouváme 5-políčkové okno tak, aby vždy zahrnovalo aktuální kámen
+            for (let offset = -4; offset <= 0; offset++) {
+                const startQ = q + dir[0] * offset;
+                const startR = r + dir[1] * offset;
+
+                let stones = 0;
+                let gaps = [];
+                let blocked = false;
+
+                // Zkoumáme 5 polí v řadě (okno)
+                for (let i = 0; i < 5; i++) {
+                    const k = `${startQ + dir[0] * i},${startR + dir[1] * i}`;
+                    const val = board.get(k);
+                    
+                    if (val === player) {
+                        stones++;
+                    } else if (!val) {
+                        gaps.push(k);
+                    } else {
+                        blocked = true;
+                        break; // Je tam cizí kámen, toto není čistá hrozba
+                    }
+                }
+
+                // Hledáme přesně 4 kameny a 1 mezeru (např. X X . X X nebo X . X X X)
+                if (!blocked && stones === 4 && gaps.length === 1) {
+                    // Kontrola konců (políčko těsně před a těsně za naším 5-oknem)
+                    const leftEnd = `${startQ - dir[0]},${startR - dir[1]}`;
+                    const rightEnd = `${startQ + dir[0] * 5},${startR + dir[1] * 5}`;
+
+                    const leftOpen = !board.has(leftEnd);
+                    const rightOpen = !board.has(rightEnd);
+
+                    if (leftOpen && rightOpen) {
+                        // KRITICKÁ HROZBA (Priorita 1): Otevřená řada s mezerou (např. . X X . X X .)
+                        // Po zaplnění mezery vznikne nebránitelná otevřená pětka!
+                        return { key: gaps[0], priority: 1 };
+                    } else if (leftOpen || rightOpen) {
+                        // POLOUZAVŘENÁ HROZBA (Priorita 2): Po zaplnění vznikne "jen" zavřená pětka.
+                        // Uložíme si ji jako zálohu, pokud nenajdeme nic horšího.
+                        if (!bestThreat) {
+                            bestThreat = { key: gaps[0], priority: 2 };
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return bestThreat;
+}
+
+
+
+// Pomocná funkce pro zjištění všech hrozeb (řada, kruh, trojúhelník)
+countAdvancedThreats(player, board) {
+    let score = 0;
+    
+    for (let [key, color] of board) {
+        if (color !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+        
+        // 1. Kontrola řad (3, 4, 5 kamenů)
+        for (let d = 0; d < 3; d++) {
+            let line = this.getLine(board, q, r, d);
+            if (line.length === 5) score += 5000;
+            if (line.length === 4) score += 1000;
+            if (line.length === 3) score += 100;
+        }
+        
+        // 2. Kontrola zárodků trojúhelníku (velmi důležité pro tvůj případ)
+        // Hledáme formaci 2x2 nebo "V" tvar, který vede k trojúhelníku
+        if (this.isTrianglePattern(q, r, board, player)) score += 2000;
+    }
+    return score;
+}
+
+// Detekuje, zda kámen na q,r je součástí rozestavěného trojúhelníku
+isTrianglePattern(q, r, board, player) {
+    // Definice relativních pozic pro malý trojúhelník (6 kamenů)
+    // Toto je zjednodušená verze, která hledá "shluky"
+    let neighbors = 0;
+    for (let [dq, dr] of DIRS) {
+        if (board.get(`${q + dq},${r + dr}`) === player) neighbors++;
+    }
+    return neighbors >= 3; // Pokud má kámen 3 a více sousedů stejné barvy, tvoří shluk
+}
+
+
+
+countOpenEnds(player, stones, board) {
+    let openEnds = 0;
+    const opponent = (player === "black" ? "red" : "black");
+    
+    // Extrahujeme souřadnice prvního a posledního kamene v řadě
+    // (Předpokládáme, že kameny v poli 'stones' jsou seřazeny nebo je najdeme přes getLine)
+    // Pro zjednodušení prohledáme sousedy krajních bodů řady ve směru linie
+    
+    // ... Tato logika je zahrnuta v upraveném findLineThreat níže ...
+    return openEnds;
+}
+
+
+canOpponentWinNext(board, opponent) {
+    const emptySpots = this.getEmptyNeighbors(board);
+    for (let spot of emptySpots) {
+        const testBoard = new Map(board);
+        testBoard.set(spot, opponent);
+        // checkWinFull kontroluje řadu, kruh i trojúhelník
+        if (this.checkWinFull(testBoard, opponent)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Pomocná funkce pro získání všech prázdných sousedních polí (kam se dá hrát)
+getEmptyNeighbors(board) {
+    const emptyNeighbors = new Set();
+    // Projdeme všechny obsazené kameny
+    for (let key of board.keys()) {
+        const [q, r] = key.split(',').map(Number);
+        // Podíváme se na 6 sousedů každého kamene
+        const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+        for (let [dq, dr] of DIRS) {
+            const neighborKey = `${q + dq},${r + dr}`;
+            if (!board.has(neighborKey)) {
+                emptyNeighbors.add(neighborKey);
+            }
+        }
+    }
+    return Array.from(emptyNeighbors);
+}
+
+// Opravená verze findLineThreat, aby správně používala tvou logiku getLine
+findLineThreat(player, board, length) {
+    for (let [key, p] of board) {
+        if (p !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+        // Směry 0, 1, 2 pokrývají všechny linie v hexagonální mřížce
+        for (let d = 0; d < 3; d++) {
+            let stones = this.getLine(board, q, r, d);
+            if (stones.length >= length) {
+                // Tady je důležitý trik: ověříme, zda je řada "otevřená" 
+                // nebo zda má aspoň jeden konec volný k doplnění do 6
+                return true; 
+            }
+        }
+    }
+    return false;
+}
+
+
+// Pomocná funkce pro hledání řad konkrétní délky
+findLineThreat(player, board, length) {
+    for (let [key, p] of board) {
+        if (p !== player) continue;
+        const [q, r] = key.split(',').map(Number);
+        for (let d = 0; d < 3; d++) {
+            let stones = this.getLine(board, q, r, d);
+            if (stones.length >= length) return true;
+        }
+    }
+    return false;
+}
+
+
+/*
+evaluateMoveHeuristic(move, state, player) {
+
+    const opponent = (player === "black" ? "red" : "black");
+    const sim = this.simulateMove(state, move, player);
+    const board = sim.board;
+
+    let score = 0;
+
+    // 1) Okamžitá výhra (moje)
+    if (this.checkWinFull(board, player)) score += 10000;
+
+    // 2) Tah, po kterém soupeř vyhrává → kritická penalizace
+    if (this.checkWinFull(board, opponent)) score -= 10000;
+
+    // 3) Moje hrozby (chci je vytvářet)
+    if (this.findLineThreat4OnBoard(player, board)) score += 800;
+    if (this.findThreat(player, 5, sim)) score += 1200;
+    if (this.findTriangleThreat(player, sim)) score += 600;
+    if (this.findImmediateRing(player, board)) score += 600;
+    if (this.findThreat(player, 3, sim)) score += 300;
+    if (this.findThreat(player, 4, sim)) score += 600;
+
+    // 4) Hrozby soupeře (POKUD ZŮSTANOU na desce po mém tahu, je to průšvih -> obří penalizace!)
+    if (this.findLineThreat4OnBoard(opponent, board)) score -= 2000;
+    if (this.findThreat(opponent, 5, sim)) score -= 2500;
+    if (this.findTriangleThreat(opponent, sim)) score -= 1500;
+    if (this.findImmediateRing(opponent, board)) score -= 1500;
+    if (this.findThreat(opponent, 3, sim)) score -= 500;
+    if (this.findThreat(opponent, 4, sim)) score -= 1000;
+
+    // 11) Lokální hra – blízko posledního tahu soupeře
+    score -= this.distanceToLast(move, this.lastMoveKey) * 12;
+
+    // 12) Blízkost vlastních kamenů
+    const targetKey = move.type === "place" ? move.key : move.to;
+    const [q, r] = targetKey.split(',').map(Number);
+
+    let neighbors = 0;
+    for (let d = 0; d < 6; d++) {
+        const k = `${q + DIRS[d][0]},${r + DIRS[d][1]}`;
+        if (board.get(k) === player) neighbors++;
+    }
+    score += neighbors * 40;
+
+    if (neighbors === 0) score -= 80;
+
+    return score;
+}
+
+*/
+
+
+
+
+// ---------------- AI: Hodnocení pozice ----------------
+evaluateBoard(state) {
+    const board = state.board;
+    let score = 0;
+
+    // 🔴 1) POČET KAMENŮ (velká váha)
+    const myStones = [...state.board.values()].filter(c => c === "black").length;
+    const enemyStones = [...state.board.values()].filter(c => c === "red").length;
+
+    score += (myStones - enemyStones) * 2000;
+
+    
+
+    // Základní materiál (ztráta kamene je stále nejhorší scénář)
+    score += (state.blackTotal - state.redTotal) * 10000;
+
+
+    // --- KLÍČOVÝ DODATEK PRO FÁZI 2 ---
+    if (this.phase === 2) {
+        // AI se podívá, kolik jejích kamenů jsou "držáky" (sousedí s mnoha kameny)
+        // a kolik jich je naopak nebezpečně "na kraji" dlouhých výběžků.
+        this.board.forEach((color, key) => {
+            const neighbors = this.getNeighbors(key).filter(n => board.has(n));
+            if (color === 'black') {
+                // Bonus za vnitřní kameny (těžko se izolují)
+                score += neighbors.length * 50; 
+            } else {
+                // Penalizace za soupeřovy vnitřní kameny
+                score -= neighbors.length * 50;
+            }
+        });
+
+        // Kontrola hrozby rozdělení (prevence vyzobávání)
+        // Simulujeme, co se stane, když zmizí náš nejslabší článek
+        score += this.evaluateStructuralIntegrity(board, "black");
+        score -= this.evaluateStructuralIntegrity(board, "red");
+    }
+
+    score += this.scoreFormations(board);
+    return score;
+}
+
+
+
+/*
+// ---------------- AI: Minimax ----------------
+minimax(state, depth, alpha, beta, maximizingPlayer) {
+    // 1. Terminální stavy (výhra/prohra/hloubka)
+    if (state.blackTotal < 6) return -1000000;
+    if (state.redTotal < 6) return 1000000;
+    if (depth === 0) return this.evaluateBoard(state);
+
+    const player = maximizingPlayer ? "black" : "red";
+    const moves = this.getAllMoves(player, state);
+
+    if (!moves.length) return this.evaluateBoard(state);
+
+    if (maximizingPlayer) {
+        let maxEval = -Infinity;
+        for (const move of moves) {
+            const newState = this.simulateMove(state, move, player);
+            const evalScore = this.minimax(newState, depth - 1, alpha, beta, false);
+            maxEval = Math.max(maxEval, evalScore);
+            alpha = Math.max(alpha, evalScore);
+            if (beta <= alpha) break; // Prořezávání
+        }
+        return maxEval;
+    } else {
+        let minEval = Infinity;
+        for (const move of moves) {
+            const newState = this.simulateMove(state, move, player);
+            const evalScore = this.minimax(newState, depth - 1, alpha, beta, true);
+            minEval = Math.min(minEval, evalScore);
+            beta = Math.min(beta, evalScore);
+            if (beta <= alpha) break; // Prořezávání
+        }
+        return minEval;
+    }
+}
+*/
+
+
+playAIMove(move) {
+    if (!move) return;
+
+	// 🔥 NOVÉ: LOG PRO AI VE FÁZI 2
+    if (this.phase === 2 && move.type === "move") {
+
+        this.log(`Vybrán kámen AI na ${move.from}`, "#74b9ff");
+
+        // 🔥 KLÍČOVÉ – analyzuj odebrání kamene
+        const analysis = this.analyzeGroups(this.board, move.from, true);
+
+        if (analysis.groups.length > 1) {
+            this.log("⚠️ AI rozdělí desku!", "#ff7675");
+        }
+    }
+
+    if (move.type === "place") {
+        const [q, r] = move.key.split(',').map(Number);
+        this.placeStone(q, r);
+        return;
+    }
+
+    if (move.type === "move") {
+        // --- POJISTKA ZDE ---
+        const stoneColor = this.board.get(move.from);
+        if (stoneColor !== this.currentPlayer) {
+            console.error(`AI se pokusila pohnout cizím kamenem! (${stoneColor} na ${move.from})`);
+            return;
+        }
+        
+        this.moveStone(move.from, move.to);
+        return;
+    }
+
+    console.error("AI ERROR: neznámý formát tahu", move);
+}
+
+
 
 
 
@@ -742,7 +2181,7 @@ colorDot(color) {
     this.blackTotal = 21;
     this.phase = 1;
     this.selectedKey = null;
-
+    this.lastRemovedKey = null; // Zobrazení pole, odkud hráč odebere kámen
     // Základní kameny
     this.board.set("0,0", "red");
     this.board.set("1,0", "black");
@@ -872,217 +2311,9 @@ findRingThreat(player) {
 
 
 
-checkWinGeneric(board, color, lastKey) {
-    if (!lastKey) return null;
-    const [q, r] = lastKey.split(',').map(Number);
-
-    // 1. LINIE
-    for (let d = 0; d < 3; d++) {
-        let formation = [lastKey];
-        const dir = DIRS[d];
-
-        for (let i = 1; i < 6; i++) {
-            const k = `${q + dir[0]*i},${r + dir[1]*i}`;
-            if (board.get(k) === color) formation.push(k);
-            else break;
-        }
-        for (let i = 1; i < 6; i++) {
-            const k = `${q - dir[0]*i},${r - dir[1]*i}`;
-            if (board.get(k) === color) formation.push(k);
-            else break;
-        }
-
-        if (formation.length >= 6) return formation;
-    }
-
-    // 2. KRUH – přesně jako v checkWin()
-    const checkPoints = [lastKey, ...DIRS.map(d => `${q+d[0]},${r+d[1]}`)];
-    for (let cp of checkPoints) {
-        const [cq, cr] = cp.split(',').map(Number);
-        let formation = [];
-        for (let d = 0; d < 6; d++) {
-            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
-            if (board.get(k) === color) formation.push(k);
-        }
-        if (formation.length === 6) return formation;
-    }
-    // 3. TROJÚHELNÍK (Opraveno: kontroluje obě orientace)
-    // Definujeme 6 možných trojúhelníků, kterých může být aktuální kámen součástí
-    const triangleOffsets = [
-        // Orientace "špička dolů"
-        [[0,1],[1,0],[1,1],[0,2],[1,2]],
-        [[0,-1],[-1,0],[-1,-1],[0,-2],[-1,-2]],
-        [[1,-1],[1,0],[0,-1],[2,-2],[2,-1]],
-        // Orientace "špička nahoru"
-        [[1,0],[0,-1],[1,-1],[2,-1],[2,0]],
-        [[-1,0],[0,1],[-1,1],[-2,1],[-2,0]],
-        [[0,1],[1,1],[1,0],[0,2],[1,2]]
-    ];
-
-    // Procházíme všech 6 možných trojúhelníků, které tento kámen může tvořit
-    // (jako vrchol, střed nebo základna)
-    // Ale jednodušší je zkusit kámen jako "kotevní bod" pro různé relativní pozice:
-    const triDetect = [
-        [[1,0],[0,1],[1,1],[2,0],[2,1]], // vodorovný
-        [[0,1],[-1,1],[-1,2],[0,2],[-1,3]], // diagonální
-        // ... toto je složité na výčet. Použijeme raději algoritmus "Skenování okolí"
-    ];
-
-    // Robustní detekce trojúhelníku (strana 3 kameny):
-    // Trojúhelník je definován jako 3 kameny v řadě, 2 nad nimi, 1 nad nimi.
-    const directions = DIRS;
-    for (let i = 0; i < 6; i++) {
-        const d1 = directions[i];
-        const d2 = directions[(i + 1) % 6];
-        
-        // Zkusíme kámen jako jeden z rohů trojúhelníku
-        let f = [lastKey];
-        const steps = [
-            d1, [d1[0]*2, d1[1]*2], // základna
-            d2, [d2[0]*2, d2[1]*2], // druhá strana
-            [d1[0]+d2[0], d1[1]+d2[1]] // vnitřek/vrchol
-        ];
-        
-        if (steps.every(s => {
-            const k = `${q+s[0]},${r+s[1]}`;
-            if (board.get(k) === color) { f.push(k); return true; }
-            return false;
-        })) return f;
-    }
-
-    return null;
-}
 
 
-checkWinFull(board, color) {
-    for (let [key, c] of board) {
-        if (c !== color) continue;
-        const res = this.checkWinGeneric(board, color, key);
-        if (res) return res;
-    }
-    return null;
-}
-
-
-    checkWin(color, lastKey) {
-    return this.checkWinGeneric(this.board, color, lastKey);
-}
-
-
-
-
-    placeStone(q, r) {
-        const key = `${q},${r}`;
-        if (this.board.has(key) || this.gameOver) return;
-        if (!DIRS.some(d => this.board.has(`${q+d[0]},${r+d[1]}`))) return;
-
-        // --- OPRAVA: Pravidlo prvního tahu ---
-        const isFirstMove =
-    (this.currentPlayer === 'red' && this.redFirstMove) ||
-    (this.currentPlayer === 'black' && this.blackFirstMove);
-
-if (isFirstMove) { // Hráč právě pokládá svůj první kámen (po startovním)
-            const startKey = (this.currentPlayer === 'red') ? "0,0" : "1,0";
-            const [sq, sr] = startKey.split(',').map(Number);
-            const isNeighbor = DIRS.some(d => (sq + d[0] === q && sr + d[1] === r));
-            
-            if (isNeighbor) {
-
-                if (this.currentPlayer === 'red') this.log("CHYBA: První tah nesmí sousedit se startem!");
-                return; // Zablokuje tah
-            }
-        }
-        // --- Konec opravy ---
-
-        this.board.set(key, this.currentPlayer);
-        this.lastMoveKey = key;
-        if (this.currentPlayer === 'red') this.redLeft--; else this.blackLeft--;
-        this.log(`${this.currentPlayer}: Položil ${key}`);
-        if (this.currentPlayer === 'red') this.redFirstMove = false;
-else this.blackFirstMove = false;
-        this.afterAction();
-    }
-
-
-
-    moveStone(from, to) {
-    const color = this.board.get(from);
-    this.board.delete(from); // Kámen zvedneme - na desce je teď díra
-
-    // 1. Zjistíme stav skupin ve chvíli, kdy kámen chybí
-    const groups = this.getGroups(this.board);
-
-    if (groups.length > 1) {
-        // Určíme maximální velikost
-        const maxSize = Math.max(...groups.map(g => g.length));
-        const largestGroups = groups.filter(g => g.length === maxSize);
-
-        let survivingGroup;
-
-        // 2. Logika přežití
-        if (largestGroups.length > 1) {
-            // REMÍZA: Přežije ta z největších skupin, ke které se hráč PRÁVĚ PŘIPOJUJE
-            // Zkontrolujeme sousedství pole 'to' se všemi největšími skupinami
-            survivingGroup = largestGroups.find(group => 
-                group.some(key => {
-                    const [gq, gr] = key.split(',').map(Number);
-                    const [tq, tr] = to.split(',').map(Number);
-                    // Je pole 'to' sousedem nějakého kamene v této skupině?
-                    return DIRS.some(d => (gq + d[0] === tq) && (gr + d[1] === tr));
-                })
-            );
-            
-            // Pojistka: pokud by se nepřipojil k žádné, vezmeme první
-            if (!survivingGroup) survivingGroup = largestGroups[0];
-            this.log("Souboj titánů! Zachránil jsi vybranou skupinu.");
-        } else {
-            // AUTOMATIKA: Přežije prostě ta jediná největší
-            survivingGroup = largestGroups[0];
-        }
-
-        // --- Příprava proměnných pro logování zajatých kamenů ---
-        let capturedRed = 0;
-        let capturedBlack = 0;
-
-        // 3. EXEKUCE: Smažeme všechny skupiny, které nejsou 'survivingGroup'
-        groups.forEach(group => {
-            if (group !== survivingGroup) {
-                group.forEach(key => {
-                    const c = this.board.get(key);
-                    // Započítáme smazaný kámen a odečteme ho z celkového počtu
-                    if (c === 'red') {
-                        capturedRed++;
-                        this.redTotal--;
-                    } else if (c === 'black') {
-                        capturedBlack++;
-                        this.blackTotal--;
-                    }
-                    // Fyzické smazání z desky
-                    this.board.delete(key);
-                });
-            }
-        });
-
-        // --- Zápis do logu, pokud byly nějaké kameny smazány ---
-        if (capturedRed > 0 || capturedBlack > 0) {
-            let logMsg = `Zajato! Smazáno: `;
-            let parts = [];
-            if (capturedRed > 0) parts.push(`Červený ${capturedRed}`);
-            if (capturedBlack > 0) parts.push(`Černý ${capturedBlack}`);
-            logMsg += parts.join(', ');
-            this.log(logMsg);
-        }
-    }
-
-    // 4. Teprve teď položíme kámen na cílové místo
-    this.board.set(to, color);
-
-    // 5. Reset výběru a posun tahu
-    this.selectedKey = null;
-    this.log(`${color}: Přesun ${from}->${to}`);
-    this.lastMoveKey = to;
-    this.afterAction();
-}
+    
 
 
 
@@ -1108,48 +2339,6 @@ else this.blackFirstMove = false;
 
 
 
-// ---------------- AI: Hodnocení pozice ----------------
-
-evaluateBoard(state) {
-    const board = state.board;
-    let score = 0;
-
-    // 🔴 1) POČET KAMENŮ (velká váha)
-    const myStones = [...state.board.values()].filter(c => c === "black").length;
-    const enemyStones = [...state.board.values()].filter(c => c === "red").length;
-
-    score += (myStones - enemyStones) * 2000;
-
-    
-
-    // Základní materiál (ztráta kamene je stále nejhorší scénář)
-    score += (state.blackTotal - state.redTotal) * 10000;
-
-
-    // --- KLÍČOVÝ DODATEK PRO FÁZI 2 ---
-    if (this.phase === 2) {
-        // AI se podívá, kolik jejích kamenů jsou "držáky" (sousedí s mnoha kameny)
-        // a kolik jich je naopak nebezpečně "na kraji" dlouhých výběžků.
-        this.board.forEach((color, key) => {
-            const neighbors = this.getNeighbors(key).filter(n => board.has(n));
-            if (color === 'black') {
-                // Bonus za vnitřní kameny (těžko se izolují)
-                score += neighbors.length * 50; 
-            } else {
-                // Penalizace za soupeřovy vnitřní kameny
-                score -= neighbors.length * 50;
-            }
-        });
-
-        // Kontrola hrozby rozdělení (prevence vyzobávání)
-        // Simulujeme, co se stane, když zmizí náš nejslabší článek
-        score += this.evaluateStructuralIntegrity(board, "black");
-        score -= this.evaluateStructuralIntegrity(board, "red");
-    }
-
-    score += this.scoreFormations(board);
-    return score;
-}
 
 
 
@@ -1190,25 +2379,6 @@ scoreGroups(board) {
     return (maxBlack - maxRed) * 40;
 }
 
-getMaxLineLengthForStone(board, key, color) {
-    const [q, r] = key.split(',').map(Number);
-    let maxLength = 1;
-
-    for (let d = 0; d < 3; d++) {
-        let length = 1;
-        const dir = DIRS[d];
-        for (let i = 1; i < 6; i++) {
-            if (board.get(`${q + dir[0]*i},${r + dir[1]*i}`) === color) length++;
-            else break;
-        }
-        for (let i = 1; i < 6; i++) {
-            if (board.get(`${q - dir[0]*i},${r - dir[1]*i}`) === color) length++;
-            else break;
-        }
-        if (length > maxLength) maxLength = length;
-    }
-    return maxLength;
-}
 
 scoreFormations(board) {
     let score = 0;
@@ -1265,56 +2435,6 @@ countBridgesForLine(board, lineStones) {
 }
 
 
-// ---------------- AI: Generování tahů ----------------
-
-cloneState() {
-    return {
-        board: new Map(this.board),
-        redTotal: this.redTotal,
-        blackTotal: this.blackTotal,
-        phase: this.phase
-    };
-}
-
-
-
-getAllMoves(player, state) {
-    const moves = [];
-
-    // --- FÁZE 1: POKLÁDÁNÍ ---
-    if (state.phase === 1) {
-        const placements = this.getValidPlacementsForState(state, player);
-
-        placements.forEach(p => {
-            moves.push({
-                type: "place",
-                key: `${p.q},${p.r}`
-            });
-        });
-
-        return moves;
-    }
-
-    // --- FÁZE 2: PŘESUN ---
-    for (let [key, color] of state.board) {
-        if (color !== player) continue;
-
-        const targets = this.getValidMoveTargetsForState(key, state);
-
-        targets.forEach(t => {
-            moves.push({
-                type: "move",
-                from: key,
-                to: t
-            });
-        });
-    }
-
-    return moves;
-}
-
-
-
 
 getNeighbors(key) {
     const [q, r] = key.split(',').map(Number);
@@ -1329,171 +2449,15 @@ getNeighbors(key) {
 
 
 
-findGroupsAfterMove(board) {
-    const groups = [];
-    const visited = new Set();
-    const keys = Array.from(board.keys());
-
-    for (const key of keys) {
-        if (visited.has(key)) continue;
-
-        // Začínáme hledat novou skupinu (Flood Fill / BFS)
-        const group = [];
-        const queue = [key];
-        visited.add(key);
-
-        while (queue.length > 0) {
-            const current = queue.shift();
-            group.push(current);
-
-            const neighbors = this.getNeighbors(current);
-            for (const nKey of neighbors) {
-                if (board.has(nKey) && !visited.has(nKey)) {
-                    visited.add(nKey);
-                    queue.push(nKey);
-                }
-            }
-        }
-        groups.push(group);
-    }
-    return groups;
-}
-
-
-
-// ---------------- AI: Simulace tahu ----------------
-
-simulateMove(state, move, player) {
-    // 1. Vytvoříme hlubokou kopii desky
-    const nextBoard = new Map(state.board);
-    let nextBlackTotal = state.blackTotal;
-    let nextRedTotal = state.redTotal;
-
-    // 2. Provedeme pohyb v simulaci
-    if (move.type === "place") {
-        nextBoard.set(move.key, player);
-        if (player === "black") nextBlackTotal++; else nextRedTotal++;
-    } else {
-        nextBoard.delete(move.from);
-        nextBoard.set(move.to, player);
-    }
-
-    // 3. Kontrola rozdělení úlu (pouze ve Fázi 2)
-    if (state.phase === 2) {
-        const groups = this.findGroupsAfterMove(nextBoard);
-        if (groups.length > 1) {
-            // Najdeme největší skupinu (ta přežije)
-            // Poznámka: Pokud jsou stejně velké, v reálné hře rozhoduje počet barev, 
-            // ale pro AI stačí toto zjednodušení:
-            groups.sort((a, b) => b.length - a.length);
-            const survivors = new Set(groups[0]);
-
-            // Vymažeme kameny, které nejsou v přeživší skupině a aktualizujeme počty
-            for (let [key, color] of nextBoard) {
-                if (!survivors.has(key)) {
-                    nextBoard.delete(key);
-                    if (color === "black") nextBlackTotal--; else nextRedTotal--;
-                }
-            }
-        }
-    }
-
-    return {
-        board: nextBoard,
-        blackTotal: nextBlackTotal,
-        redTotal: nextRedTotal,
-        phase: state.phase
-        // ... sem můžeš přidat další stavové proměnné pokud je potřebuješ
-    };
-}
-
-
-// ---------------- AI: Minimax ----------------
-
-minimax(state, depth, alpha, beta, maximizingPlayer) {
-    // 1. Terminální stavy (výhra/prohra/hloubka)
-    if (state.blackTotal < 6) return -1000000;
-    if (state.redTotal < 6) return 1000000;
-    if (depth === 0) return this.evaluateBoard(state);
-
-    const player = maximizingPlayer ? "black" : "red";
-    const moves = this.getAllMoves(player, state);
-
-    if (!moves.length) return this.evaluateBoard(state);
-
-    if (maximizingPlayer) {
-        let maxEval = -Infinity;
-        for (const move of moves) {
-            const newState = this.simulateMove(state, move, player);
-            const evalScore = this.minimax(newState, depth - 1, alpha, beta, false);
-            maxEval = Math.max(maxEval, evalScore);
-            alpha = Math.max(alpha, evalScore);
-            if (beta <= alpha) break; // Prořezávání
-        }
-        return maxEval;
-    } else {
-        let minEval = Infinity;
-        for (const move of moves) {
-            const newState = this.simulateMove(state, move, player);
-            const evalScore = this.minimax(newState, depth - 1, alpha, beta, true);
-            minEval = Math.min(minEval, evalScore);
-            beta = Math.min(beta, evalScore);
-            if (beta <= alpha) break; // Prořezávání
-        }
-        return minEval;
-    }
-}
 
 
 
 
-findLineThreat4(player) {
-    const board = this.board;
 
-    for (let [key, color] of board) {
-        if (color !== player) continue;
 
-        const [q, r] = key.split(',').map(Number);
 
-        for (let d = 0; d < 3; d++) {
-            const dir = DIRS[d];
 
-            let stones = [key];
-            let fq = q, fr = r;
-            let bq = q, br = r;
 
-            // dopředu
-            for (let i = 1; i < 6; i++) {
-                const k = `${q + dir[0]*i},${r + dir[1]*i}`;
-                if (board.get(k) === player) {
-                    stones.push(k);
-                    fq = q + dir[0]*i;
-                    fr = r + dir[1]*i;
-                } else break;
-            }
-
-            // dozadu
-            for (let i = 1; i < 6; i++) {
-                const k = `${q - dir[0]*i},${r - dir[1]*i}`;
-                if (board.get(k) === player) {
-                    stones.push(k);
-                    bq = q - dir[0]*i;
-                    br = r - dir[1]*i;
-                } else break;
-            }
-
-            if (stones.length === 4) {
-                const end1 = `${fq + dir[0]},${fr + dir[1]}`;
-                if (!board.get(end1)) return { type: "place", key: end1 };
-
-                const end2 = `${bq - dir[0]},${br - dir[1]}`;
-                if (!board.get(end2)) return { type: "place", key: end2 };
-            }
-        }
-    }
-
-    return null;
-}
 
 
 
@@ -1565,103 +2529,11 @@ findLineThreat4(player) {
 
 
 
-playAIMove(move) {
-    if (!move) return;
-
-    if (move.type === "place") {
-        const [q, r] = move.key.split(',').map(Number);
-        this.placeStone(q, r);
-        return;
-    }
-
-    if (move.type === "move") {
-        // --- POJISTKA ZDE ---
-        const stoneColor = this.board.get(move.from);
-        if (stoneColor !== this.currentPlayer) {
-            console.error(`AI se pokusila pohnout cizím kamenem! (${stoneColor} na ${move.from})`);
-            return;
-        }
-        
-        this.moveStone(move.from, move.to);
-        return;
-    }
-
-    console.error("AI ERROR: neznámý formát tahu", move);
-}
 
 
 
 
 
-findImmediateWin(player, state) {
-    const moves = this.getAllMoves(player, state);
-
-    for (const move of moves) {
-        const newState = this.simulateMove(state, move, player);
-        const lastKey = move.type === "place" ? move.key : move.to;
-        
-        // ZMĚNA: Používáme rovnou tvou hlavní vyhodnocovací funkci
-        if (
-            this.checkWinGeneric(newState.board, player, lastKey) ||
-            this.checkWinFull(newState.board, player)
-        ) {
-            return move; 
-        }
-    }
-    return null;
-}
-
-
-
-findImmediateRing(player, board) {
-    for (let [center] of board) {
-        const [cq, cr] = center.split(',').map(Number);
-
-        let stones = 0;
-        let empty = null;
-
-        for (let d = 0; d < 6; d++) {
-            const k = `${cq + DIRS[d][0]},${cr + DIRS[d][1]}`;
-            const s = board.get(k);
-
-            if (s === player) stones++;
-            else if (!s) {
-                if (empty === null) empty = k;
-                else { empty = null; break; } // více než 1 díra → není 5/6
-            } else {
-                empty = null;
-                break;
-            }
-        }
-
-        if (stones === 5 && empty) {
-            return { type: "place", key: empty };
-        }
-    }
-
-    return null;
-}
-
-
-
-findThreat(player, length, state) {
-    const moves = this.getAllMoves(player, state);
-
-    for (const move of moves) {
-        const newState = this.simulateMove(state, move, player);
-        const board = newState.board;
-
-        for (let [key, color] of board) {
-            if (color !== player) continue;
-
-            const line = this.getMaxLineLengthForStone(board, key, player);
-            if (line >= length) {
-                return move; // move už obsahuje key nebo from/to
-            }
-        }
-    }
-    return null;
-}
 
 
 
@@ -1702,55 +2574,8 @@ findForkThreat(player, state) {
 
 
 
-findTriangleThreat(player, state) {
-    const board = state.board;
 
-    // Trojúhelník má 6 pozic relativně k "originu"
-    const triShapes = [
-        [[0,0],[1,0],[2,0],[0,1],[1,1],[0,2]],
-        [[0,0],[-1,0],[-2,0],[0,-1],[-1,-1],[0,-2]],
-        [[0,0],[1,-1],[2,-2],[1,0],[2,-1],[0,-1]],
-        [[0,0],[-1,1],[-2,2],[-1,0],[-2,1],[0,1]],
-        [[0,0],[0,1],[0,2],[1,0],[1,1],[2,1]],
-        [[0,0],[0,-1],[0,-2],[-1,0],[-1,-1],[-2,-1]]
-    ];
 
-    // Pro každý kámen hráče zkusíme, zda by mohl být součástí trojúhelníku
-    for (let [key, c] of board) {
-        if (c !== player) continue;
-
-        const [q0, r0] = key.split(',').map(Number);
-
-        for (const shape of triShapes) {
-            let filled = 0;
-            let empty = [];
-            let blocked = false;
-
-            for (const [dq, dr] of shape) {
-                const k = `${q0 + dq},${r0 + dr}`;
-                const stone = board.get(k);
-
-                if (stone === player) filled++;
-                else if (!stone) empty.push(k);
-                else { blocked = true; break; }
-            }
-
-            if (blocked) continue;
-
-            // 5/6 → kritická hrozba
-            if (filled === 5 && empty.length === 1) {
-                return { type: "place", key: empty[0], priority: 1 };
-            }
-
-            // 4/6 → velká hrozba
-            if (filled === 4 && empty.length === 2) {
-                return { type: "place", key: empty[0], priority: 2 };
-            }
-        }
-    }
-
-    return null;
-}
 
 
 
@@ -1760,134 +2585,196 @@ findTriangleThreat(player, state) {
 
     aiMove() {
     if (this.gameOver || this.currentPlayer !== "black") return;
-	
-    // SNÍŽENÍ HLOUBKY PRO FÁZI 2
-    let depth = this.aiDepth; 
-    if (this.phase === 2) {
-        depth = 2; // Pokud se to stále seká, dej 1
-    }
 
+    const opponent = "red";
     const state = this.cloneState();
 
-    // --- POMOCNÉ FUNKCE ---
-    const getTargetFromMove = (move) => {
+    // 1. Pomocná funkce pro získání souřadnice z tahu (vložená na začátek, aby byla dostupná všude)
+    const getTarget = (move) => {
         if (!move) return null;
         return move.type === "place" ? move.key : move.to;
     };
 
-    const getMoveForTarget = (targetKey) => {
-        if (!targetKey) return null;
-        if (state.phase === 1) return { type: "place", key: targetKey };
-        const moves = this.getAllMoves("black", state);
-        return moves.find(m => m.to === targetKey) || null;
-    };
+    // ---------------------------------------------------------
+    // FÁZE 1 – POKLÁDÁNÍ
+    // ---------------------------------------------------------
+    if (state.phase === 1) {
+        // A) TROJÚHELNÍKY – DVOUFÁZOVÁ OBRANA
+        const triThreat = this.findTriangleThreat(opponent, state);
 
-    // 1) OKAMŽITÁ VÝHRA AI
-    const winNow = this.findImmediateWin("black", state);
-    if (winNow) return this.playAIMove(winNow);
+        if (triThreat) {
+            // 🔴 KRITICKÁ (okamžitá hrozba)
+            if (triThreat.priority === 1) {
+                console.log("[AI] KRITICKÉ blokování trojúhelníku na", triThreat.key);
+                return this.playAIMove({ type: "place", key: triThreat.key });
+            }
 
-    // 1.5) OKAMŽITÝ KRUH AI
-    const winRingKey = this.findImmediateRing("black", state.board)?.key;
-    if (winRingKey) {
-        const m = getMoveForTarget(winRingKey);
-        if (m) return this.playAIMove(m);
-    }
-
-    // 2) BLOKOVÁNÍ OKAMŽITÉ VÝHRY SOUPEŘE
-    const enemyWin = this.findImmediateWin("red", state);
-
-    if (enemyWin) {
-        const target = getTargetFromMove(enemyWin);
-
-        // 1) pokus – přímo bloknout cílové pole
-        let blockMove = getMoveForTarget(target);
-        if (blockMove) return this.playAIMove(blockMove);
-
-        // 2) fallback – zkus jakýkoliv tah, který zabrání výhře
-        const allMoves = this.getAllMoves("black", state);
-
-        for (const m of allMoves) {
-            const sim = this.simulateMove(state, m, "black");
-
-            const stillWin =
-                this.checkWinFull(sim.board, "red");
-
-            if (!stillWin) {
-                return this.playAIMove(m);
+            // 🟠 SILNÁ (4/6 – musí se blokovat taky!)
+            if (triThreat.priority === 2) {
+                console.log("[AI] PREVENT blokování trojúhelníku (4/6) na", triThreat.key);
+                return this.playAIMove({ type: "place", key: triThreat.key });
             }
         }
+        
+        // 🔥 NOVÉ – prevence forků (dvojité hrozby)
+        const forkThreats = this.findForkThreat(opponent, state);
+
+        if (forkThreats && forkThreats.length > 0) {
+            const key = getTarget(forkThreats[0]);
+            console.log("[AI] BLOKUJU FORK na", key);
+            return this.playAIMove({ type: "place", key });
+        }
+        
+        // B) Okamžitá výhra / Blokace výhry soupeře
+        const winNow = this.findImmediateWin("black", state);
+        if (winNow) return this.playAIMove(winNow);
+
+        const enemyWin = this.findImmediateWin(opponent, state);
+        if (enemyWin) return this.playAIMove(enemyWin);
+
+
+        const broken = this.findBrokenLineThreat(opponent, state.board);
+        if (broken && broken.priority === 1) {
+            console.log("[AI] KRITICKÉ blokování rr__rr na", broken.key);
+            return this.playAIMove({ type: "place", key: broken.key });
+        }
+
+        // C) Blokace hrozeb typu Line 4
+        const threat4 = this.findLineThreat4OnBoard(opponent, state.board);
+        if (threat4 && (threat4.priority === "open" || threat4.priority === "semi")) {
+            return this.playAIMove({ type: "place", key: threat4.key });
+        }
+
+        // D) Heuristické řazení běžných tahů
+        let moves = this.getAllMoves("black", state);
+        if (!moves.length) return;
+
+        moves.sort((a, b) =>
+            this.evaluateMoveHeuristic(b, state, "black") -
+            this.evaluateMoveHeuristic(a, state, "black")
+        );
+
+        return this.playAIMove(moves[0]);
     }
 
+    // ---------------------------------------------------------
+	// --- FÁZE 2: RYCHLÁ MOBILNÍ VERZE (BEZ MINIMAXU) ---
+if (state.phase === 2) {
+    const opponent = "red";
+    const player = "black";
+    
+    const getTarget = (move) => {
+        if (!move) return null;
+        return move.type === "place" ? move.key : move.to;
+    };
 
-    // Ostatní hrozby (4 v řadě, trojúhelník...)
-    const criticalThreats = [
-        this.findLineThreat4("red")?.key,
-        this.findTriangleThreat("red", state)?.key,
-        this.findRingThreat("red")?.key,
-        getTargetFromMove(this.findThreat("red", 5, state))
-    ];
+    console.log("%c=== AI FÁZE 2: BEZPEČNOSTNÍ ANALÝZA ===", "background: #222; color: #ff5555; font-weight: bold;");
 
-    for (const threatKey of criticalThreats) {
-        if (threatKey) {
-            const blockMove = getMoveForTarget(threatKey);
-            if (blockMove) return this.playAIMove(blockMove);
+    // 1. IDENTIFIKACE HROZEB (Co musíme blokovat)
+    const enemyWinKey = getTarget(this.findImmediateWin(opponent, state));
+    const line4 = this.findLineThreat4OnBoard(opponent, state.board);
+    const triThreat = this.findTriangleThreat(opponent, state);
+    const criticalTarget = enemyWinKey || (line4 ? line4.key : null) || (triThreat ? triThreat.key : null);
+
+    // 2. GENEROVÁNÍ A BODOVÁNÍ VŠECH TAHŮ
+    let allPossibleMoves = this.getAllMoves(player, state);
+    let scoredMoves = [];
+
+    for (const m of allPossibleMoves) {
+        // Pokud existuje kritická hrozba, ignorujeme tahy, které ji neřeší
+        if (criticalTarget && m.to !== criticalTarget) continue;
+
+        const simBoard = new Map(state.board);
+        simBoard.delete(m.from);
+        simBoard.set(m.to, player);
+
+        const score = this.evaluateMoveHeuristicPhase2(m, simBoard, player, opponent);
+        scoredMoves.push({ move: m, score: score, simBoard: simBoard });
+    }
+
+    // Seřadíme podle heuristiky
+    scoredMoves.sort((a, b) => b.score - a.score);
+
+    // 3. FILTR ABSOLUTNÍ BEZPEČNOSTI
+    // Procházíme tahy od nejlepšího a hledáme ten, který je neprůstřelný
+    let bestMove = null;
+
+    for (let candidate of scoredMoves) {
+        const m = candidate.move;
+        const simBoard = candidate.simBoard;
+
+        // A) Kontrola: Nezpůsobí zvednutí kamene okamžitou prohru soupeřem kdekoli na desce?
+        // (Včetně místa, které jsme právě uvolnili)
+        if (this.canOpponentWinNext(simBoard, opponent)) continue;
+
+        // B) Kontrola: Nezpůsobí zvednutí kamene ořez našich vlastních kamenů?
+        const groups = this.getGroups(simBoard);
+        let suicide = false;
+        if (groups.length > 1) {
+            // Najdeme největší skupinu (ta přežije)
+            const sizes = groups.map(g => g.length);
+            const maxSize = Math.max(...sizes);
+            const mainGroupIndex = sizes.indexOf(maxSize);
+            
+            // Prověříme všechny zanikající skupiny
+            groups.forEach((group, index) => {
+                if (index !== mainGroupIndex) {
+                    group.forEach(key => {
+                        if (state.board.get(key) === player) suicide = true;
+                    });
+                }
+            });
+        }
+        if (suicide) continue; 
+
+        // C) Kontrola: Nevede tah k přímé prohře (např. rozpojení na 2 stejné půlky, kde zanikne ta s AI)?
+        if (this.checkWinFull(simBoard, opponent)) continue;
+
+        // Pokud projdeme až sem, tah je bezpečný
+        // Teď ještě zkusíme, jestli tento bezpečný tah náhodou i neřeže soupeře
+        const groupsAfterLift = this.getGroups(new Map(state.board).set(m.from, undefined)); // Simulace jen zvednutí
+        if (groupsAfterLift.length > 1) {
+            // Tady by šlo spočítat lostRed, ale už jen fakt, že řežeme a je to bezpečné, stačí
+            this.log(`[AI BEZPEČNÝ OŘEZ] Provádím strategický přesun z ${m.from} na ${m.to}`, "#2ecc71");
+        }
+
+        bestMove = m;
+        break; // Našli jsme nejlepší bezpečný tah, končíme hledání
+    }
+
+    // 4. EMERGENCY FALLBACK
+    // Pokud by náhodou žádný tah nebyl vyhodnocen jako 100% bezpečný, vezmeme ten nejlepší z heuristiky
+    if (!bestMove) {
+    console.warn("AI nenašla 100% bezpečný tah, zkouší přímé blokování.");
+
+    // 🔥 1. pokus: najít tah, který blokuje criticalTarget
+    if (criticalTarget) {
+        const [tq, tr] = criticalTarget.split(',').map(Number);
+
+        const blockingMove = allPossibleMoves.find(m => {
+            return m.to === criticalTarget;
+        });
+
+        if (blockingMove) {
+            console.log("[AI OBRANA] Vynucený blok na", criticalTarget);
+            return this.playAIMove(blockingMove);
+        } else {
+            console.log("[AI INFO] Kritický cíl", criticalTarget, "není dosažitelný");
         }
     }
 
-    // ... (předchozí části funkce aiMove zůstávají stejné) ...
-
-// 7) MINIMAX - ROZHODOVÁNÍ O NEJLEPŠÍM TAHU
-let moves = this.getAllMoves("black", state);
-if (!moves.length) return;
-
-// --- DŮLEŽITÁ ÚPRAVA PRO RYCHLOST ---
-// Ve Fázi 2 snížíme hloubku, aby se hra nezasekla (branching factor je příliš vysoký)
-let currentDepth = this.aiDepth; 
-if (this.phase === 2) {
-    currentDepth = 1; // Pokud je to stále pomalé, změňte na 1
-}
-
-let bestScore = -Infinity;
-let bestMove = moves[0];
-let moveCount = 0; // Pro sledování postupu v konzoli
-
-for (const move of moves) {
-    moveCount++;
-    // Každých 50 prověřených tahů vypíšeme info do konzole, abychom viděli, že AI žije
-    if (moveCount % 50 === 0) console.log(`AI analyzuje tah ${moveCount} z ${moves.length}...`);
-
-    let scorePenalty = 0;
-
-    // --- SEBEVRAŽEDNÁ POJISTKA (FÁZE 2) ---
-    if (state.phase === 2 && move.type === "move") {
-        const boardWithoutStone = new Map(state.board);
-        boardWithoutStone.delete(move.from);
-        
-        if (
-    this.checkWinGeneric(boardWithoutStone, "red", move.from) ||
-    this.checkWinFull(boardWithoutStone, "red")
-    ) {
-        scorePenalty -= 50000;
-    }
-    }
-
-    const newState = this.simulateMove(state, move, "black");
-
-    // TADY POUŽÍVÁME currentDepth MÍSTO this.aiDepth
-    const score = this.minimax(newState, currentDepth - 1, false) + scorePenalty;
-    
-    if (score > bestScore) {
-        bestScore = score;
-        bestMove = move;
-    }
-}
-
-console.log("AI vybrala nejlepší tah.");
-this.playAIMove(bestMove);
-
+    // 🔥 2. fallback
+    bestMove = scoredMoves.length > 0 ? scoredMoves[0].move : allPossibleMoves[0];
 }
 
 
+    if (criticalTarget && bestMove && bestMove.to === criticalTarget) {
+        console.log(`[AI OBRANA] Kritický blok na ${criticalTarget}`);
+    }
+
+    return this.playAIMove(bestMove);
+}
+}
 
 
 
@@ -1973,73 +2860,6 @@ if (isFirstMove) {
 
 
 
-getValidPlacementsForState(state, player) {
-    const moves = [];
-    const seen = new Set();
-
-    const startKey = (player === 'red') ? "0,0" : "1,0";
-    const [sq, sr] = startKey.split(',').map(Number);
-
-    const isFirstMove =
-        (player === 'red' && this.redFirstMove) ||
-        (player === 'black' && this.blackFirstMove);
-
-    for (let [key] of state.board) {
-        const [q, r] = key.split(',').map(Number);
-
-        DIRS.forEach(d => {
-            const nq = q + d[0];
-            const nr = r + d[1];
-            const nk = `${nq},${nr}`;
-
-            if (!state.board.has(nk) && !seen.has(nk)) {
-
-                if (isFirstMove) {
-                    const isNeighborOfStart = DIRS.some(sd => (sq + sd[0] === nq && sr + sd[1] === nr));
-                    if (isNeighborOfStart) return;
-                }
-
-                seen.add(nk);
-                moves.push({ q: nq, r: nr });
-            }
-        });
-    }
-
-    return moves;
-}
-
-
-
-getValidMoveTargetsForState(fromKey, state) {
-    const tempBoard = new Map(state.board);
-    tempBoard.delete(fromKey);
-
-    const groups = this.getGroups(tempBoard);
-    if (groups.length === 0) return [];
-
-    const maxSize = Math.max(...groups.map(g => g.length));
-    const largestGroups = groups.filter(g => g.length === maxSize);
-
-    const targets = [];
-    const seen = new Set();
-
-    largestGroups.forEach(group => {
-        group.forEach(key => {
-            const [q, r] = key.split(',').map(Number);
-
-            DIRS.forEach(d => {
-                const nKey = `${q + d[0]},${r + d[1]}`;
-
-                if (!tempBoard.has(nKey) && !seen.has(nKey) && nKey !== fromKey) {
-                    seen.add(nKey);
-                    targets.push(nKey);
-                }
-            });
-        });
-    });
-
-    return targets;
-}
 
 
 
@@ -2107,11 +2927,15 @@ getValidMoveTargetsForState(fromKey, state) {
             // A) Výběr/Zvednutí vlastního kamene
             if (clickedColor === this.currentPlayer) {
     this.selectedKey = key;
-    this.log(`Vybrán kámen ${this.currentPlayer} na ${key}`);
+	
+    this.log(`Vybrán kámen hráče ${this.currentPlayer} na ${key}`, "#74b9ff");
 
     // Log skupin jen pokud dojde k rozdělení
     const analysis = this.analyzeGroups(this.board, key, true);
 
+	if (analysis.groups.length > 1) {
+            this.log("⚠️ Hráč rozdělí desku!", "#ff7675");
+        }
     this.visualGroups = analysis.stats; // pro draw()
 }
 		
@@ -2194,6 +3018,15 @@ getValidMoveTargetsForState(fromKey, state) {
         });
     }
 
+    // --- PŘIDÁNO: 3.5 Zvýraznění prázdného pole po odebrání kamene (Fáze 2) ---
+    // Svítí žlutě JEN v případě, že hráč zrovna nevybírá kamenem (selectedKey je null)
+    if (this.phase === 2 && this.lastRemovedKey && !this.board.has(this.lastRemovedKey) && !this.selectedKey) {
+        const [q, r] = this.lastRemovedKey.split(',').map(Number);
+        this.drawHex(this.lastRemovedKey, this.hexToPixel(q, r), null, false, false, false, false, null, true);
+    }
+    // --- KONEC PŘIDANÉ ČÁSTI ---
+
+
     // 4. Vykreslení kamenů na desce
     this.board.forEach((color, key) => {
         const parts = key.split(',');
@@ -2226,7 +3059,7 @@ getValidMoveTargetsForState(fromKey, state) {
     });
 }
 
-    drawHex(key, center, color, isHint, isLastMove, isSelected, isWinning, groupHighlightColor = null) {
+    drawHex(key, center, color, isHint, isLastMove, isSelected, isWinning, groupHighlightColor = null, isRemoved = false) {
     const p = center; 
     
     // 1. DEFINICE CESTY HEXAGONU
@@ -2239,6 +3072,17 @@ getValidMoveTargetsForState(fromKey, state) {
         );
     }
     this.ctx.closePath();
+
+    // --- PŘIDÁNO: VÝPLŇ PRO ODEBRANÝ KÁMEN ---
+    if (isRemoved) {
+        this.ctx.fillStyle = 'rgba(0, 198, 204, 1)'; // modrá výplň pole, odkud byl odebraný kámen
+        this.ctx.fill();
+    //    this.ctx.strokeStyle = '#f1c40f'; // Tmavší žlutý okraj
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        return; // Dál už nekreslíme, vyskočíme z funkce
+    }
+    // --- KONEC PŘIDANÉ ČÁSTI ---
 
     // 2. VÝPLŇ (Nápověda vs. Skutečný kámen)
     if (isHint) {
