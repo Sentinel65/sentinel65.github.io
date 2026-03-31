@@ -4,11 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Desková hra Six</title>
-    <style>
-    body { font-family: sans-serif; background: #eef2f3; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: none; overflow: hidden; height: 100vh; }
     
-    /* Úprava na max-width: 1000px pro lepší prostor na iPadech */
-    #game-container { width: 100%; max-width: 1000px; display: flex; flex-direction: row; height: 100%; box-sizing: border-box; padding: 10px; gap: 10px; }
+    <style>
+/* 1. OPRAVA VÝŠKY BODY - přidání dvh pro Chrome */
+body { 
+    font-family: sans-serif; 
+    background: #eef2f3; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin: 0; 
+    touch-action: none; 
+    overflow: hidden; 
+    /* Fix pro Chrome: 100dvh zajistí, že log nebude pod lištou */
+    height: 100vh; 
+    height: 100dvh; 
+}
+
+/* 2. ZAJIŠTĚNÍ, ŽE KONTEJNER NEPŘETEČE */
+#game-container { 
+    width: 100%; 
+    max-width: 1000px; 
+    display: flex; 
+    flex-direction: row; 
+    height: 100%; 
+    max-height: 100%; /* Důležité pro Chrome */
+    box-sizing: border-box; 
+    padding: 10px; 
+    gap: 10px; 
+    overflow: hidden; /* Zabrání celkovému scrollu */
+}
     
     /* Přidáno min-height: 0 a flex: 1 pro responzivitu */
     #main-area { flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; min-height: 0; }
@@ -228,35 +253,43 @@
     .close-btn:hover { color: #d63031; }
     
     /* Responzivita pro tablety (iPad) a menší displeje */
-    @media (max-width: 1024px) { 
-        #game-container { 
-            flex-direction: column; 
-        } 
-        #debug-log { 
-            width: 100%; 
-            height: 20vh; /* Zabrání roztahování logu - zabere max 20% displeje */
-            min-height: 120px;
-            max-height: 200px;
-            flex: none;
-        } 
-        .controls { 
-            flex-wrap: nowrap !important;
-        }
-        .controls button {
-            flex-basis: 30%; /* Tlačítka se rozdělí cca 3 vedle sebe */
-            padding: 8px 4px;
-            font-size: 14px;
-        }
-        .inventory {
-            gap: 6px;
-        }
-        .stone-counter {
-            width: 42px;
-            height: 42px;
-            font-size: 16px;
-        }
+/* 3. ÚPRAVA MEDIA QUERY PRO MOBILY */
+@media (max-width: 1024px) { 
+    #game-container { 
+        flex-direction: column; 
+        padding: 5px; /* Menší padding na mobilu ušetří místo */
+    } 
+
+    #main-area {
+        flex: 1; /* Board si vezme zbytek místa */
+        min-height: 0; /* NUTNÉ pro Chrome: dovolí obsahu se zmenšit */
     }
-</style>
+
+    #debug-log { 
+        width: 100%; 
+        /* Přesná výška logu na mobilu */
+        height: 130px; 
+        flex: 0 0 130px; /* Zabrání Chrome, aby log vytlačil board */
+        min-height: 130px;
+        margin-top: 5px;
+    } 
+
+    #canvas-wrapper {
+        min-height: 0; /* Opět klíčové pro flexbox v Chrome */
+    }
+
+    .controls { 
+        flex-wrap: nowrap !important;
+        gap: 2px;
+        margin-top: 5px;
+    }
+
+    .controls button {
+        padding: 8px 1px;
+        font-size: 10px;
+    }
+}
+	</style>
 
 
 </head>
