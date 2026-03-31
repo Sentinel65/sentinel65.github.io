@@ -5,518 +5,259 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Desková hra Six</title>
     <style>
-        body { font-family: sans-serif; background: #eef2f3; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: none; overflow: hidden; height: 100vh; }
-        #game-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 10px; gap: 10px; }
-        #main-area { flex: 2; display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
-        #debug-log { flex: 1; max-width: 900px; min-height: 0; height: 80px; background: #2d3436; color: #00ff00; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; overflow-y: auto; }
-        #canvas-wrapper { flex: 1; background: #dfe6e9; border-radius: 8px; position: relative; overflow: hidden; border: 2px solid #b2bec3; }
-        canvas { display: block; width: 100%; height: 100%; cursor: move; }
-.ui-top {
-    display: flex;
-    justify-content: space-between; /* Roztáhne prvky ke krajům */
-    align-items: center;            /* Srovná je vertikálně na střed (místo "left") */
-    margin-bottom: 5px;
-    width: 100%;
-}
-
-#btnCopyLog {
-    transition: background 0.2s ease, transform 0.15s ease;
-}
-
-#btnCopyLog svg {
-    transition: all 0.2s ease;
-}
-
-/* Ripple element */
-.ripple {
-    position: absolute;
-    border-radius: 50%;
-    transform: scale(0);
-    animation: rippleAnim 0.5s linear;
-    background: rgba(255,255,255,0.4);
-    pointer-events: none;
-}
-
-@keyframes rippleAnim {
-    to {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-
-/* První prvek (Status) */
-#status {
-    flex: 1;             /* Zabre maximum místa vlevo */
-    text-align: left;    /* Zarovná svůj text k levému okraji */
-}
-
-/* Prostřední prvek (Název hry) */
-.ui-top span:nth-child(2) { 
-    flex: 0 0 auto;      /* Nechá se jen tak široký, jak potřebuje */
-    text-align: center;
-    font-weight: bold;
-    white-space: nowrap; /* Aby se text nezalamoval */
-    padding: 0 10px;     /* Malá mezera, aby do něj kraje nenarážely */
-}
-
-/* Poslední prvek (Fáze) */
-#phase-text {
-    flex: 1;             /* Zabere maximum místa vpravo (stejně jako status) */
-    text-align: right;   /* Zarovná svůj text k pravému okraji */
-}
-
-        .inventory {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 13px;
-            margin-bottom: 5px;
-            gap: 10px;
-        }
-
-.inventory-hex {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.inventory-hex svg {
-    width: 100%;
-    height: 100%;
-}
-
-.inventory-hex text {
-    font-size: 20px;
-    font-weight: bold;
-    fill: white;
-    dominant-baseline: middle;
-    text-anchor: middle;
-}
-
-
-        .stone-counter {
-            width: 50px;
-            height: 50px;
-            position: relative;
-            clip-path: polygon(
-                25% 0%, 75% 0%,
-                100% 50%,
-                75% 100%, 25% 100%,
-                0% 50%
-            );
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 20px;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .red-stone {
-            background: #d63031;
-        }
-
-        .black-stone {
-            background: #2d3436;
-        }
-
-        .stone-number {
-            position: relative;
-            z-index: 2;
-        }
-
-        .start-select {
-            padding: 4px 6px;
-            border-radius: 4px;
-            flex: 1;
-            max-width: 220px;
-        }
-
-/* Kontejner tlačítek */
-.controls { 
-    display: flex; 
-    grid-template-columns: repeat(6, 1fr); /* 6 tlačítek vedle sebe */
-    gap: 8px; 
-    margin-top: 10px; 
-    flex-wrap: nowrap;
-}
-
-/* Tlačítka stejná jako dříve */
-.controls button { 
-    flex: 1;          /* všechny tlačítka stejná šířka */
-    min-width: 0;     /* zabraňuje overflow při malém kontejneru */
-    padding: 10px 5px;
-    border: none;
-<style>
-/* Základní styl těla */
-html, body {
-    height: 100%;
-    margin: 0;
-    font-family: sans-serif;
-    background: #eef2f3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    overflow: hidden; /* scroll bude na kontejneru */
-    touch-action: none;
-}
-
-/* Hlavní kontejner */
-#game-container {
-    width: 100%;
-    max-width: 900px;
-    display: flex;
-    flex-direction: column; /* mobil: sloupec */
-    height: 100vh;          /* celý viewport */
-    box-sizing: border-box;
-    padding: 10px;
-    gap: 10px;
-    overflow: hidden;
-}
-
-/* Hlavní oblast s deskou a ovládáním */
-#main-area {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0; /* důležité pro scroll uvnitř flex */
-    background: #fff;
-    border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-/* Canvas wrapper */
-#canvas-wrapper {
-    flex: 1 1 auto;
-    min-height: 0;       /* kritické pro správný scroll */
-    background: #dfe6e9;
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
-    border: 2px solid #b2bec3;
-}
-
-canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    cursor: move;
-}
-
-/* Log tahů */
-#debug-log {
-    background: #2d3436;
-    color: #00ff00;
-    font-family: monospace;
-    font-size: 12px;
-    border-radius: 8px;
-    padding: 10px;
-    overflow-y: auto;      /* rolovatelný log */
-    flex: 0 0 auto;        /* neexpandovat */
-    max-height: 150px;     /* klidně upravit podle potřeby */
-}
-
-/* Horní status a názvy */
-.ui-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-    width: 100%;
-}
-
-#status { flex: 1; text-align: left; }
-.ui-top span:nth-child(2) { 
-    flex: 0 0 auto; 
-    text-align: center;
-    font-weight: bold;
-    white-space: nowrap;
-    padding: 0 10px;
-}
-#phase-text { flex: 1; text-align: right; }
-
-/* Inventář kamenů */
-.inventory {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 13px;
-    margin-bottom: 5px;
-    gap: 10px;
-}
-
-.inventory-hex {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    <style>
-        body { font-family: sans-serif; background: #eef2f3; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: none; overflow: hidden; height: 100vh; }
-        #game-container { width: 100%; max-width: 900px; display: flex; flex-direction: row; height: 100%; box-sizing: border-box; padding: 10px; gap: 10px; }
-        #main-area { flex: 2; display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
-        #debug-log { flex: 1; max-width: 250px; background: #2d3436; color: #00ff00; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; overflow-y: auto; }
-        #canvas-wrapper { flex: 1; background: #dfe6e9; border-radius: 8px; position: relative; overflow: hidden; border: 2px solid #b2bec3; }
-        canvas { display: block; width: 100%; height: 100%; cursor: move; }
-.ui-top {
-    display: flex;
-    justify-content: space-between; /* Roztáhne prvky ke krajům */
-    align-items: center;            /* Srovná je vertikálně na střed (místo "left") */
-    margin-bottom: 5px;
-    width: 100%;
-}
-
-#btnCopyLog {
-    transition: background 0.2s ease, transform 0.15s ease;
-}
-
-#btnCopyLog svg {
-    transition: all 0.2s ease;
-}
-
-/* Ripple element */
-.ripple {
-    position: absolute;
-    border-radius: 50%;
-    transform: scale(0);
-    animation: rippleAnim 0.5s linear;
-    background: rgba(255,255,255,0.4);
-    pointer-events: none;
-}
-
-@keyframes rippleAnim {
-    to {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-
-/* První prvek (Status) */
-#status {
-    flex: 1;             /* Zabre maximum místa vlevo */
-    text-align: left;    /* Zarovná svůj text k levému okraji */
-}
-
-/* Prostřední prvek (Název hry) */
-.ui-top span:nth-child(2) { 
-    flex: 0 0 auto;      /* Nechá se jen tak široký, jak potřebuje */
-    text-align: center;
-    font-weight: bold;
-    white-space: nowrap; /* Aby se text nezalamoval */
-    padding: 0 10px;     /* Malá mezera, aby do něj kraje nenarážely */
-}
-
-/* Poslední prvek (Fáze) */
-#phase-text {
-    flex: 1;             /* Zabere maximum místa vpravo (stejně jako status) */
-    text-align: right;   /* Zarovná svůj text k pravému okraji */
-}
-
-        .inventory {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 13px;
-            margin-bottom: 5px;
-            gap: 10px;
-        }
-
-.inventory-hex {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.inventory-hex svg {
-    width: 100%;
-    height: 100%;
-}
-
-.inventory-hex text {
-    font-size: 20px;
-    font-weight: bold;
-    fill: white;
-    dominant-baseline: middle;
-    text-anchor: middle;
-}
-
-
-        .stone-counter {
-            width: 50px;
-            height: 50px;
-            position: relative;
-            clip-path: polygon(
-                25% 0%, 75% 0%,
-                100% 50%,
-                75% 100%, 25% 100%,
-                0% 50%
-            );
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 20px;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .red-stone {
-            background: #d63031;
-        }
-
-        .black-stone {
-            background: #2d3436;
-        }
-
-        .stone-number {
-            position: relative;
-            z-index: 2;
-        }
-
-        .start-select {
-            padding: 4px 6px;
-            border-radius: 4px;
-            flex: 1;
-            max-width: 220px;
-        }
-
-/* Kontejner tlačítek */
-.controls { 
-    display: flex; 
-    grid-template-columns: repeat(6, 1fr); /* 6 tlačítek vedle sebe */
-    gap: 8px; 
-    margin-top: 10px; 
-    flex-wrap: nowrap;
-}
-
-/* Tlačítka stejná jako dříve */
-.controls button { 
-    flex: 1;          /* všechny tlačítka stejná šířka */
-    min-width: 0;     /* zabraňuje overflow při malém kontejneru */
-    padding: 10px 5px;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    color: white;
-    background: #0984e3;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
+    body { font-family: sans-serif; background: #eef2f3; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: none; overflow: hidden; height: 100vh; }
     
-   
-}
+    /* Úprava na max-width: 1000px pro lepší prostor na iPadech */
+    #game-container { width: 100%; max-width: 1000px; display: flex; flex-direction: row; height: 100%; box-sizing: border-box; padding: 10px; gap: 10px; }
+    
+    /* Přidáno min-height: 0 a flex: 1 pro responzivitu */
+    #main-area { flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; min-height: 0; }
+    
+    /* Přepracovaný log pro flexbox sloupce */
+    #debug-log { width: 250px; background: #222; color: #00ff00; font-family: monospace; font-size: 11px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* Přidáno min-height: 0 */
+    #canvas-wrapper { flex: 1; background: #dfe6e9; border-radius: 8px; position: relative; overflow: hidden; border: 2px solid #b2bec3; min-height: 0; }
+    
+    canvas { display: block; width: 100%; height: 100%; cursor: move; }
 
-/* Základní styl všech tlačítek */
-button { 
-    padding: 10px 12px; 
-    border: none; 
-    border-radius: 6px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    color: white; 
-    background: #0984e3; /* výchozí modrá */
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
+    .ui-top {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;            
+        margin-bottom: 5px;
+        width: 100%;
+    }
 
-/* Hover efekt */
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-}
+    #btnCopyLog {
+        transition: background 0.2s ease, transform 0.15s ease;
+    }
 
-/* Specifické tlačítka */
-#btnRestart { background: #d63031; }   /* červené */
-#btnCenter  { background: #636e72; }   /* šedé */
-#btnHelp    { background: #f39c12; }   /* oranžové */
-#btnSave    { background: #00b894; }   /* zelené */
-#btnLoad    { background: #6c5ce7; }   /* fialové */
-#btnCoords	{ background: #03b6fc; }   /* modré */
+    #btnCopyLog svg {
+        transition: all 0.2s ease;
+    }
 
+    /* Ripple element */
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        transform: scale(0);
+        animation: rippleAnim 0.5s linear;
+        background: rgba(255,255,255,0.4);
+        pointer-events: none;
+    }
 
-/* Volitelně malé barevné texty pro indikace */
-.red   { color: #d63031; }
-.black { color: #2d3436; }
-        
-        
-        /* Styly pro vyskakovací okno (Modal) */
-        .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 1000; 
-            left: 0; 
-            top: 0; 
+    @keyframes rippleAnim {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+
+    #status {
+        flex: 1;             
+        text-align: left;    
+    }
+
+    .ui-top span:nth-child(2) { 
+        flex: 0 0 auto;      
+        text-align: center;
+        font-weight: bold;
+        white-space: nowrap; 
+        padding: 0 10px;     
+    }
+
+    #phase-text {
+        flex: 1;             
+        text-align: right;   
+    }
+
+    .inventory {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8f9fa;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 13px;
+        margin-bottom: 5px;
+        gap: 10px;
+    }
+
+    .inventory-hex {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .inventory-hex svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .inventory-hex text {
+        font-size: 20px;
+        font-weight: bold;
+        fill: white;
+        dominant-baseline: middle;
+        text-anchor: middle;
+    }
+
+    .stone-counter {
+        width: 50px;
+        height: 50px;
+        position: relative;
+        clip-path: polygon(
+            25% 0%, 75% 0%,
+            100% 50%,
+            75% 100%, 25% 100%,
+            0% 50%
+        );
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 20px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .red-stone {
+        background: #d63031;
+    }
+
+    .black-stone {
+        background: #2d3436;
+    }
+
+    .stone-number {
+        position: relative;
+        z-index: 2;
+    }
+
+    .start-select {
+        padding: 4px 6px;
+        border-radius: 4px;
+        flex: 1;
+        max-width: 220px;
+    }
+
+    /* Kontejner tlačítek (opravený flexbox) */
+    .controls { 
+        display: flex; 
+        gap: 8px; 
+        margin-top: 10px; 
+        flex-wrap: nowrap;
+    }
+
+    .controls button { 
+        flex: 1;          
+        min-width: 0;     
+    }
+
+    /* Základní styl všech tlačítek */
+    button { 
+        padding: 10px 12px; 
+        border: none; 
+        border-radius: 6px; 
+        font-weight: bold; 
+        cursor: pointer; 
+        color: white; 
+        background: #0984e3; 
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    /* Hover efekt */
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+
+    /* Specifické tlačítka */
+    #btnRestart { background: #d63031; }   
+    #btnCenter  { background: #636e72; }   
+    #btnHelp    { background: #f39c12; }   
+    #btnSave    { background: #00b894; }   
+    #btnLoad    { background: #6c5ce7; }   
+    #btnCoords  { background: #03b6fc; }   
+
+    /* Volitelně malé barevné texty pro indikace */
+    .red   { color: #d63031; }
+    .black { color: #2d3436; }
+    
+    /* Styly pro vyskakovací okno (Modal) */
+    .modal {
+        display: none; 
+        position: fixed; 
+        z-index: 1000; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        height: 100%; 
+        background-color: rgba(0,0,0,0.6); 
+        backdrop-filter: blur(2px);
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5vh auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        line-height: 1.5;
+        color: #2d3436;
+    }
+    
+    .modal-content h2, .modal-content h3 { color: #0984e3; margin-top: 20px; margin-bottom: 10px; }
+    .modal-content h2 { margin-top: 0; }
+    
+    .close-btn {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close-btn:hover { color: #d63031; }
+    
+    /* Responzivita pro tablety (iPad) a menší displeje */
+    @media (max-width: 1024px) { 
+        #game-container { 
+            flex-direction: column; 
+        } 
+        #debug-log { 
             width: 100%; 
-            height: 100%; 
-            background-color: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(2px);
+            height: 20vh; /* Zabrání roztahování logu - zabere max 20% displeje */
+            min-height: 120px;
+            max-height: 200px;
+            flex: none;
+        } 
+        .controls { 
+            flex-wrap: nowrap !important;
         }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5vh auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            line-height: 1.5;
-            color: #2d3436;
+        .controls button {
+            flex-basis: 30%; /* Tlačítka se rozdělí cca 3 vedle sebe */
+            padding: 8px 4px;
+            font-size: 14px;
         }
-        .modal-content h2, .modal-content h3 { color: #0984e3; margin-top: 20px; margin-bottom: 10px; }
-        .modal-content h2 { margin-top: 0; }
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
+        .inventory {
+            gap: 6px;
         }
-        .close-btn:hover { color: #d63031; }
-        
-        /* Responzivita pro menší displeje */
-        @media (max-width: 700px) { 
-            #game-container { 
-                flex-direction: column; 
-            } 
-            #debug-log { 
-                max-width: 100%; 
-                height: 120px;
-                flex: none;
-            } 
-            .controls { 
-                grid-template-columns: 1fr 1fr 1fr;
-            }
-            .controls button {
-                padding: 8px 2px;
-                font-size: 12px;
-            }
-            .inventory {
-                gap: 6px;
-            }
-            .stone-counter {
-                width: 42px;
-                height: 42px;
-                font-size: 16px;
-            }
+        .stone-counter {
+            width: 42px;
+            height: 42px;
+            font-size: 16px;
         }
+    }
 </style>
+
 
 </head>
 <body>
@@ -589,7 +330,7 @@ button:hover {
          </div>
     </div>
     
-<div id="debug-log" style="height: 200px; display: flex; flex-direction: column; border: 1px solid #444; background: #222;">
+<div id="debug-log">
     <div style="padding: 5px; color: #aaa; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: flex-end; background: #333;">
         <span style="font-weight: bold; font-size: 12px;">LOG TAHŮ:</span>
         <button id="btnCopyLog" title="Kopírovat log"
