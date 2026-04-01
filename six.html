@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Desková hra Six</title>
-    
     <style>
 /* 1. OPRAVA VÝŠKY BODY - přidání dvh pro Chrome */
 body { 
@@ -289,7 +288,7 @@ body {
         font-size: 10px;
     }
 }
-	</style>
+</style>
 
 
 </head>
@@ -616,7 +615,7 @@ saveGame() {
 loadGame() {
     const savedData = localStorage.getItem('sixGameSave_v2');
     if (!savedData) {
-        alert("⚠️ Nenašel jsem žádnou uloženou hru!", "#fff154");
+        this.log("⚠️ Nenašel jsem žádnou uloženou hru!", "#fff154");
         return;
     }
     this.reset()
