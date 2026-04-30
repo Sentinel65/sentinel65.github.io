@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Šachové puzzle - věž</title>
+    <style>
+        :root {
+            --light-square: #f0d9b5;
+            --dark-square: #b58863;
+            --disabled-bg: rgba(60, 60, 60, 0.95);
+            --board-width: min(95vw, 400px);
+            --cell-size: calc(var(--board-width) / 4);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #222;
+            color: #eee;
+            margin: 0;
+            padding: 15px 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 { 
+            margin-top: 0; 
+            font-size: clamp(20px, 6vw, 28px); 
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            width: var(--board-width);
+        }
+
+        button {
+            padding: 10px 0;
+            font-size: clamp(18px, 5vw, 22px);
+            cursor: pointer;
+            background-color: #444;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 4px;
+            transition: background-color 0.2s, transform 0.1s;
+            flex: 1 1 auto;
+            min-width: 44px; 
+            min-height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation; 
+            box-sizing: border-box;
+        }
+
+        button:hover { background-color: #555; }
+        button:active { transform: scale(0.95); }
+        
+        button.active-btn {
+            background-color: #2a7a2a;
+            border-color: #3cb371;
+        }
+        button.active-btn:hover { background-color: #329232; }
+        
+        .moves-counter {
+            font-size: clamp(18px, 5vw, 22px); 
+            font-weight: bold;
+            background-color: #333; 
+            color: #fff;
+            padding: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #666;
+            flex: 1 1 auto; 
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px; 
+            box-sizing: border-box;
+            cursor: default;
+        }
+
+        .board-wrapper {
+            position: relative;
+            width: var(--board-width);
+            height: calc(5 * var(--cell-size));
+            border: 4px solid #444;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background-color: #fff;
+            touch-action: manipulation;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, var(--cell-size));
+            grid-template-rows: repeat(5, var(--cell-size));
+            width: 100%;
+            height: 100%;
+        }
+
+        .cell {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: calc(var(--cell-size) * 0.65);
+            cursor: default;
+            position: relative;
+        }
+
+        .cell.light { background-color: var(--light-square); }
+        .cell.dark { background-color: var(--dark-square); }
+        
+        .cell.disabled { background-color: #777; }
+
+        .piece {
+            cursor: pointer;
+            transition: transform 0.1s;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .piece:active { transform: scale(0.85); }
+        
+        .piece-black { color: #111; }
+        .piece-white {
+            color: #fff;
+            text-shadow: 0 0 3px #000, 0 0 5px #000;
+        }
+
+        .highlight-help::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            box-shadow: inset 0 0 0 calc(var(--cell-size) * 0.03) rgba(50, 205, 50, 0.8);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .hint-overlay {
+            position: absolute;
+            background: var(--disabled-bg);
+            color: white;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .hint-top {
+            top: 0;
+            left: var(--cell-size);
+            width: calc(3 * var(--cell-size));
+            height: var(--cell-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: clamp(10px, 3.2vw, 13px);
+            padding: 0 8px;
+            line-height: 1.25;
+            pointer-events: none;
+        }
+
+        .info-panel {
+            bottom: 0;
+            left: 0;
+            width: calc(3 * var(--cell-size));
+            height: var(--cell-size);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            padding: 4px 6px;
+            pointer-events: auto; 
+        }
+
+        #bestScoreDisplay {
+            font-size: clamp(10px, 3.5vw, 13px);
+            font-weight: bold;
+            border-bottom: 1px solid #777;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .move-log {
+            flex: 1;
+            overflow-y: auto;
+            font-size: clamp(10px, 3vw, 12px);
+            text-align: left;
+            font-family: monospace;
+            line-height: 1.4;
+            padding-right: 4px;
+        }
+
+        .move-log::-webkit-scrollbar { width: 4px; }
+        .move-log::-webkit-scrollbar-thumb { background: #888; border-radius: 2px; }
+        
+        .target-cell::before {
+            content: '';
+            position: absolute;
+            width: 80%; height: 80%;
+            border: 3px dashed rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(40, 167, 69, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none;
+            text-align: center;
+            width: max-content;
+            max-width: 90vw;
+        }
+
+        .notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="notification" class="notification"></div>
+
+    <h1>Šachové puzzle - věž</h1>
+    
+    <div class="controls">
+        <button onclick="initGame()" title="Nová hra / Zrušit">🔄</button>
+        <button onclick="undoMove()" title="Tah zpět">↩️</button>
+        <button id="helpBtn" onclick="toggleHelp()" title="Nápověda">💡</button>
+        <button onclick="saveGame()" title="Uložit hru">💾</button>
+        <button onclick="loadGame()" title="Načíst hru">📂</button>
+        <div class="moves-counter" title="Počet tahů">♖ <span id="movesCount">0</span></div>
+    </div>
+
+    <div class="board-wrapper">
+        <div class="board" id="board"></div>
+        <div class="hint-overlay hint-top">Použij standardní šachové tahy na přesunutí černé věže na pole s kruhem.</div>
+        <div class="hint-overlay info-panel">
+            <div id="bestScoreDisplay">Nejlepší výsledek: --</div>
+            <div id="moveLog" class="move-log"></div>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_ROWS = 5;
+        const BOARD_COLS = 4;
+        
+        const PIECES_UNICODE = {
+            'R': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        };
+
+        let board = [];
+        let emptyPos = { r: 4, c: 3 }; 
+        let history = [];
+        let moves = 0;
+        let helpEnabled = false;
+        
+        let moveLogs = [];
+        let bestScore = localStorage.getItem('chessPuzzleBestScore') || null;
+        
+        let soundEnabled = localStorage.getItem('soundEnabled') === 'true';
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let notifTimeout;
+
+        initGame();
+
+        function showNotification(message, duration = 2000) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            
+            clearTimeout(notifTimeout);
+            notifTimeout = setTimeout(() => {
+                notif.classList.remove('show');
+            }, duration);
+        }
+
+        function initGame() {
+            board = [
+                ['R', 'x', 'x', 'x'],       
+                ['b', 'b', 'b', 'b'],       
+                ['n', 'n', 'n', 'n'],       
+                ['p', 'p', 'p', 'p'],       
+                ['x', 'x', 'x', null]       
+            ];
+            emptyPos = { r: 4, c: 3 };
+            history = [];
+            moves = 0;
+            moveLogs = [];
+            
+            bestScore = localStorage.getItem('chessPuzzleBestScore') || null;
+            
+            render();
+            updateUI();
+        }
+
+        function saveGame() {
+            const gameState = {
+                board: board,
+                emptyPos: emptyPos,
+                moves: moves,
+                history: history,
+                logs: moveLogs
+            };
+            localStorage.setItem('chessPuzzleSave', JSON.stringify(gameState));
+            showNotification('Hra byla úspěšně uložena!');
+        }
+
+        function loadGame() {
+            const savedState = localStorage.getItem('chessPuzzleSave');
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                board = gameState.board;
+                emptyPos = gameState.emptyPos;
+                moves = gameState.moves;
+                moveLogs = gameState.logs || [];
+                
+                history = (gameState.history || []).map(h => 
+                    h.board ? h : { board: h, logs: [] }
+                );
+                
+                render();
+                updateUI();
+                showNotification('Hra byla načtena.');
+            } else {
+                showNotification('Žádná uložená hra nebyla nalezena.');
+            }
+        }
+
+        function isValidMove(r, c) {
+            const piece = board[r][c];
+            if (!piece || piece === 'x') return false;
+
+            const dr = Math.abs(r - emptyPos.r);
+            const dc = Math.abs(c - emptyPos.c);
+
+            switch (piece) {
+                case 'R': 
+                    return dr + dc === 1;
+                case 'b': 
+                    return dr === 1 && dc === 1;
+                case 'n': 
+                    return (dr === 1 && dc === 2) || (dr === 2 && dc === 1);
+                case 'p': 
+                    return emptyPos.r === r - 1 && dc === 0; 
+                default:
+                    return false;
+            }
+        }
+
+        function isGameBlocked() {
+            for (let r = 0; r < BOARD_ROWS; r++) {
+                for (let c = 0; c < BOARD_COLS; c++) {
+                    if (isValidMove(r, c)) return false;
+                }
+            }
+            return true;
+        }
+
+        function attemptMove(r, c) {
+            if (board[4][3] === 'R') return; 
+
+            if (isValidMove(r, c)) {
+                const pieceSymbol = PIECES_UNICODE[board[r][c]];
+                
+                const startCol = String.fromCharCode(97 + c);
+                const startRow = 5 - r;
+                
+                const targetCol = String.fromCharCode(97 + emptyPos.c);
+                const targetRow = 5 - emptyPos.r;
+                
+                // Přidání paddingu pro jednoznakovou číslovku (01, 02 atd.)
+                const moveNumberStr = String(moves + 1).padStart(2, '0');
+                const moveText = `${moveNumberStr}. ${pieceSymbol} ${startCol}${startRow} ${targetCol}${targetRow}`;
+
+                history.push({
+                    board: JSON.parse(JSON.stringify(board)),
+                    logs: [...moveLogs]
+                });
+
+                board[emptyPos.r][emptyPos.c] = board[r][c];
+                board[r][c] = null;
+                emptyPos = { r, c };
+                moves++;
+                
+                moveLogs.push(moveText);
+
+                if (board[4][3] === 'R') {
+                    moveLogs.push('Konec hry.');
+                    
+                    if (helpEnabled) {
+                        helpEnabled = false;
+                        document.getElementById('helpBtn').classList.remove('active-btn');
+                    }
+                    
+                    if (!bestScore || moves < bestScore) {
+                        bestScore = moves;
+                        localStorage.setItem('chessPuzzleBestScore', bestScore);
+                        showNotification('Nový nejlepší výsledek!', 4000);
+                    } else {
+                        showNotification('Gratuluji! Puzzle úspěšně dokončeno!', 4000);
+                    }
+                } else if (isGameBlocked()) {
+                    moveLogs.push('Zablokováno! Nemáš další tah.');
+                    showNotification('Hra zablokována, nelze táhnout!', 3000);
+                }
+
+                playSound();
+                render();
+                updateUI();
+            }
+        }
+
+        function undoMove() {
+            if (history.length === 0 || board[4][3] === 'R') return;
+            
+            const prevState = history.pop();
+            board = prevState.board;
+            moveLogs = prevState.logs;
+            moves--;
+            
+            for (let i = 0; i < BOARD_ROWS; i++) {
+                for (let j = 0; j < BOARD_COLS; j++) {
+                    if (board[i][j] === null) emptyPos = { r: i, c: j };
+                }
+            }
+            render();
+            updateUI();
+        }
+
+        function render() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            for (let r = 0; r < BOARD_ROWS; r++) {
+                for (let c = 0; c < BOARD_COLS; c++) {
+                    const cell = document.createElement('div');
+                    
+                    const isDark = (r + c) % 2 === 0; 
+                    cell.className = `cell ${isDark ? 'dark' : 'light'}`;
+
+                    const piece = board[r][c];
+
+                    if (piece === 'x') {
+                        cell.classList.add('disabled');
+                    } else if (r === 4 && c === 3) { 
+                        cell.classList.add('target-cell'); 
+                    }
+
+                    if (piece && piece !== 'x') {
+                        const isBlack = piece === 'R';
+                        const pieceSpan = document.createElement('span');
+                        pieceSpan.className = `piece ${isBlack ? 'piece-black' : 'piece-white'}`;
+                        pieceSpan.textContent = PIECES_UNICODE[piece];
+                        
+                        if (helpEnabled && isValidMove(r, c)) {
+                            cell.classList.add('highlight-help');
+                        }
+                        
+                        cell.appendChild(pieceSpan);
+                        cell.onclick = () => attemptMove(r, c);
+                    }
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('movesCount').textContent = moves;
+            
+            const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+            bestScoreDisplay.textContent = 'Nejlepší výsledek: ' + (bestScore !== null ? bestScore : '--');
+            
+            const logDiv = document.getElementById('moveLog');
+            logDiv.innerHTML = moveLogs.map(log => `<div>${log}</div>`).join('');
+            
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function toggleHelp() {
+            helpEnabled = !helpEnabled;
+            const helpBtn = document.getElementById('helpBtn');
+            if (helpEnabled) {
+                helpBtn.classList.add('active-btn');
+            } else {
+                helpBtn.classList.remove('active-btn');
+            }
+            render();
+        }
+
+        function playSound() {
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.08);
+            
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.08);
+        }
+    </script>
+</body>
+</html>
