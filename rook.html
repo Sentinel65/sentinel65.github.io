@@ -69,25 +69,15 @@
             border-color: #3cb371;
         }
         button.active-btn:hover { background-color: #329232; }
-        
-        .moves-counter {
-            font-size: clamp(18px, 5vw, 22px); 
+
+        #levelBtn {
+            font-size: clamp(16px, 4vw, 20px);
             font-weight: bold;
-            background-color: #333; 
-            color: #fff;
-            padding: 10px 0;
-            border-radius: 4px;
-            border: 1px solid #666;
-            flex: 1 1 auto; 
-            min-width: 44px;
-            min-height: 44px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 4px; 
-            box-sizing: border-box;
-            cursor: default;
+            background-color: #333;
+            color: #ffcc00; 
+            border-color: #886600;
         }
+        #levelBtn:hover { background-color: #444; }
 
         .board-wrapper {
             position: relative;
@@ -187,13 +177,18 @@
             pointer-events: auto; 
         }
 
-        #bestScoreDisplay {
-            font-size: clamp(10px, 3.5vw, 13px);
+        #puzzleStatsDisplay {
+            font-size: clamp(10px, 3vw, 12px);
             font-weight: bold;
             border-bottom: 1px solid #777;
             padding-bottom: 4px;
             margin-bottom: 4px;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        #puzzleStatsDisplay span {
+            color: #3cb371; 
         }
 
         .move-log {
@@ -241,10 +236,9 @@
             max-width: 90vw;
         }
 
-        .notification.show {
-            opacity: 1;
-            visibility: visible;
-        }
+        .notification.error { background-color: rgba(220, 53, 69, 0.95); }
+        .notification.warning { background-color: rgba(255, 153, 0, 0.95); }
+        .notification.show { opacity: 1; visibility: visible; }
     </style>
 </head>
 <body>
@@ -254,19 +248,24 @@
     <h1>Šachové puzzle - věž</h1>
     
     <div class="controls">
-        <button onclick="initGame()" title="Nová hra / Zrušit">🔄</button>
+        <button onclick="initGame(false)" title="Nová hra / Reset">🔄</button>
+        <button onclick="initGame(true)" title="Vygenerovat novou hru">🎲</button>
         <button onclick="undoMove()" title="Tah zpět">↩️</button>
         <button id="helpBtn" onclick="toggleHelp()" title="Nápověda">💡</button>
         <button onclick="saveGame()" title="Uložit hru">💾</button>
         <button onclick="loadGame()" title="Načíst hru">📂</button>
-        <div class="moves-counter" title="Počet tahů">♖ <span id="movesCount">0</span></div>
+        <button id="levelBtn" onclick="nextLevel()" title="Změnit obtížnost">Level 0</button>
     </div>
 
     <div class="board-wrapper">
         <div class="board" id="board"></div>
         <div class="hint-overlay hint-top">Použij standardní šachové tahy na přesunutí černé věže na pole s kruhem.</div>
         <div class="hint-overlay info-panel">
-            <div id="bestScoreDisplay">Nejlepší výsledek: --</div>
+            <div id="puzzleStatsDisplay">
+                <div>Počet tahů: <span id="movesCount">0</span></div>
+                <div>Min. tahů: <span id="statMoves">--</span></div>
+                <div>Řešení: <span id="statSolutions">--</span></div>
+            </div>
             <div id="moveLog" class="move-log"></div>
         </div>
     </div>
@@ -286,17 +285,30 @@
         let helpEnabled = false;
         
         let moveLogs = [];
-        let bestScore = localStorage.getItem('chessPuzzleBestScore') || null;
+        let currentPuzzleMinMoves = '--';
+        let currentPuzzleSolutions = '--';
+        
+        let initialBoardState = null;
+        let initialEmptyState = null;
+        
+        let currentLevel = 0; 
+        let isGenerating = false;
+        let isBlocked = false; // Zabrání dalším tahům, pokud je hra zablokovaná
         
         let soundEnabled = localStorage.getItem('soundEnabled') === 'true';
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let notifTimeout;
 
-        initGame();
+        initGame(true);
 
-        function showNotification(message, duration = 2000) {
+        function showNotification(message, duration = 2000, type = 'success') {
             const notif = document.getElementById('notification');
             notif.textContent = message;
+            
+            notif.classList.remove('error', 'warning');
+            if (type === 'error') notif.classList.add('error');
+            else if (type === 'warning') notif.classList.add('warning');
+            
             notif.classList.add('show');
             
             clearTimeout(notifTimeout);
@@ -305,55 +317,322 @@
             }, duration);
         }
 
-        function initGame() {
-            board = [
-                ['R', 'x', 'x', 'x'],       
-                ['b', 'b', 'b', 'b'],       
-                ['n', 'n', 'n', 'n'],       
-                ['p', 'p', 'p', 'p'],       
-                ['x', 'x', 'x', null]       
-            ];
-            emptyPos = { r: 4, c: 3 };
+        function getBoardString(b) {
+            let s = '';
+            for(let r=0; r<5; r++){
+                for(let c=0; c<4; c++){ s += b[r][c] || '.'; }
+            }
+            return s;
+        }
+
+        async function nextLevel() {
+            if (isGenerating) return;
+            currentLevel = currentLevel === 5 ? 0 : currentLevel + 1;
+            document.getElementById('levelBtn').textContent = 'Level ' + currentLevel;
+            await initGame(true);
+        }
+
+        function analyzePuzzleHybrid(startBoard, startEmpty, requiredSolutions = 5, targetLevel = 0) {
+            let minMoves = Infinity;
+            let startStr = getBoardString(startBoard);
+
+            let queue = [{ b: startBoard, e: startEmpty, depth: 0 }];
+            let head = 0;
+            let visitedBfs = new Set();
+            visitedBfs.add(startStr);
+            
+            while (head < queue.length) {
+                if (head > 25000) break; 
+                let current = queue[head++];
+                
+                if (current.b[4][3] === 'R') {
+                    minMoves = current.depth;
+                    break;
+                }
+                
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        let piece = current.b[r][c];
+                        if (!piece || piece === 'x') continue;
+                        
+                        let dr = Math.abs(r - current.e.r);
+                        let dc = Math.abs(c - current.e.c);
+                        let valid = false;
+                        
+                        if (piece === 'R') valid = (dr + dc === 1);
+                        else if (piece === 'b') valid = (dr === 1 && dc === 1);
+                        else if (piece === 'n') valid = ((dr === 1 && dc === 2) || (dr === 2 && dc === 1));
+                        else if (piece === 'p') valid = (current.e.r === r - 1 && dc === 0);
+
+                        if (valid) {
+                            let newB = [ [...current.b[0]], [...current.b[1]], [...current.b[2]], [...current.b[3]], [...current.b[4]] ];
+                            newB[current.e.r][current.e.c] = piece;
+                            newB[r][c] = null;
+                            
+                            let stateStr = getBoardString(newB);
+                            if (!visitedBfs.has(stateStr)) {
+                                visitedBfs.add(stateStr);
+                                queue.push({ b: newB, e: { r, c }, depth: current.depth + 1 });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (minMoves === Infinity) {
+                return { solvable: false, solutions: 0, minMoves: '--', rawSolutions: 0 };
+            }
+
+            if (targetLevel > 0) {
+                if (targetLevel === 1 && minMoves > 20) return { solvable: false };
+                if (targetLevel === 2 && (minMoves < 21 || minMoves > 25)) return { solvable: false };
+                if (targetLevel === 3 && (minMoves < 26 || minMoves > 30)) return { solvable: false };
+                if (targetLevel === 4 && (minMoves < 31 || minMoves > 35)) return { solvable: false };
+                if (targetLevel === 5 && minMoves <= 35) return { solvable: false };
+            }
+
+            let solutionsCount = 0;
+            let iters = 0;
+            let depthLimit = minMoves + 6; 
+            
+            let visitedDfs = new Set();
+            visitedDfs.add(startStr);
+
+            function dfs(b, e, depth) {
+                iters++;
+                if (iters > 100000) return; 
+                if (solutionsCount >= requiredSolutions) return;
+                
+                if (b[4][3] === 'R') {
+                    solutionsCount++;
+                    return;
+                }
+                
+                if (depth >= depthLimit) return;
+
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        let piece = b[r][c];
+                        if (!piece || piece === 'x') continue;
+                        
+                        let dr = Math.abs(r - e.r);
+                        let dc = Math.abs(c - e.c);
+                        let valid = false;
+                        
+                        if (piece === 'R') valid = (dr + dc === 1);
+                        else if (piece === 'b') valid = (dr === 1 && dc === 1);
+                        else if (piece === 'n') valid = ((dr === 1 && dc === 2) || (dr === 2 && dc === 1));
+                        else if (piece === 'p') valid = (e.r === r - 1 && dc === 0);
+
+                        if (valid) {
+                            let newB = [ [...b[0]], [...b[1]], [...b[2]], [...b[3]], [...b[4]] ];
+                            newB[e.r][e.c] = piece;
+                            newB[r][c] = null;
+                            let stateStr = getBoardString(newB);
+                            
+                            if (!visitedDfs.has(stateStr)) {
+                                visitedDfs.add(stateStr);
+                                dfs(newB, {r, c}, depth + 1);
+                                visitedDfs.delete(stateStr);
+                            }
+                        }
+                    }
+                }
+            }
+
+            dfs(startBoard, startEmpty, 0);
+
+            return {
+                solvable: solutionsCount > 0,
+                solutions: solutionsCount >= requiredSolutions ? `${requiredSolutions}+` : solutionsCount,
+                minMoves: minMoves,
+                rawSolutions: solutionsCount
+            };
+        }
+
+        function isGamePlayable(startBoard, startEmpty) {
+            let queue = [{ b: startBoard, e: startEmpty }];
+            let head = 0;
+            let visited = new Set();
+            visited.add(getBoardString(startBoard));
+
+            while (head < queue.length) {
+                if (head > 10000) return true; 
+
+                let current = queue[head++];
+                if (current.b[4][3] === 'R') return true;
+
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        let piece = current.b[r][c];
+                        if (!piece || piece === 'x') continue;
+
+                        let dr = Math.abs(r - current.e.r);
+                        let dc = Math.abs(c - current.e.c);
+                        let valid = false;
+
+                        if (piece === 'R') valid = (dr + dc === 1);
+                        else if (piece === 'b') valid = (dr === 1 && dc === 1);
+                        else if (piece === 'n') valid = ((dr === 1 && dc === 2) || (dr === 2 && dc === 1));
+                        else if (piece === 'p') valid = (current.e.r === r - 1 && dc === 0);
+
+                        if (valid) {
+                            let newB = [ [...current.b[0]], [...current.b[1]], [...current.b[2]], [...current.b[3]], [...current.b[4]] ];
+                            newB[current.e.r][current.e.c] = piece;
+                            newB[r][c] = null;
+                            let stateStr = getBoardString(newB);
+
+                            if (!visited.has(stateStr)) {
+                                visited.add(stateStr);
+                                queue.push({ b: newB, e: { r, c } });
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        async function generateRandomSolvableBoardAsync(targetLevel) {
+            const pieces = ['b','b','b','b', 'n','n','n','n', 'p','p','p','p'];
+            let attempts = 0;
+            
+            let reqSols = targetLevel === 1 ? 1 : 
+                          targetLevel === 2 ? 2 : 
+                          targetLevel === 3 ? 3 : 
+                          targetLevel === 4 ? 4 : 5;
+            
+            while (true) {
+                attempts++;
+                
+                if (attempts % 50 === 0) {
+                    const notif = document.getElementById('notification');
+                    if (notif) notif.textContent = `Hledám Level ${targetLevel} (pokus ${attempts})...`;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+
+                for (let i = pieces.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+                }
+                
+                let testBoard = [
+                    ['R', 'x', 'x', 'x'],
+                    [pieces[0], pieces[1], pieces[2], pieces[3]],
+                    [pieces[4], pieces[5], pieces[6], pieces[7]],
+                    [pieces[8], pieces[9], pieces[10], pieces[11]],
+                    ['x', 'x', 'x', null] 
+                ];
+                
+                let testEmpty = { r: 4, c: 3 };
+                
+                let analysis = analyzePuzzleHybrid(testBoard, testEmpty, reqSols, targetLevel); 
+                if (analysis.solvable && analysis.rawSolutions >= reqSols) {
+                    return { b: testBoard, e: testEmpty, analysis: analysis };
+                }
+            }
+        }
+
+        async function initGame(isNewGame = true) {
+            if (isGenerating) return;
+
+            if (isNewGame || !initialBoardState) {
+                if (currentLevel === 0) {
+                    initialBoardState = [
+                        ['R', 'x', 'x', 'x'],       
+                        ['b', 'b', 'b', 'b'],       
+                        ['n', 'n', 'n', 'n'],       
+                        ['p', 'p', 'p', 'p'],       
+                        ['x', 'x', 'x', null]       
+                    ];
+                    initialEmptyState = { r: 4, c: 3 };
+                    
+                    let analysis = analyzePuzzleHybrid(initialBoardState, initialEmptyState, 5, 0);
+                    currentPuzzleMinMoves = analysis.minMoves;
+                    currentPuzzleSolutions = analysis.solutions;
+                    
+                    showNotification('Načteno klasické puzzle (Level 0)', 1500, 'success');
+                } else {
+                    isGenerating = true;
+                    showNotification(`Generuji Level ${currentLevel}...`, 100000, 'warning');
+                    
+                    await new Promise(r => setTimeout(r, 50)); 
+                    
+                    const randomState = await generateRandomSolvableBoardAsync(currentLevel);
+                    
+                    initialBoardState = randomState.b;
+                    initialEmptyState = randomState.e;
+                    currentPuzzleMinMoves = randomState.analysis.minMoves;
+                    currentPuzzleSolutions = randomState.analysis.solutions;
+                    
+                    isGenerating = false;
+                    showNotification(`Připraveno (Level ${currentLevel})`, 2500, 'success');
+                }
+            } else {
+                showNotification('Hra byla resetována do výchozí pozice.', 1500, 'success');
+            }
+
+            board = JSON.parse(JSON.stringify(initialBoardState));
+            emptyPos = { ...initialEmptyState };
+            
             history = [];
             moves = 0;
             moveLogs = [];
-            
-            bestScore = localStorage.getItem('chessPuzzleBestScore') || null;
+            isBlocked = false; // Odblokování desky při nové hře/resetu
             
             render();
             updateUI();
         }
 
         function saveGame() {
+            if (isGenerating) return;
             const gameState = {
                 board: board,
                 emptyPos: emptyPos,
                 moves: moves,
                 history: history,
-                logs: moveLogs
+                logs: moveLogs,
+                statsMinMoves: currentPuzzleMinMoves,
+                statsSolutions: currentPuzzleSolutions,
+                level: currentLevel,
+                initialBoard: initialBoardState,
+                initialEmpty: initialEmptyState
             };
             localStorage.setItem('chessPuzzleSave', JSON.stringify(gameState));
-            showNotification('Hra byla úspěšně uložena!');
+            showNotification('Hra byla úspěšně uložena!', 2000, 'success');
         }
 
         function loadGame() {
+            if (isGenerating) return;
             const savedState = localStorage.getItem('chessPuzzleSave');
             if (savedState) {
                 const gameState = JSON.parse(savedState);
+                
                 board = gameState.board;
                 emptyPos = gameState.emptyPos;
                 moves = gameState.moves;
                 moveLogs = gameState.logs || [];
+                currentPuzzleMinMoves = gameState.statsMinMoves || '--';
+                currentPuzzleSolutions = gameState.statsSolutions || '--';
+                currentLevel = gameState.level !== undefined ? gameState.level : 0;
+                
+                initialBoardState = gameState.initialBoard || JSON.parse(JSON.stringify(gameState.board));
+                initialEmptyState = gameState.initialEmpty || { ...gameState.emptyPos };
                 
                 history = (gameState.history || []).map(h => 
                     h.board ? h : { board: h, logs: [] }
                 );
                 
+                document.getElementById('levelBtn').textContent = 'Level ' + currentLevel;
+                
+                // Kontrola po načtení, zda hra náhodou není zablokovaná
+                isBlocked = board[4][3] !== 'R' ? !isGamePlayable(board, emptyPos) : false;
+                
                 render();
                 updateUI();
-                showNotification('Hra byla načtena.');
+                showNotification('Hra byla načtena.', 2000, 'success');
             } else {
-                showNotification('Žádná uložená hra nebyla nalezena.');
+                showNotification('Žádná uložená hra nebyla nalezena.', 2000, 'error');
             }
         }
 
@@ -378,17 +657,9 @@
             }
         }
 
-        function isGameBlocked() {
-            for (let r = 0; r < BOARD_ROWS; r++) {
-                for (let c = 0; c < BOARD_COLS; c++) {
-                    if (isValidMove(r, c)) return false;
-                }
-            }
-            return true;
-        }
-
         function attemptMove(r, c) {
-            if (board[4][3] === 'R') return; 
+            // Pokud je hra zablokována, nepovolí žádné další tahy
+            if (board[4][3] === 'R' || isGenerating || isBlocked) return; 
 
             if (isValidMove(r, c)) {
                 const pieceSymbol = PIECES_UNICODE[board[r][c]];
@@ -399,7 +670,6 @@
                 const targetCol = String.fromCharCode(97 + emptyPos.c);
                 const targetRow = 5 - emptyPos.r;
                 
-                // Přidání paddingu pro jednoznakovou číslovku (01, 02 atd.)
                 const moveNumberStr = String(moves + 1).padStart(2, '0');
                 const moveText = `${moveNumberStr}. ${pieceSymbol} ${startCol}${startRow} ${targetCol}${targetRow}`;
 
@@ -423,16 +693,12 @@
                         document.getElementById('helpBtn').classList.remove('active-btn');
                     }
                     
-                    if (!bestScore || moves < bestScore) {
-                        bestScore = moves;
-                        localStorage.setItem('chessPuzzleBestScore', bestScore);
-                        showNotification('Nový nejlepší výsledek!', 4000);
-                    } else {
-                        showNotification('Gratuluji! Puzzle úspěšně dokončeno!', 4000);
-                    }
-                } else if (isGameBlocked()) {
-                    moveLogs.push('Zablokováno! Nemáš další tah.');
-                    showNotification('Hra zablokována, nelze táhnout!', 3000);
+                    showNotification(`Gratuluji! Dokončeno na ${moves} tahů.`, 4000, 'success');
+                    
+                } else if (!isGamePlayable(board, emptyPos)) {
+                    isBlocked = true; // Zablokování dalších tahů
+                    moveLogs.push('Zablokováno! Věž už nemá cestu do cíle. Použij tlačítko "Tah zpět" (↩️) nebo hru resetuj (🔄).');
+                    showNotification('Konec cesty! Hra uzamčena. Použij tlačítko "Tah zpět" (↩️) nebo hru resetuj (🔄).', 5000, 'error');
                 }
 
                 playSound();
@@ -442,12 +708,14 @@
         }
 
         function undoMove() {
-            if (history.length === 0 || board[4][3] === 'R') return;
+            if (history.length === 0 || board[4][3] === 'R' || isGenerating) return;
             
             const prevState = history.pop();
             board = prevState.board;
             moveLogs = prevState.logs;
             moves--;
+            
+            isBlocked = false; // Po vrácení tahu je deska logicky opět odemčena
             
             for (let i = 0; i < BOARD_ROWS; i++) {
                 for (let j = 0; j < BOARD_COLS; j++) {
@@ -483,7 +751,7 @@
                         pieceSpan.className = `piece ${isBlack ? 'piece-black' : 'piece-white'}`;
                         pieceSpan.textContent = PIECES_UNICODE[piece];
                         
-                        if (helpEnabled && isValidMove(r, c)) {
+                        if (helpEnabled && isValidMove(r, c) && !isBlocked) {
                             cell.classList.add('highlight-help');
                         }
                         
@@ -497,9 +765,8 @@
 
         function updateUI() {
             document.getElementById('movesCount').textContent = moves;
-            
-            const bestScoreDisplay = document.getElementById('bestScoreDisplay');
-            bestScoreDisplay.textContent = 'Nejlepší výsledek: ' + (bestScore !== null ? bestScore : '--');
+            document.getElementById('statSolutions').textContent = currentPuzzleSolutions;
+            document.getElementById('statMoves').textContent = currentPuzzleMinMoves;
             
             const logDiv = document.getElementById('moveLog');
             logDiv.innerHTML = moveLogs.map(log => `<div>${log}</div>`).join('');
