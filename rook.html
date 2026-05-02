@@ -161,8 +161,22 @@
             font-size: clamp(10px, 3.2vw, 13px);
             padding: 0 8px;
             line-height: 1.25;
-            pointer-events: none;
+            pointer-events: auto; 
         }
+
+        .sol-btn {
+            background-color: #444;
+            border: 1px solid #777;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.1s, transform 0.1s;
+        }
+        .sol-btn:hover { background-color: #666; }
+        .sol-btn:active { transform: scale(0.9); }
 
         .info-panel {
             bottom: 0;
@@ -259,7 +273,7 @@
 
     <div class="board-wrapper">
         <div class="board" id="board"></div>
-        <div class="hint-overlay hint-top">Použij standardní šachové tahy na přesunutí černé věže na pole s kruhem.</div>
+        <div id="topHint" class="hint-overlay hint-top">Použij standardní šachové tahy na přesunutí černé věže na pole s kruhem.</div>
         <div class="hint-overlay info-panel">
             <div id="puzzleStatsDisplay">
                 <div>Počet tahů: <span id="movesCount">0</span></div>
@@ -293,7 +307,10 @@
         
         let currentLevel = 0; 
         let isGenerating = false;
-        let isBlocked = false; // Zabrání dalším tahům, pokud je hra zablokovaná
+        let isBlocked = false; 
+        
+        let currentSolutionPath = null;
+        let autoPlayTimer = null;
         
         let soundEnabled = localStorage.getItem('soundEnabled') === 'true';
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -330,6 +347,52 @@
             currentLevel = currentLevel === 5 ? 0 : currentLevel + 1;
             document.getElementById('levelBtn').textContent = 'Level ' + currentLevel;
             await initGame(true);
+        }
+
+        function getShortestPath(startBoard, startEmpty) {
+            let startStr = getBoardString(startBoard);
+            let queue = [{ b: startBoard, e: startEmpty, moves: [] }];
+            let visited = new Set();
+            visited.add(startStr);
+            let head = 0;
+
+            while (head < queue.length) {
+                if (head > 25000) break; 
+                let current = queue[head++];
+
+                if (current.b[4][3] === 'R') {
+                    return current.moves;
+                }
+
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        let piece = current.b[r][c];
+                        if (!piece || piece === 'x') continue;
+
+                        let dr = Math.abs(r - current.e.r);
+                        let dc = Math.abs(c - current.e.c);
+                        let valid = false;
+
+                        if (piece === 'R') valid = (dr + dc === 1);
+                        else if (piece === 'b') valid = (dr === 1 && dc === 1);
+                        else if (piece === 'n') valid = ((dr === 1 && dc === 2) || (dr === 2 && dc === 1));
+                        else if (piece === 'p') valid = (current.e.r === r - 1 && dc === 0);
+
+                        if (valid) {
+                            let newB = [ [...current.b[0]], [...current.b[1]], [...current.b[2]], [...current.b[3]], [...current.b[4]] ];
+                            newB[current.e.r][current.e.c] = piece;
+                            newB[r][c] = null;
+                            let stateStr = getBoardString(newB);
+
+                            if (!visited.has(stateStr)) {
+                                visited.add(stateStr);
+                                queue.push({ b: newB, e: { r, c }, moves: [...current.moves, {r, c}] });
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         function analyzePuzzleHybrid(startBoard, startEmpty, requiredSolutions = 5, targetLevel = 0) {
@@ -578,8 +641,18 @@
             history = [];
             moves = 0;
             moveLogs = [];
-            isBlocked = false; // Odblokování desky při nové hře/resetu
+            isBlocked = false; 
             
+            helpEnabled = false;
+            document.getElementById('helpBtn').classList.remove('active-btn');
+            
+            // Bezpečné vynulování časovače bez cyklení
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+            }
+            
+            updateHintOverlay();
             render();
             updateUI();
         }
@@ -625,9 +698,17 @@
                 
                 document.getElementById('levelBtn').textContent = 'Level ' + currentLevel;
                 
-                // Kontrola po načtení, zda hra náhodou není zablokovaná
                 isBlocked = board[4][3] !== 'R' ? !isGamePlayable(board, emptyPos) : false;
                 
+                helpEnabled = false;
+                document.getElementById('helpBtn').classList.remove('active-btn');
+                
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+                
+                updateHintOverlay();
                 render();
                 updateUI();
                 showNotification('Hra byla načtena.', 2000, 'success');
@@ -657,16 +738,15 @@
             }
         }
 
-        function attemptMove(r, c) {
-            // Pokud je hra zablokována, nepovolí žádné další tahy
+        function attemptMove(r, c, isAuto = false) {
             if (board[4][3] === 'R' || isGenerating || isBlocked) return; 
+
+            if (!isAuto && autoPlayTimer) solTogglePlay(true);
 
             if (isValidMove(r, c)) {
                 const pieceSymbol = PIECES_UNICODE[board[r][c]];
-                
                 const startCol = String.fromCharCode(97 + c);
                 const startRow = 5 - r;
-                
                 const targetCol = String.fromCharCode(97 + emptyPos.c);
                 const targetRow = 5 - emptyPos.r;
                 
@@ -682,8 +762,16 @@
                 board[r][c] = null;
                 emptyPos = { r, c };
                 moves++;
-                
                 moveLogs.push(moveText);
+
+                if (helpEnabled) {
+                    if (isAuto) {
+                        if (currentSolutionPath) currentSolutionPath.shift();
+                    } else {
+                        currentSolutionPath = getShortestPath(board, emptyPos);
+                    }
+                    updateHintOverlay();
+                }
 
                 if (board[4][3] === 'R') {
                     moveLogs.push('Konec hry.');
@@ -691,13 +779,18 @@
                     if (helpEnabled) {
                         helpEnabled = false;
                         document.getElementById('helpBtn').classList.remove('active-btn');
+                        if (autoPlayTimer) {
+                            clearInterval(autoPlayTimer);
+                            autoPlayTimer = null;
+                        }
+                        updateHintOverlay();
                     }
                     
                     showNotification(`Gratuluji! Dokončeno na ${moves} tahů.`, 4000, 'success');
                     
                 } else if (!isGamePlayable(board, emptyPos)) {
-                    isBlocked = true; // Zablokování dalších tahů
-                    moveLogs.push('Zablokováno! Věž už nemá cestu do cíle. Použij tlačítko "Tah zpět" (↩️) nebo hru resetuj (🔄).');
+                    isBlocked = true; 
+                    moveLogs.push('Zablokováno! Věž už nemá cestu do cíle.');
                     showNotification('Konec cesty! Hra uzamčena. Použij tlačítko "Tah zpět" (↩️) nebo hru resetuj (🔄).', 5000, 'error');
                 }
 
@@ -715,15 +808,101 @@
             moveLogs = prevState.logs;
             moves--;
             
-            isBlocked = false; // Po vrácení tahu je deska logicky opět odemčena
+            isBlocked = false; 
             
             for (let i = 0; i < BOARD_ROWS; i++) {
                 for (let j = 0; j < BOARD_COLS; j++) {
                     if (board[i][j] === null) emptyPos = { r: i, c: j };
                 }
             }
+
+            if (helpEnabled) {
+                currentSolutionPath = getShortestPath(board, emptyPos);
+                updateHintOverlay();
+            }
+
             render();
             updateUI();
+        }
+
+        function solTogglePlay(forceStop = false) {
+            if (autoPlayTimer || forceStop) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+            } else {
+                if (currentSolutionPath && currentSolutionPath.length > 0) {
+                    autoPlayTimer = setInterval(() => {
+                        solStepForward();
+                    }, 800); 
+                }
+            }
+            updateHintOverlay();
+        }
+
+        function solStepForward() {
+            if (!currentSolutionPath || currentSolutionPath.length === 0) {
+                solTogglePlay(true);
+                return;
+            }
+            let nextMove = currentSolutionPath[0];
+            attemptMove(nextMove.r, nextMove.c, true); 
+        }
+
+        function solStepBackward() {
+            solTogglePlay(true); 
+            undoMove();
+        }
+
+        // OPRAVENO: Bezpečné zastavování přehrávání bez vyvolání nekonečné smyčky
+        function updateHintOverlay() {
+            const topHint = document.getElementById('topHint');
+            if (!topHint) return;
+
+            if (helpEnabled) {
+                if (board[4][3] === 'R') {
+                    topHint.innerHTML = `<span style="color:#3cb371; font-weight:bold;">Puzzle vyřešeno!</span>`;
+                    if (autoPlayTimer) {
+                        clearInterval(autoPlayTimer);
+                        autoPlayTimer = null;
+                    }
+                } else if (!currentSolutionPath || currentSolutionPath.length === 0) {
+                    topHint.innerHTML = `<span style="color:#ff6b6b; font-weight:bold; font-size: 11px;">Z této pozice už nelze hru dokončit.</span>`;
+                    if (autoPlayTimer) {
+                        clearInterval(autoPlayTimer);
+                        autoPlayTimer = null;
+                    }
+                } else {
+                    let playIcon = autoPlayTimer ? '⏸' : '▶';
+                    topHint.innerHTML = `
+                        <div style="display:flex; align-items:center; gap: 8px; width:100%; justify-content:center;">
+                            <span style="font-weight:bold; font-size: clamp(10px, 3.2vw, 13px);">Ukaž řešení:</span>
+                            <button class="sol-btn" onclick="solStepBackward()" style="width:32px; height:32px; font-size:16px; padding:0;">⏮</button>
+                            <button class="sol-btn" id="solPlayBtn" onclick="solTogglePlay()" style="width:32px; height:32px; font-size:16px; padding:0;">${playIcon}</button>
+                            <button class="sol-btn" onclick="solStepForward()" style="width:32px; height:32px; font-size:16px; padding:0;">⏭</button>
+                        </div>
+                    `;
+                }
+            } else {
+                topHint.innerHTML = "Použij standardní šachové tahy na přesunutí černé věže na pole s kruhem.";
+            }
+        }
+
+        function toggleHelp() {
+            helpEnabled = !helpEnabled;
+            const helpBtn = document.getElementById('helpBtn');
+            if (helpEnabled) {
+                helpBtn.classList.add('active-btn');
+                currentSolutionPath = getShortestPath(board, emptyPos);
+            } else {
+                helpBtn.classList.remove('active-btn');
+                currentSolutionPath = null;
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+            }
+            updateHintOverlay();
+            render();
         }
 
         function render() {
@@ -772,17 +951,6 @@
             logDiv.innerHTML = moveLogs.map(log => `<div>${log}</div>`).join('');
             
             logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        function toggleHelp() {
-            helpEnabled = !helpEnabled;
-            const helpBtn = document.getElementById('helpBtn');
-            if (helpEnabled) {
-                helpBtn.classList.add('active-btn');
-            } else {
-                helpBtn.classList.remove('active-btn');
-            }
-            render();
         }
 
         function playSound() {
