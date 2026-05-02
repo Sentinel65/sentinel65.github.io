@@ -790,8 +790,8 @@
                     
                 } else if (!isGamePlayable(board, emptyPos)) {
                     isBlocked = true; 
-                    moveLogs.push('Zablokováno! Věž už nemá cestu do cíle.');
-                    showNotification('Konec cesty! Hra uzamčena. Použij tlačítko "Tah zpět" (↩️) nebo hru resetuj (🔄).', 5000, 'error');
+                    moveLogs.push('Pozice věže zablokována! Použij tlačítko "Tah zpět" (↩️) nebo "Reset"  (🔄).');
+                    showNotification('Pozice věže zablokována! Použij tlačítko "Tah zpět" (↩️) nebo "Reset"  (🔄).', 3000, 'error');
                 }
 
                 playSound();
