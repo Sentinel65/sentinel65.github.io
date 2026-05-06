@@ -322,6 +322,7 @@
     <div id="final-score" style="display:none; text-align:center; margin-top:10px; background:#e9ecef; padding:10px; border-radius:8px;"></div>
 </div>
 
+<!-- Modal pro výběr 1 nebo 2 -->
 <div id="choice-modal" class="modal-overlay">
     <div class="modal-content">
         <h3 style="color:#333;">Výběr čísla</h3>
@@ -333,15 +334,16 @@
     </div>
 </div>
 
+<!-- Nápověda Modal -->
 <div id="help-modal" class="modal-overlay">
     <div class="modal-content help">
         <h3>Hra Hex6 - pravidla</h3>
         <p><strong>Příprava:</strong> Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet).</p>
         <ul style="padding-left:15px; margin:10px 0;">
-            <li style="margin-bottom:8px;"><strong>Tah:</strong> Otočte 2 karty. Umístěte <strong>1</strong> na prázdné pole odpovídající jedné z barev. Jsou-li obě karty stejné barvy, můžete na ni umístit <strong>1</strong> nebo <strong>2</strong>.</li>
-            <li style="margin-bottom:8px;"><strong>Párování:</strong> Umístíte-li číslo vedle stejného čísla, obě se spárují a <strong>škrtnou</strong>. Okamžitě musíte umístit <strong>o 1 vyšší číslo do volného pole ve stejné řadě</strong>. Pokud je řada plná, lze číslo umístit kamkoliv. Tímto vznikají řetězové reakce.</li>
+            <li style="margin-bottom:8px;"><strong>Tah:</strong> Otočte 2 karty. Kliknutím na prázdné pole odpovídající jedné z barev zapíšete číslo 1. Jsou-li obě karty stejné barvy, můžete si vybrat, zda zapíšete číslo 1 nebo číslo 2.</li>
+            <li style="margin-bottom:8px;"><strong>Párování:</strong> Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se škrtnou, pole ztmavnou. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</li>
             <li style="margin-bottom:8px;"><strong>Bonusy a Žolíky:</strong> Vyplnění všech polí jedné barvy dělá z této barvy <strong>Žolíka (★)</strong>. Za žolíka můžeš použít kteroukoliv barvu.</li>
-            <li><strong>Skóre:</strong> Hra končí dobráním balíčku. Škrtnutá čísla a jedničky nenesou body. Počítají se i předtištěné bílé 2. Zde je přehled bodování:
+            <li style="margin-bottom:8px;"><strong>Skóre:</strong> Hra končí dobráním balíčku. Do celkového skóre se počítá součet nespárovaných čísel od hodnoty 2 a vyšší (včetně předdefinovaných 3 bílých polí s hodnotou 2) a body za bonusy z fáze 1 a fáze 2. Zde je přehled bodování:
                 <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9em; text-align:left;">
                     <tr style="background:#f1f3f5; border-bottom:1px solid #ccc;">
                         <th style="padding:6px;" colspan="2">Bodování nespárovaných čísel</th>
@@ -379,6 +381,7 @@
                     </tr>
                 </table>
             </li>
+            <li><strong>Taktika:</strong> Plánujte si umístění čísel tak, abyste spouštěli řetězové reakce a získali vysoce bodovaná čísla (5 a 6). Zároveň se snažte v první fázi hry prioritně uzavírat menší barevné skupiny – získáte tím více bodů a vytvoříte si flexibilní žolíky pro snazší párování ve zbytku hry.</li>
         </ul>
         <button id="close-help-btn" style="width:100%; margin-top:10px;" class="modal-btn">Zavřít</button>
     </div>
