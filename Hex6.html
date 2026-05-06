@@ -576,6 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pendingPlacement === null && pendingPartnerSelection === null) {
             ui.instr.innerText = "Můžete otočit další karty.";
             ui.btnFlip.disabled = false;
+            restoreCardsUI();
             if (deck.length === 0) endGame();
         }
     }
@@ -597,8 +598,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         historyStack = [];
         ui.btnUndo.disabled = true;
+        currentCards = [];
 
         renderGrid();
+        restoreCardsUI();
         ui.instr.innerText = 'Začněte kliknutím na Otočit karty (🃏)';
         ui.btnFlip.disabled = false;
         updateUI();
