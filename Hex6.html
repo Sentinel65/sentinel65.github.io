@@ -343,11 +343,30 @@
 
 <div id="help-modal" class="modal-overlay">
     <div class="modal-content help">
-        <h3>Hra Hex6 - pravidla</h3>
+        <h3>Pravidla hry Hex 6</h3>
         <p><strong>Příprava:</strong> Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet).</p>
         <ul style="padding-left:15px; margin:10px 0;">
             <li style="margin-bottom:8px;"><strong>Tah:</strong> Otočte 2 karty. Kliknutím na prázdné pole odpovídající jedné z barev zapíšete číslo 1. Jsou-li obě karty stejné barvy, můžete si vybrat, zda zapíšete číslo 1 nebo číslo 2.</li>
-            <li style="margin-bottom:8px;"><strong>Párování:</strong> Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se škrtnou, pole ztmavnou. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</li>
+            <li style="margin-bottom:8px;">
+                <strong>Párování:</strong> Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se škrtnou, pole ztmavnou. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef;">
+                    <div style="position:relative; width:40px; height:46px;">
+                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#e0e0e0" stroke="#777" stroke-width="2"/></svg>
+                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#777; text-decoration:line-through; font-size:15px;">2</div>
+                    </div>
+                    <div style="font-weight:bold; color:#555; font-size:18px;">+</div>
+                    <div style="position:relative; width:40px; height:46px;">
+                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#e0e0e0" stroke="#777" stroke-width="2"/></svg>
+                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#777; text-decoration:line-through; font-size:15px;">2</div>
+                    </div>
+                    <div style="font-weight:bold; color:#d32f2f; margin: 0 5px; font-size:18px;">&rarr;</div>
+                    <div style="position:relative; width:40px; height:46px;">
+                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#fff" stroke="#4caf50" stroke-width="4"/></svg>
+                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#111; font-size:15px;">3</div>
+                    </div>
+                </div>
+            </li>
             <li style="margin-bottom:8px;"><strong>Bonusy a Žolíky:</strong> Vyplnění všech polí jedné barvy dělá z této barvy <strong>Žolíka (★)</strong>. Za žolíka můžeš použít kteroukoliv barvu.</li>
             <li style="margin-bottom:8px;"><strong>Skóre:</strong> Hra končí dobráním balíčku. Do celkového skóre se počítá součet nespárovaných čísel od hodnoty 2 a vyšší (včetně předdefinovaných 3 bílých polí s hodnotou 2) a body za bonusy z fáze 1 a fáze 2. Zde je přehled bodování:
                 <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9em; text-align:left;">
