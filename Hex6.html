@@ -106,49 +106,12 @@
             transition: transform 0.1s;
         }
         .hex-wrapper:active { transform: scale(0.92); }
-        
-        .hex-bg {
-            position: absolute;
-            inset: 0;
-            background-color: #111;
-            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            transition: background-color 0.3s;
-        }
-
-        .hex-wrapper.allowed-target { z-index: 10; animation: pulse-hex 1.5s infinite; }
-        .hex-wrapper.allowed-target .hex-bg { background-color: #4caf50; transform: scale(1.05); }
-        
-        .hex-wrapper.partner-target { z-index: 10; animation: pulse-partner 1.5s infinite; }
-        .hex-wrapper.partner-target .hex-bg { background-color: #2196f3; transform: scale(1.05); }
-
-        .hex-wrapper.match-target { z-index: 9; animation: pulse-match 1.5s infinite; }
-        .hex-wrapper.match-target .hex-bg { background-color: #9c27b0; transform: scale(1.05); }
-
-        @keyframes pulse-hex {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.05); filter: brightness(1.2); }
-            100% { transform: scale(1); filter: brightness(1); }
-        }
-
-        @keyframes pulse-partner {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.05); filter: brightness(1.3); }
-            100% { transform: scale(1); filter: brightness(1); }
-        }
-
-        @keyframes pulse-match {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.05); filter: brightness(1.4); }
-            100% { transform: scale(1); filter: brightness(1); }
-        }
 
         .hex-inner {
             position: absolute;
-            left: 0.5px; 
-            top: 0.5px;
-            width: calc(100% - 1px);
-            height: calc(100% - 1px);
+            inset: 0;
+            width: 100%;
+            height: 100%;
             -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             display: flex;
@@ -156,13 +119,60 @@
             align-items: center;
             justify-content: center;
             transition: filter 0.2s;
+            z-index: 1;
+        }
+
+        /* Nová SVG vrstva pro ohraničení šestiúhelníků */
+        .hex-stroke {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .hex-stroke polygon {
+            fill: none;
+            stroke: #111;
+            stroke-width: 0.5;
+            vector-effect: non-scaling-stroke;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+
+        /* Animace a stylování aktivních/cílových hexů pomocí vektorové linky */
+        .hex-wrapper.allowed-target { z-index: 10; animation: pulse-wrapper 1.5s infinite; }
+        .hex-wrapper.allowed-target .hex-stroke polygon { stroke: #4caf50; stroke-width: 3; }
+        
+        .hex-wrapper.partner-target { z-index: 10; animation: pulse-wrapper-partner 1.5s infinite; }
+        .hex-wrapper.partner-target .hex-stroke polygon { stroke: #2196f3; stroke-width: 3; }
+
+        .hex-wrapper.match-target { z-index: 9; animation: pulse-wrapper-match 1.5s infinite; }
+        .hex-wrapper.match-target .hex-stroke polygon { stroke: #9c27b0; stroke-width: 3; }
+
+        @keyframes pulse-wrapper {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes pulse-wrapper-partner {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.3); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes pulse-wrapper-match {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.4); }
+            100% { transform: scale(1); filter: brightness(1); }
         }
 
         .hex-wrapper.paired .hex-inner { filter: grayscale(50%) brightness(0.8); }
         .hex-wrapper.paired .val { text-decoration: line-through; color: #555; }
         
-        .val { font-size: 17px; font-weight: 900; color: #111; z-index: 2; pointer-events: none; }
-        .star { font-size: 11px; color: #444; z-index: 2; pointer-events: none; margin-top: -3px; }
+        .val { font-size: 17px; font-weight: 900; color: #111; z-index: 3; pointer-events: none; }
+        .star { font-size: 11px; color: #444; z-index: 3; pointer-events: none; margin-top: -3px; }
 
         .c-yellow { background-color: #ffeb3b; }
         .c-green  { background-color: #81c784; }
@@ -211,7 +221,6 @@
             background: #198754; width: 100%; padding: 12px; border-radius: 8px; color: white; border: none; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer;
         }
 
-        /* Notifikace (Toasty) */
         #toast-container {
             position: fixed;
             top: 20px;
@@ -243,7 +252,6 @@
             100% { opacity: 0; transform: translateY(-20px); }
         }
 
-        /* Vlastní okna (Modals) */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -322,7 +330,6 @@
     <div id="final-score" style="display:none; text-align:center; margin-top:10px; background:#e9ecef; padding:10px; border-radius:8px;"></div>
 </div>
 
-<!-- Modal pro výběr 1 nebo 2 -->
 <div id="choice-modal" class="modal-overlay">
     <div class="modal-content">
         <h3 style="color:#333;">Výběr čísla</h3>
@@ -334,7 +341,6 @@
     </div>
 </div>
 
-<!-- Nápověda Modal -->
 <div id="help-modal" class="modal-overlay">
     <div class="modal-content help">
         <h3>Hra Hex6 - pravidla</h3>
@@ -682,10 +688,15 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.left = `${positions[index].x - minX}px`;
             wrapper.style.top = `${positions[index].y - minY}px`;
 
-            let innerHTML = `<div class="hex-bg"></div><div class="hex-inner c-${hex.c}">`;
-            if (hex.v !== null) innerHTML += `<div class="val">${hex.v}</div>`;
-            if (hex.s) innerHTML += `<div class="star">★</div>`;
-            innerHTML += `</div>`;
+            let innerHTML = `
+                <div class="hex-inner c-${hex.c}">
+                    ${hex.v !== null ? `<div class="val">${hex.v}</div>` : ''}
+                    ${hex.s ? `<div class="star">★</div>` : ''}
+                </div>
+                <svg class="hex-stroke" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <polygon points="50,0 100,25 100,75 50,100 0,75 0,25" />
+                </svg>
+            `;
             
             wrapper.innerHTML = innerHTML;
             wrapper.onclick = () => handleHexClick(index);
