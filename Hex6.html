@@ -220,7 +220,7 @@
         }
 
         #lang-btn {
-            background: #e9ecef; /* Světlejší pozadí, ať vlajka vynikne */
+            background: #e9ecef;
         }
         .flag {
             width: 32px;
@@ -291,6 +291,7 @@
         .modal-btn-row { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
         .modal-btn {
             padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; color: white; background: #0d6efd;
+            flex: 1;
         }
         .modal-btn.secondary { background: #6c757d; }
         .no-underline-link { color: #0d6efd; text-decoration: none; }
@@ -368,6 +369,20 @@
     <div id="final-score" style="display:none; text-align:center; margin-top:10px; background:#e9ecef; padding:10px; border-radius:8px;"></div>
 </div>
 
+<div id="confirm-load-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="color:#d32f2f;"><span class="cs">Upozornění</span><span class="en">Warning</span></h3>
+        <p style="margin-bottom: 20px;">
+            <span class="cs">Máte rozehranou hru. Opravdu ji chcete přepsat načtenou hrou ze záznamu? Aktuální postup bude ztracen.</span>
+            <span class="en">A game is in progress. Do you really want to overwrite it? Your current progress will be lost.</span>
+        </p>
+        <div class="modal-btn-row">
+            <button id="confirm-load-yes" class="modal-btn" style="background:#d32f2f;"><span class="cs">Ano, načíst</span><span class="en">Yes, Load</span></button>
+            <button id="confirm-load-no" class="modal-btn secondary"><span class="cs">Zrušit</span><span class="en">Cancel</span></button>
+        </div>
+    </div>
+</div>
+
 <div id="choice-modal" class="modal-overlay">
     <div class="modal-content">
         <h3 style="color:#333;"><span class="cs">Výběr čísla</span><span class="en">Choose Number</span></h3>
@@ -383,7 +398,7 @@
     <div class="modal-content help">
         <h3><span class="cs">Pravidla hry Hex 6</span><span class="en">Hex 6 Rules</span></h3>
         
-        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić</span><span class="en">of the Flip&Write game by Stefan Nikolić</span></h5>
+        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić a Kristian Amundsen Østby</span><span class="en">of the Flip&Write game by Stefan Nikolić & Kristian Amundsen Østby</span></h5>
         
         <p><strong><span class="cs">Příprava:</span><span class="en">Setup:</span></strong> <span class="cs">Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet).</span><span class="en">Played with a standard 48-card deck. 6 random cards are permanently removed before the game. The remaining 42 cards are divided into Phase 1 (first 32 cards) and Phase 2 (last 10 cards).</span></p>
         
@@ -692,6 +707,27 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification(t('noSave'));
             return;
         }
+
+        // Pokud je balíček menší než 42, znamená to, že hráč už udělal tah (hra je rozehraná)
+        if (deck.length < 42) {
+            const confirmModal = document.getElementById('confirm-load-modal');
+            confirmModal.style.display = 'flex';
+            
+            document.getElementById('confirm-load-yes').onclick = () => {
+                confirmModal.style.display = 'none';
+                executeLoad(saved);
+            };
+            
+            document.getElementById('confirm-load-no').onclick = () => {
+                confirmModal.style.display = 'none';
+            };
+        } else {
+            // Hra není rozehraná (čistý stůl), rovnou načteme
+            executeLoad(saved);
+        }
+    }
+
+    function executeLoad(saved) {
         const saveData = JSON.parse(saved);
         const state = saveData.state;
         historyStack = saveData.history;
