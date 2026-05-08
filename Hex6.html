@@ -31,7 +31,7 @@
         }
         h2 { text-align: center; margin-top: 0; font-size: 1.3em; color: #333; margin-bottom: 5px; display: none; }
         
-        /* JAZYKOVÁ LOGIKA (CSS) */
+        /* JAZYKOVÁ LOGIKA */
         body.lang-en .cs { display: none !important; }
         body.lang-cs .en { display: none !important; }
 
@@ -81,6 +81,7 @@
             font-size: 28px;
             color: #333;
             text-shadow: 0px 0px 5px rgba(255,255,255,0.8);
+            z-index: 2;
         }
 
         .instruction {
@@ -126,6 +127,7 @@
             z-index: 1;
         }
 
+        /* NASTAVENÍ SVG LINEK (Základní tenké + aktivní stavy) */
         .hex-stroke {
             position: absolute;
             inset: 0;
@@ -135,22 +137,22 @@
             pointer-events: none;
             z-index: 2;
         }
-        .hex-stroke polygon {
+        .hex-stroke .base-stroke {
             fill: none;
             stroke: #111;
-            stroke-width: 0.5;
+            stroke-width: 0.5; /* Tenký základ */
             vector-effect: non-scaling-stroke;
             transition: stroke 0.3s, stroke-width 0.3s;
         }
 
         .hex-wrapper.allowed-target { z-index: 10; animation: pulse-wrapper 1.5s infinite; }
-        .hex-wrapper.allowed-target .hex-stroke polygon { stroke: #4caf50; stroke-width: 3; }
+        .hex-wrapper.allowed-target .hex-stroke .base-stroke { stroke: #4caf50; stroke-width: 3; }
         
         .hex-wrapper.partner-target { z-index: 10; animation: pulse-wrapper-partner 1.5s infinite; }
-        .hex-wrapper.partner-target .hex-stroke polygon { stroke: #2196f3; stroke-width: 3; }
+        .hex-wrapper.partner-target .hex-stroke .base-stroke { stroke: #2196f3; stroke-width: 3; }
 
         .hex-wrapper.match-target { z-index: 9; animation: pulse-wrapper-match 1.5s infinite; }
-        .hex-wrapper.match-target .hex-stroke polygon { stroke: #9c27b0; stroke-width: 3; }
+        .hex-wrapper.match-target .hex-stroke .base-stroke { stroke: #9c27b0; stroke-width: 3; }
 
         @keyframes pulse-wrapper {
             0% { transform: scale(1); filter: brightness(1); }
@@ -184,20 +186,47 @@
         .c-grey   { background-color: #e0e0e0; }
         .c-white  { background-color: #ffffff; }
 
+        /* REŽIM PRO BARVOSLEPÉ (PIKTOGRAMY A OHRANIČENÍ SKUPIN) */
+        .cb-icon {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: rgba(0,0,0,0.18);
+            z-index: 1;
+            pointer-events: none;
+        }
+        body.cb-mode .cb-icon { display: flex; }
+        
+        .cb-borders line {
+            stroke: #111;
+            stroke-width: 4; /* Silná hranice skupiny */
+            stroke-linecap: round;
+            vector-effect: non-scaling-stroke;
+            display: none; /* Normálně neviditelné */
+        }
+        body.cb-mode .cb-borders line {
+            display: block; /* Viditelné pouze v CB režimu */
+        }
+
+        /* OVLÁDACÍ LIŠTA A TLAČÍTKA - Nuceně v jednom řádku */
         .controls {
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            gap: 6px; /* Zmenšené rozestupy */
+            justify-content: space-between;
             align-items: center;
             margin-top: 5px;
             width: 100%;
+            flex-wrap: nowrap; /* Zákaz zalamování řádků */
         }
         
         .small-btn {
             padding: 0;
-            width: 46px;
-            height: 46px;
-            font-size: 22px;
+            width: 40px; /* Zmenšená šířka */
+            height: 40px; /* Zmenšená výška */
+            font-size: 18px; /* Úprava ikonek pro menší tlačítko */
             background: #6c757d;
             border-radius: 50%;
             display: flex;
@@ -208,26 +237,20 @@
             cursor: pointer;
             box-shadow: 0 3px 6px rgba(0,0,0,0.2);
             transition: transform 0.1s;
+            flex-shrink: 0; /* Zabrání nechtěnému zdršťování přes limit */
         }
         .small-btn:active:not(:disabled) { transform: scale(0.92); }
         .small-btn:disabled { background: #adb5bd; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
         
         .primary-btn {
             background: #0d6efd;
-            width: 58px;
-            height: 58px;
-            font-size: 28px;
+            width: 48px; /* Mírně větší, ale vejde se */
+            height: 48px;
+            font-size: 24px;
         }
 
-        #lang-btn {
-            background: #e9ecef;
-        }
-        .flag {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: block;
-        }
+        #lang-btn { background: #e9ecef; }
+        .flag { width: 26px; height: 26px; border-radius: 50%; display: block; }
 
         #restart-btn { 
             background: #198754; width: 100%; padding: 12px; border-radius: 8px; color: white; border: none; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer;
@@ -264,6 +287,7 @@
             100% { opacity: 0; transform: translateY(-20px); }
         }
 
+        /* MODÁLY */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -333,11 +357,12 @@
     </div>
 
     <div class="controls" id="game-controls">
-        <button id="undo-btn" class="small-btn" disabled title="Zpět">↩️</button>
-        <button id="save-btn" class="small-btn" title="Uložit hru">💾</button>
-        <button id="flip-btn" class="small-btn primary-btn" disabled title="Otočit karty">🔄</button>
-        <button id="load-btn" class="small-btn" title="Načíst hru">📂</button>
-        <button id="help-btn" class="small-btn" title="Nápověda">💡</button>
+        <button id="undo-btn" class="small-btn" disabled title="Zpět / Undo">↩️</button>
+        <button id="save-btn" class="small-btn" title="Uložit hru / Save Game">💾</button>
+        <button id="load-btn" class="small-btn" title="Načíst hru / Load Game">📂</button>
+        <button id="flip-btn" class="small-btn primary-btn" disabled title="Otočit karty / Flip Cards">🔄</button>
+        <button id="cb-btn" class="small-btn" title="Režim pro barvoslepé / Colorblind mode" style="background:#495057;">👁️</button>
+        <button id="help-btn" class="small-btn" title="Nápověda / Help">💡</button>
         <button id="lang-btn" class="small-btn" title="Změnit jazyk / Change language">
             <span class="cs">
                 <svg class="flag" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -398,7 +423,7 @@
     <div class="modal-content help">
         <h3><span class="cs">Pravidla hry Hex 6</span><span class="en">Hex 6 Rules</span></h3>
         
-        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić</span><span class="en">of the Flip&Write game by Stefan Nikolić</span></h5>
+        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić a Kristian Amundsen Østby</span><span class="en">of the Flip&Write game by Stefan Nikolić & Kristian Amundsen Østby</span></h5>
         
         <p><strong><span class="cs">Příprava:</span><span class="en">Setup:</span></strong> <span class="cs">Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet).</span><span class="en">Played with a standard 48-card deck. 6 random cards are permanently removed before the game. The remaining 42 cards are divided into Phase 1 (first 32 cards) and Phase 2 (last 10 cards).</span></p>
         
@@ -453,12 +478,36 @@
                         <td style="padding:6px;"><span class="cs">Číslo 6</span><span class="en">Number 6</span></td>
                         <td style="padding:6px; text-align:right;">35 <span class="cs">b.</span><span class="en">pts</span></td>
                     </tr>
+                    
                     <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
-                        <th style="padding:6px;" colspan="2"><span class="cs">Bonusy (dokončeny ve fázi 1 | 2)</span><span class="en">Bonuses (completed in Phase 1 | 2)</span></th>
+                        <th style="padding:6px;" colspan="2"><span class="cs">Bonusy za barvu (1. fáze | 2. fáze)</span><span class="en">Color Bonuses (Phase 1 | Phase 2)</span></th>
                     </tr>
                     <tr style="border-bottom:1px solid #eee;">
-                        <td style="padding:6px;"><span class="cs">Barva (Žolík)</span><span class="en">Color (Wild)</span></td>
+                        <td style="padding:6px;"><span class="cs">Žlutá</span><span class="en">Yellow</span> (●)</td>
                         <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Zelená</span><span class="en">Green</span> (▲)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Červená</span><span class="en">Red</span> (■)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Modrá</span><span class="en">Blue</span> (▼)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Oranžová</span><span class="en">Orange</span> (◆)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Šedá</span><span class="en">Grey</span> (✖)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
+                        <th style="padding:6px;" colspan="2"><span class="cs">Další bonusy</span><span class="en">Other Bonuses</span></th>
                     </tr>
                     <tr>
                         <td style="padding:6px;"><span class="cs">Všech 12 hvězdiček</span><span class="en">All 12 stars</span></td>
@@ -547,36 +596,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateLanguageUI() {
-        document.body.className = `lang-${currentLang}`;
+        document.body.className = `lang-${currentLang} ${cbMode ? 'cb-mode' : ''}`;
         
         ui.btnUndo.title = currentLang === 'cs' ? 'Zpět' : 'Undo';
         ui.btnSave.title = currentLang === 'cs' ? 'Uložit hru' : 'Save Game';
         ui.btnFlip.title = currentLang === 'cs' ? 'Otočit karty' : 'Flip Cards';
         ui.btnLoad.title = currentLang === 'cs' ? 'Načíst hru' : 'Load Game';
         ui.btnHelp.title = currentLang === 'cs' ? 'Nápověda' : 'Help';
+        ui.btnCb.title = currentLang === 'cs' ? 'Režim pro barvoslepé' : 'Colorblind Mode';
         
         ui.phase.innerText = firstPileFinished ? t('phaseLow') : t('phaseHigh');
         ui.instr.innerText = t(currentInstrKey, currentInstrVars);
     }
     // -------------------
-
-    let soundEnabled = localStorage.getItem('soundEnabled') === 'true';
-
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq, duration) {
-        if (!soundEnabled) return;
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.value = freq;
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration/1000);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + duration/1000);
-    }
 
     function showNotification(msg) {
         const container = document.getElementById('toast-container');
@@ -604,11 +636,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const COLORS = ['yellow', 'green', 'red', 'blue', 'orange', 'grey'];
+    const CB_ICONS = {
+        'yellow': '●',
+        'green': '▲',
+        'red': '■',
+        'blue': '▼',
+        'orange': '◆',
+        'grey': '✖'
+    };
+
     let deck = [];
     let currentCards = [];
     let boardState = [];
     let bonuses = { colors: {}, stars: false };
     let firstPileFinished = false;
+    let cbMode = localStorage.getItem('hex6CbMode') === 'true';
     
     let pendingPlacement = null;
     let pendingPartnerSelection = null; 
@@ -641,7 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnUndo: document.getElementById('undo-btn'),
         btnSave: document.getElementById('save-btn'),
         btnLoad: document.getElementById('load-btn'),
-        btnHelp: document.getElementById('help-btn')
+        btnHelp: document.getElementById('help-btn'),
+        btnCb: document.getElementById('cb-btn')
     };
 
     function shuffle(array) {
@@ -708,7 +751,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Pokud je balíček menší než 42, znamená to, že hráč už udělal tah (hra je rozehraná)
         if (deck.length < 42) {
             const confirmModal = document.getElementById('confirm-load-modal');
             confirmModal.style.display = 'flex';
@@ -722,7 +764,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmModal.style.display = 'none';
             };
         } else {
-            // Hra není rozehraná (čistý stůl), rovnou načteme
             executeLoad(saved);
         }
     }
@@ -758,9 +799,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const w1 = isColorComplete(currentCards[0]);
             const w2 = isColorComplete(currentCards[1]);
             ui.card1.className = `card c-${currentCards[0]}`;
-            ui.card1.innerHTML = w1 ? '<div class="wild-icon" title="★">★</div>' : '';
+            ui.card1.innerHTML = `<div class="cb-icon">${CB_ICONS[currentCards[0]] || ''}</div>` + (w1 ? '<div class="wild-icon" title="★">★</div>' : '');
             ui.card2.className = `card c-${currentCards[1]}`;
-            ui.card2.innerHTML = w2 ? '<div class="wild-icon" title="★">★</div>' : '';
+            ui.card2.innerHTML = `<div class="cb-icon">${CB_ICONS[currentCards[1]] || ''}</div>` + (w2 ? '<div class="wild-icon" title="★">★</div>' : '');
         } else {
             ui.card1.className = `card`; ui.card1.innerHTML = '?';
             ui.card2.className = `card`; ui.card2.innerHTML = '?';
@@ -802,6 +843,16 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.btnFlip.disabled = false;
         updateUI();
     }
+
+    // Směry sousedů a k nim příslušné vykreslovací souřadnice hran v SVG (0 0 100 100)
+    const SVG_HEX_EDGES = [
+        {q: 1, r: -1, x1: 50, y1: 0, x2: 100, y2: 25},  // Vpravo nahoře
+        {q: 1, r: 0, x1: 100, y1: 25, x2: 100, y2: 75}, // Vpravo
+        {q: 0, r: 1, x1: 100, y1: 75, x2: 50, y2: 100}, // Vpravo dole
+        {q: -1, r: 1, x1: 50, y1: 100, x2: 0, y2: 75},  // Vlevo dole
+        {q: -1, r: 0, x1: 0, y1: 75, x2: 0, y2: 25},    // Vlevo
+        {q: 0, r: -1, x1: 0, y1: 25, x2: 50, y2: 0}     // Vlevo nahoře
+    ];
 
     function renderGrid() {
         ui.grid.innerHTML = '';
@@ -875,13 +926,25 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.left = `${positions[index].x - minX}px`;
             wrapper.style.top = `${positions[index].y - minY}px`;
 
+            // Výpočet vnějších hranic skupiny (pouze pro Colorblind mód)
+            let cbBordersHTML = '';
+            SVG_HEX_EDGES.forEach(dir => {
+                const neighbor = boardState.find(h => h.q === hex.q + dir.q && h.r === hex.r + dir.r);
+                // Pokud soused neexistuje (konec mapy) nebo má jinou barvu, vykreslíme tučnější linku
+                if (!neighbor || neighbor.c !== hex.c) {
+                    cbBordersHTML += `<line x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}" />`;
+                }
+            });
+
             let innerHTML = `
                 <div class="hex-inner c-${hex.c}">
+                    <div class="cb-icon">${CB_ICONS[hex.c] || ''}</div>
                     ${hex.v !== null ? `<div class="val">${hex.v}</div>` : ''}
                     ${hex.s ? `<div class="star">★</div>` : ''}
                 </div>
                 <svg class="hex-stroke" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <polygon points="50,0 100,25 100,75 50,100 0,75 0,25" />
+                    <polygon class="base-stroke" points="50,0 100,25 100,75 50,100 0,75 0,25" />
+                    <g class="cb-borders">${cbBordersHTML}</g>
                 </svg>
             `;
             
@@ -902,7 +965,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         saveToHistory();
 
-        playBeep(600, 50);
         currentCards = [deck.pop(), deck.pop()];
         
         if (deck.length < 10 && !firstPileFinished) {
@@ -915,10 +977,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const w2 = isColorComplete(currentCards[1]);
 
         ui.card1.className = `card c-${currentCards[0]}`;
-        ui.card1.innerHTML = w1 ? '<div class="wild-icon" title="★">★</div>' : '';
+        ui.card1.innerHTML = `<div class="cb-icon">${CB_ICONS[currentCards[0]] || ''}</div>` + (w1 ? '<div class="wild-icon" title="★">★</div>' : '');
         
         ui.card2.className = `card c-${currentCards[1]}`;
-        ui.card2.innerHTML = w2 ? '<div class="wild-icon" title="★">★</div>' : '';
+        ui.card2.innerHTML = `<div class="cb-icon">${CB_ICONS[currentCards[1]] || ''}</div>` + (w2 ? '<div class="wild-icon" title="★">★</div>' : '');
         
         ui.btnFlip.disabled = true;
         setInstr('selectHex');
@@ -1024,7 +1086,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function placeNumber(index, val) {
-        playBeep(800, 100);
         boardState[index].v = val;
         
         checkBonuses();
@@ -1051,7 +1112,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function executePairing(idx1, idx2, val) {
-        setTimeout(() => playBeep(1200, 200), 200);
         const hex1 = boardState[idx1];
         const hex2 = boardState[idx2];
         
@@ -1128,8 +1188,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function endGame() {
-        playBeep(400, 500);
-        
         let scoreColors = 0;
         Object.values(bonuses.colors).forEach(v => scoreColors += v);
         let scoreStars = bonuses.stars ? bonuses.stars : 0;
@@ -1204,6 +1262,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('lang-btn').onclick = toggleLanguage;
     document.getElementById('help-btn').onclick = () => document.getElementById('help-modal').style.display = 'flex';
     document.getElementById('close-help-btn').onclick = () => document.getElementById('help-modal').style.display = 'none';
+
+    // Přepínání režimu pro barvoslepé
+    document.getElementById('cb-btn').onclick = () => {
+        cbMode = !cbMode;
+        localStorage.setItem('hex6CbMode', cbMode);
+        updateLanguageUI(); 
+    };
 
     window.addEventListener('resize', renderGrid);
 
