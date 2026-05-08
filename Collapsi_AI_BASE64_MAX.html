@@ -667,6 +667,59 @@ function applyShift(direction, rowIndex, colIndex) {
     }
 }
 
+
+function simulateShift(b, posMap, collSet, direction, rowIndex, colIndex) {
+    let size = b.length;
+    // Vytvoření virtuální kopie desky, pozic a zničených karet
+    let nb = b.map(row => [...row]);
+    let np = { 
+        R: posMap.R ? { i: posMap.R.i, j: posMap.R.j } : null, 
+        B: posMap.B ? { i: posMap.B.i, j: posMap.B.j } : null 
+    };
+    let nc = new Set();
+    
+    // Posun virtuálních karet
+    if (direction === 'L') {
+        let first = nb[rowIndex].shift(); nb[rowIndex].push(first);
+    } else if (direction === 'R') {
+        let last = nb[rowIndex].pop(); nb[rowIndex].unshift(last);
+    } else if (direction === 'U') {
+        let first = nb[0][colIndex];
+        for (let i = 0; i < size - 1; i++) nb[i][colIndex] = nb[i + 1][colIndex];
+        nb[size - 1][colIndex] = first;
+    } else if (direction === 'D') {
+        let last = nb[size - 1][colIndex];
+        for (let i = size - 1; i > 0; i--) nb[i][colIndex] = nb[i - 1][colIndex];
+        nb[0][colIndex] = last;
+    }
+
+    // Posun virtuálních figurek
+    for (let p of ['R', 'B']) {
+        if (!np[p]) continue; 
+        if ((direction === 'L' || direction === 'R') && np[p].i === rowIndex) {
+            np[p].j = (np[p].j + (direction === 'R' ? 1 : -1) + size) % size;
+        } else if ((direction === 'U' || direction === 'D') && np[p].j === colIndex) {
+            np[p].i = (np[p].i + (direction === 'D' ? 1 : -1) + size) % size;
+        }
+    }
+
+    // Posun virtuálních děr (rozpadlých karet)
+    for (let key of collSet) {
+        let parts = key.split(',');
+        let ci = parseInt(parts[0]), cj = parseInt(parts[1]);
+        if ((direction === 'L' || direction === 'R') && ci === rowIndex) {
+            cj = (cj + (direction === 'R' ? 1 : -1) + size) % size;
+        } else if ((direction === 'U' || direction === 'D') && cj === colIndex) {
+            ci = (ci + (direction === 'D' ? 1 : -1) + size) % size;
+        }
+        nc.add(`${ci},${cj}`);
+    }
+
+    return { newBoard: nb, newPositions: np, newCollapsed: nc };
+}
+
+
+
 	function updateHeuristicIcon() {
 	  const icon = document.getElementById('heuristicSwitchIcon');
 	  icon.src = heuristicIcons[heuristicMoveLimit] || heuristicIcons[0];
@@ -2488,28 +2541,58 @@ function applyShift(direction, rowIndex, colIndex) {
     blueAIMoveCount++;
     justCollapsedPlayed = false;
 
-    // --- LOGIKA SHIFT PRO AI ---
+        // --- LOGIKA SHIFT PRO AI ---
     if (shiftModeEnabled) {
-        // Vybereme náhodný směr posunu (U, D, L, R)
         const dirs = ['U', 'D', 'L', 'R'];
-        const randomDir = dirs[Math.floor(Math.random() * dirs.length)];
+        let chosenDir = dirs[Math.floor(Math.random() * dirs.length)]; // Výchozí stav (náhoda)
         
-        console.log(`↔️ AI aktivuje Mód Shift ve směru: ${randomDir}`);
+        // Zjistíme počet aktivních karet
+        let activeCards = countRemainingActive(); 
         
-        // Aplikujeme posun hrací desky
-        applyShift(randomDir, bestMove.i, bestMove.j);
+        if (activeCards <= 14) {
+            console.log(`🧠 Zbývá ${activeCards} karet. AI propočítává nejlepší Shift...`);
+            let bestShiftScore = -Infinity;
+            let bestDirs = [];
+            
+            for (let d of dirs) {
+                // Nasimulování, jak by deska vypadala po posunu
+                const { newBoard, newPositions, newCollapsed } = simulateShift(board, positions, collapsed, d, bestMove.i, bestMove.j);
+                
+                // Spočítáme platné tahy pro AI a pro hráče NA NOVÉ DESCE
+                const aiMovesAfter = getValidMovesFor(newBoard, newCollapsed, newPositions, 'B').length;
+                const playerMovesAfter = getValidMovesFor(newBoard, newCollapsed, newPositions, 'R').length;
+                
+                // Heuristika: AI chce mít co nejvíc tahů pro sebe a co nejméně pro hráče
+                let score = aiMovesAfter - playerMovesAfter;
+                
+                // Extrémní bodování za blokaci
+                if (playerMovesAfter === 0) score += 1000; // Výhra pro AI
+                if (aiMovesAfter === 0) score -= 1000;   // AI by zabila sama sebe
+                
+                if (score > bestShiftScore) {
+                    bestShiftScore = score;
+                    bestDirs = [d];
+                } else if (score === bestShiftScore) {
+                    bestDirs.push(d); // Ukládáme směry se stejným skóre
+                }
+            }
+            
+            // Vybereme náhodně z těch nejlepších směrů
+            chosenDir = bestDirs[Math.floor(Math.random() * bestDirs.length)];
+            console.log(`🧠 AI vybrala Shift směr: ${chosenDir} (Skóre: ${bestShiftScore})`);
+        } else {
+            console.log(`↔️ AI aktivuje Mód Shift ve směru: ${chosenDir} (Náhoda)`);
+        }
+
+        // Fyzická aplikace nejlepšího/náhodného směru
+        applyShift(chosenDir, bestMove.i, bestMove.j);
         
         // --- GRAFICKÉ LOGOVÁNÍ PRO AI ---
         if (typeof logEvent === "function") {
              let dirText = { 'U':'Nahoru', 'D':'Dolů', 'L':'Doleva', 'R':'Doprava' };
-             
-             // Přesné SVG modrého panáčka pro log
              const blueSvg = '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="18" height="18" alt="Blue">';
-             
-             // Zápis pouze ikony a směru do logu (text AI už tu není)
-             logEvent(`<span style="color:blue;">${blueSvg}</span> posunul desku: <strong>${dirText[randomDir]}</strong>`);
+             logEvent(`<span style="color:blue;">${blueSvg}</span> posunul desku: <strong>${dirText[chosenDir]}</strong>`);
         }
-        // --------------------------------
     }
     // ----------------------------
 
@@ -2520,13 +2603,27 @@ function applyShift(direction, rowIndex, colIndex) {
 }
 
 
+
 			document.getElementById('resetBtn').addEventListener('click', createBoard);
 			createBoard();
 			updateStats();
 			
 			starterSelect.addEventListener('change', () => {
-		  createBoard();
-		});
+    const val = starterSelect.value;
+    const shiftIcon = document.getElementById('shiftToggleIcon');
+    
+    // Pokud je vybrán Sólo mód, schováme ikonu a mód případně vypneme
+    if (val === 'solo-3x3' || val === 'solo-4x4') {
+        shiftIcon.style.display = 'none';
+        if (shiftModeEnabled) toggleShiftMode(); // Pokud byl zapnutý, tak ho vypneme
+    } else {
+        // U ostatních módů ikonu opět ukážeme
+        shiftIcon.style.display = 'inline-block'; 
+    }
+    
+    createBoard();
+});
+
 	  </script>
 	</body>
 	</html>
