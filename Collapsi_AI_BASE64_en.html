@@ -774,7 +774,7 @@ function toggleAutoPlay() {
         if (currentReplayStep >= fullGameHistory.length) {
             goToReplayStep(0);
         }
-        if (btn) btn.innerHTML = '⏸️ Pauza';
+        if (btn) btn.innerHTML = '⏸️ Pause';
         autoPlayInterval = setInterval(() => {
             if (currentReplayStep >= fullGameHistory.length) {
                 toggleAutoPlay();
