@@ -461,6 +461,10 @@ const cardImages = {
     let solutionPathExpanded = null;
     let lastMoveEnd = null; // {i, j}
     let playerHistory = []; // paměť hráčových tahů
+    let initialGameState = null; // Fotka desky na začátku partie
+    let fullGameHistory = [];    // Deník úplně všech skutečných tahů a posunů (AI, hráč i Shift)
+    let isReplaying = false;     // Zámek proti klikání během přehrávání (možná už ho používáte pro sólo)
+    
     let soloMode = false;
 	let remainingKeys = [];
 	let heuristicMoveLimit = 2;
@@ -540,7 +544,18 @@ function renderShiftControls(r, c) {
         btn.onclick = (e) => {
             e.stopPropagation();
             
-            // Fyzický posun pole a úklid šipek
+            // --- 🎬 ZÁPIS POSUNU HRÁČE DO HISTORIE (PŘEHRÁVAČ) ---
+            if (typeof fullGameHistory !== 'undefined') {
+                fullGameHistory.push({
+                    type: 'shift',
+                    dir: d.dir,
+                    r: r,
+                    c: c
+                });
+            }
+            // -----------------------------------------------------
+
+                // Fyzický posun pole a úklid šipek
             applyShift(d.dir, r, c);
             
             // --- DYNAMICKÉ GRAFICKÉ LOGOVÁNÍ POSUNU ---
@@ -709,6 +724,141 @@ function simulateShift(b, posMap, collSet, direction, rowIndex, colIndex) {
 
     return { newBoard: nb, newPositions: np, newCollapsed: nc };
 }
+
+
+
+// ==========================================
+// 🎬 AUTOMATICKÝ KROKOVACÍ PŘEHRÁVAČ
+// ==========================================
+let currentReplayStep = 0;
+let autoPlayInterval = null;
+
+
+// Vygeneruje se automaticky ihned po konci hry
+function initAutoReplay() {
+    if (!initialGameState || fullGameHistory.length === 0) return;
+    isReplaying = true;
+
+    const logEl = document.getElementById('log');
+    
+    // Vygenerování ovládání do logu
+    if (!document.getElementById('replayPanel')) {
+        const panelHTML = `
+            <div id="replayPanel" style="margin: 10px 0; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                <button onclick="stepReplay(-1)" style="padding: 6px 12px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff;">⏪</button>
+                <button id="autoPlayBtn" onclick="toggleAutoPlay()" style="padding: 6px 12px; font-size: 14px; font-weight: bold; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #333;">▶️ Auto</button>
+                <button onclick="stepReplay(1)" style="padding: 6px 12px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff;">⏩</button>
+                <div id="replayStatusText" style="margin-left: 10px; font-size: 16px; font-weight: bold; color: #333;"></div>
+            </div>
+        `;
+        logEl.innerHTML = panelHTML + logEl.innerHTML;
+    }
+
+    // 🛑 OPRAVA: Automaticky nastaví desku na výchozí stav (krok 0) s Jokery!
+    goToReplayStep(0);
+}
+
+
+function stepReplay(dir) {
+    if (autoPlayInterval) toggleAutoPlay(); 
+    goToReplayStep(currentReplayStep + dir);
+}
+
+function toggleAutoPlay() {
+    const btn = document.getElementById('autoPlayBtn');
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        if (btn) btn.innerHTML = '▶️ Auto';
+    } else {
+        if (currentReplayStep >= fullGameHistory.length) {
+            goToReplayStep(0);
+        }
+        if (btn) btn.innerHTML = '⏸️ Pauza';
+        autoPlayInterval = setInterval(() => {
+            if (currentReplayStep >= fullGameHistory.length) {
+                toggleAutoPlay();
+            } else {
+                goToReplayStep(currentReplayStep + 1);
+            }
+        }, 1000);
+    }
+}
+
+
+// Hlavní mozek přehrávače
+function goToReplayStep(targetStep) {
+    if (!initialGameState) return;
+    
+    if (targetStep < 0) targetStep = 0;
+    if (targetStep > fullGameHistory.length) targetStep = fullGameHistory.length;
+
+    currentReplayStep = targetStep;
+
+    // 1. Obnovení desky do počátku
+    board = initialGameState.board.map(row => [...row]);
+    positions = {
+        R: initialGameState.positions.R ? { ...initialGameState.positions.R } : null,
+        B: initialGameState.positions.B ? { ...initialGameState.positions.B } : null
+    };
+    collapsed = new Set(initialGameState.collapsed);
+    collapsedBy = { ...initialGameState.collapsedBy };
+    justCollapsedKey = null;
+    lastMoveEnd = null;
+    waitingForShift = false;
+
+    // 2. Rychlý přepočet do vybraného kroku
+    for (let i = 0; i < currentReplayStep; i++) {
+        let action = fullGameHistory[i];
+        if (action.type === 'move') {
+            let key = `${action.from.i},${action.from.j}`;
+            collapsed.add(key);
+            collapsedBy[key] = action.player;
+            justCollapsedKey = key;
+
+            board[action.from.i][action.from.j] = ''; // Smazání staré pozice
+            positions[action.player] = { i: action.to.i, j: action.to.j };
+            lastMoveEnd = { i: action.to.i, j: action.to.j };
+        } else if (action.type === 'shift') {
+            applyShift(action.dir, action.r, action.c);
+        }
+    }
+
+    // 3. 🎯 DOKONALÁ LOGIKA PODBARVENÍ
+    if (currentReplayStep < fullGameHistory.length) {
+        let nextAction = fullGameHistory[currentReplayStep];
+        
+        if (nextAction.type === 'move') {
+            currentPlayer = nextAction.player;
+        } 
+        else if (nextAction.type === 'shift') {
+            // Najdeme posledního hráče, který táhl před tímto shiftem
+            let lastMove = fullGameHistory.slice(0, currentReplayStep).reverse().find(a => a.type === 'move');
+            let mover = lastMove ? lastMove.player : 'R';
+            currentPlayer = (mover === 'R' ? 'B' : 'R');
+        }
+    } else {
+        // 🛑 OPRAVA: JSME NA ÚPLNÉM KONCI ZÁZNAMU
+        // Podíváme se, kdo táhl jako poslední, a předáme tučné zvýraznění tomu druhému
+        // (tomu, kdo prohrál, protože nemá tah, ale technicky vzato je na řadě).
+        let lastMove = fullGameHistory.slice().reverse().find(a => a.type === 'move');
+        if (lastMove) {
+            currentPlayer = (lastMove.player === 'R' ? 'B' : 'R');
+        } else {
+            currentPlayer = 'R'; // Výchozí záloha pro jistotu
+        }
+    }
+
+    // 4. Vykreslíme výsledek 
+    renderBoard();
+
+    // 5. Formát kroků v jednom řádku
+    const statusEl = document.getElementById('replayStatusText');
+    if (statusEl) {
+        statusEl.innerHTML = `${currentReplayStep} / ${fullGameHistory.length}`;
+    }
+}
+
 
 
 	function updateHeuristicIcon() {
@@ -1251,7 +1401,26 @@ function simulateShift(b, posMap, collSet, direction, rowIndex, colIndex) {
 	  logEvent(!soloMode && !isPvP
 		? `AI mode: ${aiUpdateMode}`
 		: 'AI disabled in [PvP] or [Solo mode]');		
+
+      // 🎬 --- PŘIDÁNO: VYFOCENÍ STAVU PRO PŘEHRÁVAČ ---
+      fullGameHistory = [];
+      isReplaying = false;
+      
+      initialGameState = {
+          board: board.map(row => [...row]),
+          positions: {
+              R: positions.R ? { i: positions.R.i, j: positions.R.j } : null,
+              B: positions.B ? { i: positions.B.i, j: positions.B.j } : null
+          },
+          collapsed: new Set(collapsed),
+          collapsedBy: { ...collapsedBy }
+      };
+      // ------------------------------------------------
 	}
+
+
+
+
 
 	function updateTurnText() {
 	  if (soloMode) {
@@ -1573,47 +1742,49 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 		//  Grafické zobrazení konce hry a vítěze 
 		function showGameOver(winner, message = '') {
-		const overlay = document.getElementById('game-over-overlay');
-		const text = document.getElementById('game-over-text');
+    const overlay = document.getElementById('game-over-overlay');
+    const text = document.getElementById('game-over-text');
 
-	if (soloMode) {
-	  // 🧩 V sólo režimu zobraz výsledek podle proměnné soloGameEnd
-	  let soloMessage;
+    if (soloMode) {
+        let soloMessage;
+        if (soloGameEnd === 2) {
+            soloMessage = `
+                <div class="trophy">🤔</div>
+                <div>Konec hry!</div>
+                <div>${message}</div>
+            `;
+        } else if (soloGameEnd === 1){
+            soloMessage = `
+                <div class="trophy">🏆</div>
+                <div>Konec hry!</div>
+                <div>${message}</div>
+            `;
+        }
+        text.innerHTML = soloMessage;
+    } else {
+        const plainWinnerText = winner === 'R' 
+            ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="144" height="144" alt="Red">' 
+            : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="144" height="144" alt="Blue">';
+        
+        text.innerHTML = `
+            <div class="trophy">🏆</div>
+            <div></div>
+            <div>${plainWinnerText}</div>
+            <div style="margin-top:10px;">${message}</div>
+        `;
+    }
 
-	  if (soloGameEnd === 2) {
-		soloMessage = `
-		  <div class="trophy">🤔</div>
-		  <div>End of game!</div>
-		  <div>${message}</div>
-		`;
-	  } else if (soloGameEnd === 1){
-		soloMessage = `
-		  <div class="trophy">🏆</div>
-		  <div>End of game!</div>
-		  <div>${message}</div>
-		`;
-	  }
+    overlay.classList.remove('hidden');
 
-	  text.innerHTML = soloMessage;
+    // Automaticky spustit přehrávač za 100 milisekund (zajistí, že bude v logu ÚPLNĚ NAHOŘE)
+    setTimeout(() => {
+        initAutoReplay();
+    }, 100);
 
-	} else {
-	  // 🧑‍🤝‍🧑 PvP nebo AI režim
-	  const plainWinnerText = winner === 'R' ? '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0icmVkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAxMmMyLjcgMCA0LjgtMi4xIDQuOC00LjhTMTQuNyAyLjQgMTIgMi40IDcuMiA0LjUgNy4yIDcuMiA5LjMgMTIgMTIgMTJ6bTAgMi40Yy0zLjIgMC05LjYgMS42LTkuNiA0Ljh2Mi40aDE5LjJ2LTIuNGMwLTMuMi02LjQtNC44LTkuNi00Ljh6Ii8+PC9zdmc+" width="144" height="144" alt="Red">' : '<img style="vertical-align: bottom;" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTJjMi43IDAgNC44LTIuMSA0LjgtNC44UzE0LjcgMi40IDEyIDIuNCA3LjIgNC41IDcuMiA3LjIgOS4zIDEyIDEyIDEyem0wIDIuNGMtMy4yIDAtOS42IDEuNi05LjYgNC44djIuNGgxOS4ydi0yLjRjMC0zLjItNi40LTQuOC05LjYtNC44eiIvPjwvc3ZnPg==" width="144" height="144" alt="Blue">';
-	  text.innerHTML = `
-		<div class="trophy">🏆</div>
-		<div></div>
-		<div>${plainWinnerText}</div>
-		<div style="margin-top:10px;">${message}</div>
-	  `;
-	}
-
-			overlay.classList.remove('hidden');
-
-			// Automatické schování po 3 sekundách
-			setTimeout(() => {
-			overlay.classList.add('hidden');
-			}, 3000);
-			}
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+    }, 3000);
+}
 
 
 		// 🔽 funkce pro solo hru 
@@ -1693,6 +1864,9 @@ function getValidMoves(player, b = board, posMap = positions) {
 
 
 			function selectCell(i, j, forceSelect) {
+    // 🛑 Během záznamu nesmí hráč klikat do desky!
+    if (typeof isReplaying !== 'undefined' && isReplaying) return;
+
     // 1. ZÁKLADNÍ POJISTKA: Pokud se čeká na šipky Shift, ignorujeme jakékoliv klikání na karty!
     if (typeof waitingForShift !== 'undefined' && waitingForShift) {
         return;
@@ -1720,6 +1894,17 @@ function getValidMoves(player, b = board, posMap = positions) {
     const move = valids.find(m => m.i === i && m.j === j);
 
     if (move) {
+        // --- 🎬 ZÁPIS DO HISTORIE (PŘEHRÁVAČ) ---
+        if (typeof fullGameHistory !== 'undefined') {
+            fullGameHistory.push({
+                type: 'move',
+                player: currentPlayer,
+                from: { i: pos.i, j: pos.j },
+                to: { i, j }
+            });
+        }
+        // ----------------------------------------
+
         if (currentPlayer === 'R') {
             playerHistory.push({
                 from: { i: pos.i, j: pos.j },
@@ -1818,6 +2003,10 @@ function getValidMoves(player, b = board, posMap = positions) {
         }
     }
 }
+
+
+
+
 
 
 			function endGame(winner) {
@@ -2476,6 +2665,19 @@ for (const move of playerMoves) {
 		return;
 	  }
 
+
+    // --- 🎬 ZÁPIS DO HISTORIE (PŘEHRÁVAČ) ---
+    if (typeof fullGameHistory !== 'undefined') {
+        fullGameHistory.push({
+            type: 'move',
+            player: 'B',
+            from: { i: pos.i, j: pos.j },
+            to: { i: bestMove.i, j: bestMove.j }
+        });
+    }
+    // ----------------------------------------
+
+
 	  // ✅ Provedení tahu
 	  const key = `${pos.i},${pos.j}`;
 	  collapsed.add(key);
@@ -2571,6 +2773,19 @@ for (const move of playerMoves) {
         } else {
             console.log(`↔️ AI aktivuje Mód Shift ve směru: ${chosenDir} (Náhoda)`);
         }
+
+
+        // --- 🎬 ZÁPIS POSUNU AI DO HISTORIE (PŘEHRÁVAČ) ---
+        if (typeof fullGameHistory !== 'undefined') {
+            fullGameHistory.push({
+                type: 'shift',
+                dir: chosenDir,
+                r: bestMove.i,
+                c: bestMove.j
+            });
+        }
+        // ---------------------------------------------------
+
 
         // Fyzická aplikace nejlepšího/náhodného směru
         applyShift(chosenDir, bestMove.i, bestMove.j);
