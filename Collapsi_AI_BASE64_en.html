@@ -1762,13 +1762,13 @@ function getValidMoves(player, b = board, posMap = positions) {
         if (soloGameEnd === 2) {
             soloMessage = `
                 <div class="trophy">🤔</div>
-                <div>Konec hry!</div>
+                <div>End of gamey!</div>
                 <div>${message}</div>
             `;
         } else if (soloGameEnd === 1){
             soloMessage = `
                 <div class="trophy">🏆</div>
-                <div>Konec hry!</div>
+                <divEnd of game!</div>
                 <div>${message}</div>
             `;
         }
@@ -2027,7 +2027,7 @@ function getValidMoves(player, b = board, posMap = positions) {
 			}
 
 
-		 // Testuje konec hry
+		 // Testuje Konec Hry
 	function checkGameOver() {
 	  if (soloMode) {
 		const exit = findExitCard(); // výstupní karta B
