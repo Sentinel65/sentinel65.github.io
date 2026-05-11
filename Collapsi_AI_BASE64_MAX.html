@@ -48,6 +48,11 @@
 		box-shadow: inset 0 0 0 3px limegreen;
 	  }
 
+    .active-step-blue {
+    border: 3px solid blue !important;
+    box-shadow: 0 0 10px blue !important;
+    }
+
 	.active-step {
 	  border: 3px solid red !important;
 	  box-shadow: 0 0 10px red !important;
@@ -803,16 +808,24 @@ function stepReplay(dir) {
     goToReplayStep(currentReplayStep + dir);
 }
 
-// Hlavní mozek přehrávače
+
+
+// ========================================================
+// 🎬 Hlavní mozek přehrávače - s vizuální animací rozpadu
+// ========================================================
+let isAnimatingReplay = false;
+
 function goToReplayStep(targetStep) {
     if (!initialGameState) return;
+    
+    if (isAnimatingReplay) return;
     
     if (targetStep < 0) targetStep = 0;
     if (targetStep > fullGameHistory.length) targetStep = fullGameHistory.length;
 
     currentReplayStep = targetStep;
 
-    // 1. Obnovení desky do počátku
+    // 1. Obnovení desky do počátku (včetně Jokerů)
     board = initialGameState.board.map(row => [...row]);
     positions = {
         R: initialGameState.positions.R ? { ...initialGameState.positions.R } : null,
@@ -824,8 +837,20 @@ function goToReplayStep(targetStep) {
     lastMoveEnd = null;
     waitingForShift = false;
 
-    // 2. Rychlý přepočet do vybraného kroku
-    for (let i = 0; i < currentReplayStep; i++) {
+    // 🛡️ POMOCNÁ FUNKCE: Vykreslí desku, ale zakáže jí obarvovat platné tahy zeleně
+    function renderBoardClean() {
+        if (typeof window.getValidMoves === 'function') {
+            const originalGetValidMoves = window.getValidMoves;
+            window.getValidMoves = function() { return []; }; 
+            renderBoard();
+            window.getValidMoves = originalGetValidMoves; 
+        } else {
+            renderBoard();
+        }
+    }
+
+    // 2. Rychlý přepočet VŠECH kroků AŽ PŘED ten aktuální
+    for (let i = 0; i < currentReplayStep - 1; i++) {
         let action = fullGameHistory[i];
         if (action.type === 'move') {
             let key = `${action.from.i},${action.from.j}`;
@@ -833,7 +858,7 @@ function goToReplayStep(targetStep) {
             collapsedBy[key] = action.player;
             justCollapsedKey = key;
 
-            board[action.from.i][action.from.j] = ''; // Smazání staré pozice
+            board[action.from.i][action.from.j] = ''; 
             positions[action.player] = { i: action.to.i, j: action.to.j };
             lastMoveEnd = { i: action.to.i, j: action.to.j };
         } else if (action.type === 'shift') {
@@ -841,40 +866,103 @@ function goToReplayStep(targetStep) {
         }
     }
 
-    // 3. 🎯 DOKONALÁ LOGIKA PODBARVENÍ
-    if (currentReplayStep < fullGameHistory.length) {
-        let nextAction = fullGameHistory[currentReplayStep];
-        
-        if (nextAction.type === 'move') {
-            currentPlayer = nextAction.player;
-        } 
-        else if (nextAction.type === 'shift') {
-            // Najdeme posledního hráče, který táhl před tímto shiftem
-            let lastMove = fullGameHistory.slice(0, currentReplayStep).reverse().find(a => a.type === 'move');
-            let mover = lastMove ? lastMove.player : 'R';
-            currentPlayer = (mover === 'R' ? 'B' : 'R');
-        }
-    } else {
-        // 🛑 OPRAVA: JSME NA ÚPLNÉM KONCI ZÁZNAMU
-        // Podíváme se, kdo táhl jako poslední, a předáme tučné zvýraznění tomu druhému
-        // (tomu, kdo prohrál, protože nemá tah, ale technicky vzato je na řadě).
-        let lastMove = fullGameHistory.slice().reverse().find(a => a.type === 'move');
-        if (lastMove) {
-            currentPlayer = (lastMove.player === 'R' ? 'B' : 'R');
+    // --- Zjištění a provedení AKTUALNÍHO KROKU ---
+    if (currentReplayStep === 0) {
+        if (fullGameHistory.length > 0 && fullGameHistory[0].type === 'move') {
+            currentPlayer = fullGameHistory[0].player;
         } else {
-            currentPlayer = 'R'; // Výchozí záloha pro jistotu
+            currentPlayer = 'R'; 
+        }
+        justCollapsedPlayed = true; 
+        renderBoardClean(); 
+        updateStatusText();
+        return;
+    }
+
+    let currentAction = fullGameHistory[currentReplayStep - 1];
+
+    if (currentAction.type === 'move') {
+        isAnimatingReplay = true; 
+
+        currentPlayer = currentAction.player;
+        justCollapsedPlayed = true; 
+        renderBoardClean(); 
+        
+        const fromCell = document.getElementById(`cell-${currentAction.from.i}-${currentAction.from.j}`);
+        const toCell = document.getElementById(`cell-${currentAction.to.i}-${currentAction.to.j}`);
+        
+        // 🎯 ELEGANTNÍ OBARVENÍ POMOCÍ TŘÍD
+        if (fromCell) {
+            if (currentAction.player === 'B') {
+                fromCell.classList.add('active-step-blue');
+            } else {
+                fromCell.classList.add('active-step');
+            }
+        }
+        
+        if (toCell) {
+            toCell.classList.add('target-step'); // Zelený cíl
+        }
+
+        setTimeout(() => {
+            // Bezpečně odebereme obě možné třídy
+            if (fromCell) {
+                fromCell.classList.remove('active-step', 'active-step-blue');
+            }
+            if (toCell) toCell.classList.remove('target-step');
+            
+            let key = `${currentAction.from.i},${currentAction.from.j}`;
+            collapsed.add(key);
+            collapsedBy[key] = currentAction.player;
+            justCollapsedKey = key;
+            
+            justCollapsedPlayed = false; 
+
+            board[currentAction.from.i][currentAction.from.j] = ''; 
+            positions[currentAction.player] = { i: currentAction.to.i, j: currentAction.to.j };
+            lastMoveEnd = { i: currentAction.to.i, j: currentAction.to.j };
+            
+            determineNextPlayerForHighlight();
+            
+            renderBoardClean(); 
+            updateStatusText();
+            isAnimatingReplay = false; 
+
+        }, 1000); 
+
+    } else if (currentAction.type === 'shift') {
+        applyShift(currentAction.dir, currentAction.r, currentAction.c);
+        justCollapsedPlayed = true; 
+        determineNextPlayerForHighlight();
+        renderBoardClean(); 
+        updateStatusText();
+    }
+
+    function determineNextPlayerForHighlight() {
+        if (currentReplayStep < fullGameHistory.length) {
+            let nextAction = fullGameHistory[currentReplayStep];
+            if (nextAction.type === 'move') {
+                currentPlayer = nextAction.player;
+            } else if (nextAction.type === 'shift') {
+                let lastMove = fullGameHistory.slice(0, currentReplayStep).reverse().find(a => a.type === 'move');
+                let mover = lastMove ? lastMove.player : 'R';
+                currentPlayer = (mover === 'R' ? 'B' : 'R');
+            }
+        } else {
+            let lastMove = fullGameHistory.slice().reverse().find(a => a.type === 'move');
+            currentPlayer = lastMove ? (lastMove.player === 'R' ? 'B' : 'R') : 'R';
         }
     }
 
-    // 4. Vykreslíme výsledek 
-    renderBoard();
-
-    // 5. Formát kroků v jednom řádku
-    const statusEl = document.getElementById('replayStatusText');
-    if (statusEl) {
-        statusEl.innerHTML = `${currentReplayStep} / ${fullGameHistory.length}`;
+    function updateStatusText() {
+        const statusEl = document.getElementById('replayStatusText');
+        if (statusEl) {
+            statusEl.innerHTML = `${currentReplayStep} / ${fullGameHistory.length}`;
+        }
     }
 }
+
+
 
 
 
