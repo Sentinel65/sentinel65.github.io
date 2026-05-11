@@ -78,7 +78,7 @@
             position: relative;
         }
         .card .wild-icon {
-            font-size: 28px;
+            font-size: 36px;
             color: #333;
             text-shadow: 0px 0px 5px rgba(255,255,255,0.8);
             z-index: 2;
@@ -127,7 +127,6 @@
             z-index: 1;
         }
 
-        /* NASTAVENÍ SVG LINEK (Základní tenké + aktivní stavy) */
         .hex-stroke {
             position: absolute;
             inset: 0;
@@ -140,7 +139,7 @@
         .hex-stroke .base-stroke {
             fill: none;
             stroke: #111;
-            stroke-width: 0.5; /* Tenký základ */
+            stroke-width: 0.5;
             vector-effect: non-scaling-stroke;
             transition: stroke 0.3s, stroke-width 0.3s;
         }
@@ -172,11 +171,31 @@
             100% { transform: scale(1); filter: brightness(1); }
         }
 
-        .hex-wrapper.paired .hex-inner { filter: grayscale(50%) brightness(0.8); }
-        .hex-wrapper.paired .val { text-decoration: line-through; color: #555; }
+        /* --- ZMĚNA PRO PŘEHLEDNOST SPÁROVANÝCH POLÍ --- */
+        .val { 
+            font-size: 17px; 
+            font-weight: 900; 
+            color: #111; 
+            z-index: 3; 
+            pointer-events: none; 
+            /* Aktivní čísla mají jemnou bílou záři pro lepší čitelnost na barevném pozadí */
+            text-shadow: 0px 1px 3px rgba(255,255,255,0.8);
+        }
+
+        .hex-wrapper.paired .val { 
+            /* Spárovaná čísla zmizí do ztracena (průhledná s lehkým okrajem) */
+            color: transparent; 
+            -webkit-text-stroke: 1.5px rgba(17, 17, 17, 0.25);
+            text-shadow: none; /* Zrušíme bílou záři */
+        }
         
-        .val { font-size: 17px; font-weight: 900; color: #111; z-index: 3; pointer-events: none; }
-        .star { font-size: 18px; color: #444; z-index: 3; pointer-events: none; margin-top: -3px; }
+        .star { 
+            font-size: 20px; 
+            color: #444; 
+            z-index: 3; 
+            pointer-events: none; 
+            margin-top: -4px; 
+        }
 
         .c-yellow { background-color: #ffeb3b; }
         .c-green  { background-color: #81c784; }
@@ -186,47 +205,53 @@
         .c-grey   { background-color: #e0e0e0; }
         .c-white  { background-color: #ffffff; }
 
-        /* REŽIM PRO BARVOSLEPÉ (PIKTOGRAMY A OHRANIČENÍ SKUPIN) */
+        /* REŽIM PRO BARVOSLEPÉ */
         .cb-icon {
             display: none;
             position: absolute;
             inset: 0;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 34px; 
             color: rgba(0,0,0,0.18);
             z-index: 1;
             pointer-events: none;
         }
         body.cb-mode .cb-icon { display: flex; }
         
+        /* Posuny a velikosti piktogramů */
+        .c-yellow .cb-icon { font-size: 44px; transform: translateY(-1px); }
+        .c-green .cb-icon { transform: translateY(3px); }
+        .c-blue .cb-icon { transform: translateY(-1px); }
+        .c-grey .cb-icon { transform: translateY(1px); }
+        .c-orange .cb-icon { transform: translateY(1px); }
+
         .cb-borders line {
             stroke: #111;
-            stroke-width: 4; /* Silná hranice skupiny */
+            stroke-width: 4; 
             stroke-linecap: round;
             vector-effect: non-scaling-stroke;
-            display: none; /* Normálně neviditelné */
+            display: none; 
         }
         body.cb-mode .cb-borders line {
-            display: block; /* Viditelné pouze v CB režimu */
+            display: block; 
         }
 
-        /* OVLÁDACÍ LIŠTA A TLAČÍTKA - Nuceně v jednom řádku */
         .controls {
             display: flex;
-            gap: 6px; /* Zmenšené rozestupy */
+            gap: 6px; 
             justify-content: space-between;
             align-items: center;
             margin-top: 5px;
             width: 100%;
-            flex-wrap: nowrap; /* Zákaz zalamování řádků */
+            flex-wrap: nowrap; 
         }
         
         .small-btn {
             padding: 0;
-            width: 40px; /* Zmenšená šířka */
-            height: 40px; /* Zmenšená výška */
-            font-size: 18px; /* Úprava ikonek pro menší tlačítko */
+            width: 40px; 
+            height: 40px; 
+            font-size: 18px; 
             background: #6c757d;
             border-radius: 50%;
             display: flex;
@@ -237,14 +262,14 @@
             cursor: pointer;
             box-shadow: 0 3px 6px rgba(0,0,0,0.2);
             transition: transform 0.1s;
-            flex-shrink: 0; /* Zabrání nechtěnému zdršťování přes limit */
+            flex-shrink: 0; 
         }
         .small-btn:active:not(:disabled) { transform: scale(0.92); }
         .small-btn:disabled { background: #adb5bd; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
         
         .primary-btn {
             background: #0d6efd;
-            width: 48px; /* Mírně větší, ale vejde se */
+            width: 48px; 
             height: 48px;
             font-size: 24px;
         }
@@ -287,7 +312,6 @@
             100% { opacity: 0; transform: translateY(-20px); }
         }
 
-        /* MODÁLY */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -328,16 +352,14 @@
         .score-table .total-row td { font-size: 1.1em; border-bottom: none; border-top: 2px solid #333; padding-top: 8px; }
         .score-table .best-row td { font-size: 1em; color: #198754; border-bottom: none; padding-top: 4px; }
         
-                /* Jemné optické dorovnání piktogramů v režimu pro barvoslepé */
-.c-green .cb-icon {
-    transform: translateY(-5px); /* Posune trojúhelník mírně dolů */
-}
+         /* Jemné optické dorovnání piktogramů v režimu pro barvoslepé */
 .c-grey .cb-icon {
+    font-size: 31px;
     transform: translateY(-5px); /* Mírný posun křížku dolů (uprav dle potřeby) */
 }
 .c-yellow .cb-icon {
      font-size: 50px;
-    transform: translateY(-4px); /* Někdy potřebuje i kosočtverec drobný posun */
+    transform: translateY(-5px); /* Někdy potřebuje i kosočtverec drobný posun */
 }
 .c-green .cb-icon {
 font-size: 35px;
@@ -450,37 +472,14 @@ font-size: 35px;
 <div id="help-modal" class="modal-overlay">
     <div class="modal-content help">
         <h3><span class="cs">Pravidla hry Hex 6</span><span class="en">Hex 6 Rules</span></h3>
-        
-        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić</span><span class="en">of the Flip&Write game by Stefan Nikolić</span></h5>
-        
+        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić.</span><span class="en">of the Flip&Write game by Stefan Nikolić.</span></h5>
         <p><strong><span class="cs">Příprava:</span><span class="en">Setup:</span></strong> <span class="cs">Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet).</span><span class="en">Played with a standard 48-card deck. 6 random cards are permanently removed before the game. The remaining 42 cards are divided into Phase 1 (first 32 cards) and Phase 2 (last 10 cards).</span></p>
-        
         <ul style="padding-left:15px; margin:10px 0;">
             <li style="margin-bottom:8px;"><strong><span class="cs">Tah:</span><span class="en">Turn:</span></strong> <span class="cs">Otočte 2 karty. Kliknutím na prázdné pole odpovídající jedné z barev zapíšete číslo 1. Jsou-li obě karty stejné barvy, můžete si vybrat, zda zapíšete číslo 1 nebo číslo 2.</span><span class="en">Flip 2 cards. Click an empty hex matching one of the colors to write '1'. If both cards are the same color, you can choose to write '1' or '2'.</span></li>
-            
             <li style="margin-bottom:8px;">
-                <strong><span class="cs">Párování:</span><span class="en">Pairing:</span></strong> <span class="cs">Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se škrtnou, pole ztmavnou. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</span><span class="en">If you place a number next to an unpaired identical number, they pair up and cross out. Immediately place a number 1 value higher in an empty hex in the same straight line. If the line is full, place it anywhere. This triggers chain reactions.</span>
-                
-                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef;">
-                    <div style="position:relative; width:40px; height:46px;">
-                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#e0e0e0" stroke="#777" stroke-width="2"/></svg>
-                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#777; text-decoration:line-through; font-size:15px;">2</div>
-                    </div>
-                    <div style="font-weight:bold; color:#555; font-size:18px;">+</div>
-                    <div style="position:relative; width:40px; height:46px;">
-                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#e0e0e0" stroke="#777" stroke-width="2"/></svg>
-                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#777; text-decoration:line-through; font-size:15px;">2</div>
-                    </div>
-                    <div style="font-weight:bold; color:#d32f2f; margin: 0 5px; font-size:18px;">&rarr;</div>
-                    <div style="position:relative; width:40px; height:46px;">
-                        <svg viewBox="0 0 100 100" style="position:absolute; width:100%; height:100%;"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#fff" stroke="#4caf50" stroke-width="4"/></svg>
-                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#111; font-size:15px;">3</div>
-                    </div>
-                </div>
+                <strong><span class="cs">Párování:</span><span class="en">Pairing:</span></strong> <span class="cs">Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se zprůhlední a stanou se neaktivními. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</span><span class="en">If you place a number next to an unpaired identical number, they pair up and fade out. Immediately place a number 1 value higher in an empty hex in the same straight line. If the line is full, place it anywhere. This triggers chain reactions.</span>
             </li>
-            
             <li style="margin-bottom:8px;"><strong><span class="cs">Bonusy a Žolíky:</span><span class="en">Bonuses & Wilds:</span></strong> <span class="cs">Vyplnění všech polí jedné barvy dělá z této barvy <strong>Žolíka (★)</strong>. Za žolíka můžeš použít kteroukoliv barvu.</span><span class="en">Filling all hexes of one color turns that color into a <strong>Wild (★)</strong>. You can use any color for a Wild card.</span></li>
-            
             <li style="margin-bottom:8px;"><strong><span class="cs">Skóre:</span><span class="en">Scoring:</span></strong> <span class="cs">Hra končí dobráním balíčku. Do celkového skóre se počítá součet nespárovaných čísel od hodnoty 2 a vyšší (včetně předdefinovaných 3 bílých polí s hodnotou 2) a body za bonusy z fáze 1 a fáze 2. Zde je přehled bodování:</span><span class="en">Game ends when the deck is empty. Final score is the sum of unpaired numbers value 2 or higher (including the 3 pre-printed white 2s) plus phase bonuses. Scoring table:</span>
                 <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9em; text-align:left;">
                     <tr style="background:#f1f3f5; border-bottom:1px solid #ccc;">
@@ -506,7 +505,6 @@ font-size: 35px;
                         <td style="padding:6px;"><span class="cs">Číslo 6</span><span class="en">Number 6</span></td>
                         <td style="padding:6px; text-align:right;">35 <span class="cs">b.</span><span class="en">pts</span></td>
                     </tr>
-                    
                     <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
                         <th style="padding:6px;" colspan="2"><span class="cs">Bonusy za barvu (1. fáze | 2. fáze)</span><span class="en">Color Bonuses (Phase 1 | Phase 2)</span></th>
                     </tr>
@@ -636,7 +634,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.phase.innerText = firstPileFinished ? t('phaseLow') : t('phaseHigh');
         ui.instr.innerText = t(currentInstrKey, currentInstrVars);
     }
-    // -------------------
 
     function showNotification(msg) {
         const container = document.getElementById('toast-container');
@@ -872,14 +869,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     }
 
-    // Směry sousedů a k nim příslušné vykreslovací souřadnice hran v SVG (0 0 100 100)
     const SVG_HEX_EDGES = [
-        {q: 1, r: -1, x1: 50, y1: 0, x2: 100, y2: 25},  // Vpravo nahoře
-        {q: 1, r: 0, x1: 100, y1: 25, x2: 100, y2: 75}, // Vpravo
-        {q: 0, r: 1, x1: 100, y1: 75, x2: 50, y2: 100}, // Vpravo dole
-        {q: -1, r: 1, x1: 50, y1: 100, x2: 0, y2: 75},  // Vlevo dole
-        {q: -1, r: 0, x1: 0, y1: 75, x2: 0, y2: 25},    // Vlevo
-        {q: 0, r: -1, x1: 0, y1: 25, x2: 50, y2: 0}     // Vlevo nahoře
+        {q: 1, r: -1, x1: 50, y1: 0, x2: 100, y2: 25}, 
+        {q: 1, r: 0, x1: 100, y1: 25, x2: 100, y2: 75}, 
+        {q: 0, r: 1, x1: 100, y1: 75, x2: 50, y2: 100}, 
+        {q: -1, r: 1, x1: 50, y1: 100, x2: 0, y2: 75},  
+        {q: -1, r: 0, x1: 0, y1: 75, x2: 0, y2: 25},    
+        {q: 0, r: -1, x1: 0, y1: 25, x2: 50, y2: 0}     
     ];
 
     function renderGrid() {
@@ -954,21 +950,25 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.left = `${positions[index].x - minX}px`;
             wrapper.style.top = `${positions[index].y - minY}px`;
 
-            // Výpočet vnějších hranic skupiny (pouze pro Colorblind mód)
             let cbBordersHTML = '';
             SVG_HEX_EDGES.forEach(dir => {
                 const neighbor = boardState.find(h => h.q === hex.q + dir.q && h.r === hex.r + dir.r);
-                // Pokud soused neexistuje (konec mapy) nebo má jinou barvu, vykreslíme tučnější linku
                 if (!neighbor || neighbor.c !== hex.c) {
                     cbBordersHTML += `<line x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}" />`;
                 }
             });
 
+            // LOGIKA ZOBRAZENÍ:
+            // 1. Zprůhlednění piktogramu, pokud je pole obsazené
+            const iconOpacityStyle = hex.v !== null ? 'style="opacity: 0.3;"' : '';
+            // 2. Skrytí hvězdy, pokud už na poli leží číslo
+            const showStar = hex.s && hex.v === null;
+
             let innerHTML = `
                 <div class="hex-inner c-${hex.c}">
-                    <div class="cb-icon">${CB_ICONS[hex.c] || ''}</div>
+                    <div class="cb-icon" ${iconOpacityStyle}>${CB_ICONS[hex.c] || ''}</div>
                     ${hex.v !== null ? `<div class="val">${hex.v}</div>` : ''}
-                    ${hex.s ? `<div class="star">★</div>` : ''}
+                    ${showStar ? `<div class="star">★</div>` : ''}
                 </div>
                 <svg class="hex-stroke" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <polygon class="base-stroke" points="50,0 100,25 100,75 50,100 0,75 0,25" />
@@ -1291,7 +1291,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('help-btn').onclick = () => document.getElementById('help-modal').style.display = 'flex';
     document.getElementById('close-help-btn').onclick = () => document.getElementById('help-modal').style.display = 'none';
 
-    // Přepínání režimu pro barvoslepé
     document.getElementById('cb-btn').onclick = () => {
         cbMode = !cbMode;
         localStorage.setItem('hex6CbMode', cbMode);
