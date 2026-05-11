@@ -172,12 +172,14 @@
         }
 
         .val { 
-            font-size: 17px; 
+            font-size: 22px; 
             font-weight: 900; 
             color: #111; 
             z-index: 3; 
             pointer-events: none; 
             text-shadow: 0px 1px 3px rgba(255,255,255,0.8);
+            -webkit-text-stroke: 1px #111; /* Přidá 1px černý obrys, čímž číslo zesílí */
+            
         }
 
         .hex-wrapper.paired .val { 
@@ -187,7 +189,7 @@
         }
         
         .star { 
-            font-size: 20px; 
+            font-size: 23px; 
             color: #444; 
             z-index: 3; 
             pointer-events: none; 
@@ -203,13 +205,13 @@
         .c-grey   { background-color: #e0e0e0; }
         .c-white  { background-color: #ffffff; }
 
-        /* REŽIM PRO BARVOSLEPÉ (Okabe-Ito paleta + Ohraničení skupin) */
-        body.cb-mode .c-yellow { background-color: #F0E442; } /* Zářivá žlutá */
-        body.cb-mode .c-green  { background-color: #009E73; } /* Modrozelená */
-        body.cb-mode .c-red    { background-color: #CC79A7; } /* Purpurová (Magenta) - vynikající kontrast k zelené/oranžové */
-        body.cb-mode .c-blue   { background-color: #56B4E9; } /* Světle modrá */
-        body.cb-mode .c-orange { background-color: #D55E00; } /* Tmavě oranžová/Rumělková */
-        body.cb-mode .c-grey   { background-color: #999999; } /* Neutrální šedá */
+        /* REŽIM PRO BARVOSLEPÉ */
+        body.cb-mode .c-yellow { background-color: #F0E442; } 
+        body.cb-mode .c-green  { background-color: #009E73; } 
+        body.cb-mode .c-red    { background-color: #CC79A7; } 
+        body.cb-mode .c-blue   { background-color: #56B4E9; } 
+        body.cb-mode .c-orange { background-color: #D55E00; } 
+        body.cb-mode .c-grey   { background-color: #999999; } 
 
         .cb-borders line {
             stroke: #111;
@@ -222,6 +224,46 @@
             display: block; 
         }
 
+        /* VNĚJŠÍ LEGENDY A KARTY (Piktogramy) */
+        .cb-icon {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            inset: 0;
+            color: #111;
+            font-size: 34px; 
+            pointer-events: none;
+        }
+        body.cb-mode .cb-icon { display: flex; }
+        
+        .card .cb-icon {
+            font-size: 26px; /* Menší ikonka na kartě */
+            color: rgba(0,0,0,0.5); /* Silný kontrast na kartě */
+        }
+
+        .cb-board-label {
+            position: absolute;
+            pointer-events: none;
+            display: none;
+            background-color: transparent !important; /* Zajišťuje průhlednost legendy */
+        }
+        body.cb-mode .cb-board-label { display: block; }
+        
+        .cb-board-label .cb-icon {
+            color: rgba(17, 17, 17, 0.7); /* Výraznější tmavě šedá mimo desku */
+        }
+
+        /* Posuny a velikosti piktogramů pro legendy a karty */
+        .c-yellow .cb-icon { font-size: 50px; transform: translateY(-3px); }
+        .card.c-yellow .cb-icon { font-size: 32px; } /* Zmenšení jen pro kartu */
+        
+        .c-green .cb-icon { font-size: 33px; transform: translateY(-2px); }
+        .c-blue .cb-icon { font-size: 33px; transform: translateY(-2px); }
+        .c-grey .cb-icon { transform: translateY(-2px); }
+        .c-orange .cb-icon { font-size: 38px; transform: translateY(-2px); }
+        .c-red .cb-icon { transform: translateY(-1px); }
+        
         .controls {
             display: flex;
             gap: 6px; 
@@ -598,6 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const COLORS = ['yellow', 'green', 'red', 'blue', 'orange', 'grey'];
+    const CB_ICONS = {
+        'yellow': '●',
+        'green': '▲',
+        'red': '■',
+        'blue': '▼',
+        'orange': '◆',
+        'grey': '✖'
+    };
 
     let deck = [];
     let currentCards = [];
@@ -620,6 +670,16 @@ document.addEventListener('DOMContentLoaded', () => {
         {q:1, r:-4, c:'grey', s:true}, {q:1, r:-3, c:'green'}, {q:1, r:-2, c:'green'}, {q:1, r:-1, c:'orange'}, {q:1, r:0, c:'orange'}, {q:1, r:1, c:'white'}, {q:1, r:2, c:'orange', s:true},
         {q:2, r:-4, c:'white'}, {q:2, r:-3, c:'green'}, {q:2, r:-2, c:'green'}, {q:2, r:-1, c:'green', s:true}, {q:2, r:0, c:'orange'}, {q:2, r:1, c:'orange'},
         {q:3, r:-4, c:'green'}, {q:3, r:-3, c:'green', s:true}, {q:3, r:-2, c:'white', v:2}, {q:3, r:-1, c:'green'}, {q:3, r:0, c:'orange'}
+    ];
+
+    // Virtuální souřadnice pro piktogramy legendy vně mapy
+    const outerLabelsData = [
+        {q: -4.0, r: -2.4, c: 'red'},
+        {q: -6.3, r: 3.5, c: 'yellow'},
+        {q: -3.1, r: 5.1, c: 'blue'},
+        {q: 1.8, r: 2.5, c: 'orange'},
+        {q: 4.3, r: -3.5, c: 'green'},
+        {q: 1.0, r: -5.3, c: 'grey'}
     ];
 
     const ui = {
@@ -752,10 +812,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentCards.length === 2) {
             const w1 = isColorComplete(currentCards[0]);
             const w2 = isColorComplete(currentCards[1]);
+            
             ui.card1.className = `card c-${currentCards[0]}`;
-            ui.card1.innerHTML = w1 ? '<div class="wild-icon" title="★">★</div>' : '';
+            let content1 = `<div class="cb-icon">${CB_ICONS[currentCards[0]] || ''}</div>`;
+            if (w1) content1 += '<div class="wild-icon" title="★">★</div>';
+            ui.card1.innerHTML = content1;
+            
             ui.card2.className = `card c-${currentCards[1]}`;
-            ui.card2.innerHTML = w2 ? '<div class="wild-icon" title="★">★</div>' : '';
+            let content2 = `<div class="cb-icon">${CB_ICONS[currentCards[1]] || ''}</div>`;
+            if (w2) content2 += '<div class="wild-icon" title="★">★</div>';
+            ui.card2.innerHTML = content2;
         } else {
             ui.card1.className = `card`; ui.card1.innerHTML = '?';
             ui.card2.className = `card`; ui.card2.innerHTML = '?';
@@ -815,9 +881,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const HEX_H = 2 * HEX_SIZE;
         const Y_SPACING = 1.5 * HEX_SIZE;
         
-        const positions = boardState.map(hex => {
-            const x = HEX_W * (hex.q + hex.r/2);
-            const y = Y_SPACING * hex.r;
+        // Zahrneme do výpočtu hranic i venkovní legendy, aby se deska správně vycentrovala
+        const allElements = [...boardState, ...outerLabelsData];
+        const positions = allElements.map(el => {
+            const x = HEX_W * (el.q + el.r/2);
+            const y = Y_SPACING * el.r;
             return { x, y };
         });
 
@@ -848,6 +916,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.grid.style.left = `${leftOffset}px`;
         ui.grid.style.top = `0px`;
 
+        const boardPositions = positions.slice(0, boardState.length);
+        const labelPositionsCalculated = positions.slice(boardState.length);
+
+        // VYKRESLENÍ HERNÍCH POLÍ
         boardState.forEach((hex, index) => {
             let isAllowedTarget = false;
             let isPartnerTarget = false;
@@ -876,8 +948,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             wrapper.style.width = `${HEX_W}px`;
             wrapper.style.height = `${HEX_H}px`;
-            wrapper.style.left = `${positions[index].x - minX}px`;
-            wrapper.style.top = `${positions[index].y - minY}px`;
+            wrapper.style.left = `${boardPositions[index].x - minX}px`;
+            wrapper.style.top = `${boardPositions[index].y - minY}px`;
 
             let cbBordersHTML = '';
             SVG_HEX_EDGES.forEach(dir => {
@@ -887,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Skrytí hvězdy, pokud už na poli leží číslo
+            // Uvnitř hexu už negenerujeme piktogram .cb-icon
             const showStar = hex.s && hex.v === null;
 
             let innerHTML = `
@@ -903,6 +975,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             wrapper.innerHTML = innerHTML;
             wrapper.onclick = () => handleHexClick(index);
+            ui.grid.appendChild(wrapper);
+        });
+
+        // VYKRESLENÍ VNĚJŠÍCH PIKTOGRAMŮ (LEGENDY)
+        outerLabelsData.forEach((lbl, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = `cb-board-label c-${lbl.c}`;
+            wrapper.style.width = `${HEX_W}px`;
+            wrapper.style.height = `${HEX_H}px`;
+            wrapper.style.left = `${labelPositionsCalculated[index].x - minX}px`;
+            wrapper.style.top = `${labelPositionsCalculated[index].y - minY}px`;
+            
+            wrapper.innerHTML = `<div class="cb-icon">${CB_ICONS[lbl.c]}</div>`;
             ui.grid.appendChild(wrapper);
         });
     }
@@ -926,14 +1011,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.phase.style.color = "#ff9800";
         }
 
-        const w1 = isColorComplete(currentCards[0]);
-        const w2 = isColorComplete(currentCards[1]);
-
-        ui.card1.className = `card c-${currentCards[0]}`;
-        ui.card1.innerHTML = w1 ? '<div class="wild-icon" title="★">★</div>' : '';
-        
-        ui.card2.className = `card c-${currentCards[1]}`;
-        ui.card2.innerHTML = w2 ? '<div class="wild-icon" title="★">★</div>' : '';
+        restoreCardsUI();
         
         ui.btnFlip.disabled = true;
         setInstr('selectHex');
