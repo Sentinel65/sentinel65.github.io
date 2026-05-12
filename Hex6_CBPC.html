@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hex 6 - Solo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #2c3e50;
+            margin: 0;
+            padding: 5px;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        h2 { text-align: center; margin-top: 0; font-size: 1.3em; color: #333; margin-bottom: 5px; display: none; }
+        
+        /* JAZYKOVÁ LOGIKA */
+        body.lang-en .cs { display: none !important; }
+        body.lang-cs .en { display: none !important; }
+
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .status {
+            display: flex;
+            gap: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #555;
+            background: #f8f9fa;
+            padding: 6px;
+            border-radius: 8px;
+            flex-grow: 1;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .cards {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            height: 60px;
+            margin-bottom: 8px;
+        }
+        .card {
+            width: 52px;
+            height: 60px;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5em;
+            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+            position: relative;
+        }
+        .card .wild-icon {
+            font-size: 36px;
+            color: #333;
+            text-shadow: 0px 0px 5px rgba(255,255,255,0.8);
+            z-index: 2;
+        }
+
+        .instruction {
+            text-align: center;
+            font-weight: bold;
+            color: #d32f2f;
+            min-height: 20px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .grid-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+            flex-grow: 1;
+        }
+
+        #grid {
+            position: absolute;
+            transform-origin: top left;
+        }
+
+        .hex-wrapper {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .hex-wrapper:active { transform: scale(0.92); }
+
+        .hex-inner {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: filter 0.2s, background-color 0.3s;
+            z-index: 1;
+        }
+
+        .hex-stroke {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .hex-stroke .base-stroke {
+            fill: none;
+            stroke: #111;
+            stroke-width: 0.5;
+            vector-effect: non-scaling-stroke;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+
+        .hex-wrapper.allowed-target { z-index: 10; animation: pulse-wrapper 1.5s infinite; }
+        .hex-wrapper.allowed-target .hex-stroke .base-stroke { stroke: #4caf50; stroke-width: 3; }
+        
+        .hex-wrapper.partner-target { z-index: 10; animation: pulse-wrapper-partner 1.5s infinite; }
+        .hex-wrapper.partner-target .hex-stroke .base-stroke { stroke: #2196f3; stroke-width: 3; }
+
+        .hex-wrapper.match-target { z-index: 9; animation: pulse-wrapper-match 1.5s infinite; }
+        .hex-wrapper.match-target .hex-stroke .base-stroke { stroke: #9c27b0; stroke-width: 3; }
+
+        @keyframes pulse-wrapper {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes pulse-wrapper-partner {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.3); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes pulse-wrapper-match {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.4); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        .val { 
+            font-size: 22px; 
+            font-weight: 900; 
+            color: #111; 
+            z-index: 3; 
+            pointer-events: none; 
+            text-shadow: 0px 1px 3px rgba(255,255,255,0.8);
+            -webkit-text-stroke: 1px #111; /* Přidá 1px černý obrys, čímž číslo zesílí */
+            
+        }
+
+        .hex-wrapper.paired .val { 
+            color: transparent; 
+            -webkit-text-stroke: 1.5px rgba(17, 17, 17, 0.25);
+            text-shadow: none; 
+        }
+        
+        .star { 
+            font-size: 23px; 
+            color: #444; 
+            z-index: 3; 
+            pointer-events: none; 
+            margin-top: -4px; 
+        }
+
+        /* STANDARDNÍ BARVY */
+        .c-yellow { background-color: #ffeb3b; }
+        .c-green  { background-color: #81c784; }
+        .c-red    { background-color: #e57373; }
+        .c-blue   { background-color: #64b5f6; }
+        .c-orange { background-color: #ffb74d; }
+        .c-grey   { background-color: #e0e0e0; }
+        .c-white  { background-color: #ffffff; }
+
+        /* REŽIM PRO BARVOSLEPÉ */
+        body.cb-mode .c-yellow { background-color: #F0E442; } 
+        body.cb-mode .c-green  { background-color: #009E73; } 
+        body.cb-mode .c-red    { background-color: #CC79A7; } 
+        body.cb-mode .c-blue   { background-color: #56B4E9; } 
+        body.cb-mode .c-orange { background-color: #D55E00; } 
+        body.cb-mode .c-grey   { background-color: #999999; } 
+
+        .cb-borders line {
+            stroke: #111;
+            stroke-width: 4; 
+            stroke-linecap: round;
+            vector-effect: non-scaling-stroke;
+            display: none; 
+        }
+        body.cb-mode .cb-borders line {
+            display: block; 
+        }
+
+        /* VNĚJŠÍ LEGENDY A KARTY (Piktogramy) */
+        .cb-icon {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            inset: 0;
+            color: #111;
+            font-size: 34px; 
+            pointer-events: none;
+        }
+        body.cb-mode .cb-icon { display: flex; }
+        
+        .card .cb-icon {
+            font-size: 26px; /* Menší ikonka na kartě */
+            color: rgba(0,0,0,0.5); /* Silný kontrast na kartě */
+        }
+
+        .cb-board-label {
+            position: absolute;
+            pointer-events: none;
+            display: none;
+            background-color: transparent !important; /* Zajišťuje průhlednost legendy */
+        }
+        body.cb-mode .cb-board-label { display: block; }
+        
+        .cb-board-label .cb-icon {
+            color: rgba(17, 17, 17, 0.7); /* Výraznější tmavě šedá mimo desku */
+        }
+
+        /* Vyřazené karty na konci hry - PŘIDÁNO ZPĚT */
+        .removed-hex {
+            position: relative;
+            width: 38px;
+            height: 44px;
+            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .removed-hex .cb-icon {
+            font-size: 26px;
+            color: rgba(0,0,0,0.4);
+        }
+        body.cb-mode .removed-hex .cb-icon { display: flex; }
+        .removed-hex.c-yellow .cb-icon { font-size: 34px; }
+
+        /* Posuny a velikosti piktogramů pro legendy a karty */
+        .c-yellow .cb-icon { font-size: 50px; transform: translateY(-3px); }
+        .card.c-yellow .cb-icon { font-size: 32px; } /* Zmenšení jen pro kartu */
+        
+        .c-green .cb-icon { font-size: 33px; transform: translateY(-2px); }
+        .c-blue .cb-icon { font-size: 33px; transform: translateY(-2px); }
+        .c-grey .cb-icon { transform: translateY(-2px); }
+        .c-orange .cb-icon { font-size: 38px; transform: translateY(-2px); }
+        .c-red .cb-icon { transform: translateY(-1px); }
+        
+        .controls {
+            display: flex;
+            gap: 6px; 
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+            width: 100%;
+            flex-wrap: nowrap; 
+        }
+        
+        .small-btn {
+            padding: 0;
+            width: 40px; 
+            height: 40px; 
+            font-size: 18px; 
+            background: #6c757d;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            flex-shrink: 0; 
+        }
+        .small-btn:active:not(:disabled) { transform: scale(0.92); }
+        .small-btn:disabled { background: #adb5bd; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
+        
+        .primary-btn {
+            background: #0d6efd;
+            width: 48px; 
+            height: 48px;
+            font-size: 24px;
+        }
+
+        #lang-btn { background: #e9ecef; }
+        .flag { width: 26px; height: 26px; border-radius: 50%; display: block; }
+
+        #restart-btn { 
+            background: #198754; width: 100%; padding: 12px; border-radius: 8px; color: white; border: none; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            width: 90%;
+            max-width: 400px;
+        }
+        .toast {
+            background: rgba(33, 37, 41, 0.95);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: fadeInOut 2.5s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 450px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: #333;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content.help { text-align: left; font-size: 0.9em; line-height: 1.5; }
+        .modal-content h3 { margin-top: 0; color: #d32f2f; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .modal-btn-row { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+        .modal-btn {
+            padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; color: white; background: #0d6efd;
+            flex: 1;
+        }
+        .modal-btn.secondary { background: #6c757d; }
+        .no-underline-link { color: #0d6efd; text-decoration: none; }
+        .no-underline-link:hover { text-decoration: underline; }
+        
+        .score-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.95em; }
+        .score-table td { padding: 5px; border-bottom: 1px solid #ccc; }
+        .score-table td:first-child { text-align: left; color: #444; }
+        .score-table td:last-child { text-align: right; font-weight: bold; color: #111; }
+        .score-table .total-row td { font-size: 1.1em; border-bottom: none; border-top: 2px solid #333; padding-top: 8px; }
+        .score-table .best-row td { font-size: 1em; color: #198754; border-bottom: none; padding-top: 4px; }
+    </style>
+</head>
+<body class="lang-cs">
+
+<div id="toast-container"></div>
+
+<div id="game-container">
+    <h2>Hex 6</h2>
+    
+    <div class="top-bar">
+        <div class="status">
+            <div><span class="cs">Bonus:</span><span class="en">Bonus:</span><br><span id="game-phase" style="color:#d32f2f">...</span></div>
+            <div><span class="cs">Hvězdy:</span><span class="en">Stars:</span><br><span id="stars-count">12</span></div>
+            <div><span class="cs">Karty:</span><span class="en">Cards:</span><br><span id="deck-count">42</span></div>
+            <div><span class="cs">Body:</span><span class="en">Score:</span><br><span id="total-score">0</span></div>
+        </div>
+    </div>
+
+    <div class="cards" id="cards">
+        <div class="card" id="card-1">?</div>
+        <div class="card" id="card-2">?</div>
+    </div>
+
+    <div class="instruction" id="instruction">...</div>
+
+    <div class="grid-wrapper">
+        <div id="grid"></div>
+    </div>
+
+    <div class="controls" id="game-controls">
+        <button id="undo-btn" class="small-btn" disabled title="Zpět / Undo">↩️</button>
+        <button id="save-btn" class="small-btn" title="Uložit hru / Save Game">💾</button>
+        <button id="load-btn" class="small-btn" title="Načíst hru / Load Game">📂</button>
+        <button id="flip-btn" class="small-btn primary-btn" disabled title="Otočit karty / Flip Cards">🔄</button>
+        <button id="cb-btn" class="small-btn" title="Přepnout paletu barev (přístupnost) / Toggle high-contrast palette" style="background:#495057;">👁️</button>
+        <button id="help-btn" class="small-btn" title="Nápověda / Help">💡</button>
+        <button id="lang-btn" class="small-btn" title="Změnit jazyk / Change language">
+            <span class="cs">
+                <svg class="flag" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <clipPath id="uk-clip"><circle cx="50" cy="50" r="50"/></clipPath>
+                    <g clip-path="url(#uk-clip)">
+                        <rect width="100" height="100" fill="#012169"/>
+                        <g stroke="#fff" stroke-width="14"><line x1="0" y1="0" x2="100" y2="100"/><line x1="0" y1="100" x2="100" y2="0"/></g>
+                        <g stroke="#C8102E" stroke-width="6"><line x1="0" y1="0" x2="100" y2="100"/><line x1="0" y1="100" x2="100" y2="0"/></g>
+                        <g stroke="#fff" stroke-width="20"><line x1="50" y1="0" x2="50" y2="100"/><line x1="0" y1="50" x2="100" y2="50"/></g>
+                        <g stroke="#C8102E" stroke-width="12"><line x1="50" y1="0" x2="50" y2="100"/><line x1="0" y1="50" x2="100" y2="50"/></g>
+                    </g>
+                </svg>
+            </span>
+            <span class="en">
+                <svg class="flag" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <clipPath id="cz-clip"><circle cx="50" cy="50" r="50"/></clipPath>
+                    <g clip-path="url(#cz-clip)">
+                        <rect width="100" height="50" fill="#fff"/>
+                        <rect y="50" width="100" height="50" fill="#d7141a"/>
+                        <polygon points="0,0 50,50 0,100" fill="#11457e"/>
+                    </g>
+                </svg>
+            </span>
+        </button>
+    </div>
+
+    <button id="restart-btn" style="display:none;"><span class="cs">Hrát znovu</span><span class="en">Play Again</span></button>
+
+    <div id="final-score" style="display:none; text-align:center; margin-top:10px; background:white; border: 1px solid #ddd; padding:10px; border-radius:8px;"></div>
+</div>
+
+<div id="confirm-load-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="color:#d32f2f;"><span class="cs">Upozornění</span><span class="en">Warning</span></h3>
+        <p style="margin-bottom: 20px;">
+            <span class="cs">Máte rozehranou hru. Opravdu ji chcete přepsat načtenou hrou ze záznamu? Aktuální postup bude ztracen.</span>
+            <span class="en">A game is in progress. Do you really want to overwrite it? Your current progress will be lost.</span>
+        </p>
+        <div class="modal-btn-row">
+            <button id="confirm-load-yes" class="modal-btn" style="background:#d32f2f;"><span class="cs">Ano, načíst</span><span class="en">Yes, Load</span></button>
+            <button id="confirm-load-no" class="modal-btn secondary"><span class="cs">Zrušit</span><span class="en">Cancel</span></button>
+        </div>
+    </div>
+</div>
+
+<div id="choice-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="color:#333;"><span class="cs">Výběr čísla</span><span class="en">Choose Number</span></h3>
+        <p id="choice-text"><span class="cs">Karty umožňují umístit vyšší číslo. Jaké číslo chcete zapsat?</span><span class="en">Cards allow placing a higher number. Which one?</span></p>
+        <div class="modal-btn-row">
+            <button id="choice-btn-1" class="modal-btn">2</button>
+            <button id="choice-btn-2" class="modal-btn secondary">1</button>
+        </div>
+    </div>
+</div>
+
+<div id="help-modal" class="modal-overlay">
+    <div class="modal-content help">
+        <h3><span class="cs">Pravidla hry Hex 6</span><span class="en">Hex 6 Rules</span></h3>
+        <h5><a href="https://boardgamegeek.com/thread/2898182/wip-hex-6-flip-and-write-contest-ready/page/1" target="_blank" class="no-underline-link" ><span class="cs">Digitální verze</span><span class="en">Digital version</span></a> <span class="cs">Flip&Write hry od Stefan Nikolić.</span><span class="en">of the Flip&Write game by Stefan Nikolić.</span></h5>
+        <p><strong><span class="cs">Příprava:</span><span class="en">Setup:</span></strong> <span class="cs">Hraje se se základním balíčkem 48 karet (6 barev po 8 kartách). Před začátkem hry se 6 náhodných karet trvale odstraní. Zbylých 42 karet se rozdělí na první fázi (prvních 32 karet) a druhou fázi (posledních 10 karet). Tlačítkem 👁️ lze přepnout na vysoce kontrastní paletu barev vhodnou pro lidi s poruchou barvocitu.</span><span class="en">Played with a standard 48-card deck. 6 random cards are permanently removed before the game. The remaining 42 cards are divided into Phase 1 (first 32 cards) and Phase 2 (last 10 cards). Use the 👁️ button to toggle a high-contrast colorblind-safe palette.</span></p>
+        <ul style="padding-left:15px; margin:10px 0;">
+            <li style="margin-bottom:8px;"><strong><span class="cs">Tah:</span><span class="en">Turn:</span></strong> <span class="cs">Otočte 2 karty. Kliknutím na prázdné pole odpovídající jedné z barev zapíšete číslo 1. Jsou-li obě karty stejné barvy, můžete si vybrat, zda zapíšete číslo 1 nebo číslo 2.</span><span class="en">Flip 2 cards. Click an empty hex matching one of the colors to write '1'. If both cards are the same color, you can choose to write '1' or '2'.</span></li>
+            <li style="margin-bottom:8px;">
+                <strong><span class="cs">Párování:</span><span class="en">Pairing:</span></strong> <span class="cs">Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se zprůhlední a stanou se neaktivními. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</span><span class="en">If you place a number next to an unpaired identical number, they pair up and fade out. Immediately place a number 1 value higher in an empty hex in the same straight line. If the line is full, place it anywhere. This triggers chain reactions.</span>
+            </li>
+            <li style="margin-bottom:8px;"><strong><span class="cs">Bonusy a Žolíky:</span><span class="en">Bonuses & Wilds:</span></strong> <span class="cs">Vyplnění všech polí jedné skupiny dělá z této barvy <strong>Žolíka (★)</strong>. Za žolíka můžeš použít kteroukoliv barvu.</span><span class="en">Filling all hexes of one group turns that color into a <strong>Wild (★)</strong>. You can use any color for a Wild card.</span></li>
+            <li style="margin-bottom:8px;"><strong><span class="cs">Skóre:</span><span class="en">Scoring:</span></strong> <span class="cs">Hra končí dobráním balíčku. Do celkového skóre se počítá součet nespárovaných čísel od hodnoty 2 a vyšší (včetně předdefinovaných 3 bílých polí s hodnotou 2) a body za bonusy z fáze 1 a fáze 2. Zde je přehled bodování:</span><span class="en">Game ends when the deck is empty. Final score is the sum of unpaired numbers value 2 or higher (including the 3 pre-printed white 2s) plus phase bonuses. Scoring table:</span>
+                <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9em; text-align:left;">
+                    <tr style="background:#f1f3f5; border-bottom:1px solid #ccc;">
+                        <th style="padding:6px;" colspan="2"><span class="cs">Bodování nespárovaných čísel</span><span class="en">Scoring Unpaired Numbers</span></th>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Číslo 2</span><span class="en">Number 2</span></td>
+                        <td style="padding:6px; text-align:right;">1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Číslo 3</span><span class="en">Number 3</span></td>
+                        <td style="padding:6px; text-align:right;">3 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Číslo 4</span><span class="en">Number 4</span></td>
+                        <td style="padding:6px; text-align:right;">7 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Číslo 5</span><span class="en">Number 5</span></td>
+                        <td style="padding:6px; text-align:right;">16 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Číslo 6</span><span class="en">Number 6</span></td>
+                        <td style="padding:6px; text-align:right;">35 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
+                        <th style="padding:6px;" colspan="2"><span class="cs">Bonusy za barvu (1. fáze | 2. fáze)</span><span class="en">Color Bonuses (Phase 1 | Phase 2)</span></th>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Červená barva</span><span class="en">Red color</span> (■)</td>
+                        <td style="padding:6px; text-align:right;">5 <span class="cs">b.</span><span class="en">pts</span> | 3 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Oranžová barva</span><span class="en">Orange color</span> (◆)</td>
+                        <td style="padding:6px; text-align:right;">5 <span class="cs">b.</span><span class="en">pts</span> | 3 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Žlutá barva</span><span class="en">Yellow color</span> (●)</td>
+                        <td style="padding:6px; text-align:right;">3 <span class="cs">b.</span><span class="en">pts</span> | 2 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Zelená barva</span><span class="en">Green color</span> (▲)</td>
+                        <td style="padding:6px; text-align:right;">3 <span class="cs">b.</span><span class="en">pts</span> | 2 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Šedá barva</span><span class="en">Grey color</span> (✖)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;"><span class="cs">Modrá barva</span><span class="en">Blue color</span> (▼)</td>
+                        <td style="padding:6px; text-align:right;">2 <span class="cs">b.</span><span class="en">pts</span> | 1 <span class="cs">b.</span><span class="en">pt</span></td>
+                    </tr>
+                    <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
+                        <th style="padding:6px;" colspan="2"><span class="cs">Další bonusy</span><span class="en">Other Bonuses</span></th>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px;"><span class="cs">Všech 12 hvězdiček</span><span class="en">All 12 stars</span></td>
+                        <td style="padding:6px; text-align:right;">7 <span class="cs">b.</span><span class="en">pts</span> | 5 <span class="cs">b.</span><span class="en">pts</span></td>
+                    </tr>
+                </table>
+            </li>
+            <li><strong><span class="cs">Taktika:</span><span class="en">Tactics:</span></strong> <span class="cs">Plánujte si umístění čísel tak, abyste spouštěli řetězové reakce a získali vysoce bodovaná čísla (5 a 6). Zároveň se snažte v první fázi hry prioritně uzavírat menší barevné skupiny – získáte tím více bodů a vytvoříte si flexibilní žolíky pro snazší párování ve zbytku hry.</span><span class="en">Plan placements to trigger chain reactions and score highly valued numbers (5 & 6). Also, try to complete smaller color groups in Phase 1 to maximize points and secure flexible Wilds for the rest of the game.</span></li>
+        </ul>
+        <button id="close-help-btn" style="width:100%; margin-top:10px;" class="modal-btn"><span class="cs">Zavřít</span><span class="en">Close</span></button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- LOKALIZACE ---
+    let currentLang = localStorage.getItem('hex6Lang') || 'cs';
+    
+    const i18n = {
+        cs: {
+            phaseHigh: "Vyšší", phaseLow: "Nižší",
+            start: "Začněte kliknutím na Otočit karty (🔄)",
+            canFlip: "Můžete otočit další karty (🔄).",
+            selectHex: "Vyberte pole pro umístění čísla.",
+            occupied: "Vybrané pole už je obsazené!",
+            mustSameRow: "Při párování musíte číslo umístit do volného pole ve stejné řadě (vyznačeno zeleně).",
+            mismatch: "Toto pole neodpovídá otočeným kartám.",
+            pairSelect: "Vyberte pole ke spárování (bliká modře).",
+            pairHighlight: "Musíte vybrat jedno ze zvýrazněných sousedních polí (modře blikající) ke spárování!",
+            pairRowFull: "PÁROVÁNÍ! Řada je plná. Umístěte {val} na libovolné volné pole. (Fialová ukazuje spoje)",
+            pairRow: "PÁROVÁNÍ! Umístěte číslo {val} do blikající řady (zeleně).",
+            colorFull: "Barva naplněna! Získáváte bonus {b} bodů. Nyní funguje jako žolík.",
+            starsFull: "Všechny hvězdičky naplněny! Bonus {b} bodů.",
+            gameOver: "Hra skončila.",
+            saved: "Hra byla úspěšně uložena.",
+            noSave: "V paměti není žádná uložená hra.",
+            loaded: "Hra byla úspěšně načtena.",
+            c_red: "Červená", c_orange: "Oranžová", c_yellow: "Žlutá", c_green: "Zelená", c_grey: "Šedá", c_blue: "Modrá",
+            phase1: "1. fáze", phase2: "2. fáze",
+            rankLose: "Prohra", rankOK: "Ucházející", rankDecent: "Slušné", rankNice: "Pěkné", rankGreat: "Skvělé", rankTop: "Špičkové", rankAmazing: "Úžasné", rankSpectacular: "Spektakulární"
+        },
+        en: {
+            phaseHigh: "Higher", phaseLow: "Lower",
+            start: "Start by clicking Flip cards (🔄)",
+            canFlip: "You can flip the next cards (🔄).",
+            selectHex: "Select a hex to place the number.",
+            occupied: "Selected hex is already occupied!",
+            mustSameRow: "When pairing, you must place the number in an empty hex in the same row (green).",
+            mismatch: "This hex does not match the flipped cards.",
+            pairSelect: "Select a hex to pair with (blinking blue).",
+            pairHighlight: "You must select one of the highlighted adjacent hexes (blue) to pair!",
+            pairRowFull: "PAIRING! Row is full. Place {val} anywhere. (Purple shows links)",
+            pairRow: "PAIRING! Place number {val} in the blinking row (green).",
+            colorFull: "Color complete! Bonus {b} pts. It acts as a Wild now.",
+            starsFull: "All stars complete! Bonus {b} pts.",
+            gameOver: "Game over.",
+            saved: "Game saved successfully.",
+            noSave: "No saved game found.",
+            loaded: "Game loaded successfully.",
+            c_red: "Red", c_orange: "Orange", c_yellow: "Yellow", c_green: "Green", c_grey: "Grey", c_blue: "Blue",
+            phase1: "Phase 1", phase2: "Phase 2",
+            rankLose: "Loss", rankOK: "OK-ish", rankDecent: "Decent", rankNice: "Nice", rankGreat: "Great", rankTop: "Top notch", rankAmazing: "Amazing", rankSpectacular: "Spectacular"
+        }
+    };
+
+    function t(key, vars = {}) {
+        let str = i18n[currentLang][key] || key;
+        for (const [k, v] of Object.entries(vars)) {
+            str = str.replace(`{${k}}`, v);
+        }
+        return str;
+    }
+
+    let currentInstrKey = 'loading';
+    let currentInstrVars = {};
+
+    function setInstr(key, vars = {}) {
+        currentInstrKey = key;
+        currentInstrVars = vars;
+        ui.instr.innerText = t(key, vars);
+    }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'cs' ? 'en' : 'cs';
+        localStorage.setItem('hex6Lang', currentLang);
+        updateLanguageUI();
+    }
+
+    function updateLanguageUI() {
+        document.body.className = `lang-${currentLang} ${cbMode ? 'cb-mode' : ''}`;
+        
+        ui.btnUndo.title = currentLang === 'cs' ? 'Zpět' : 'Undo';
+        ui.btnSave.title = currentLang === 'cs' ? 'Uložit hru' : 'Save Game';
+        ui.btnFlip.title = currentLang === 'cs' ? 'Otočit karty' : 'Flip Cards';
+        ui.btnLoad.title = currentLang === 'cs' ? 'Načíst hru' : 'Load Game';
+        ui.btnHelp.title = currentLang === 'cs' ? 'Nápověda' : 'Help';
+        ui.btnCb.title = currentLang === 'cs' ? 'Přepnout paletu barev (přístupnost)' : 'Toggle high-contrast palette';
+        
+        ui.phase.innerText = firstPileFinished ? t('phaseLow') : t('phaseHigh');
+        ui.instr.innerText = t(currentInstrKey, currentInstrVars);
+    }
+
+    function showNotification(msg) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 2500);
+    }
+
+    function showChoiceModal(btn1Text, btn2Text, callback) {
+        const modal = document.getElementById('choice-modal');
+        const btn1 = document.getElementById('choice-btn-1');
+        const btn2 = document.getElementById('choice-btn-2');
+        
+        btn1.innerText = btn1Text;
+        btn2.innerText = btn2Text;
+
+        btn1.onclick = () => { modal.style.display = 'none'; callback(btn1Text); };
+        btn2.onclick = () => { modal.style.display = 'none'; callback(btn2Text); };
+
+        modal.style.display = 'flex';
+    }
+
+    const COLORS = ['yellow', 'green', 'red', 'blue', 'orange', 'grey'];
+    const CB_ICONS = {
+        'yellow': '●', 'green': '▲', 'red': '■', 'blue': '▼', 'orange': '◆', 'grey': '✖'
+    };
+
+    // Nastavení bodů pro barvy a hvězdy
+    const COLOR_BONUSES = {
+        'red': { p1: 5, p2: 3 },
+        'orange': { p1: 5, p2: 3 },
+        'yellow': { p1: 3, p2: 2 },
+        'green': { p1: 3, p2: 2 },
+        'grey': { p1: 2, p2: 1 },
+        'blue': { p1: 2, p2: 1 }
+    };
+    const STAR_BONUS = { p1: 7, p2: 5 };
+
+    let deck = [];
+    let currentCards = [];
+    let removedCards = []; 
+    let boardState = [];
+    let bonuses = { colors: {}, stars: false };
+    let firstPileFinished = false;
+    let cbMode = localStorage.getItem('hex6CbMode') === 'true';
+    
+    let pendingPlacement = null;
+    let pendingPartnerSelection = null; 
+    let historyStack = [];
+
+    const rawBoardData = [
+        {q:-5, r:0, c:'red', s:true}, {q:-5, r:1, c:'red'}, {q:-5, r:2, c:'yellow'}, {q:-5, r:3, c:'yellow'}, {q:-5, r:4, c:'yellow', s:true},
+        {q:-4, r:-1, c:'red'}, {q:-4, r:0, c:'red'}, {q:-4, r:1, c:'yellow'}, {q:-4, r:2, c:'yellow'}, {q:-4, r:3, c:'white'}, {q:-4, r:4, c:'blue', s:true},
+        {q:-3, r:-2, c:'red'}, {q:-3, r:-1, c:'white', v:2}, {q:-3, r:0, c:'red'}, {q:-3, r:1, c:'yellow', s:true}, {q:-3, r:2, c:'yellow'}, {q:-3, r:3, c:'blue'}, {q:-3, r:4, c:'blue'},
+        {q:-2, r:-3, c:'red'}, {q:-2, r:-2, c:'red'}, {q:-2, r:-1, c:'red'}, {q:-2, r:0, c:'red'}, {q:-2, r:1, c:'yellow'}, {q:-2, r:2, c:'yellow'}, {q:-2, r:3, c:'blue', s:true}, {q:-2, r:4, c:'blue'},
+        {q:-1, r:-4, c:'grey'}, {q:-1, r:-3, c:'grey', s:true}, {q:-1, r:-2, c:'grey'}, {q:-1, r:-1, c:'grey'}, {q:-1, r:0, c:'white'}, {q:-1, r:1, c:'blue', s:true}, {q:-1, r:2, c:'blue'}, {q:-1, r:3, c:'blue'}, {q:-1, r:4, c:'white', v:2},
+        {q:0, r:-4, c:'grey'}, {q:0, r:-3, c:'grey'}, {q:0, r:-2, c:'grey', s:true}, {q:0, r:-1, c:'green'}, {q:0, r:0, c:'orange'}, {q:0, r:1, c:'orange'}, {q:0, r:2, c:'orange'}, {q:0, r:3, c:'orange'},
+        {q:1, r:-4, c:'grey', s:true}, {q:1, r:-3, c:'green'}, {q:1, r:-2, c:'green'}, {q:1, r:-1, c:'orange'}, {q:1, r:0, c:'orange'}, {q:1, r:1, c:'white'}, {q:1, r:2, c:'orange', s:true},
+        {q:2, r:-4, c:'white'}, {q:2, r:-3, c:'green'}, {q:2, r:-2, c:'green'}, {q:2, r:-1, c:'green', s:true}, {q:2, r:0, c:'orange'}, {q:2, r:1, c:'orange'},
+        {q:3, r:-4, c:'green'}, {q:3, r:-3, c:'green', s:true}, {q:3, r:-2, c:'white', v:2}, {q:3, r:-1, c:'green'}, {q:3, r:0, c:'orange'}
+    ];
+
+    // Virtuální souřadnice pro piktogramy legendy vně mapy
+    const outerLabelsData = [
+        {q: -4.0, r: -2.4, c: 'red'},
+        {q: -6.3, r: 3.5, c: 'yellow'},
+        {q: -3.1, r: 5.1, c: 'blue'},
+        {q: 1.8, r: 2.5, c: 'orange'},
+        {q: 4.3, r: -3.5, c: 'green'},
+        {q: 1.0, r: -5.3, c: 'grey'}
+    ];
+
+
+    const ui = {
+        grid: document.getElementById('grid'),
+        gridWrapper: document.querySelector('.grid-wrapper'),
+        deckCount: document.getElementById('deck-count'),
+        phase: document.getElementById('game-phase'),
+        score: document.getElementById('total-score'),
+        instr: document.getElementById('instruction'),
+        card1: document.getElementById('card-1'),
+        card2: document.getElementById('card-2'),
+        btnFlip: document.getElementById('flip-btn'),
+        btnRestart: document.getElementById('restart-btn'),
+        finalScore: document.getElementById('final-score'),
+        btnUndo: document.getElementById('undo-btn'),
+        btnSave: document.getElementById('save-btn'),
+        btnLoad: document.getElementById('load-btn'),
+        btnHelp: document.getElementById('help-btn'),
+        btnCb: document.getElementById('cb-btn')
+    };
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function deepCopyState() {
+        return {
+            deck: [...deck],
+            currentCards: [...currentCards],
+            removedCards: [...removedCards], 
+            boardState: JSON.parse(JSON.stringify(boardState)),
+            bonuses: JSON.parse(JSON.stringify(bonuses)),
+            firstPileFinished,
+            pendingPlacement: pendingPlacement ? JSON.parse(JSON.stringify(pendingPlacement)) : null,
+            pendingPartnerSelection: pendingPartnerSelection ? JSON.parse(JSON.stringify(pendingPartnerSelection)) : null,
+            instrKey: currentInstrKey,
+            instrVars: JSON.parse(JSON.stringify(currentInstrVars)),
+            flipDisabled: ui.btnFlip.disabled
+        };
+    }
+
+    function saveToHistory() {
+        historyStack.push(deepCopyState());
+        ui.btnUndo.disabled = false;
+    }
+
+    function undo() {
+        if (historyStack.length === 0) return;
+        const state = historyStack.pop();
+        
+        deck = [...state.deck];
+        currentCards = [...state.currentCards];
+        removedCards = [...state.removedCards];
+        boardState = JSON.parse(JSON.stringify(state.boardState));
+        bonuses = JSON.parse(JSON.stringify(state.bonuses));
+        firstPileFinished = state.firstPileFinished;
+        pendingPlacement = state.pendingPlacement ? JSON.parse(JSON.stringify(state.pendingPlacement)) : null;
+        pendingPartnerSelection = state.pendingPartnerSelection ? JSON.parse(JSON.stringify(state.pendingPartnerSelection)) : null;
+        
+        setInstr(state.instrKey, state.instrVars);
+        ui.btnFlip.disabled = state.flipDisabled;
+        if (historyStack.length === 0) ui.btnUndo.disabled = true;
+
+        restoreCardsUI();
+        ui.phase.innerText = firstPileFinished ? t('phaseLow') : t('phaseHigh');
+        ui.phase.style.color = firstPileFinished ? "#ff9800" : "#d32f2f";
+
+        renderGrid();
+        updateUI();
+    }
+
+    function saveGame() {
+        const saveData = { state: deepCopyState(), history: historyStack };
+        localStorage.setItem('hex6Save', JSON.stringify(saveData));
+        showNotification(t('saved'));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('hex6Save');
+        if (!saved) {
+            showNotification(t('noSave'));
+            return;
+        }
+
+        if (deck.length < 42) {
+            const confirmModal = document.getElementById('confirm-load-modal');
+            confirmModal.style.display = 'flex';
+            
+            document.getElementById('confirm-load-yes').onclick = () => {
+                confirmModal.style.display = 'none';
+                executeLoad(saved);
+            };
+            
+            document.getElementById('confirm-load-no').onclick = () => {
+                confirmModal.style.display = 'none';
+            };
+        } else {
+            executeLoad(saved);
+        }
+    }
+
+    function executeLoad(saved) {
+        const saveData = JSON.parse(saved);
+        const state = saveData.state;
+        historyStack = saveData.history;
+        
+        deck = [...state.deck];
+        currentCards = [...state.currentCards];
+        removedCards = [...state.removedCards];
+        boardState = JSON.parse(JSON.stringify(state.boardState));
+        bonuses = JSON.parse(JSON.stringify(state.bonuses));
+        firstPileFinished = state.firstPileFinished;
+        pendingPlacement = state.pendingPlacement ? JSON.parse(JSON.stringify(state.pendingPlacement)) : null;
+        pendingPartnerSelection = state.pendingPartnerSelection ? JSON.parse(JSON.stringify(state.pendingPartnerSelection)) : null;
+        
+        setInstr(state.instrKey, state.instrVars);
+        ui.btnFlip.disabled = state.flipDisabled;
+        ui.btnUndo.disabled = historyStack.length === 0;
+
+        restoreCardsUI();
+        ui.phase.innerText = firstPileFinished ? t('phaseLow') : t('phaseHigh');
+        ui.phase.style.color = firstPileFinished ? "#ff9800" : "#d32f2f";
+
+        renderGrid();
+        updateUI();
+        showNotification(t('loaded'));
+    }
+
+    function restoreCardsUI() {
+        if (currentCards.length === 2) {
+            const w1 = isColorComplete(currentCards[0]);
+            const w2 = isColorComplete(currentCards[1]);
+            
+            ui.card1.className = `card c-${currentCards[0]}`;
+            let content1 = `<div class="cb-icon">${CB_ICONS[currentCards[0]] || ''}</div>`;
+            if (w1) content1 += '<div class="wild-icon" title="★">★</div>';
+            ui.card1.innerHTML = content1;
+            
+            ui.card2.className = `card c-${currentCards[1]}`;
+            let content2 = `<div class="cb-icon">${CB_ICONS[currentCards[1]] || ''}</div>`;
+            if (w2) content2 += '<div class="wild-icon" title="★">★</div>';
+            ui.card2.innerHTML = content2;
+        } else {
+            ui.card1.className = `card`; ui.card1.innerHTML = '?';
+            ui.card2.className = `card`; ui.card2.innerHTML = '?';
+        }
+    }
+
+    function checkUnlockFlip() {
+        if (pendingPlacement === null && pendingPartnerSelection === null) {
+            setInstr('canFlip');
+            ui.btnFlip.disabled = false;
+            restoreCardsUI();
+            if (deck.length === 0) endGame();
+        }
+    }
+
+    function initGame() {
+        updateLanguageUI();
+        deck = [];
+        COLORS.forEach(c => {
+            for(let i=0; i<8; i++) deck.push(c);
+        });
+        shuffle(deck);
+        removedCards = deck.splice(0, 6); 
+
+        boardState = rawBoardData.map(h => ({
+            ...h,
+            paired: false,
+            v: h.v ? h.v : (h.c === 'white' ? 1 : null),
+            s: !!h.s
+        }));
+
+        historyStack = [];
+        ui.btnUndo.disabled = true;
+        currentCards = [];
+
+        renderGrid();
+        restoreCardsUI();
+        setInstr('start');
+        ui.btnFlip.disabled = false;
+        updateUI();
+    }
+
+    const SVG_HEX_EDGES = [
+        {q: 1, r: -1, x1: 50, y1: 0, x2: 100, y2: 25}, 
+        {q: 1, r: 0, x1: 100, y1: 25, x2: 100, y2: 75}, 
+        {q: 0, r: 1, x1: 100, y1: 75, x2: 50, y2: 100}, 
+        {q: -1, r: 1, x1: 50, y1: 100, x2: 0, y2: 75},  
+        {q: -1, r: 0, x1: 0, y1: 75, x2: 0, y2: 25},    
+        {q: 0, r: -1, x1: 0, y1: 25, x2: 50, y2: 0}     
+    ];
+
+    function renderGrid() {
+        ui.grid.innerHTML = '';
+        
+        const HEX_SIZE = 24.5;
+        const HEX_W = Math.sqrt(3) * HEX_SIZE;
+        const HEX_H = 2 * HEX_SIZE;
+        const Y_SPACING = 1.5 * HEX_SIZE;
+        
+        const allElements = [...boardState, ...outerLabelsData];
+        const positions = allElements.map(el => {
+            const x = HEX_W * (el.q + el.r/2);
+            const y = Y_SPACING * el.r;
+            return { x, y };
+        });
+
+        let minX = Math.min(...positions.map(p => p.x));
+        let maxX = Math.max(...positions.map(p => p.x));
+        let minY = Math.min(...positions.map(p => p.y));
+        let maxY = Math.max(...positions.map(p => p.y));
+
+        const gridWidth = (maxX - minX) + HEX_W;
+        const gridHeight = (maxY - minY) + HEX_H;
+        
+        ui.grid.style.width = `${gridWidth}px`;
+        ui.grid.style.height = `${gridHeight}px`;
+
+        const containerWidth = ui.gridWrapper.clientWidth;
+        let scale = 1;
+        if (gridWidth > containerWidth) {
+            scale = containerWidth / gridWidth;
+        }
+
+        ui.grid.style.transform = `scale(${scale})`;
+        ui.gridWrapper.style.height = `${gridHeight * scale}px`;
+
+        const scaledWidth = gridWidth * scale;
+        let leftOffset = (containerWidth - scaledWidth) / 2;
+        if (leftOffset < 0) leftOffset = 0; 
+        
+        ui.grid.style.left = `${leftOffset}px`;
+        ui.grid.style.top = `0px`;
+
+        const boardPositions = positions.slice(0, boardState.length);
+        const labelPositionsCalculated = positions.slice(boardState.length);
+
+        boardState.forEach((hex, index) => {
+            let isAllowedTarget = false;
+            let isPartnerTarget = false;
+            let isMatchTarget = false;
+
+            if (pendingPlacement !== null) {
+                if (pendingPlacement.allowed === 'all' && hex.v === null) {
+                    isAllowedTarget = true;
+                } else if (Array.isArray(pendingPlacement.allowed) && pendingPlacement.allowed.includes(index)) {
+                    isAllowedTarget = true;
+                }
+
+                if (pendingPlacement.allowed === 'all' && hex.v === pendingPlacement.value && !hex.paired) {
+                    isMatchTarget = true;
+                }
+            }
+
+            if (pendingPartnerSelection !== null) {
+                if (pendingPartnerSelection.options.includes(index)) {
+                    isPartnerTarget = true;
+                }
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `hex-wrapper ${hex.paired ? 'paired' : ''} ${isAllowedTarget ? 'allowed-target' : ''} ${isPartnerTarget ? 'partner-target' : ''} ${isMatchTarget ? 'match-target' : ''}`;
+            
+            wrapper.style.width = `${HEX_W}px`;
+            wrapper.style.height = `${HEX_H}px`;
+            wrapper.style.left = `${boardPositions[index].x - minX}px`;
+            wrapper.style.top = `${boardPositions[index].y - minY}px`;
+
+            let cbBordersHTML = '';
+            SVG_HEX_EDGES.forEach(dir => {
+                const neighbor = boardState.find(h => h.q === hex.q + dir.q && h.r === hex.r + dir.r);
+                if (!neighbor || neighbor.c !== hex.c) {
+                    cbBordersHTML += `<line x1="${dir.x1}" y1="${dir.y1}" x2="${dir.x2}" y2="${dir.y2}" />`;
+                }
+            });
+
+            const showStar = hex.s && hex.v === null;
+
+            let innerHTML = `
+                <div class="hex-inner c-${hex.c}">
+                    ${hex.v !== null ? `<div class="val">${hex.v}</div>` : ''}
+                    ${showStar ? `<div class="star">★</div>` : ''}
+                </div>
+                <svg class="hex-stroke" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <polygon class="base-stroke" points="50,0 100,25 100,75 50,100 0,75 0,25" />
+                    <g class="cb-borders">${cbBordersHTML}</g>
+                </svg>
+            `;
+            
+            wrapper.innerHTML = innerHTML;
+            wrapper.onclick = () => handleHexClick(index);
+            ui.grid.appendChild(wrapper);
+        });
+
+        outerLabelsData.forEach((lbl, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = `cb-board-label c-${lbl.c}`;
+            wrapper.style.width = `${HEX_W}px`;
+            wrapper.style.height = `${HEX_H}px`;
+            wrapper.style.left = `${labelPositionsCalculated[index].x - minX}px`;
+            wrapper.style.top = `${labelPositionsCalculated[index].y - minY}px`;
+            
+            wrapper.innerHTML = `<div class="cb-icon">${CB_ICONS[lbl.c]}</div>`;
+            ui.grid.appendChild(wrapper);
+        });
+    }
+
+    function isColorComplete(color) {
+        if (color === 'white') return false;
+        const hexes = boardState.filter(h => h.c === color);
+        return hexes.length > 0 && hexes.every(h => h.v !== null);
+    }
+
+    function handleFlip() {
+        if (deck.length < 2) return;
+        
+        saveToHistory();
+
+        currentCards = [deck.pop(), deck.pop()];
+        
+        if (deck.length < 10 && !firstPileFinished) {
+            firstPileFinished = true;
+            ui.phase.innerText = t('phaseLow');
+            ui.phase.style.color = "#ff9800";
+        }
+
+        restoreCardsUI();
+        
+        ui.btnFlip.disabled = true;
+        setInstr('selectHex');
+        updateUI();
+    }
+
+    function getNeighbors(index) {
+        const hex = boardState[index];
+        return boardState.filter(h => {
+            const dq = h.q - hex.q;
+            const dr = h.r - hex.r;
+            const dist = (Math.abs(dq) + Math.abs(dq + dr) + Math.abs(dr)) / 2;
+            return dist === 1; 
+        });
+    }
+
+    function handleHexClick(index) {
+        const hex = boardState[index];
+
+        if (pendingPartnerSelection !== null) {
+            if (pendingPartnerSelection.options.includes(index)) {
+                saveToHistory();
+                const origin = pendingPartnerSelection.originIndex;
+                const val = pendingPartnerSelection.value;
+                pendingPartnerSelection = null; 
+                executePairing(origin, index, val);
+            } else {
+                showNotification(t('pairHighlight'));
+            }
+            return;
+        }
+
+        if (pendingPlacement !== null) {
+            if (hex.v !== null) {
+                showNotification(t('occupied'));
+                return;
+            }
+            
+            if (pendingPlacement.allowed !== 'all' && !pendingPlacement.allowed.includes(index)) {
+                showNotification(t('mustSameRow'));
+                return;
+            }
+            
+            saveToHistory();
+            const valToPlace = pendingPlacement.value;
+            pendingPlacement = null; 
+            
+            placeNumber(index, valToPlace);
+            checkUnlockFlip();
+            return;
+        }
+
+        if (currentCards.length === 0) return;
+        if (hex.v !== null) return; 
+
+        const c1 = currentCards[0];
+        const c2 = currentCards[1];
+        const w1 = isColorComplete(c1);
+        const w2 = isColorComplete(c2);
+        
+        let allowed = false;
+        let canPlace2 = false;
+
+        if (w1 && w2) {
+            allowed = true;
+            canPlace2 = true;
+        } else if (w1 || w2) {
+            allowed = true;
+            const nonWild = w1 ? c2 : c1;
+            if (hex.c === nonWild) {
+                canPlace2 = true;
+            }
+        } else {
+            if (c1 === c2) {
+                if (hex.c === c1) {
+                    allowed = true;
+                    canPlace2 = true;
+                }
+            } else {
+                if (hex.c === c1 || hex.c === c2) {
+                    allowed = true;
+                }
+            }
+        }
+
+        if (allowed) {
+            if (canPlace2) {
+                showChoiceModal("2", "1", (choice) => {
+                    saveToHistory();
+                    placeNumber(index, choice === "2" ? 2 : 1);
+                    currentCards = [];
+                    checkUnlockFlip();
+                });
+            } else {
+                saveToHistory();
+                placeNumber(index, 1);
+                currentCards = [];
+                checkUnlockFlip();
+            }
+        } else {
+            showNotification(t('mismatch'));
+        }
+    }
+
+    function placeNumber(index, val) {
+        boardState[index].v = val;
+        
+        checkBonuses();
+
+        const neighbors = getNeighbors(index);
+        const partners = neighbors.filter(n => n.v === val && !n.paired);
+
+        if (partners.length === 1) {
+            executePairing(index, boardState.indexOf(partners[0]), val);
+        } else if (partners.length > 1) {
+            pendingPartnerSelection = {
+                originIndex: index,
+                value: val,
+                options: partners.map(p => boardState.indexOf(p))
+            };
+            ui.btnFlip.disabled = true;
+            setInstr('pairSelect');
+            renderGrid();
+            updateUI();
+        } else {
+            renderGrid();
+            updateUI();
+        }
+    }
+
+    function executePairing(idx1, idx2, val) {
+        const hex1 = boardState[idx1];
+        const hex2 = boardState[idx2];
+        
+        hex1.paired = true;
+        hex2.paired = true;
+        
+        let allowedIndices = [];
+        if (hex1.q === hex2.q) {
+            allowedIndices = boardState.map((h, i) => ({h, i})).filter(x => x.h.q === hex1.q && x.h.v === null).map(x => x.i);
+        } else if (hex1.r === hex2.r) {
+            allowedIndices = boardState.map((h, i) => ({h, i})).filter(x => x.h.r === hex1.r && x.h.v === null).map(x => x.i);
+        } else {
+            const s1 = -hex1.q - hex1.r;
+            allowedIndices = boardState.map((h, i) => ({h, i})).filter(x => (-x.h.q - x.h.r) === s1 && x.h.v === null).map(x => x.i);
+        }
+
+        if (allowedIndices.length === 0) {
+            allowedIndices = 'all';
+        }
+
+        pendingPlacement = { value: val + 1, allowed: allowedIndices };
+        ui.btnFlip.disabled = true;
+        
+        if (allowedIndices === 'all') {
+            setInstr('pairRowFull', {val: val + 1});
+        } else {
+            setInstr('pairRow', {val: val + 1});
+        }
+
+        renderGrid();
+        updateUI();
+    }
+
+    function checkBonuses() {
+        COLORS.forEach(c => {
+            if (!bonuses.colors[c] && isColorComplete(c)) {
+                bonuses.colors[c] = firstPileFinished ? COLOR_BONUSES[c].p2 : COLOR_BONUSES[c].p1;
+                setTimeout(() => showNotification(t('colorFull', {b: bonuses.colors[c]})), 100);
+            }
+        });
+        
+        if (!bonuses.stars) {
+            const starHexes = boardState.filter(h => h.s);
+            if (starHexes.length > 0 && starHexes.every(h => h.v !== null)) {
+                bonuses.stars = firstPileFinished ? STAR_BONUS.p2 : STAR_BONUS.p1;
+                setTimeout(() => showNotification(t('starsFull', {b: bonuses.stars})), 100);
+            }
+        }
+    }
+
+    function calculateScore() {
+        let score = 0;
+        Object.values(bonuses.colors).forEach(v => score += v);
+        if (bonuses.stars) score += bonuses.stars;
+        
+        boardState.forEach(h => {
+            if (h.v !== null && !h.paired) {
+                if (h.v === 2) score += 1;
+                else if (h.v === 3) score += 3;
+                else if (h.v === 4) score += 7;
+                else if (h.v === 5) score += 16;
+                else if (h.v === 6) score += 35;
+            }
+        });
+        return score;
+    }
+
+    function updateUI() {
+        ui.deckCount.innerText = deck.length;
+        ui.score.innerText = calculateScore();
+        
+        const starsLeft = boardState.filter(h => h.s && h.v === null).length;
+        document.getElementById('stars-count').innerText = starsLeft;
+    }
+
+    function endGame() {
+        let scoreColors = 0;
+        Object.values(bonuses.colors).forEach(v => scoreColors += v);
+        let scoreStars = bonuses.stars ? bonuses.stars : 0;
+        
+        let counts = { 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        boardState.forEach(h => {
+            if (h.v !== null && !h.paired) {
+                if (h.v >= 2 && h.v <= 6) counts[h.v]++;
+            }
+        });
+
+        let s2 = counts[2] * 1;
+        let s3 = counts[3] * 3;
+        let s4 = counts[4] * 7;
+        let s5 = counts[5] * 16;
+        let s6 = counts[6] * 35;
+
+        const final = scoreColors + scoreStars + s2 + s3 + s4 + s5 + s6;
+
+        let bestScore = parseInt(localStorage.getItem('hex6BestScore')) || 0;
+        let newBest = false;
+        if (final > bestScore) {
+            bestScore = final;
+            localStorage.setItem('hex6BestScore', final);
+            newBest = true;
+        }
+
+        let rankKey = "";
+        if (final < 26) rankKey = "rankLose";
+        else if (final <= 29) rankKey = "rankOK";
+        else if (final <= 33) rankKey = "rankDecent";
+        else if (final <= 37) rankKey = "rankNice";
+        else if (final <= 41) rankKey = "rankGreat";
+        else if (final <= 45) rankKey = "rankTop";
+        else if (final <= 49) rankKey = "rankAmazing";
+        else rankKey = "rankSpectacular";
+
+        document.getElementById('game-controls').style.display = 'none';
+        ui.btnRestart.style.display = 'block';
+        ui.finalScore.style.display = 'block';
+        setInstr('gameOver');
+        
+        let html = `<h3 style="margin-top:0; margin-bottom:5px; color:#333;"><span class="cs">Konec hry</span><span class="en">Game Over</span></h3>`;
+        
+        html += `<div style="text-align:center; font-size:0.85em; margin-bottom:8px; color:#555;"><span class="cs">Odstraněné karty před hrou:</span><span class="en">Cards removed before game:</span></div>`;
+        html += `<div style="display:flex; justify-content:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;">`;
+        // Zde vypíšeme rovnou všech 6 vyřazených karet vedle sebe
+        removedCards.forEach(c => {
+            html += `<div class="removed-hex c-${c}">
+                        <div class="cb-icon">${CB_ICONS[c]}</div>
+                     </div>`;
+        });
+        html += `</div>`;
+
+        html += `<table class="score-table">`;
+        
+        // Rozpis bonusů za barvy
+        html += `<tr><td colspan="2" style="font-weight:normal; text-align:left; border-bottom:none; padding-bottom:2px;"><span class="cs">Bonusy za barvy:</span><span class="en">Color Bonuses:</span></td></tr>`;
+        for (let c of COLORS) {
+            if (bonuses.colors[c]) {
+                let phaseStr = bonuses.colors[c] === COLOR_BONUSES[c].p1 ? t('phase1') : t('phase2');
+                html += `<tr><td style="padding-left:15px; border-bottom:1px solid #eee;">- ${t('c_'+c)} (${phaseStr})</td><td style="border-bottom:1px solid #eee;">${bonuses.colors[c]}</td></tr>`;
+            }
+        }
+        if (scoreColors === 0) {
+            html += `<tr><td style="padding-left:15px; border-bottom:1px solid #eee;"><span class="cs">Žádné</span><span class="en">None</span></td><td style="border-bottom:1px solid #eee;">0</td></tr>`;
+        }
+        html += `<tr><td style="font-weight:bold; text-align:left;"><span class="cs">Celkem za barvy:</span><span class="en">Colors total:</span></td><td>${scoreColors}</td></tr>`;
+        
+        // Bonus za hvězdy vč. fáze
+        let starPhaseStr = "";
+        if (bonuses.stars) {
+            starPhaseStr = bonuses.stars === STAR_BONUS.p1 ? ` (${t('phase1')})` : ` (${t('phase2')})`;
+        }
+        html += `<tr><td><span class="cs">Bonus za hvězdy${starPhaseStr}:</span><span class="en">Star Bonus${starPhaseStr}:</span></td><td>${scoreStars}</td></tr>`;
+        
+        if (counts[2] > 0) html += `<tr><td><span class="cs">Nepárované 2 (${counts[2]} × 1):</span><span class="en">Unpaired 2 (${counts[2]} × 1):</span></td><td>${s2}</td></tr>`;
+        if (counts[3] > 0) html += `<tr><td><span class="cs">Nepárované 3 (${counts[3]} × 3):</span><span class="en">Unpaired 3 (${counts[3]} × 3):</span></td><td>${s3}</td></tr>`;
+        if (counts[4] > 0) html += `<tr><td><span class="cs">Nepárované 4 (${counts[4]} × 7):</span><span class="en">Unpaired 4 (${counts[4]} × 7):</span></td><td>${s4}</td></tr>`;
+        if (counts[5] > 0) html += `<tr><td><span class="cs">Nepárované 5 (${counts[5]} × 16):</span><span class="en">Unpaired 5 (${counts[5]} × 16):</span></td><td>${s5}</td></tr>`;
+        if (counts[6] > 0) html += `<tr><td><span class="cs">Nepárované 6 (${counts[6]} × 35):</span><span class="en">Unpaired 6 (${counts[6]} × 35):</span></td><td>${s6}</td></tr>`;
+        
+        // Celkové skóre a Nejlepší výsledek oba tučně v levém i pravém sloupci
+        html += `<tr class="total-row"><td style="font-weight:bold; text-align:left;"><span class="cs">Celkové skóre:</span><span class="en">Total Score:</span></td><td style="font-weight:bold;">${final}</td></tr>`;
+        html += `<tr class="best-row"><td style="font-weight:bold; text-align:left;"><span class="cs">Nejlepší výsledek:</span><span class="en">Best Score:</span></td><td style="font-weight:bold;">${bestScore}${newBest ? ' <span class="cs" style="color:#198754;">(NOVÝ!)</span><span class="en" style="color:#198754;">(NEW!)</span>' : ''}</td></tr>`;
+        html += `</table>`;
+        html += `<p style="margin-bottom:0; color:#444;"><span class="cs">Hodnocení:</span><span class="en">Rating:</span><br><span style="font-size:1.4em; color:#d32f2f; font-weight:bold;"><span class="cs">${i18n['cs'][rankKey]}</span><span class="en">${i18n['en'][rankKey]}</span></span></p>`;
+
+        ui.finalScore.innerHTML = html;
+
+        setTimeout(() => {
+            ui.finalScore.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 300);
+    }
+
+    ui.btnFlip.onclick = handleFlip;
+    ui.btnRestart.onclick = () => location.reload();
+    ui.btnUndo.onclick = undo;
+    ui.btnSave.onclick = saveGame;
+    ui.btnLoad.onclick = loadGame;
+    
+    document.getElementById('lang-btn').onclick = toggleLanguage;
+    document.getElementById('help-btn').onclick = () => document.getElementById('help-modal').style.display = 'flex';
+    document.getElementById('close-help-btn').onclick = () => document.getElementById('help-modal').style.display = 'none';
+
+    document.getElementById('cb-btn').onclick = () => {
+        cbMode = !cbMode;
+        localStorage.setItem('hex6CbMode', cbMode);
+        updateLanguageUI(); 
+    };
+
+    window.addEventListener('resize', renderGrid);
+
+    initGame();
+});
+</script>
+</body>
+</html>
