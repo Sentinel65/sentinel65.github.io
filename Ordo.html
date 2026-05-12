@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDO - Digitální desková hra</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #e6e6e6;
+            --board-light: #d1d8e0;
+            --board-dark: #4b7bec;
+            --piece-white: #ffffff;
+            --piece-black: #1e272e;
+            --highlight: rgba(46, 204, 113, 0.6);
+            --selected: rgba(241, 196, 15, 0.8);
+            --home-white: rgba(255, 255, 255, 0.8);
+            --home-black: rgba(30, 39, 46, 0.8);
+            --accent: #3867d6;
+            --score-yellow: #f1c40f; /* Nová jasně žlutá pro skóre */
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            background: rgba(45, 52, 70, 0.8);
+            padding: 6px 12px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            flex-wrap: nowrap;
+        }
+
+        .controls button {
+            background: none;
+            color: white;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .controls button:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+        
+        .controls button.active-mode { 
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .turn-indicator {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: #2d3436;
+            padding: 10px 15px;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 550px;
+            box-sizing: border-box;
+        }
+
+        .player-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #636e72;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            z-index: 2;
+            min-width: 65px;
+            justify-content: center;
+        }
+
+        .player-badge.active.white {
+            background: #f1f2f6;
+            color: #2d3436;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .player-badge.active.black {
+            background: #1e272e;
+            color: #f1f2f6;
+            border-color: #555;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .player-badge.disconnected {
+            background: #e74c3c !important;
+            color: white !important;
+            border-color: #c0392b !important;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6) !important;
+        }
+
+        .mini-piece {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .mini-piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
+        .mini-piece.black { background: radial-gradient(circle at 30% 30%, #444, #000); border: 1px solid #111; }
+
+        .game-title-inline {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-align: center;
+            pointer-events: none;
+            width: auto;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%;
+            max-width: 550px;
+            aspect-ratio: 10 / 8;
+            border: 5px solid #222;
+            background-color: #333;
+            gap: 1px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+
+        .cell {
+            background-color: var(--board-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .cell:nth-child(20n + 1), .cell:nth-child(20n + 3), .cell:nth-child(20n + 5), .cell:nth-child(20n + 7), .cell:nth-child(20n + 9),
+        .cell:nth-child(20n + 12), .cell:nth-child(20n + 14), .cell:nth-child(20n + 16), .cell:nth-child(20n + 18), .cell:nth-child(20n + 20) {
+            background-color: var(--board-light);
+        }
+        .cell:nth-child(20n + 2), .cell:nth-child(20n + 4), .cell:nth-child(20n + 6), .cell:nth-child(20n + 8), .cell:nth-child(20n + 10),
+        .cell:nth-child(20n + 11), .cell:nth-child(20n + 13), .cell:nth-child(20n + 15), .cell:nth-child(20n + 17), .cell:nth-child(20n + 19) {
+            background-color: var(--board-dark);
+        }
+
+        .home-row-black { box-shadow: inset 0 6px 0 var(--home-black); }
+        .home-row-white { box-shadow: inset 0 -6px 0 var(--home-white); }
+
+        .piece {
+            width: 75%;
+            height: 75%;
+            border-radius: 50%;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.4), 3px 3px 6px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
+        .piece.black { background: radial-gradient(circle at 30% 30%, #444, #000); border: 1px solid #111; }
+
+        .cell.selected { background-color: var(--selected) !important; }
+        .cell.highlight::after {
+            content: '';
+            position: absolute;
+            width: 30%; height: 30%;
+            background-color: var(--highlight);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.6; } }
+
+        .log-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 550px;
+            margin-top: 15px;
+        }
+
+        .log-container {
+            width: 100%;
+            height: 120px;
+            background: #2d3436;
+            border-radius: 10px;
+            overflow-y: auto;
+            padding: 12px;
+            border: 1px solid #444;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        .btn-copy {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 5px;
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-copy:hover { background: rgba(255, 255, 255, 0.2); }
+
+        #toastContainer {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            background: rgba(45, 52, 70, 0.95); color: white; padding: 12px 25px; border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-left: 4px solid var(--accent);
+            animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards; font-size: 0.95rem;
+        }
+
+        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        #modalOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #2d3436; padding: 25px; border-radius: 15px; text-align: center;
+            width: 90%; max-width: 480px; max-height: 85vh; border-top: 5px solid var(--accent);
+            display: flex; flex-direction: column;
+        }
+        #modalText {
+            overflow-y: auto; text-align: left; padding-right: 5px; line-height: 1.4;
+        }
+        #modalText h4 { margin-top: 10px; margin-bottom: 5px; color: var(--accent); text-align: center; }
+        #modalText ul { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
+        #modalText li { margin-bottom: 5px; }
+        #modalText::-webkit-scrollbar { width: 6px; }
+        #modalText::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        #modalText::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-shrink: 0; }
+        .modal-btn {
+            background: var(--accent); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; border: none; cursor: pointer;
+        }
+        .modal-btn.cancel { background: #e74c3c; }
+
+        @media (max-width: 600px) {
+            .controls button { width: 36px; height: 36px; font-size: 1.2rem; }
+            .player-badge { font-size: 1.1rem; padding: 6px 12px; }
+            .btn-copy { width: 28px; height: 28px; right: 10px; font-size: 0.9rem; }
+            #modalText { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="controls">
+        <button id="btnPvP" class="active-mode" onclick="setMode('PvP')" title="Hráč vs Hráč">👥</button>
+        <button id="btnPvE" onclick="setMode('PvE')" title="Hráč vs Počítač">🤖</button>
+        <button onclick="confirmReset()" id="tBtnNew" title="Nová hra">🔄</button>
+        <button onclick="saveGame()" id="tBtnSave" title="Uložit">💾</button>
+        <button onclick="confirmLoad()" id="tBtnLoad" title="Načíst">📂</button>
+        <button class="lang-btn" id="btnLang" onclick="toggleLang()" title="Změnit jazyk">🇬🇧</button>
+        <button onclick="showHelp()" id="tBtnHelp" title="Nápověda">💡</button>
+    </div>
+
+    <div class="turn-indicator" id="turnIndicator">
+        <div id="whitePlayer" class="player-badge white">
+            <div class="mini-piece white"></div> <span id="txtWhite">20</span>
+        </div>
+        <div class="game-title-inline" id="centerText">
+            <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.8rem; width: auto; vertical-align: middle;">
+                <rect x="0" y="0" width="2048" height="582" rx="291" fill="#28A8B3" />
+                <circle cx="291" cy="291" r="291" fill="#48C7D1" />
+                <circle cx="291" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
+                <circle cx="1757" cy="291" r="291" fill="#48C7D1" />
+                <circle cx="1757" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
+                <path fill="#F2F2F2" d="M664 78 H790 Q906 78 906 202 Q906 291 840 322 L943 505 H841 L769 384 H728 V505 H664 Z M728 139 V274 H785 Q842 274 842 202 Q842 139 785 139 Z" />
+                <path fill="#F2F2F2" d="M1073 78 H1214 Q1406 78 1406 291 Q1406 505 1214 505 H1073 Z M1137 139 V444 H1204 Q1341 444 1341 291 Q1341 139 1204 139 Z" />
+            </svg>
+        </div>
+        <div id="blackPlayer" class="player-badge black">
+            <span id="txtBlack">20</span> <div class="mini-piece black"></div>
+        </div>
+    </div>
+    
+    <div id="board"></div>
+    
+    <div class="log-wrapper">
+        <div class="log-container" id="gameLog"></div>
+        <button class="btn-copy" onclick="copyLog()" title="Kopírovat log">📋</button>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <div id="modalOverlay">
+        <div class="modal-box">
+            <div id="modalText"></div>
+            <div class="modal-btns">
+                <button class="modal-btn" id="modalOk">OK</button>
+                <button class="modal-btn cancel" id="modalCancel">Zrušit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 8, COLS = 10;
+        let board = [], turn = 1, mode = 'PvP', gameActive = true;
+        let selectedPieces = [], validMoves = [];
+        let log = []; 
+        let currentLang = 'cs';
+        let startingPlayer = 1;
+        let aiTimeout = null;
+
+        const svgLogoHTML = `
+        <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.8rem; width: auto; vertical-align: middle;">
+            <rect x="0" y="0" width="2048" height="582" rx="291" fill="#28A8B3" />
+            <circle cx="291" cy="291" r="291" fill="#48C7D1" />
+            <circle cx="291" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
+            <circle cx="1757" cy="291" r="291" fill="#48C7D1" />
+            <circle cx="1757" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
+            <path fill="#F2F2F2" d="M664 78 H790 Q906 78 906 202 Q906 291 840 322 L943 505 H841 L769 384 H728 V505 H664 Z M728 139 V274 H785 Q842 274 842 202 Q842 139 785 139 Z" />
+            <path fill="#F2F2F2" d="M1073 78 H1214 Q1406 78 1406 291 Q1406 505 1214 505 H1073 Z M1137 139 V444 H1204 Q1341 444 1341 291 Q1341 139 1204 139 Z" />
+        </svg>`;
+
+        const i18n = {
+            cs: {
+                pvp: "Hráč vs Hráč", pve: "Hráč vs Počítač",
+                new: "Nová hra", save: "Uložit", load: "Načíst", help: "Nápověda",
+                white: "Bílý", black: "Černý",
+                whiteAdj: "bílého", blackAdj: "černého",
+                sure: "Opravdu?", newQ: "Ztratíte aktuální postup. Začít novou hru?", loadQ: "Ztratíte rozehranou hru. Načíst uloženou pozici?",
+                saved: "Hra uložena do prohlížeče.", noSave: "Nenalezena žádná uložená hra.", loaded: "Hra načtena.",
+                cancel: "Zrušit", ok: "OK", copied: "Log zkopírován do schránky.",
+                helpText: "<h4>TERMINOLOGIE</h4><strong>Skupina:</strong> Ortogonálně (rovně) nebo diagonálně (šikmo) spojená skupina všech kamenů hráče.<br><h4>CÍL HRY</h4>Hráči pohybují svými kameny a snaží se dosáhnout soupeřovy domovské řady.<br><br><strong>Domovská řada:</strong> Nejbližší řada na desce z pohledu hráče.<br><h4>PRŮBĚH HRY</h4>Začíná bílý, poté se hráči střídají v tazích. Hráč se nesmí vzdát tahu.<br><br><strong>Spojení:</strong> Během hry, po odehrání tahu, musí být všechny kameny hráče spojeny v jedné jediné skupině.<br><br><strong>Tahy a braní:</strong> Existují dva možné způsoby pohybu kamenů: tahy jedním kamenem a tahy Ordo.<ul><li><strong>Tah jedním kamenem:</strong> Jeden kámen se může pohybovat vpřed nebo do stran, rovně nebo šikmo v přímé linii o libovolný počet prázdných polí. Tah může ukončit na prázdném poli nebo na poli obsazeném soupeřovým kamenem, který je tímto zajat a odstraněn z desky. Tahy dozadu jsou povoleny pouze při spojovacích tazích (viz níže).</li><li><strong>Tahy Ordo:</strong> Ordo tah: 2 a více kamenů, které jsou spojeny v přímé horizontální nebo vertikální linii, se mohou posouvat vedle sebe o libovolný počet prázdných polí. Mohou se pohybovat pouze rovně (ne šikmo) vpřed (pokud jsou zarovnány horizontálně) nebo do stran (pokud jsou zarovnány vertikálně), a to o stejný počet polí. Nemohou brát soupeřovy kameny.</li></ul><strong>Rozpojení:</strong> Pokud je skupina hráče rozpojena v důsledku soupeřova tahu s braním, musí tento hráč táhnout tak, aby se skupina opět spojila. Pokud takový tah není možný, okamžitě prohrává hru. Normálně se kameny pohybují vpřed nebo do stran. V případě rozdělené skupiny (a pouze tehdy) se kameny mohou pohybovat i dozadu. To platí i pro tahy Ordo.<br><h4>KONEC HRY</h4>Hlavním cílem hry je umístit kámen na soupeřovu domovskou řadu.<br><br>Hráči také prohrávají hru, pokud po rozpojení nedokážou svou skupinu znovu spojit, nebo pokud jim na desce nezbydou žádné kameny.<br><br><strong>Upozornění:</strong> Pokud hráči zbývá pouze jeden kámen, je tento kámen stále považován za skupinu!",
+                disconnectLog: (pAdj) => `Skupina kamenů ${pAdj} hráče rozpojena! Nutný tah pro znovuspojení.`,
+                winGoal: (w, l) => `Konec hry. ${w} dosáhl domovské řady soupeře a vyhrál.`,
+                winNoMove: (w, l) => `Konec hry. ${l} nemá žádný kámen. Vítězí ${w.toLowerCase()}.`,
+                winDisc: (w, l) => `Konec hry. ${l} nemůže spojit svou skupinu kamenů. Vítězí ${w.toLowerCase()}.`
+            },
+            en: {
+                pvp: "Player vs Player", pve: "Player vs Computer",
+                new: "New Game", save: "Save", load: "Load", help: "Help",
+                white: "White", black: "Black",
+                whiteAdj: "white", blackAdj: "black",
+                sure: "Are you sure?", newQ: "Current progress will be lost. Start a new game?", loadQ: "Current game will be lost. Load saved game?",
+                saved: "Game saved to browser.", noSave: "No saved game found.", loaded: "Game loaded.",
+                cancel: "Cancel", ok: "OK", copied: "Log copied to clipboard.",
+                helpText: "<h4>TERMINOLOGY</h4><strong>Group:</strong> Orthogonally or diagonally connected group of all pieces of a player.<br><h4>OBJECTIVE</h4>Players move their pieces trying to reach the opponent's home row.<br><br><strong>Home row:</strong> Nearest row on the board seen from a player's perspective.<br><h4>GAME PLAY</h4>White starts, then players take turns making a move. They may not pass.<br><br><strong>Connection:</strong> Throughout the game, after a player's move, all pieces of that player must be connected in one sole group.<br><br><strong>Moves and Captures:</strong> There are two possible ways to move the pieces: single piece moves and ordo moves.<ul><li><strong>Single Piece Move:</strong> A single piece can move forward or sideways, orthogonally or diagonally in a straight line any number of empty squares. It may end the move in an empty square or a square occupied by an opponent's piece, which is then captured and removed from the board. Backward moves are allowed only in reconnection moves (see below).</li><li><strong>Ordo Moves:</strong> The ordo move: 2 or more pieces, which are connected in a straight horizontal or vertical line, can move side by side any number of empty squares. They may only move orthogonally (not diagonally) forward (if they are horizontally aligned) or sideways (if they are vertically aligned), the same number of squares. They may not capture.</li></ul><strong>Disconnection:</strong> If a player's group is disconnected because of a capture move by the opponent, that player must move such that the group is connected again. If no such move is possible, the game is lost immediately. Normally, pieces move forward or sideways. In case of a split group (and only then), pieces may also move backwards. This is also true for ordo moves.<br><h4>END OF THE GAME</h4>The main goal of the game is to place a piece on the opponent's home row.<br><br>Also, players lose a game if they cannot reconnect their group, after a split capture by the opponent or if they have no pieces left on the board.<br><br><strong>Please note:</strong> If a player has only one piece left, said piece is still considered a group!",
+                disconnectLog: (pAdj) => `${pAdj.charAt(0).toUpperCase() + pAdj.slice(1)} player's pieces disconnected! A reconnecting move is required.`,
+                winGoal: (w, l) => `Game over. ${w} reached the opponent's home row and won.`,
+                winNoMove: (w, l) => `Game over. ${l} has no piece. ${w} wins.`,
+                winDisc: (w, l) => `Game over. ${l} cannot reconnect their group of pieces. ${w} wins.`
+            }
+        };
+
+        function t(key) { return i18n[currentLang][key]; }
+
+        function toggleLang() {
+            currentLang = currentLang === 'cs' ? 'en' : 'cs';
+            updateUILang();
+        }
+
+        function updateUILang() {
+            document.getElementById('btnPvP').title = t('pvp');
+            document.getElementById('btnPvE').title = t('pve');
+            document.getElementById('tBtnNew').title = t('new');
+            document.getElementById('tBtnSave').title = t('save');
+            document.getElementById('tBtnLoad').title = t('load');
+            document.getElementById('tBtnHelp').title = t('help');
+            document.getElementById('btnLang').innerText = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
+            document.getElementById('modalCancel').innerText = t('cancel');
+            updateLog();
+        }
+
+        function updateCounters() {
+            let countW = 0, countB = 0;
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(board[r][c] === 1) countW++;
+                    else if(board[r][c] === 2) countB++;
+                }
+            }
+            document.getElementById('txtWhite').innerText = countW;
+            document.getElementById('txtBlack').innerText = countB;
+        }
+
+        const boardEl = document.getElementById('board');
+        const logEl = document.getElementById('gameLog');
+        const modal = document.getElementById('modalOverlay');
+        const centerTextEl = document.getElementById('centerText');
+
+        function showToast(msg) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        let modalAction = null;
+        function showConfirm(msg, action) {
+            document.getElementById('modalText').innerHTML = `<h3 style="margin-top:0;margin-bottom:15px;color:var(--text-color);">${t('sure')}</h3><div style="font-size:1rem;">${msg}</div>`;
+            document.getElementById('modalOk').innerText = t('ok');
+            document.getElementById('modalCancel').style.display = 'inline-block';
+            modal.style.display = 'flex';
+            modalAction = action;
+        }
+
+        function showHelp() {
+            document.getElementById('modalText').innerHTML = t('helpText');
+            document.getElementById('modalOk').innerText = t('ok');
+            document.getElementById('modalCancel').style.display = 'none';
+            modal.style.display = 'flex';
+            modalAction = null;
+        }
+
+        document.getElementById('modalOk').onclick = () => { modal.style.display = 'none'; if(modalAction) modalAction(); };
+        document.getElementById('modalCancel').onclick = () => { modal.style.display = 'none'; };
+
+        function init(alternate = false) {
+            clearTimeout(aiTimeout);
+            
+            if (alternate) {
+                startingPlayer = startingPlayer === 1 ? 2 : 1;
+            }
+
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+            board[0][2]=2; board[0][3]=2; board[0][6]=2; board[0][7]=2;
+            for(let c=0; c<10; c++) board[1][c]=2;
+            board[2][0]=2; board[2][1]=2; board[2][4]=2; board[2][5]=2; board[2][8]=2; board[2][9]=2;
+            
+            board[5][0]=1; board[5][1]=1; board[5][4]=1; board[5][5]=1; board[5][8]=1; board[5][9]=1;
+            for(let c=0; c<10; c++) board[6][c]=1;
+            board[7][2]=1; board[7][3]=1; board[7][6]=1; board[7][7]=1;
+
+            turn = startingPlayer; 
+            gameActive = true; selectedPieces = []; validMoves = []; log = [];
+            document.getElementById('whitePlayer').classList.remove('disconnected');
+            document.getElementById('blackPlayer').classList.remove('disconnected');
+            
+            centerTextEl.innerHTML = svgLogoHTML;
+            
+            updateUILang();
+            updateGame();
+        }
+
+        function render() {
+            boardEl.innerHTML = '';
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if(r===0) cell.classList.add('home-row-black');
+                    if(r===7) cell.classList.add('home-row-white');
+                    if(selectedPieces.some(p => p.r===r && p.c===c)) cell.classList.add('selected');
+                    if(validMoves.some(m => m.targets.some(t => t.r===r && t.c===c))) cell.classList.add('highlight');
+
+                    if(board[r][c] !== 0) {
+                        const p = document.createElement('div');
+                        p.className = `piece ${board[r][c]===1 ? 'white' : 'black'}`;
+                        cell.appendChild(p);
+                    }
+                    cell.onclick = () => handleCellClick(r, c);
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if(!gameActive || (mode==='PvE' && turn===2)) return;
+
+            const move = validMoves.find(m => m.targets.some(t => t.r===r && t.c===c));
+            if(move) { move.execute(); return; }
+
+            if(board[r][c] === turn) {
+                if(selectedPieces.length === 1 && (selectedPieces[0].r === r || selectedPieces[0].c === c)) {
+                    let group = getOrdoLine(selectedPieces[0], {r, c});
+                    if(group) { selectedPieces = group; } 
+                    else { selectedPieces = [{r, c}]; }
+                } else {
+                    selectedPieces = [{r, c}];
+                }
+                validMoves = calculateMoves();
+                render();
+            } else {
+                selectedPieces = []; validMoves = []; render();
+            }
+        }
+
+        function getOrdoLine(p1, p2) {
+            let res = [];
+            if(p1.r === p2.r) {
+                let min = Math.min(p1.c, p2.c), max = Math.max(p1.c, p2.c);
+                for(let i=min; i<=max; i++) {
+                    if(board[p1.r][i] !== turn) return null;
+                    res.push({r: p1.r, c: i});
+                }
+            } else {
+                let min = Math.min(p1.r, p2.r), max = Math.max(p1.r, p2.r);
+                for(let i=min; i<=max; i++) {
+                    if(board[i][p1.c] !== turn) return null;
+                    res.push({r: i, c: p1.c});
+                }
+            }
+            return res.length > 1 ? res : null;
+        }
+
+        function calculateMoves() {
+            let moves = [];
+            const isSplit = isDisconnected(board, turn);
+            const fwd = turn === 1 ? -1 : 1;
+
+            if(selectedPieces.length === 1) {
+                const dirs = isSplit ? [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] : [[fwd,0],[fwd,1],[fwd,-1],[0,1],[0,-1]];
+                const p = selectedPieces[0];
+                dirs.forEach(([dr, dc]) => {
+                    let nr = p.r+dr, nc = p.c+dc;
+                    while(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
+                        const target = board[nr][nc];
+                        if(target === turn) break;
+                        
+                        let tb = board.map(row => [...row]);
+                        tb[p.r][p.c] = 0; tb[nr][nc] = turn;
+                        if(!isDisconnected(tb, turn)) {
+                            let endR = nr, endC = nc, isCap = target !== 0;
+                            moves.push({ from: [{r:p.r, c:p.c}], targets: [{r:nr, c:nc}], isCap: isCap, execute: () => executeMove([{r:p.r, c:p.c}], [{r:endR, c:endC}], isCap) });
+                        }
+                        if(target !== 0) break;
+                        nr += dr; nc += dc;
+                    }
+                });
+            } else {
+                const isHoriz = selectedPieces.every(p => p.r === selectedPieces[0].r);
+                let dirs = isHoriz ? [[1,0],[-1,0]] : [[0,1],[0,-1]];
+                if(!isSplit && isHoriz) dirs = dirs.filter(d => d[0] === fwd);
+
+                dirs.forEach(([dr, dc]) => {
+                    let dist = 1;
+                    while(true) {
+                        let next = [], blocked = false;
+                        for(let p of selectedPieces) {
+                            let nr = p.r+dr*dist, nc = p.c+dc*dist;
+                            if(nr<0 || nr>=ROWS || nc<0 || nc>=COLS || board[nr][nc] !== 0) { blocked = true; break; }
+                            next.push({r:nr, c:nc});
+                        }
+                        if(blocked) break;
+
+                        let tb = board.map(row => [...row]);
+                        selectedPieces.forEach(p => tb[p.r][p.c] = 0);
+                        next.forEach(p => tb[p.r][p.c] = turn);
+                        if(!isDisconnected(tb, turn)) {
+                            let from = [...selectedPieces], to = [...next];
+                            moves.push({ from: from, targets: to, isCap: false, execute: () => executeMove(from, to, false) });
+                        }
+                        dist++;
+                    }
+                });
+            }
+            return moves;
+        }
+
+        function isDisconnected(testBoard, p) {
+            let pieces = [];
+            for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) if(testBoard[r][c] === p) pieces.push({r,c});
+            if(pieces.length <= 1) return false;
+
+            let visited = new Set(), queue = [pieces[0]];
+            visited.add(`${pieces[0].r},${pieces[0].c}`);
+            while(queue.length > 0) {
+                let curr = queue.shift();
+                for(let dr=-1; dr<=1; dr++){
+                    for(let dc=-1; dc<=1; dc++){
+                        if(dr===0 && dc===0) continue;
+                        let nr = curr.r+dr, nc = curr.c+dc;
+                        if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && testBoard[nr][nc]===p && !visited.has(`${nr},${nc}`)) {
+                            visited.add(`${nr},${nc}`);
+                            queue.push({r:nr, c:nc});
+                        }
+                    }
+                }
+            }
+            return visited.size !== pieces.length;
+        }
+
+        function evaluateBoardHeuristic(testBoard, move, player) {
+            let score = 0;
+            let opp = player === 1 ? 2 : 1;
+            let targetRow = player === 1 ? 0 : 7;
+            let startRow = player === 1 ? 7 : 0;
+            
+            if(move.targets.some(p => p.r === targetRow)) return 1000000;
+            if(move.isCap) score += 5000;
+            if(isDisconnected(testBoard, opp)) score += 10000;
+            
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(testBoard[r][c] === player) {
+                        score += Math.abs(r - startRow) * 10;
+                    } else if (testBoard[r][c] === opp) {
+                        score -= Math.abs(r - targetRow) * 10;
+                    }
+                }
+            }
+            if(move.from.length > 1) score += 20;
+            return Math.round(score);
+        }
+
+        function executeMove(from, to, isCap) {
+            from.forEach(p => board[p.r][p.c] = 0);
+            to.forEach(p => board[p.r][p.c] = turn);
+            
+            let scoreVal = evaluateBoardHeuristic(board, {from: from, targets: to, isCap: isCap}, turn);
+            
+            const cols = "ABCDEFGHIJ";
+            const pName = turn === 1 ? t('white') : t('black');
+            
+            let moveText = '';
+            // HTML upraven pro žlutou barvu skóre
+            if(from.length === 1) {
+                moveText = `${pName}: ${cols[from[0].c]}${8-from[0].r}➔${cols[to[0].c]}${8-to[0].r}${isCap?' (x)':''} <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${scoreVal}]</span>`;
+            } else {
+                let sortedFrom = [...from].sort((a,b) => a.r===b.r ? a.c-b.c : a.r-b.r);
+                let sortedTo = [...to].sort((a,b) => a.r===b.r ? a.c-b.c : a.r-b.r);
+                let f1 = sortedFrom[0], f2 = sortedFrom[sortedFrom.length-1];
+                let t1 = sortedTo[0], t2 = sortedTo[sortedTo.length-1];
+                let fromStr = `${cols[f1.c]}${8-f1.r}-${cols[f2.c]}${8-f2.r}`;
+                let toStr = `${cols[t1.c]}${8-t1.r}-${cols[t2.c]}${8-t2.r}`;
+                
+                moveText = `${pName} Ordo: ${fromStr}➔${toStr}${isCap?' (x)':''} <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${scoreVal}]</span>`;
+            }
+            
+            log.unshift({ type: 'move', text: moveText });
+            
+            let targetRow = turn === 1 ? 0 : 7;
+            if(to.some(p => p.r === targetRow)) {
+                let winner = turn === 1 ? t('white') : t('black');
+                let loser = turn === 1 ? t('black') : t('white');
+                updateCounters();
+                return win(t('winGoal')(winner, loser));
+            }
+            
+            turn = turn === 1 ? 2 : 1;
+            updateGame();
+        }
+
+        function updateGame() {
+            updateCounters();
+            selectedPieces = []; validMoves = [];
+            let possible = false;
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    if(board[r][c] === turn) {
+                        selectedPieces = [{r,c}];
+                        if(calculateMoves().length > 0) { possible = true; break; }
+                    }
+                }
+                if(possible) break;
+            }
+            selectedPieces = [];
+            
+            const isDisc = isDisconnected(board, turn);
+
+            // Logo se nyní v záhlaví udržuje vždy, pokud není restartováno
+            if(!centerTextEl.innerHTML.includes('<svg')) {
+                centerTextEl.innerHTML = svgLogoHTML;
+            }
+
+            if(!possible && log.length > 0) {
+                let winner = turn === 1 ? t('black') : t('white');
+                let loser = turn === 1 ? t('white') : t('black');
+                if (isDisc) {
+                    return win(t('winDisc')(winner, loser));
+                } else {
+                    return win(t('winNoMove')(winner, loser));
+                }
+            }
+            
+            if (isDisc && log.length > 0) {
+                let pAdj = turn === 1 ? t('whiteAdj') : t('blackAdj');
+                log.unshift({ type: 'warning', text: t('disconnectLog')(pAdj) });
+            }
+
+            document.getElementById('whitePlayer').className = 'player-badge white' + (turn===1 ? ' active' : '') + (turn===1 && isDisc ? ' disconnected' : '');
+            document.getElementById('blackPlayer').className = 'player-badge black' + (turn===2 ? ' active' : '') + (turn===2 && isDisc ? ' disconnected' : '');
+            
+            render();
+            updateLog();
+            
+            clearTimeout(aiTimeout);
+            if(mode==='PvE' && turn===2 && gameActive) aiTimeout = setTimeout(aiMove, 600);
+        }
+
+        function aiMove() {
+            let allMoves = [];
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(board[r][c]===2) {
+                        selectedPieces = [{r,c}]; 
+                        allMoves.push(...calculateMoves());
+                        for(let r2=0; r2<ROWS; r2++) {
+                            let line = getOrdoLine({r,c}, {r:r2, c});
+                            if(line) { 
+                                selectedPieces = line; 
+                                allMoves.push(...calculateMoves()); 
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if(allMoves.length === 0) return;
+
+            let bestScore = -Infinity;
+            let bestMoves = [];
+
+            for(let move of allMoves) {
+                let testBoard = board.map(row => [...row]);
+                move.from.forEach(p => testBoard[p.r][p.c] = 0);
+                move.targets.forEach(p => testBoard[p.r][p.c] = 2);
+
+                let score = evaluateBoardHeuristic(testBoard, move, 2);
+                let randomizedScore = score + Math.random() * 5; 
+                
+                if(randomizedScore > bestScore) {
+                    bestScore = randomizedScore;
+                    bestMoves = [move];
+                } else if (randomizedScore === bestScore) {
+                    bestMoves.push(move);
+                }
+            }
+
+            let chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            chosenMove.execute();
+        }
+
+        function win(msg) { 
+            gameActive = false; 
+            log.unshift({ type: 'end', text: msg });
+            document.getElementById('whitePlayer').classList.remove('active', 'disconnected');
+            document.getElementById('blackPlayer').classList.remove('active', 'disconnected');
+            
+            // Záhlaví zůstává nedotčené (logo se nemění na text)
+            
+            render();
+            updateLog();
+        }
+
+        function updateLog() { 
+            let html = '';
+            let moveNum = log.filter(l => l.type === 'move').length;
+            
+            for(let i=0; i<log.length; i++) {
+                if (log[i].type === 'move') {
+                    html += `<div style="margin-bottom: 2px;">${moveNum}. ${log[i].text}</div>`;
+                    moveNum--;
+                } else if (log[i].type === 'warning') {
+                    html += `<div style="color: #ff7675; font-weight: bold; margin: 6px 0;">! ${log[i].text}</div>`;
+                } else if (log[i].type === 'end') {
+                    html += `<div style="color: #55efc4; font-weight: bold; margin: 10px 0; font-size: 1rem;">🏁 ${log[i].text}</div>`;
+                }
+            }
+            logEl.innerHTML = html; 
+        }
+
+        function copyLog() {
+            let textToCopy = [];
+            let moveNum = 1;
+            let reversedLog = [...log].reverse();
+            
+            for(let entry of reversedLog) {
+                if(entry.type === 'move') {
+                    let cleanText = entry.text.replace(/<[^>]+>/g, '');
+                    textToCopy.push(`${moveNum}. ${cleanText}`);
+                    moveNum++;
+                } else if (entry.type === 'warning') {
+                    textToCopy.push(`[!] ${entry.text}`);
+                } else if (entry.type === 'end') {
+                    textToCopy.push(`--- ${entry.text} ---`);
+                }
+            }
+            
+            navigator.clipboard.writeText(textToCopy.join('\n')).then(() => {
+                showToast(t('copied'));
+            }).catch(err => {
+                showToast("Nelze kopírovat.");
+            });
+        }
+
+        function setMode(m) { 
+            mode = m; 
+            document.getElementById('btnPvP').classList.toggle('active-mode', m==='PvP'); 
+            document.getElementById('btnPvE').classList.toggle('active-mode', m==='PvE'); 
+            startingPlayer = 1; 
+            init(false); 
+        }
+        
+        function isBoardUntouched() {
+            return log.filter(l => l.type === 'move').length === 0;
+        }
+
+        function confirmReset() { 
+            if(!gameActive || isBoardUntouched()) init(true);
+            else showConfirm(t('newQ'), () => init(true)); 
+        }
+        
+        function saveGame() { 
+            localStorage.setItem('ordo_save', JSON.stringify({board, turn, mode, log, startingPlayer})); 
+            showToast(t('saved')); 
+        }
+        
+        function confirmLoad() { 
+            if(!gameActive || isBoardUntouched()) load(); 
+            else showConfirm(t('loadQ'), load); 
+        }
+        
+        function load() {
+            let s = localStorage.getItem('ordo_save');
+            if(!s) return showToast(t('noSave'));
+            let d = JSON.parse(s); 
+            board = d.board; turn = d.turn; mode = d.mode; log = d.log;
+            startingPlayer = d.startingPlayer || 1;
+            
+            if (log.length > 0 && typeof log[0] === 'string') {
+                log = log.map(str => ({ type: 'move', text: str }));
+            }
+            
+            gameActive = true; 
+            document.getElementById('btnPvP').classList.toggle('active-mode', mode==='PvP'); 
+            document.getElementById('btnPvE').classList.toggle('active-mode', mode==='PvE');
+            
+            centerTextEl.innerHTML = svgLogoHTML;
+            
+            updateUILang();
+            updateGame(); 
+            showToast(t('loaded'));
+        }
+
+        init(false);
+    </script>
+</body>
+</html>
