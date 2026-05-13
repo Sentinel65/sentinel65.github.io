@@ -79,18 +79,18 @@
             background: #2d3436;
             padding: 8px 15px;
             border-radius: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             width: 100%;
             max-width: 550px;
             box-sizing: border-box;
-            transition: border 0.3s, box-shadow 0.3s;
             border: 3px solid transparent;
+            transition: border-color 0.3s, box-shadow 1.0s;
         }
 
-        .turn-indicator.diff-0 { border-color: #2ecc71; box-shadow: 0 0 15px rgba(46, 204, 113, 0.4); }
-        .turn-indicator.diff-1 { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
-        .turn-indicator.diff-2 { border-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.4); }
+        .turn-indicator.diff-0 { border-color: #2ecc71; box-shadow: 0 0 15px #2ecc71; }
+        .turn-indicator.diff-1 { border-color: #f39c12; box-shadow: 0 0 15px #f39c12; }
+        .turn-indicator.diff-2 { border-color: #e74c3c; box-shadow: 0 0 15px #e74c3c; }
 
+        /* Plastická počítadla */
         .player-badge {
             display: flex;
             align-items: center;
@@ -99,32 +99,42 @@
             border-radius: 20px;
             font-weight: bold;
             font-size: 1.2rem;
-            color: #636e72;
             transition: all 0.3s ease;
             border: 2px solid transparent;
             z-index: 2;
             min-width: 65px;
             justify-content: center;
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.5);
         }
 
+        /* Neaktivní stav Bílý */
+        .player-badge.white { background-color: #bdc3c7; color: #7f8c8d; }
+        /* Aktivní stav Bílý */
         .player-badge.active.white {
-            background: #f1f2f6;
-            color: #2d3436;
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+            background-color: #f1f2f6;
+            color: #2d3436; 
+            border-color: #fff;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.9), inset 0 -3px 5px rgba(0,0,0,0.15), 0 0 12px rgba(255,255,255,0.4);
         }
 
+        /* Neaktivní stav Černý */
+        .player-badge.black { background-color: #2d3436; color: #7f8c8d; }
+        /* Aktivní stav Černý */
         .player-badge.active.black {
-            background: #1e272e;
-            color: #f1f2f6;
-            border-color: #555;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background-color: #1e272e;
+            color: #ffffff; 
+            border-color: #444;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.2), inset 0 -3px 5px rgba(0,0,0,0.5), 0 0 12px rgba(255,255,255,0.15);
         }
 
+        /* Extrémní stav - rozpojení */
         .player-badge.disconnected {
-            background: #e74c3c !important;
+            background-color: #e74c3c !important;
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(0,0,0,0.2)) !important;
             color: white !important;
             border-color: #c0392b !important;
-            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6) !important;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.3), inset 0 -3px 5px rgba(0,0,0,0.4), 0 0 15px rgba(231, 76, 60, 0.6) !important;
         }
 
         .mini-piece {
@@ -136,6 +146,7 @@
         .mini-piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
         .mini-piece.black { background: radial-gradient(circle at 30% 30%, #444, #000); border: 1px solid #111; }
 
+        /* Plastické a neproblikávající logo - zmenšeno na úroveň počítadel */
         .game-title-inline {
             position: absolute;
             left: 50%;
@@ -146,10 +157,28 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent; 
+            padding: 4px 10px; /* Zmenšený vnitřní prostor */
+            border-radius: 20px;
+            background-color: #2d3436; 
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(0,0,0,0.25));
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.6);
+            border: 1px solid #444;
         }
 
-        .game-title-inline:hover { transform: translateX(-50%) scale(1.08); }
+        .game-title-inline:hover { 
+            transform: translateX(-50%) scale(1.05); 
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.5), 0 5px 8px rgba(0,0,0,0.7);
+        }
+        
+        .game-title-inline:active {
+            transform: translateX(-50%) scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.5);
+            background-image: linear-gradient(to top, rgba(255,255,255,0.1), rgba(0,0,0,0.3));
+        }
 
         #board {
             display: grid;
@@ -332,6 +361,8 @@
             .player-badge { font-size: 1.1rem; padding: 6px 12px; }
             .btn-copy { width: 28px; height: 28px; right: 10px; font-size: 0.9rem; }
             #modalText { font-size: 0.9rem; }
+            /* Na mobilu můžeme ikonu v případě potřeby ještě o fousek stáhnout */
+            .game-title-inline svg { height: 1.5rem !important; }
         }
     </style>
 </head>
@@ -412,15 +443,16 @@
         let startingPlayer = 1;
         let aiTimeout = null;
         
-        let difficulty = 1; // 0 = Easy, 1 = Medium, 2 = Hard
+        let difficulty = 2; // 0 = Easy, 1 = Medium, 2 = Hard
         let stats = JSON.parse(localStorage.getItem('ordo_stats')) || {
             0: { w: 0, b: 0 },
             1: { w: 0, b: 0 },
             2: { w: 0, b: 0 }
         };
 
+        // Zmenšený atribut SVG na height: 1.4rem
         const svgLogoHTML = `
-        <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.8rem; width: auto; vertical-align: middle;">
+        <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.4rem; width: auto; vertical-align: middle; pointer-events: none;">
             <rect x="0" y="0" width="2048" height="582" rx="291" fill="#28A8B3" />
             <circle cx="291" cy="291" r="291" fill="#48C7D1" />
             <circle cx="291" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
@@ -443,7 +475,7 @@
                 diffEasy: "Lehká", diffMed: "Střední", diffHard: "Těžká", diffTitle: "Obtížnost AI",
                 statsTitle: "Statistiky her (AI)", resetStatsBtn: "Resetovat statistiky",
                 resetStatsQ: "Opravdu chcete smazat všechny statistiky her proti AI?", statsReseted: "Statistiky vymazány.",
-                helpText: "<h4>TERMINOLOGIE</h4><strong>Skupina:</strong> Ortogonálně (rovně) nebo diagonálně (šikmo) spojená skupina všech kamenů hráče.<br><h4>CÍL HRY</h4>Hráči pohybují svými kameny a snaží se dosáhnout soupeřovy domovské řady.<br><br><strong>Domovská řada:</strong> Nejbližší řada na desce z pohledu hráče.<br><h4>PRŮBĚH HRY</h4>Začíná bílý, poté se hráči střídají v tazích. Hráč se nesmí vzdát tahu.<br><br><strong>Spojení:</strong> Během hry, po odehrání tahu, musí být všechny kameny hráče spojeny v jedné jediné skupině.<br><br><strong>Tahy a braní:</strong> Existují dva možné způsoby pohybu kamenů: tahy jedním kamenem a tahy Ordo.<ul><li><strong>Tah jedním kamenem:</strong> Jeden kámen se může pohybovat vpřed nebo do stran, rovně nebo šikmo v přímé linii o libovolný počet prázdných polí. Tah může ukončit na prázdném poli nebo na poli obsazeném soupeřovým kamenem, který je tímto zajat a odstraněn z desky. Tahy dozadu jsou povoleny pouze při spojovacích tazích (viz níže).</li><li><strong>Tahy Ordo:</strong> Ordo tah: 2 a více kamenů, které jsou spojeny v přímé horizontální nebo vertikální linii, se mohou posouvat vedle sebe o libovolný počet prázdných polí. Mohou se pohybovat pouze rovně (ne šikmo) vpřed (pokud jsou zarovnány horizontálně) nebo do stran (pokud jsou zarovnány vertikálně), a to o stejný počet polí. Nemohou brát soupeřovy kameny.</li></ul><strong>Rozpojení:</strong> Pokud je skupina hráče rozpojena v důsledku soupeřova tahu s braním, musí tento hráč táhnout tak, aby se skupina opět spojila. Pokud takový tah není možný, okamžitě prohrává hru. Normálně se kameny pohybují vpřed nebo do stran. V případě rozdělené skupiny (a pouze tehdy) se kameny mohou pohybovat i dozadu. To platí i pro tahy Ordo.<br><h4>KONEC HRY</h4>Hlavním cílem hry je umístit kámen na soupeřovu domovskou řadu.<br><br>Hráči také prohrávají hru, pokud po rozpojení nedokážou svou skupinu znovu spojit, nebo pokud jim na desce nezbydou žádné kameny.<br><br><strong>Upozornění:</strong> Pokud hráči zbývá pouze jeden kámen, je tento kámen stále považován za skupinu!<br><h4>OBTÍŽNOST AI</h4>Při hře proti počítači můžete měnit obtížnost kliknutím na logo ORDO uprostřed horního ukazatele tahů. Aktuální obtížnost je indikována barvou orámování ukazatele a odpovídá i ikonám ve statistikách:<ul><li><strong>🟩 Lehká (Zelená):</strong> Počítač vidí jen jeden tah dopředu, hraje agresivně na okamžitý zisk a často dělá taktické chyby.</li><li><strong>🟨 Střední (Žlutá):</strong> Počítač předvídá váš další tah, umí se bránit, ale občas zvolí suboptimální tah, aby hra nebyla vždy stejná.</li><li><strong>🟥 Těžká (Červená):</strong> Neúprosná umělá inteligence. Propočítává fatální následky (např. smrtící rozpojení), pečlivě formuje kameny a hraje s chladnou matematickou přesností bez prvků náhody.</li></ul><br><h4>STATISTIKY</h4>Tabulka zobrazuje vaše výsledky proti umělé inteligenci. Pod jednotlivými piktogramy obtížnosti (🟩 Lehká, 🟨 Střední, 🟥 Těžká) je pro bílou i černou barvu uvedena dvojice čísel, která znamená <strong>výhra | prohra</strong>.",
+                helpText: "<h4>TERMINOLOGIE</h4><strong>Skupina:</strong> Ortogonálně (rovně) nebo diagonálně (šikmo) spojená skupina všech kamenů hráče.<br><h4>CÍL HRY</h4>Hráči pohybují svými kameny a snaží se dosáhnout soupeřovy domovské řady.<br><br><strong>Domovská řada:</strong> Nejbližší řada na desce z pohledu hráče.<br><h4>PRŮBĚH HRY</h4>Začíná bílý, poté se hráči střídají v tazích. Hráč se nesmí vzdát tahu.<br><br><strong>Spojení:</strong> Během hry, po odehrání tahu, musí být všechny kameny hráče spojeny v jedné jediné skupině.<br><br><strong>Tahy a braní:</strong> Existují dva možné způsoby pohybu kamenů: tahy jedním kamenem a tahy Ordo.<ul><li><strong>Tah jedním kamenem:</strong> Jeden kámen se může pohybovat vpřed nebo do stran, rovně nebo šikmo v přímé linii o libovolný počet prázdných polí. Tah může ukončit na prázdném poli nebo na poli obsazeném soupeřovým kamenem, který je tímto zajat a odstraněn z desky. Tahy dozadu jsou povoleny pouze při spojovacích tazích (viz níže).</li><li><strong>Tahy Ordo:</strong> Ordo tah: 2 a více kamenů, které jsou spojeny v přímé horizontální nebo vertikální linii, se mohou posouvat vedle sebe o libovolný počet prázdných polí. Mohou se pohybovat pouze rovně (ne šikmo) vpřed (pokud jsou zarovnány horizontálně) nebo do stran (pokud jsou zarovnány vertikálně), a to o stejný počet polí. Nemohou brát soupeřovy kameny.</li></ul><strong>Rozpojení:</strong> Pokud je skupina hráče rozpojena v důsledku soupeřova tahu s braním, musí tento hráč táhnout tak, aby se skupina opět spojila. Pokud takový tah není možný, okamžitě prohrává hru. Normálně se kameny pohybují vpřed nebo do stran. V případě rozdělené skupiny (a pouze tehdy) se kameny mohou pohybovat i dozadu. To platí i pro tahy Ordo.<br><h4>KONEC HRY</h4>Hlavním cílem hry je umístit kámen na soupeřovu domovskou řadu.<br><br>Hráči také prohrávají hru, pokud po rozpojení nedokážou svou skupinu znovu spojit, nebo pokud jim na desce nezbydou žádné kameny.<br><br><strong>Upozornění:</strong> Pokud hráči zbývá pouze jeden kámen, je tento kámen stále považován za skupinu!<br><h4>OBTÍŽNOST AI</h4>Při hře proti počítači můžete měnit obtížnost kliknutím na logo ORDO uprostřed horního ukazatele tahů. Aktuální obtížnost je indikována barvou orámování ukazatele a odpovídá i ikonám ve statistikách:<ul><li><strong>🟩 Lehká (Zelená):</strong> Počítač hraje agresivně na okamžitý zisk a dělá taktické chyby.</li><li><strong>🟨 Střední (Oranžová):</strong> Počítač pečlivě hodnotí strukturu a formaci, ale občas zvolí horší tah, aby hra nebyla vždy stejná.</li><li><strong>🟥 Těžká (Červená):</strong> Neúprosná umělá inteligence. Prohledává vývoj hry do hloubky dynamicky na základě přiděleného času. Hraje kompaktně, chrání svou integritu, maximalizuje mobilitu a trestá jakoukoliv slabinu bez prvků náhody.</li></ul><br><h4>STATISTIKY</h4>Tabulka zobrazuje vaše výsledky proti umělé inteligenci. Pod jednotlivými piktogramy obtížnosti (🟩 Lehká, 🟨 Střední, 🟥 Těžká) je pro bílou i černou barvu uvedena dvojice čísel, která znamená <strong>výhra | prohra</strong>.",
                 disconnectLog: (pAdj) => `Skupina kamenů ${pAdj} hráče rozpojena! Nutný tah pro znovuspojení.`,
                 winGoal: (w, l) => `Konec hry. ${w} dosáhl domovské řady soupeře a vyhrál.`,
                 winNoMove: (w, l) => `Konec hry. ${l} nemá žádný platný tah. Vítězí ${w.toLowerCase()}.`,
@@ -461,7 +493,7 @@
                 diffEasy: "Easy", diffMed: "Medium", diffHard: "Hard", diffTitle: "AI Difficulty",
                 statsTitle: "Game Statistics (AI)", resetStatsBtn: "Reset Statistics",
                 resetStatsQ: "Are you sure you want to delete all AI game statistics?", statsReseted: "Statistics reset.",
-                helpText: "<h4>TERMINOLOGY</h4><strong>Group:</strong> Orthogonally or diagonally connected group of all pieces of a player.<br><h4>OBJECTIVE</h4>Players move their pieces trying to reach the opponent's home row.<br><br><strong>Home row:</strong> Nearest row on the board seen from a player's perspective.<br><h4>GAME PLAY</h4>White starts, then players take turns making a move. They may not pass.<br><br><strong>Connection:</strong> Throughout the game, after a player's move, all pieces of that player must be connected in one sole group.<br><br><strong>Moves and Captures:</strong> There are two possible ways to move the pieces: single piece moves and ordo moves.<ul><li><strong>Single Piece Move:</strong> A single piece can move forward or sideways, orthogonally or diagonally in a straight line any number of empty squares. It may end the move in an empty square or a square occupied by an opponent's piece, which is then captured and removed from the board. Backward moves are allowed only in reconnection moves (see below).</li><li><strong>Ordo Moves:</strong> The ordo move: 2 or more pieces, which are connected in a straight horizontal or vertical line, can move side by side any number of empty squares. They may only move orthogonally (not diagonally) forward (if they are horizontally aligned) or sideways (if they are vertically aligned), the same number of squares. They may not capture.</li></ul><strong>Disconnection:</strong> If a player's group is disconnected because of a capture move by the opponent, that player must move such that the group is connected again. If no such move is possible, the game is lost immediately. Normally, pieces move forward or sideways. In case of a split group (and only then), pieces may also move backwards. This is also true for ordo moves.<br><h4>END OF THE GAME</h4>The main goal of the game is to place a piece on the opponent's home row.<br><br>Also, players lose a game if they cannot reconnect their group, after a split capture by the opponent or if they have no pieces left on the board.<br><br><strong>Please note:</strong> If a player has only one piece left, said piece is still considered a group!<br><h4>AI DIFFICULTY</h4>When playing against the computer, you can change the difficulty by clicking on the ORDO logo in the middle of the top turn indicator. The current difficulty is indicated by the border color and matches the icons in the statistics:<ul><li><strong>🟩 Easy (Green):</strong> The computer only sees one move ahead, plays aggressively for immediate gain, and often makes tactical mistakes.</li><li><strong>🟨 Medium (Yellow):</strong> The computer anticipates your next move, knows how to defend, but sometimes chooses a suboptimal move for greater game variability.</li><li><strong>🟥 Hard (Red):</strong> Relentless artificial intelligence. It calculates fatal consequences (like deadly disconnections), forms compact groups, and plays with cold mathematical precision without any random elements.</li></ul><br><h4>STATISTICS</h4>The table shows your results against the AI. Below the difficulty pictograms (🟩 Easy, 🟨 Medium, 🟥 Hard), there is a pair of numbers for both white and black indicating <strong>win | loss</strong>.",
+                helpText: "<h4>TERMINOLOGY</h4><strong>Group:</strong> Orthogonally or diagonally connected group of all pieces of a player.<br><h4>OBJECTIVE</h4>Players move their pieces trying to reach the opponent's home row.<br><br><strong>Home row:</strong> Nearest row on the board seen from a player's perspective.<br><h4>GAME PLAY</h4>White starts, then players take turns making a move. They may not pass.<br><br><strong>Connection:</strong> Throughout the game, after a player's move, all pieces of that player must be connected in one sole group.<br><br><strong>Moves and Captures:</strong> There are two possible ways to move the pieces: single piece moves and ordo moves.<ul><li><strong>Single Piece Move:</strong> A single piece can move forward or sideways, orthogonally or diagonally in a straight line any number of empty squares. It may end the move in an empty square or a square occupied by an opponent's piece, which is then captured and removed from the board. Backward moves are allowed only in reconnection moves (see below).</li><li><strong>Ordo Moves:</strong> The ordo move: 2 or more pieces, which are connected in a straight horizontal or vertical line, can move side by side any number of empty squares. They may only move orthogonally (not diagonally) forward (if they are horizontally aligned) or sideways (if they are vertically aligned), the same number of squares. They may not capture.</li></ul><strong>Disconnection:</strong> If a player's group is disconnected because of a capture move by the opponent, that player must move such that the group is connected again. If no such move is possible, the game is lost immediately. Normally, pieces move forward or sideways. In case of a split group (and only then), pieces may also move backwards. This is also true for ordo moves.<br><h4>END OF THE GAME</h4>The main goal of the game is to place a piece on the opponent's home row.<br><br>Also, players lose a game if they cannot reconnect their group, after a split capture by the opponent or if they have no pieces left on the board.<br><br><strong>Please note:</strong> If a player has only one piece left, said piece is still considered a group!<br><h4>AI DIFFICULTY</h4>When playing against the computer, you can change the difficulty by clicking on the ORDO logo in the middle of the top turn indicator. The current difficulty is indicated by the border color and matches the icons in the statistics:<ul><li><strong>🟩 Easy (Green):</strong> The computer plays aggressively for immediate gain and often makes tactical mistakes.</li><li><strong>🟨 Medium (Orange):</strong> The computer evaluates structure and formation carefully, but sometimes chooses a suboptimal move for greater game variability.</li><li><strong>🟥 Hard (Red):</strong> Relentless artificial intelligence. Searches dynamically deeper based on time limits. Evaluates structural integrity, maximizes mobility, and prevents fatal disconnections. Plays without any random elements.</li></ul><br><h4>STATISTICS</h4>The table shows your results against the AI. Below the difficulty pictograms (🟩 Easy, 🟨 Medium, 🟥 Hard), there is a pair of numbers for both white and black indicating <strong>win | loss</strong>.",
                 disconnectLog: (pAdj) => `${pAdj.charAt(0).toUpperCase() + pAdj.slice(1)} player's pieces disconnected! A reconnecting move is required.`,
                 winGoal: (w, l) => `Game over. ${w} reached the opponent's home row and won.`,
                 winNoMove: (w, l) => `Game over. ${l} has no valid move. ${w} wins.`,
@@ -567,7 +599,8 @@
         }
 
         function showHelp() {
-            const logoWithMargin = svgLogoHTML.replace('style="', 'style="margin: 10px 0; ');
+            // Při zobrazení nápovědy do modalu vyrenderujeme logo trošku větší
+            const logoWithMargin = svgLogoHTML.replace('height: 1.4rem;', 'height: 1.8rem; margin: 10px 0;');
             let html = `
                 <div class="help-header">
                     <h2>${t('title')}</h2>
@@ -612,6 +645,7 @@
             
             renderStats();
             updateUILang();
+            updateDifficultyUI();
             updateGame();
         }
 
@@ -753,112 +787,66 @@
             return visited.size !== pieces.length;
         }
 
-        function evaluateBoardHeuristic(testBoard, move, player, depth = 0) {
-            let score = 0;
-            let opp = player === 1 ? 2 : 1;
-            let targetRow = player === 1 ? 0 : 7;
-            let startRow = player === 1 ? 7 : 0;
-            
-            if(move.targets.some(p => p.r === targetRow)) return 1000000;
-            
-            let myPieces = [];
-            let oppPieces = [];
+        function evaluatePosition(testBoard, p) {
+            let opp = p === 1 ? 2 : 1;
+            let targetRow = p === 1 ? 0 : 7;
+            let oppTargetRow = opp === 1 ? 0 : 7;
+            let pStartRow = p === 1 ? 7 : 0;
+            let oppStartRow = opp === 1 ? 7 : 0;
+
+            let myPieces = [], oppPieces = [];
             for(let r=0; r<ROWS; r++) {
                 for(let c=0; c<COLS; c++) {
-                    if(testBoard[r][c] === player) myPieces.push({r,c});
+                    if(testBoard[r][c] === p) myPieces.push({r,c});
                     else if(testBoard[r][c] === opp) oppPieces.push({r,c});
                 }
             }
+
             if(myPieces.length === 0) return -1000000;
             if(oppPieces.length === 0) return 1000000;
+            if(myPieces.some(pc => pc.r === targetRow)) return 1000000;
+            if(oppPieces.some(pc => pc.r === oppTargetRow)) return -1000000;
 
-            let isOppDisconnected = isDisconnected(testBoard, opp);
-
-            if (isOppDisconnected) {
-                let oppMoves = getAllMovesForBoard(testBoard, opp);
-                if (oppMoves.length === 0) return 1000000; 
-
-                if (depth < 1) { 
-                    let allReconnectionsLeadToDeath = true;
-                    for (let rMove of oppMoves) {
-                        let nextBoard = testBoard.map(row => [...row]);
-                        rMove.from.forEach(p => nextBoard[p.r][p.c] = 0);
-                        rMove.targets.forEach(p => nextBoard[p.r][p.c] = opp);
-                        
-                        let winExists = false;
-                        let nextMoves = getAllMovesForBoard(nextBoard, player);
-                        for (let wMove of nextMoves) {
-                            let finalBoard = nextBoard.map(row => [...row]);
-                            wMove.from.forEach(p => finalBoard[p.r][p.c] = 0);
-                            wMove.targets.forEach(p => finalBoard[p.r][p.c] = player);
-                            
-                            let wScore = evaluateBoardHeuristic(finalBoard, wMove, player, depth + 1);
-                            if (wScore >= 500000) {
-                                winExists = true;
-                                break;
-                            }
-                        }
-                        if (!winExists) {
-                            allReconnectionsLeadToDeath = false;
-                            break;
-                        }
-                    }
-                    if (allReconnectionsLeadToDeath) return 1000000;
-                }
-                score += 15000;
-            }
-
-            if (myPieces.length === 1) {
-                let myPiece = myPieces[0];
-                let oppFwd = opp === 1 ? -1 : 1;
-                let isSafe = true;
-                
-                const dirs = isOppDisconnected 
-                    ? [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] 
-                    : [[oppFwd,0],[oppFwd,1],[oppFwd,-1],[0,1],[0,-1]];
-                    
-                for(let [dr, dc] of dirs) {
-                    let nr = myPiece.r - dr, nc = myPiece.c - dc;
-                    while(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
-                        if(testBoard[nr][nc] === opp) { isSafe = false; break; }
-                        if(testBoard[nr][nc] !== 0) break; 
-                        nr -= dr; nc -= dc;
-                    }
-                    if(!isSafe) break;
-                }
-
-                let forwardBonus = Math.abs(myPiece.r - startRow) * 1000;
-                if (!isSafe) return -500000 + forwardBonus; 
-                else return 50000 + forwardBonus + (move.isCap ? 500 : 0);
-            }
-
-            if(move.isCap) score += 5000;
+            let myDisc = isDisconnected(testBoard, p);
+            let oppDisc = isDisconnected(testBoard, opp);
             
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
-                    if(testBoard[r][c] === player) {
-                        score += Math.abs(r - startRow) * 10;
-                        if (c >= 3 && c <= 6) score += 5; 
-                        
-                        let neighbors = 0;
-                        for(let dr=-1; dr<=1; dr++){
-                            for(let dc=-1; dc<=1; dc++){
-                                if(dr===0 && dc===0) continue;
-                                let nr = r+dr, nc = c+dc;
-                                if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && testBoard[nr][nc] === player) {
-                                    neighbors++;
-                                }
-                            }
-                        }
-                        score += neighbors * 2;
-                        
-                    } else if (testBoard[r][c] === opp) {
-                        score -= Math.abs(r - targetRow) * 10;
+            if (myDisc) return -500000; 
+            if (oppDisc) return 500000;
+
+            let score = 0;
+            
+            for(let pc of myPieces) {
+                score += Math.abs(pc.r - pStartRow) * 50; 
+                if (pc.c >= 3 && pc.c <= 6) score += 20; 
+                
+                let neighbors = 0;
+                for(let dr=-1; dr<=1; dr++){
+                    for(let dc=-1; dc<=1; dc++){
+                        if(dr===0 && dc===0) continue;
+                        let nr = pc.r+dr, nc = pc.c+dc;
+                        if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && testBoard[nr][nc] === p) neighbors++;
                     }
                 }
+                score += neighbors * 15; 
             }
-            if(move.from.length > 1) score += 40;
-            return Math.round(score);
+
+            for(let pc of oppPieces) {
+                score -= Math.abs(pc.r - oppStartRow) * 50;
+                if (pc.c >= 3 && pc.c <= 6) score -= 20;
+                
+                let neighbors = 0;
+                for(let dr=-1; dr<=1; dr++){
+                    for(let dc=-1; dc<=1; dc++){
+                        if(dr===0 && dc===0) continue;
+                        let nr = pc.r+dr, nc = pc.c+dc;
+                        if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && testBoard[nr][nc] === opp) neighbors++;
+                    }
+                }
+                score -= neighbors * 15;
+            }
+
+            score += (myPieces.length - oppPieces.length) * 1000; 
+            return score;
         }
 
         function getAllMovesForBoard(targetBoard, p) {
@@ -871,21 +859,13 @@
                     if(board[r][c]===p) {
                         selectedPieces = [{r,c}];
                         calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
-                        
                         for(let r2=0; r2<ROWS; r2++) {
                             let line = getOrdoLine({r,c}, {r:r2, c});
-                            if(line) {
-                                selectedPieces = line;
-                                calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
-                            }
+                            if(line) { selectedPieces = line; calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m)); }
                         }
-                        
                         for(let c2=0; c2<COLS; c2++) {
                             let line = getOrdoLine({r,c}, {r, c:c2});
-                            if(line) {
-                                selectedPieces = line;
-                                calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
-                            }
+                            if(line) { selectedPieces = line; calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m)); }
                         }
                     }
                 }
@@ -901,11 +881,112 @@
             if(!set.has(id)) { set.add(id); movesArr.push(move); }
         }
 
+        function orderMoves(movesArray, p) {
+            let fwd = p === 1 ? -1 : 1;
+            movesArray.forEach(m => {
+                m.sortScore = 0;
+                if(m.isCap) m.sortScore += 1000;
+                if(m.from.length > 1) m.sortScore += 500; 
+                let fromR = m.from[0].r;
+                let toR = m.targets[0].r;
+                if((toR - fromR) === fwd) m.sortScore += 200; 
+            });
+            movesArray.sort((a,b) => b.sortScore - a.sortScore);
+        }
+
+        let timeLimitExceeded = false;
+        
+        function getNegamax(testBoard, player, depth, alpha, beta, startTime, timeLimit) {
+            if (Date.now() - startTime > timeLimit) {
+                timeLimitExceeded = true;
+                return 0;
+            }
+
+            let evalScore = evaluatePosition(testBoard, player);
+            if (depth <= 0 || Math.abs(evalScore) >= 500000) {
+                return evalScore;
+            }
+
+            let moves = getAllMovesForBoard(testBoard, player);
+            if (moves.length === 0) return -1000000; 
+            
+            orderMoves(moves, player);
+
+            let bestScore = -Infinity;
+            let opp = player === 1 ? 2 : 1;
+
+            for(let move of moves) {
+                let nextBoard = testBoard.map(row => [...row]);
+                move.from.forEach(p => nextBoard[p.r][p.c] = 0);
+                move.targets.forEach(p => nextBoard[p.r][p.c] = player);
+
+                let score = -getNegamax(nextBoard, opp, depth - 1, -beta, -alpha, startTime, timeLimit);
+
+                if (timeLimitExceeded) return 0;
+
+                if (score > bestScore) bestScore = score;
+                if (score > alpha) alpha = score;
+                if (alpha >= beta) break; 
+            }
+            return bestScore;
+        }
+
+        function aiMove() {
+            let maxTime = difficulty === 2 ? 800 : (difficulty === 1 ? 150 : 50); 
+            let startTime = Date.now();
+            timeLimitExceeded = false;
+
+            let allMoves = getAllMovesForBoard(board, 2);
+            if(allMoves.length === 0) return;
+
+            orderMoves(allMoves, 2);
+
+            let bestMove = allMoves[0];
+            let maxDepth = difficulty === 2 ? 10 : (difficulty === 1 ? 2 : 1);
+            
+            if (difficulty === 0) {
+                bestMove = allMoves[Math.floor(Math.random() * Math.min(3, allMoves.length))];
+                bestMove.execute();
+                return;
+            }
+
+            for (let depth = 1; depth <= maxDepth; depth++) {
+                let currentBestMove = null;
+                let bestScore = -Infinity;
+                let alpha = -Infinity;
+                let beta = Infinity;
+
+                for (let move of allMoves) {
+                    let nextBoard = board.map(row => [...row]);
+                    move.from.forEach(p => nextBoard[p.r][p.c] = 0);
+                    move.targets.forEach(p => nextBoard[p.r][p.c] = 2);
+
+                    let score = -getNegamax(nextBoard, 1, depth - 1, -beta, -alpha, startTime, maxTime);
+
+                    if (timeLimitExceeded) break;
+
+                    if (difficulty === 1) score += Math.random() * 20;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        currentBestMove = move;
+                    }
+                    if (score > alpha) alpha = score;
+                }
+
+                if (timeLimitExceeded) break; 
+                if (currentBestMove) bestMove = currentBestMove;
+                if (bestScore >= 500000) break; 
+            }
+
+            if (bestMove) bestMove.execute();
+        }
+
         function executeMove(from, to, isCap) {
             from.forEach(p => board[p.r][p.c] = 0);
             to.forEach(p => board[p.r][p.c] = turn);
             
-            let scoreVal = evaluateBoardHeuristic(board, {from: from, targets: to, isCap: isCap}, turn, 0);
+            let scoreVal = evaluatePosition(board, turn); 
             const cols = "ABCDEFGHIJ";
             let fromStr, toStr;
 
@@ -976,7 +1057,9 @@
                 else return win({ reason: 'nomove', winner: turn === 1 ? 2 : 1, loser: turn });
             }
             
-            if (isDisc && log.length > 0) log.unshift({ type: 'warning', player: turn });
+            if (isDisc && log.length > 0) {
+                log.unshift({ type: 'warning', player: turn });
+            }
 
             document.getElementById('whitePlayer').className = 'player-badge white' + (turn===1 ? ' active' : '') + (turn===1 && isDisc ? ' disconnected' : '');
             document.getElementById('blackPlayer').className = 'player-badge black' + (turn===2 ? ' active' : '') + (turn===2 && isDisc ? ' disconnected' : '');
@@ -985,59 +1068,7 @@
             updateLog();
             
             clearTimeout(aiTimeout);
-            if(mode==='PvE' && turn===2 && gameActive) aiTimeout = setTimeout(aiMove, 600);
-        }
-
-        function aiMove() {
-            let allMoves = getAllMovesForBoard(board, 2);
-            if(allMoves.length === 0) return;
-
-            let bestScore = -Infinity;
-            let bestMoves = [];
-
-            for(let move of allMoves) {
-                let testBoard = board.map(row => [...row]);
-                move.from.forEach(p => testBoard[p.r][p.c] = 0);
-                move.targets.forEach(p => testBoard[p.r][p.c] = 2);
-
-                let score = evaluateBoardHeuristic(testBoard, move, 2, 0);
-
-                if (difficulty > 0 && score < 500000) {
-                    let oppMoves = getAllMovesForBoard(testBoard, 1);
-                    let oppBestScore = -Infinity;
-
-                    for(let oMove of oppMoves) {
-                        let nextBoard = testBoard.map(row => [...row]);
-                        oMove.from.forEach(p => nextBoard[p.r][p.c] = 0);
-                        oMove.targets.forEach(p => nextBoard[p.r][p.c] = 1);
-                        
-                        let oScore = evaluateBoardHeuristic(nextBoard, oMove, 1, 0);
-                        if (oScore > oppBestScore) oppBestScore = oScore;
-                        
-                        if (oppBestScore >= 1000000) break;
-                    }
-
-                    if (oppBestScore !== -Infinity) {
-                        score -= (difficulty === 2 ? oppBestScore : oppBestScore * 0.9);
-                    }
-                }
-
-                let randomizedScore = score;
-                if (difficulty === 0) randomizedScore += Math.random() * 100;
-                else if (difficulty === 1) randomizedScore += Math.random() * 5;
-
-                if(randomizedScore > bestScore) {
-                    bestScore = randomizedScore;
-                    bestMoves = [move];
-                } else if (Math.abs(randomizedScore - bestScore) < 0.1) {
-                    bestMoves.push(move);
-                }
-            }
-
-            if (bestMoves.length > 0) {
-                let chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-                chosenMove.execute();
-            }
+            if(mode==='PvE' && turn===2 && gameActive) aiTimeout = setTimeout(aiMove, 100);
         }
 
         function win(endData) { 
@@ -1163,6 +1194,7 @@
             
             centerTextEl.innerHTML = svgLogoHTML;
             updateUILang();
+            updateDifficultyUI();
             updateGame(); 
             showToast(t('loaded'));
         }
