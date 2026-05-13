@@ -146,7 +146,7 @@
         .mini-piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
         .mini-piece.black { background: radial-gradient(circle at 30% 30%, #444, #000); border: 1px solid #111; }
 
-        /* Plastické a neproblikávající logo - zmenšeno na úroveň počítadel */
+        /* Plastické a neproblikávající logo */
         .game-title-inline {
             position: absolute;
             left: 50%;
@@ -161,7 +161,7 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent; 
-            padding: 4px 10px; /* Zmenšený vnitřní prostor */
+            padding: 4px 10px;
             border-radius: 20px;
             background-color: #2d3436; 
             background-image: linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(0,0,0,0.25));
@@ -361,7 +361,6 @@
             .player-badge { font-size: 1.1rem; padding: 6px 12px; }
             .btn-copy { width: 28px; height: 28px; right: 10px; font-size: 0.9rem; }
             #modalText { font-size: 0.9rem; }
-            /* Na mobilu můžeme ikonu v případě potřeby ještě o fousek stáhnout */
             .game-title-inline svg { height: 1.5rem !important; }
         }
     </style>
@@ -443,16 +442,22 @@
         let startingPlayer = 1;
         let aiTimeout = null;
         
-        let difficulty = 2; // 0 = Easy, 1 = Medium, 2 = Hard
+        let savedDiff = localStorage.getItem('ordo_difficulty');
+
+let defaultDifficulty =
+    savedDiff !== null ? parseInt(savedDiff) : 2;
+
+// aktuální obtížnost běžící hry
+let difficulty = defaultDifficulty;
+        
         let stats = JSON.parse(localStorage.getItem('ordo_stats')) || {
             0: { w: 0, b: 0 },
             1: { w: 0, b: 0 },
             2: { w: 0, b: 0 }
         };
 
-        // Zmenšený atribut SVG na height: 1.4rem
         const svgLogoHTML = `
-        <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.4rem; width: auto; vertical-align: middle; pointer-events: none;">
+        <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.5rem; width: auto; vertical-align: middle; pointer-events: none;">
             <rect x="0" y="0" width="2048" height="582" rx="291" fill="#28A8B3" />
             <circle cx="291" cy="291" r="291" fill="#48C7D1" />
             <circle cx="291" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
@@ -468,7 +473,7 @@
                 pvp: "Hráč vs Hráč", pve: "Hráč vs Počítač",
                 new: "Nová hra", save: "Uložit", load: "Načíst", help: "Nápověda",
                 white: "Bílý", black: "Černý", remains: "Zbývá",
-                whiteAdj: "bílého", blackAdj: "černého",
+                whiteAdj: "bílých", blackAdj: "černých",
                 sure: "Opravdu?", newQ: "Ztratíte aktuální postup. Začít novou hru?", loadQ: "Ztratíte rozehranou hru. Načíst uloženou pozici?",
                 saved: "Hra uložena", noSave: "Nenalezena žádná uložená hra.", loaded: "Hra načtena.",
                 cancel: "Zrušit", ok: "OK", copied: "Log zkopírován do schránky.",
@@ -476,7 +481,7 @@
                 statsTitle: "Statistiky her (AI)", resetStatsBtn: "Resetovat statistiky",
                 resetStatsQ: "Opravdu chcete smazat všechny statistiky her proti AI?", statsReseted: "Statistiky vymazány.",
                 helpText: "<h4>TERMINOLOGIE</h4><strong>Skupina:</strong> Ortogonálně (rovně) nebo diagonálně (šikmo) spojená skupina všech kamenů hráče.<br><h4>CÍL HRY</h4>Hráči pohybují svými kameny a snaží se dosáhnout soupeřovy domovské řady.<br><br><strong>Domovská řada:</strong> Nejbližší řada na desce z pohledu hráče.<br><h4>PRŮBĚH HRY</h4>Začíná bílý, poté se hráči střídají v tazích. Hráč se nesmí vzdát tahu.<br><br><strong>Spojení:</strong> Během hry, po odehrání tahu, musí být všechny kameny hráče spojeny v jedné jediné skupině.<br><br><strong>Tahy a braní:</strong> Existují dva možné způsoby pohybu kamenů: tahy jedním kamenem a tahy Ordo.<ul><li><strong>Tah jedním kamenem:</strong> Jeden kámen se může pohybovat vpřed nebo do stran, rovně nebo šikmo v přímé linii o libovolný počet prázdných polí. Tah může ukončit na prázdném poli nebo na poli obsazeném soupeřovým kamenem, který je tímto zajat a odstraněn z desky. Tahy dozadu jsou povoleny pouze při spojovacích tazích (viz níže).</li><li><strong>Tahy Ordo:</strong> Ordo tah: 2 a více kamenů, které jsou spojeny v přímé horizontální nebo vertikální linii, se mohou posouvat vedle sebe o libovolný počet prázdných polí. Mohou se pohybovat pouze rovně (ne šikmo) vpřed (pokud jsou zarovnány horizontálně) nebo do stran (pokud jsou zarovnány vertikálně), a to o stejný počet polí. Nemohou brát soupeřovy kameny.</li></ul><strong>Rozpojení:</strong> Pokud je skupina hráče rozpojena v důsledku soupeřova tahu s braním, musí tento hráč táhnout tak, aby se skupina opět spojila. Pokud takový tah není možný, okamžitě prohrává hru. Normálně se kameny pohybují vpřed nebo do stran. V případě rozdělené skupiny (a pouze tehdy) se kameny mohou pohybovat i dozadu. To platí i pro tahy Ordo.<br><h4>KONEC HRY</h4>Hlavním cílem hry je umístit kámen na soupeřovu domovskou řadu.<br><br>Hráči také prohrávají hru, pokud po rozpojení nedokážou svou skupinu znovu spojit, nebo pokud jim na desce nezbydou žádné kameny.<br><br><strong>Upozornění:</strong> Pokud hráči zbývá pouze jeden kámen, je tento kámen stále považován za skupinu!<br><h4>OBTÍŽNOST AI</h4>Při hře proti počítači můžete měnit obtížnost kliknutím na logo ORDO uprostřed horního ukazatele tahů. Aktuální obtížnost je indikována barvou orámování ukazatele a odpovídá i ikonám ve statistikách:<ul><li><strong>🟩 Lehká (Zelená):</strong> Počítač hraje agresivně na okamžitý zisk a dělá taktické chyby.</li><li><strong>🟨 Střední (Oranžová):</strong> Počítač pečlivě hodnotí strukturu a formaci, ale občas zvolí horší tah, aby hra nebyla vždy stejná.</li><li><strong>🟥 Těžká (Červená):</strong> Neúprosná umělá inteligence. Prohledává vývoj hry do hloubky dynamicky na základě přiděleného času. Hraje kompaktně, chrání svou integritu, maximalizuje mobilitu a trestá jakoukoliv slabinu bez prvků náhody.</li></ul><br><h4>STATISTIKY</h4>Tabulka zobrazuje vaše výsledky proti umělé inteligenci. Pod jednotlivými piktogramy obtížnosti (🟩 Lehká, 🟨 Střední, 🟥 Těžká) je pro bílou i černou barvu uvedena dvojice čísel, která znamená <strong>výhra | prohra</strong>.",
-                disconnectLog: (pAdj) => `Skupina kamenů ${pAdj} hráče rozpojena! Nutný tah pro znovuspojení.`,
+                disconnectLog: (pAdj) => `Skupina ${pAdj} kamenů rozpojena!`,
                 winGoal: (w, l) => `Konec hry. ${w} dosáhl domovské řady soupeře a vyhrál.`,
                 winNoMove: (w, l) => `Konec hry. ${l} nemá žádný platný tah. Vítězí ${w.toLowerCase()}.`,
                 winDisc: (w, l) => `Konec hry. ${l} nemůže spojit svou skupinu kamenů. Vítězí ${w.toLowerCase()}.`
@@ -494,7 +499,7 @@
                 statsTitle: "Game Statistics (AI)", resetStatsBtn: "Reset Statistics",
                 resetStatsQ: "Are you sure you want to delete all AI game statistics?", statsReseted: "Statistics reset.",
                 helpText: "<h4>TERMINOLOGY</h4><strong>Group:</strong> Orthogonally or diagonally connected group of all pieces of a player.<br><h4>OBJECTIVE</h4>Players move their pieces trying to reach the opponent's home row.<br><br><strong>Home row:</strong> Nearest row on the board seen from a player's perspective.<br><h4>GAME PLAY</h4>White starts, then players take turns making a move. They may not pass.<br><br><strong>Connection:</strong> Throughout the game, after a player's move, all pieces of that player must be connected in one sole group.<br><br><strong>Moves and Captures:</strong> There are two possible ways to move the pieces: single piece moves and ordo moves.<ul><li><strong>Single Piece Move:</strong> A single piece can move forward or sideways, orthogonally or diagonally in a straight line any number of empty squares. It may end the move in an empty square or a square occupied by an opponent's piece, which is then captured and removed from the board. Backward moves are allowed only in reconnection moves (see below).</li><li><strong>Ordo Moves:</strong> The ordo move: 2 or more pieces, which are connected in a straight horizontal or vertical line, can move side by side any number of empty squares. They may only move orthogonally (not diagonally) forward (if they are horizontally aligned) or sideways (if they are vertically aligned), the same number of squares. They may not capture.</li></ul><strong>Disconnection:</strong> If a player's group is disconnected because of a capture move by the opponent, that player must move such that the group is connected again. If no such move is possible, the game is lost immediately. Normally, pieces move forward or sideways. In case of a split group (and only then), pieces may also move backwards. This is also true for ordo moves.<br><h4>END OF THE GAME</h4>The main goal of the game is to place a piece on the opponent's home row.<br><br>Also, players lose a game if they cannot reconnect their group, after a split capture by the opponent or if they have no pieces left on the board.<br><br><strong>Please note:</strong> If a player has only one piece left, said piece is still considered a group!<br><h4>AI DIFFICULTY</h4>When playing against the computer, you can change the difficulty by clicking on the ORDO logo in the middle of the top turn indicator. The current difficulty is indicated by the border color and matches the icons in the statistics:<ul><li><strong>🟩 Easy (Green):</strong> The computer plays aggressively for immediate gain and often makes tactical mistakes.</li><li><strong>🟨 Medium (Orange):</strong> The computer evaluates structure and formation carefully, but sometimes chooses a suboptimal move for greater game variability.</li><li><strong>🟥 Hard (Red):</strong> Relentless artificial intelligence. Searches dynamically deeper based on time limits. Evaluates structural integrity, maximizes mobility, and prevents fatal disconnections. Plays without any random elements.</li></ul><br><h4>STATISTICS</h4>The table shows your results against the AI. Below the difficulty pictograms (🟩 Easy, 🟨 Medium, 🟥 Hard), there is a pair of numbers for both white and black indicating <strong>win | loss</strong>.",
-                disconnectLog: (pAdj) => `${pAdj.charAt(0).toUpperCase() + pAdj.slice(1)} player's pieces disconnected! A reconnecting move is required.`,
+                disconnectLog: (pAdj) => `Group of ${pAdj} pieces disconnected!`,
                 winGoal: (w, l) => `Game over. ${w} reached the opponent's home row and won.`,
                 winNoMove: (w, l) => `Game over. ${l} has no valid move. ${w} wins.`,
                 winDisc: (w, l) => `Game over. ${l} cannot reconnect their group of pieces. ${w} wins.`
@@ -543,11 +548,23 @@
         const centerTextEl = document.getElementById('centerText');
 
         function toggleDifficulty() {
-            if (mode !== 'PvE') return;
-            difficulty = (difficulty + 1) % 3;
-            updateDifficultyUI();
-            if (board.length > 0) saveGame(true);
-        }
+    if (mode !== 'PvE') return;
+
+    difficulty = (difficulty + 1) % 3;
+
+    defaultDifficulty = difficulty;
+
+    localStorage.setItem('ordo_difficulty', defaultDifficulty);
+
+    updateDifficultyUI();
+
+    log.unshift({
+        type: 'difficulty',
+        level: difficulty
+    });
+
+    updateLog();
+}
 
         function updateDifficultyUI() {
             const ti = document.getElementById('turnIndicator');
@@ -599,8 +616,7 @@
         }
 
         function showHelp() {
-            // Při zobrazení nápovědy do modalu vyrenderujeme logo trošku větší
-            const logoWithMargin = svgLogoHTML.replace('height: 1.4rem;', 'height: 1.8rem; margin: 10px 0;');
+            const logoWithMargin = svgLogoHTML.replace('height: 1.5rem;', 'height: 1.8rem; margin: 10px 0;');
             let html = `
                 <div class="help-header">
                     <h2>${t('title')}</h2>
@@ -637,7 +653,18 @@
             board[7][2]=1; board[7][3]=1; board[7][6]=1; board[7][7]=1;
 
             turn = startingPlayer; 
-            gameActive = true; selectedPieces = []; validMoves = []; log = [];
+            gameActive = true; selectedPieces = []; validMoves = []; 
+            log = [];
+            
+            log = [];
+
+// nová hra vždy používá defaultní obtížnost
+difficulty = defaultDifficulty;
+
+if (mode === 'PvE') {
+    log.unshift({ type: 'difficulty', level: difficulty });
+}
+
             document.getElementById('whitePlayer').classList.remove('disconnected');
             document.getElementById('blackPlayer').classList.remove('disconnected');
             
@@ -987,7 +1014,7 @@
             to.forEach(p => board[p.r][p.c] = turn);
             
             let scoreVal = evaluatePosition(board, turn); 
-            const cols = "ABCDEFGHIJ";
+            const cols = "abcdefghij";
             let fromStr, toStr;
 
             if(from.length === 1) {
@@ -998,8 +1025,8 @@
                 let sortedTo = [...to].sort((a,b) => a.r===b.r ? a.c-b.c : a.r-b.r);
                 let f1 = sortedFrom[0], f2 = sortedFrom[sortedFrom.length-1];
                 let t1 = sortedTo[0], t2 = sortedTo[sortedTo.length-1];
-                fromStr = `${cols[f1.c]}${8-f1.r}-${cols[f2.c]}${8-f2.r}`;
-                toStr = `${cols[t1.c]}${8-t1.r}-${cols[t2.c]}${8-t2.r}`;
+                fromStr = `${cols[f1.c]}${8-f1.r}${cols[f2.c]}${8-f2.r}`;
+                toStr = `${cols[t1.c]}${8-t1.r}${cols[t2.c]}${8-t2.r}`;
             }
 
             let countW = 0, countB = 0;
@@ -1012,14 +1039,7 @@
                 }
             }
             
-            let diffIcon = '';
-            if (mode === 'PvE' && turn === 2) {
-                if (difficulty === 0) diffIcon = ' [🟩]';
-                else if (difficulty === 1) diffIcon = ' [🟨]';
-                else if (difficulty === 2) diffIcon = ' [🟥]';
-            }
-
-            log.unshift({ type: 'move', player: turn, isOrdo: from.length > 1, fromStr: fromStr, toStr: toStr, isCap: isCap, scoreVal: scoreVal, countW: countW, countB: countB, diffIcon: diffIcon });
+            log.unshift({ type: 'move', player: turn, isOrdo: from.length > 1, fromStr: fromStr, toStr: toStr, isCap: isCap, scoreVal: scoreVal, countW: countW, countB: countB });
             
             let targetRow = turn === 1 ? 0 : 7;
             if(to.some(p => p.r === targetRow)) {
@@ -1095,12 +1115,17 @@
             if (entry.type === 'move') {
                 if(entry.text) return withHTML ? entry.text : entry.text.replace(/<[^>]+>/g, '');
                 const pName = entry.player === 1 ? t('white') : t('black');
-                const capStr = entry.isCap ? ' (x)' : '';
                 const scoreStr = withHTML ? ` <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${entry.scoreVal}]</span>` : ` [★ ${entry.scoreVal}]`;
                 const ordoStr = entry.isOrdo ? ' Ordo' : '';
-                const diffStr = entry.diffIcon ? entry.diffIcon : '';
                 
-                let text = `${pName}${ordoStr}: ${entry.fromStr}➔${entry.toStr}${capStr}${scoreStr}${diffStr}`;
+                let moveText = '';
+                if (entry.isOrdo) {
+                    moveText = `${entry.fromStr}-${entry.toStr}`;
+                } else {
+                    moveText = entry.isCap ? `${entry.fromStr}x${entry.toStr}` : `${entry.fromStr}${entry.toStr}`;
+                }
+                
+                let text = `${pName}${ordoStr}: ${moveText}${scoreStr}`;
                 
                 if (entry.isCap && entry.countW !== undefined) {
                     if (withHTML) text += `<br><span style="color:#bdc3c7; font-size: 0.9em;">&nbsp;&nbsp;↳ ${t('remains')}: ${t('white')} ${entry.countW} | ${t('black')} ${entry.countB}</span>`;
@@ -1110,7 +1135,7 @@
             } else if (entry.type === 'warning') {
                 if(entry.text) return entry.text;
                 let pAdj = entry.player === 1 ? t('whiteAdj') : t('blackAdj');
-                return t('disconnectLog')(pAdj);
+                return `⚙️ ${t('disconnectLog')(pAdj)}`;
             } else if (entry.type === 'end') {
                 if(entry.text) return entry.text;
                 let w = entry.winner === 1 ? t('white') : t('black');
@@ -1118,6 +1143,18 @@
                 if(entry.reason === 'goal') return t('winGoal')(w, l);
                 if(entry.reason === 'nomove') return t('winNoMove')(w, l);
                 if(entry.reason === 'disc') return t('winDisc')(w, l);
+            } else if (entry.type === 'difficulty') {
+                const icons = ['🟩', '🟨', '🟥'];
+                const text = currentLang === 'cs' ? 'Úroveň obtížnosti' : 'Difficulty level';
+                return `⚙️ ${text} ${icons[entry.level]}`;
+            } else if (entry.type === 'save') {
+                const icons = ['🟩', '🟨', '🟥'];
+                const text = currentLang === 'cs' ? 'Hra uložena' : 'Game saved';
+                return `⚙️ ${text}  ${icons[entry.level]} `;
+            } else if (entry.type === 'load') {
+                const icons = ['🟩', '🟨', '🟥'];
+                const text = currentLang === 'cs' ? 'Hra načtena' : 'Game loaded';
+                return `⚙️ ${text}  ${icons[entry.level]} `;
             }
             return '';
         }
@@ -1129,12 +1166,17 @@
             for(let i=0; i<log.length; i++) {
                 let renderedText = renderLogEntry(log[i], true);
                 if (log[i].type === 'move') {
-                    html += `<div style="margin-bottom: 5px;">${moveNum}. ${renderedText}</div>`;
+                    let formattedNum = moveNum.toString().padStart(2, '0');
+                    html += `<div style="margin-bottom: 5px;">${formattedNum}. ${renderedText}</div>`;
                     moveNum--;
                 } else if (log[i].type === 'warning') {
-                    html += `<div style="color: #ff7675; font-weight: bold; margin: 6px 0;">! ${renderedText}</div>`;
+                    html += `<div style="color: #ff7675; font-weight: bold; margin: 6px 0;">${renderedText}</div>`;
                 } else if (log[i].type === 'end') {
                     html += `<div style="color: #55efc4; font-weight: bold; margin: 10px 0; font-size: 1rem;">🏁 ${renderedText}</div>`;
+                } else if (log[i].type === 'difficulty') {
+                    html += `<div style="color: #a29bfe; font-style: italic; margin: 6px 0;">${renderedText}</div>`;
+                } else if (log[i].type === 'save' || log[i].type === 'load') {
+                    html += `<div style="color: #00cec9; font-style: italic; margin: 6px 0;">${renderedText}</div>`;
                 }
             }
             logEl.innerHTML = html; 
@@ -1146,9 +1188,15 @@
             let reversedLog = [...log].reverse();
             for(let entry of reversedLog) {
                 let cleanText = renderLogEntry(entry, false);
-                if(entry.type === 'move') { textToCopy.push(`${moveNum}. ${cleanText}`); moveNum++; } 
-                else if (entry.type === 'warning') textToCopy.push(`[!] ${cleanText}`);
+                if(entry.type === 'move') { 
+                    let formattedNum = moveNum.toString().padStart(2, '0');
+                    textToCopy.push(`${formattedNum}. ${cleanText}`); 
+                    moveNum++; 
+                } 
+                else if (entry.type === 'warning') textToCopy.push(cleanText);
                 else if (entry.type === 'end') textToCopy.push(`--- ${cleanText} ---`);
+                else if (entry.type === 'difficulty') textToCopy.push(cleanText);
+                else if (entry.type === 'save' || entry.type === 'load') textToCopy.push(cleanText);
             }
             navigator.clipboard.writeText(textToCopy.join('\n')).then(() => showToast(t('copied'))).catch(err => showToast("Nelze kopírovat."));
         }
@@ -1169,6 +1217,10 @@
         }
         
         function saveGame(silent = false) { 
+            if (!silent) {
+                log.unshift({ type: 'save', level: difficulty });
+                updateLog();
+            }
             localStorage.setItem('ordo_save', JSON.stringify({board, turn, mode, log, startingPlayer, difficulty})); 
             if (!silent) showToast(t('saved')); 
         }
@@ -1178,26 +1230,74 @@
             else showConfirm(t('loadQ'), load); 
         }
         
-        function load() {
-            let s = localStorage.getItem('ordo_save');
-            if(!s) return showToast(t('noSave'));
-            let d = JSON.parse(s); 
-            board = d.board; turn = d.turn; mode = d.mode; log = d.log;
-            startingPlayer = d.startingPlayer || 1;
-            difficulty = d.difficulty !== undefined ? d.difficulty : 1;
-            
-            if (log.length > 0 && typeof log[0] === 'string') log = log.map(str => ({ type: 'move', text: str }));
-            
-            gameActive = true; 
-            document.getElementById('btnPvP').classList.toggle('active-mode', mode==='PvP'); 
-            document.getElementById('btnPvE').classList.toggle('active-mode', mode==='PvE');
-            
-            centerTextEl.innerHTML = svgLogoHTML;
-            updateUILang();
-            updateDifficultyUI();
-            updateGame(); 
-            showToast(t('loaded'));
-        }
+function load() {
+    let s = localStorage.getItem('ordo_save');
+
+    if(!s) {
+        showToast(t('noSave'));
+        return;
+    }
+
+    let d = JSON.parse(s);
+
+    // ===== OBNOVA STAVU HRY =====
+    board = d.board;
+    turn = d.turn;
+    mode = d.mode;
+    log = d.log || [];
+    startingPlayer = d.startingPlayer || 1;
+
+    // ===== DŮLEŽITÉ =====
+    // načíst difficulty ZE SAVE
+    difficulty =
+        d.difficulty !== undefined
+            ? parseInt(d.difficulty)
+            : 2;
+
+    // aktuální save se stane aktivní obtížností
+    defaultDifficulty = difficulty;
+
+    // uložit do localStorage
+    localStorage.setItem('ordo_difficulty', difficulty);
+
+    // kompatibilita se starým logem
+    if (log.length > 0 && typeof log[0] === 'string') {
+        log = log.map(str => ({
+            type: 'move',
+            text: str
+        }));
+    }
+
+    // info do logu
+    log.unshift({
+        type: 'load',
+        level: difficulty
+    });
+
+    gameActive = true;
+
+    document.getElementById('btnPvP')
+        .classList.toggle('active-mode', mode === 'PvP');
+
+    document.getElementById('btnPvE')
+        .classList.toggle('active-mode', mode === 'PvE');
+
+    centerTextEl.innerHTML = svgLogoHTML;
+
+    // ===== UI MUSÍ AŽ TEĎ =====
+    updateDifficultyUI();
+    updateUILang();
+
+    // reset výběrů
+    selectedPieces = [];
+    validMoves = [];
+
+    // kompletní refresh
+    render();
+    updateGame();
+
+    showToast(t('loaded'));
+}
 
         init(false);
     </script>
