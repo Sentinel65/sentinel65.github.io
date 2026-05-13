@@ -753,7 +753,6 @@
             return visited.size !== pieces.length;
         }
 
-        // Upravené heuristické ohodnocení s parametrem depth pro taktické protažení
         function evaluateBoardHeuristic(testBoard, move, player, depth = 0) {
             let score = 0;
             let opp = player === 1 ? 2 : 1;
@@ -775,12 +774,10 @@
 
             let isOppDisconnected = isDisconnected(testBoard, opp);
 
-            // Taktické protažení: Pokud jsme soupeře rozpojili, zkontrolujeme, jestli ho to rovnou nezabije
             if (isOppDisconnected) {
                 let oppMoves = getAllMovesForBoard(testBoard, opp);
-                if (oppMoves.length === 0) return 1000000; // Okamžitá výhra
+                if (oppMoves.length === 0) return 1000000; 
 
-                // Hledáme vynucený "mat" do hloubky
                 if (depth < 1) { 
                     let allReconnectionsLeadToDeath = true;
                     for (let rMove of oppMoves) {
@@ -795,7 +792,6 @@
                             wMove.from.forEach(p => finalBoard[p.r][p.c] = 0);
                             wMove.targets.forEach(p => finalBoard[p.r][p.c] = player);
                             
-                            // Zanoření do další vrstvy
                             let wScore = evaluateBoardHeuristic(finalBoard, wMove, player, depth + 1);
                             if (wScore >= 500000) {
                                 winExists = true;
@@ -807,7 +803,7 @@
                             break;
                         }
                     }
-                    if (allReconnectionsLeadToDeath) return 1000000; // Past sklapla, soupeř nemá úniku
+                    if (allReconnectionsLeadToDeath) return 1000000;
                 }
                 score += 15000;
             }
@@ -844,7 +840,6 @@
                         score += Math.abs(r - startRow) * 10;
                         if (c >= 3 && c <= 6) score += 5; 
                         
-                        // Ochranný sousedský bonus (nutí AI držet formaci)
                         let neighbors = 0;
                         for(let dr=-1; dr<=1; dr++){
                             for(let dc=-1; dc<=1; dc++){
@@ -936,7 +931,14 @@
                 }
             }
             
-            log.unshift({ type: 'move', player: turn, isOrdo: from.length > 1, fromStr: fromStr, toStr: toStr, isCap: isCap, scoreVal: scoreVal, countW: countW, countB: countB });
+            let diffIcon = '';
+            if (mode === 'PvE' && turn === 2) {
+                if (difficulty === 0) diffIcon = ' [🟩]';
+                else if (difficulty === 1) diffIcon = ' [🟨]';
+                else if (difficulty === 2) diffIcon = ' [🟥]';
+            }
+
+            log.unshift({ type: 'move', player: turn, isOrdo: from.length > 1, fromStr: fromStr, toStr: toStr, isCap: isCap, scoreVal: scoreVal, countW: countW, countB: countB, diffIcon: diffIcon });
             
             let targetRow = turn === 1 ? 0 : 7;
             if(to.some(p => p.r === targetRow)) {
@@ -1012,7 +1014,6 @@
                         let oScore = evaluateBoardHeuristic(nextBoard, oMove, 1, 0);
                         if (oScore > oppBestScore) oppBestScore = oScore;
                         
-                        // Alpha-Beta prořezávání: pokud zjistíme tah hráče, který nám zaručí prohru, hned končíme hledání.
                         if (oppBestScore >= 1000000) break;
                     }
 
@@ -1066,8 +1067,9 @@
                 const capStr = entry.isCap ? ' (x)' : '';
                 const scoreStr = withHTML ? ` <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${entry.scoreVal}]</span>` : ` [★ ${entry.scoreVal}]`;
                 const ordoStr = entry.isOrdo ? ' Ordo' : '';
+                const diffStr = entry.diffIcon ? entry.diffIcon : '';
                 
-                let text = `${pName}${ordoStr}: ${entry.fromStr}➔${entry.toStr}${capStr}${scoreStr}`;
+                let text = `${pName}${ordoStr}: ${entry.fromStr}➔${entry.toStr}${capStr}${scoreStr}${diffStr}`;
                 
                 if (entry.isCap && entry.countW !== undefined) {
                     if (withHTML) text += `<br><span style="color:#bdc3c7; font-size: 0.9em;">&nbsp;&nbsp;↳ ${t('remains')}: ${t('white')} ${entry.countW} | ${t('black')} ${entry.countB}</span>`;
