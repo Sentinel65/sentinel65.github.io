@@ -17,7 +17,7 @@
             --home-white: rgba(255, 255, 255, 0.8);
             --home-black: rgba(30, 39, 46, 0.8);
             --accent: #3867d6;
-            --score-yellow: #f1c40f; /* Nová jasně žlutá pro skóre */
+            --score-yellow: #f1c40f;
         }
 
         body {
@@ -134,11 +134,6 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--text-color);
-            text-align: center;
-            pointer-events: none;
             width: auto;
             z-index: 1;
             display: flex;
@@ -248,11 +243,13 @@
         #toastContainer {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+            align-items: center; width: 100%;
         }
         .toast {
             background: rgba(45, 52, 70, 0.95); color: white; padding: 12px 25px; border-radius: 25px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-left: 4px solid var(--accent);
             animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards; font-size: 0.95rem;
+            text-align: center; min-width: 150px;
         }
 
         @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -270,7 +267,8 @@
         #modalText {
             overflow-y: auto; text-align: left; padding-right: 5px; line-height: 1.4;
         }
-        #modalText h4 { margin-top: 10px; margin-bottom: 5px; color: var(--accent); text-align: center; }
+        #modalText h2 { text-align: center; margin-top: 0; color: white; }
+        #modalText h4 { margin-top: 15px; margin-bottom: 5px; color: var(--accent); text-align: center; }
         #modalText ul { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
         #modalText li { margin-bottom: 5px; }
         #modalText::-webkit-scrollbar { width: 6px; }
@@ -283,6 +281,10 @@
         }
         .modal-btn.cancel { background: #e74c3c; }
 
+        .help-header { text-align: center; margin-bottom: 20px; }
+        .help-subtitle { display: block; text-align: center; margin-top: 5px; }
+        .help-author { display: block; text-align: center; color: var(--score-yellow); font-weight: bold; margin-bottom: 15px; }
+
         @media (max-width: 600px) {
             .controls button { width: 36px; height: 36px; font-size: 1.2rem; }
             .player-badge { font-size: 1.1rem; padding: 6px 12px; }
@@ -294,8 +296,8 @@
 <body>
     
     <div class="controls">
-        <button id="btnPvP" class="active-mode" onclick="setMode('PvP')" title="Hráč vs Hráč">👥</button>
-        <button id="btnPvE" onclick="setMode('PvE')" title="Hráč vs Počítač">🤖</button>
+        <button id="btnPvP" onclick="setMode('PvP')" title="Hráč vs Hráč">👥</button>
+        <button id="btnPvE" class="active-mode" onclick="setMode('PvE')" title="Hráč vs Počítač">🖥️</button>
         <button onclick="confirmReset()" id="tBtnNew" title="Nová hra">🔄</button>
         <button onclick="saveGame()" id="tBtnSave" title="Uložit">💾</button>
         <button onclick="confirmLoad()" id="tBtnLoad" title="Načíst">📂</button>
@@ -307,17 +309,7 @@
         <div id="whitePlayer" class="player-badge white">
             <div class="mini-piece white"></div> <span id="txtWhite">20</span>
         </div>
-        <div class="game-title-inline" id="centerText">
-            <svg viewBox="0 0 2048 582" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORDO Logo" style="height: 1.8rem; width: auto; vertical-align: middle;">
-                <rect x="0" y="0" width="2048" height="582" rx="291" fill="#28A8B3" />
-                <circle cx="291" cy="291" r="291" fill="#48C7D1" />
-                <circle cx="291" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
-                <circle cx="1757" cy="291" r="291" fill="#48C7D1" />
-                <circle cx="1757" cy="291" r="161" fill="none" stroke="#F2F2F2" stroke-width="61" />
-                <path fill="#F2F2F2" d="M664 78 H790 Q906 78 906 202 Q906 291 840 322 L943 505 H841 L769 384 H728 V505 H664 Z M728 139 V274 H785 Q842 274 842 202 Q842 139 785 139 Z" />
-                <path fill="#F2F2F2" d="M1073 78 H1214 Q1406 78 1406 291 Q1406 505 1214 505 H1073 Z M1137 139 V444 H1204 Q1341 444 1341 291 Q1341 139 1204 139 Z" />
-            </svg>
-        </div>
+        <div class="game-title-inline" id="centerText"></div>
         <div id="blackPlayer" class="player-badge black">
             <span id="txtBlack">20</span> <div class="mini-piece black"></div>
         </div>
@@ -344,7 +336,7 @@
 
     <script>
         const ROWS = 8, COLS = 10;
-        let board = [], turn = 1, mode = 'PvP', gameActive = true;
+        let board = [], turn = 1, mode = 'PvE', gameActive = true;
         let selectedPieces = [], validMoves = [];
         let log = []; 
         let currentLang = 'cs';
@@ -364,31 +356,33 @@
 
         const i18n = {
             cs: {
+                title: "Pravidla hry", subtitle: "desková strategická hra", author: "Dieter Stein",
                 pvp: "Hráč vs Hráč", pve: "Hráč vs Počítač",
                 new: "Nová hra", save: "Uložit", load: "Načíst", help: "Nápověda",
-                white: "Bílý", black: "Černý",
+                white: "Bílý", black: "Černý", remains: "Zbývá",
                 whiteAdj: "bílého", blackAdj: "černého",
                 sure: "Opravdu?", newQ: "Ztratíte aktuální postup. Začít novou hru?", loadQ: "Ztratíte rozehranou hru. Načíst uloženou pozici?",
-                saved: "Hra uložena do prohlížeče.", noSave: "Nenalezena žádná uložená hra.", loaded: "Hra načtena.",
+                saved: "Hra uložena", noSave: "Nenalezena žádná uložená hra.", loaded: "Hra načtena.",
                 cancel: "Zrušit", ok: "OK", copied: "Log zkopírován do schránky.",
                 helpText: "<h4>TERMINOLOGIE</h4><strong>Skupina:</strong> Ortogonálně (rovně) nebo diagonálně (šikmo) spojená skupina všech kamenů hráče.<br><h4>CÍL HRY</h4>Hráči pohybují svými kameny a snaží se dosáhnout soupeřovy domovské řady.<br><br><strong>Domovská řada:</strong> Nejbližší řada na desce z pohledu hráče.<br><h4>PRŮBĚH HRY</h4>Začíná bílý, poté se hráči střídají v tazích. Hráč se nesmí vzdát tahu.<br><br><strong>Spojení:</strong> Během hry, po odehrání tahu, musí být všechny kameny hráče spojeny v jedné jediné skupině.<br><br><strong>Tahy a braní:</strong> Existují dva možné způsoby pohybu kamenů: tahy jedním kamenem a tahy Ordo.<ul><li><strong>Tah jedním kamenem:</strong> Jeden kámen se může pohybovat vpřed nebo do stran, rovně nebo šikmo v přímé linii o libovolný počet prázdných polí. Tah může ukončit na prázdném poli nebo na poli obsazeném soupeřovým kamenem, který je tímto zajat a odstraněn z desky. Tahy dozadu jsou povoleny pouze při spojovacích tazích (viz níže).</li><li><strong>Tahy Ordo:</strong> Ordo tah: 2 a více kamenů, které jsou spojeny v přímé horizontální nebo vertikální linii, se mohou posouvat vedle sebe o libovolný počet prázdných polí. Mohou se pohybovat pouze rovně (ne šikmo) vpřed (pokud jsou zarovnány horizontálně) nebo do stran (pokud jsou zarovnány vertikálně), a to o stejný počet polí. Nemohou brát soupeřovy kameny.</li></ul><strong>Rozpojení:</strong> Pokud je skupina hráče rozpojena v důsledku soupeřova tahu s braním, musí tento hráč táhnout tak, aby se skupina opět spojila. Pokud takový tah není možný, okamžitě prohrává hru. Normálně se kameny pohybují vpřed nebo do stran. V případě rozdělené skupiny (a pouze tehdy) se kameny mohou pohybovat i dozadu. To platí i pro tahy Ordo.<br><h4>KONEC HRY</h4>Hlavním cílem hry je umístit kámen na soupeřovu domovskou řadu.<br><br>Hráči také prohrávají hru, pokud po rozpojení nedokážou svou skupinu znovu spojit, nebo pokud jim na desce nezbydou žádné kameny.<br><br><strong>Upozornění:</strong> Pokud hráči zbývá pouze jeden kámen, je tento kámen stále považován za skupinu!",
                 disconnectLog: (pAdj) => `Skupina kamenů ${pAdj} hráče rozpojena! Nutný tah pro znovuspojení.`,
                 winGoal: (w, l) => `Konec hry. ${w} dosáhl domovské řady soupeře a vyhrál.`,
-                winNoMove: (w, l) => `Konec hry. ${l} nemá žádný kámen. Vítězí ${w.toLowerCase()}.`,
+                winNoMove: (w, l) => `Konec hry. ${l} nemá žádný platný tah. Vítězí ${w.toLowerCase()}.`,
                 winDisc: (w, l) => `Konec hry. ${l} nemůže spojit svou skupinu kamenů. Vítězí ${w.toLowerCase()}.`
             },
             en: {
+                title: "Game Rules", subtitle: "abstract strategy board game", author: "Dieter Stein",
                 pvp: "Player vs Player", pve: "Player vs Computer",
                 new: "New Game", save: "Save", load: "Load", help: "Help",
-                white: "White", black: "Black",
+                white: "White", black: "Black", remains: "Remaining",
                 whiteAdj: "white", blackAdj: "black",
                 sure: "Are you sure?", newQ: "Current progress will be lost. Start a new game?", loadQ: "Current game will be lost. Load saved game?",
-                saved: "Game saved to browser.", noSave: "No saved game found.", loaded: "Game loaded.",
+                saved: "Game saved", noSave: "No saved game found.", loaded: "Game loaded.",
                 cancel: "Cancel", ok: "OK", copied: "Log copied to clipboard.",
                 helpText: "<h4>TERMINOLOGY</h4><strong>Group:</strong> Orthogonally or diagonally connected group of all pieces of a player.<br><h4>OBJECTIVE</h4>Players move their pieces trying to reach the opponent's home row.<br><br><strong>Home row:</strong> Nearest row on the board seen from a player's perspective.<br><h4>GAME PLAY</h4>White starts, then players take turns making a move. They may not pass.<br><br><strong>Connection:</strong> Throughout the game, after a player's move, all pieces of that player must be connected in one sole group.<br><br><strong>Moves and Captures:</strong> There are two possible ways to move the pieces: single piece moves and ordo moves.<ul><li><strong>Single Piece Move:</strong> A single piece can move forward or sideways, orthogonally or diagonally in a straight line any number of empty squares. It may end the move in an empty square or a square occupied by an opponent's piece, which is then captured and removed from the board. Backward moves are allowed only in reconnection moves (see below).</li><li><strong>Ordo Moves:</strong> The ordo move: 2 or more pieces, which are connected in a straight horizontal or vertical line, can move side by side any number of empty squares. They may only move orthogonally (not diagonally) forward (if they are horizontally aligned) or sideways (if they are vertically aligned), the same number of squares. They may not capture.</li></ul><strong>Disconnection:</strong> If a player's group is disconnected because of a capture move by the opponent, that player must move such that the group is connected again. If no such move is possible, the game is lost immediately. Normally, pieces move forward or sideways. In case of a split group (and only then), pieces may also move backwards. This is also true for ordo moves.<br><h4>END OF THE GAME</h4>The main goal of the game is to place a piece on the opponent's home row.<br><br>Also, players lose a game if they cannot reconnect their group, after a split capture by the opponent or if they have no pieces left on the board.<br><br><strong>Please note:</strong> If a player has only one piece left, said piece is still considered a group!",
                 disconnectLog: (pAdj) => `${pAdj.charAt(0).toUpperCase() + pAdj.slice(1)} player's pieces disconnected! A reconnecting move is required.`,
                 winGoal: (w, l) => `Game over. ${w} reached the opponent's home row and won.`,
-                winNoMove: (w, l) => `Game over. ${l} has no piece. ${w} wins.`,
+                winNoMove: (w, l) => `Game over. ${l} has no valid move. ${w} wins.`,
                 winDisc: (w, l) => `Game over. ${l} cannot reconnect their group of pieces. ${w} wins.`
             }
         };
@@ -448,7 +442,17 @@
         }
 
         function showHelp() {
-            document.getElementById('modalText').innerHTML = t('helpText');
+            const logoWithMargin = svgLogoHTML.replace('style="', 'style="margin: 10px 0; ');
+            let html = `
+                <div class="help-header">
+                    <h2>${t('title')}</h2>
+                    ${logoWithMargin}
+                    <span class="help-subtitle">${t('subtitle')}</span>
+                    <span class="help-author">${t('author')}</span>
+                </div>
+                ${t('helpText')}
+            `;
+            document.getElementById('modalText').innerHTML = html;
             document.getElementById('modalOk').innerText = t('ok');
             document.getElementById('modalCancel').style.display = 'none';
             modal.style.display = 'flex';
@@ -629,21 +633,121 @@
             let targetRow = player === 1 ? 0 : 7;
             let startRow = player === 1 ? 7 : 0;
             
+            // Okamžitá výhra (nejvyšší priorita)
             if(move.targets.some(p => p.r === targetRow)) return 1000000;
+            
+            let myPieces = [];
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(testBoard[r][c] === player) { myPieces.push({r,c}); }
+                }
+            }
+            if(myPieces.length === 0) return -1000000;
+
+            let isOppDisconnected = isDisconnected(testBoard, opp);
+
+            // Speciální režim přežití pro 1 kámen
+            if (myPieces.length === 1) {
+                let myPiece = myPieces[0];
+                let oppFwd = opp === 1 ? -1 : 1;
+                let isSafe = true;
+                
+                const dirs = isOppDisconnected 
+                    ? [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] 
+                    : [[oppFwd,0],[oppFwd,1],[oppFwd,-1],[0,1],[0,-1]];
+                    
+                for(let [dr, dc] of dirs) {
+                    let nr = myPiece.r - dr, nc = myPiece.c - dc;
+                    while(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
+                        if(testBoard[nr][nc] === opp) { isSafe = false; break; }
+                        if(testBoard[nr][nc] !== 0) break; 
+                        nr -= dr; nc -= dc;
+                    }
+                    if(!isSafe) break;
+                }
+
+                let forwardBonus = Math.abs(myPiece.r - startRow) * 1000;
+                
+                if (!isSafe) {
+                    return -500000 + forwardBonus; 
+                } else {
+                    let baseScore = 50000 + forwardBonus;
+                    if (move.isCap) baseScore += 500; 
+                    return baseScore;
+                }
+            }
+
+            // Normální hodnocení
             if(move.isCap) score += 5000;
-            if(isDisconnected(testBoard, opp)) score += 10000;
+            if(isOppDisconnected) score += 10000;
             
             for(let r=0; r<ROWS; r++) {
                 for(let c=0; c<COLS; c++) {
                     if(testBoard[r][c] === player) {
                         score += Math.abs(r - startRow) * 10;
+                        // Podpora držení se ve středu desky
+                        if (c >= 3 && c <= 6) score += 5;
                     } else if (testBoard[r][c] === opp) {
                         score -= Math.abs(r - targetRow) * 10;
                     }
                 }
             }
-            if(move.from.length > 1) score += 20;
+            if(move.from.length > 1) score += 30; // Posílený bonus za ordo tahy
             return Math.round(score);
+        }
+
+        // Nová funkce pro vygenerování absolutně všech platných tahů pro daného hráče na testovací desce
+        function getAllMovesForBoard(targetBoard, p) {
+            let backupBoard = board;
+            let backupTurn = turn;
+            let backupSelected = selectedPieces;
+
+            board = targetBoard;
+            turn = p;
+            let moves = [];
+            let moveSet = new Set();
+
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(board[r][c]===p) {
+                        selectedPieces = [{r,c}];
+                        calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
+                        
+                        // Vertikální Ordo tahy
+                        for(let r2=0; r2<ROWS; r2++) {
+                            let line = getOrdoLine({r,c}, {r:r2, c});
+                            if(line) {
+                                selectedPieces = line;
+                                calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
+                            }
+                        }
+                        
+                        // Nově přidáno: Horizontální Ordo tahy (AI to doteď "neviděla")
+                        for(let c2=0; c2<COLS; c2++) {
+                            let line = getOrdoLine({r,c}, {r, c:c2});
+                            if(line) {
+                                selectedPieces = line;
+                                calculateMoves().forEach(m => addUniqueMove(moves, moveSet, m));
+                            }
+                        }
+                    }
+                }
+            }
+
+            board = backupBoard;
+            turn = backupTurn;
+            selectedPieces = backupSelected;
+            return moves;
+        }
+
+        function addUniqueMove(movesArr, set, move) {
+            let f = [...move.from].sort((a,b)=>a.r!==b.r?a.r-b.r:a.c-b.c);
+            let t = [...move.targets].sort((a,b)=>a.r!==b.r?a.r-b.r:a.c-b.c);
+            let id = JSON.stringify(f) + "|" + JSON.stringify(t);
+            if(!set.has(id)) {
+                set.add(id);
+                movesArr.push(move);
+            }
         }
 
         function executeMove(from, to, isCap) {
@@ -653,31 +757,46 @@
             let scoreVal = evaluateBoardHeuristic(board, {from: from, targets: to, isCap: isCap}, turn);
             
             const cols = "ABCDEFGHIJ";
-            const pName = turn === 1 ? t('white') : t('black');
-            
-            let moveText = '';
-            // HTML upraven pro žlutou barvu skóre
+            let fromStr, toStr;
+
             if(from.length === 1) {
-                moveText = `${pName}: ${cols[from[0].c]}${8-from[0].r}➔${cols[to[0].c]}${8-to[0].r}${isCap?' (x)':''} <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${scoreVal}]</span>`;
+                fromStr = `${cols[from[0].c]}${8-from[0].r}`;
+                toStr = `${cols[to[0].c]}${8-to[0].r}`;
             } else {
                 let sortedFrom = [...from].sort((a,b) => a.r===b.r ? a.c-b.c : a.r-b.r);
                 let sortedTo = [...to].sort((a,b) => a.r===b.r ? a.c-b.c : a.r-b.r);
                 let f1 = sortedFrom[0], f2 = sortedFrom[sortedFrom.length-1];
                 let t1 = sortedTo[0], t2 = sortedTo[sortedTo.length-1];
-                let fromStr = `${cols[f1.c]}${8-f1.r}-${cols[f2.c]}${8-f2.r}`;
-                let toStr = `${cols[t1.c]}${8-t1.r}-${cols[t2.c]}${8-t2.r}`;
-                
-                moveText = `${pName} Ordo: ${fromStr}➔${toStr}${isCap?' (x)':''} <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${scoreVal}]</span>`;
+                fromStr = `${cols[f1.c]}${8-f1.r}-${cols[f2.c]}${8-f2.r}`;
+                toStr = `${cols[t1.c]}${8-t1.r}-${cols[t2.c]}${8-t2.r}`;
+            }
+
+            let countW = 0, countB = 0;
+            if(isCap) {
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        if(board[r][c] === 1) countW++;
+                        else if(board[r][c] === 2) countB++;
+                    }
+                }
             }
             
-            log.unshift({ type: 'move', text: moveText });
+            log.unshift({ 
+                type: 'move', 
+                player: turn, 
+                isOrdo: from.length > 1, 
+                fromStr: fromStr, 
+                toStr: toStr, 
+                isCap: isCap, 
+                scoreVal: scoreVal,
+                countW: countW,
+                countB: countB
+            });
             
             let targetRow = turn === 1 ? 0 : 7;
             if(to.some(p => p.r === targetRow)) {
-                let winner = turn === 1 ? t('white') : t('black');
-                let loser = turn === 1 ? t('black') : t('white');
                 updateCounters();
-                return win(t('winGoal')(winner, loser));
+                return win({ reason: 'goal', winner: turn, loser: turn === 1 ? 2 : 1 });
             }
             
             turn = turn === 1 ? 2 : 1;
@@ -701,24 +820,20 @@
             
             const isDisc = isDisconnected(board, turn);
 
-            // Logo se nyní v záhlaví udržuje vždy, pokud není restartováno
             if(!centerTextEl.innerHTML.includes('<svg')) {
                 centerTextEl.innerHTML = svgLogoHTML;
             }
 
             if(!possible && log.length > 0) {
-                let winner = turn === 1 ? t('black') : t('white');
-                let loser = turn === 1 ? t('white') : t('black');
                 if (isDisc) {
-                    return win(t('winDisc')(winner, loser));
+                    return win({ reason: 'disc', winner: turn === 1 ? 2 : 1, loser: turn });
                 } else {
-                    return win(t('winNoMove')(winner, loser));
+                    return win({ reason: 'nomove', winner: turn === 1 ? 2 : 1, loser: turn });
                 }
             }
             
             if (isDisc && log.length > 0) {
-                let pAdj = turn === 1 ? t('whiteAdj') : t('blackAdj');
-                log.unshift({ type: 'warning', text: t('disconnectLog')(pAdj) });
+                log.unshift({ type: 'warning', player: turn });
             }
 
             document.getElementById('whitePlayer').className = 'player-badge white' + (turn===1 ? ' active' : '') + (turn===1 && isDisc ? ' disconnected' : '');
@@ -731,59 +846,104 @@
             if(mode==='PvE' && turn===2 && gameActive) aiTimeout = setTimeout(aiMove, 600);
         }
 
+        // --- VYLEPŠENÁ INTELIGENCE ---
         function aiMove() {
-            let allMoves = [];
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
-                    if(board[r][c]===2) {
-                        selectedPieces = [{r,c}]; 
-                        allMoves.push(...calculateMoves());
-                        for(let r2=0; r2<ROWS; r2++) {
-                            let line = getOrdoLine({r,c}, {r:r2, c});
-                            if(line) { 
-                                selectedPieces = line; 
-                                allMoves.push(...calculateMoves()); 
-                            }
-                        }
-                    }
-                }
-            }
-            
+            let allMoves = getAllMovesForBoard(board, 2);
             if(allMoves.length === 0) return;
 
             let bestScore = -Infinity;
             let bestMoves = [];
 
             for(let move of allMoves) {
+                // 1. Zkusíme tah
                 let testBoard = board.map(row => [...row]);
                 move.from.forEach(p => testBoard[p.r][p.c] = 0);
                 move.targets.forEach(p => testBoard[p.r][p.c] = 2);
 
                 let score = evaluateBoardHeuristic(testBoard, move, 2);
-                let randomizedScore = score + Math.random() * 5; 
-                
+
+                // 2. OBRANNÝ REFLEX (2-ply Minimax): Pokud tímto tahem nevyhrajeme, podíváme se, co by s námi udělal hráč
+                if (score < 500000) {
+                    let oppMoves = getAllMovesForBoard(testBoard, 1);
+                    let oppBestScore = -Infinity;
+
+                    // Zkusíme všechny hráčovy odpovědi
+                    for(let oMove of oppMoves) {
+                        let nextBoard = testBoard.map(row => [...row]);
+                        oMove.from.forEach(p => nextBoard[p.r][p.c] = 0);
+                        oMove.targets.forEach(p => nextBoard[p.r][p.c] = 1);
+
+                        let oScore = evaluateBoardHeuristic(nextBoard, oMove, 1);
+                        if (oScore > oppBestScore) {
+                            oppBestScore = oScore;
+                        }
+                    }
+
+                    // Pokud hráč dokáže zahrát zdrcující útok, radikálně snížíme hodnotu tohoto našeho tahu
+                    if (oppBestScore !== -Infinity) {
+                        score -= (oppBestScore * 0.95);
+                    }
+                }
+
+                let randomizedScore = score + Math.random() * 2; // Menší náhodnost (AI hraje konzistentněji dobré tahy)
+
                 if(randomizedScore > bestScore) {
                     bestScore = randomizedScore;
                     bestMoves = [move];
-                } else if (randomizedScore === bestScore) {
+                } else if (Math.abs(randomizedScore - bestScore) < 0.1) {
                     bestMoves.push(move);
                 }
             }
 
-            let chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-            chosenMove.execute();
+            if (bestMoves.length > 0) {
+                let chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+                chosenMove.execute();
+            }
         }
 
-        function win(msg) { 
+        function win(endData) { 
             gameActive = false; 
-            log.unshift({ type: 'end', text: msg });
+            log.unshift({ type: 'end', ...endData });
             document.getElementById('whitePlayer').classList.remove('active', 'disconnected');
             document.getElementById('blackPlayer').classList.remove('active', 'disconnected');
-            
-            // Záhlaví zůstává nedotčené (logo se nemění na text)
-            
             render();
             updateLog();
+        }
+
+        function renderLogEntry(entry, withHTML = true) {
+            if (entry.type === 'move') {
+                if(entry.text) return withHTML ? entry.text : entry.text.replace(/<[^>]+>/g, '');
+                const pName = entry.player === 1 ? t('white') : t('black');
+                const capStr = entry.isCap ? ' (x)' : '';
+                const scoreStr = withHTML 
+                    ? ` <span style="color:var(--score-yellow);font-weight:bold;font-size:0.85em;">[★ ${entry.scoreVal}]</span>` 
+                    : ` [★ ${entry.scoreVal}]`;
+                const ordoStr = entry.isOrdo ? ' Ordo' : '';
+                
+                let text = `${pName}${ordoStr}: ${entry.fromStr}➔${entry.toStr}${capStr}${scoreStr}`;
+                
+                if (entry.isCap && entry.countW !== undefined) {
+                    if (withHTML) {
+                        text += `<br><span style="color:#bdc3c7; font-size: 0.9em;">&nbsp;&nbsp;↳ ${t('remains')}: ${t('white')} ${entry.countW} | ${t('black')} ${entry.countB}</span>`;
+                    } else {
+                        text += `\n   ↳ ${t('remains')}: ${t('white')} ${entry.countW} | ${t('black')} ${entry.countB}`;
+                    }
+                }
+                
+                return text;
+            } else if (entry.type === 'warning') {
+                if(entry.text) return entry.text;
+                let pAdj = entry.player === 1 ? t('whiteAdj') : t('blackAdj');
+                return t('disconnectLog')(pAdj);
+            } else if (entry.type === 'end') {
+                if(entry.text) return entry.text;
+                let w = entry.winner === 1 ? t('white') : t('black');
+                let l = entry.loser === 1 ? t('white') : t('black');
+                if(entry.reason === 'goal') return t('winGoal')(w, l);
+                if(entry.reason === 'nomove') return t('winNoMove')(w, l);
+                if(entry.reason === 'disc') return t('winDisc')(w, l);
+            }
+            return '';
         }
 
         function updateLog() { 
@@ -791,13 +951,14 @@
             let moveNum = log.filter(l => l.type === 'move').length;
             
             for(let i=0; i<log.length; i++) {
+                let renderedText = renderLogEntry(log[i], true);
                 if (log[i].type === 'move') {
-                    html += `<div style="margin-bottom: 2px;">${moveNum}. ${log[i].text}</div>`;
+                    html += `<div style="margin-bottom: 5px;">${moveNum}. ${renderedText}</div>`;
                     moveNum--;
                 } else if (log[i].type === 'warning') {
-                    html += `<div style="color: #ff7675; font-weight: bold; margin: 6px 0;">! ${log[i].text}</div>`;
+                    html += `<div style="color: #ff7675; font-weight: bold; margin: 6px 0;">! ${renderedText}</div>`;
                 } else if (log[i].type === 'end') {
-                    html += `<div style="color: #55efc4; font-weight: bold; margin: 10px 0; font-size: 1rem;">🏁 ${log[i].text}</div>`;
+                    html += `<div style="color: #55efc4; font-weight: bold; margin: 10px 0; font-size: 1rem;">🏁 ${renderedText}</div>`;
                 }
             }
             logEl.innerHTML = html; 
@@ -809,14 +970,14 @@
             let reversedLog = [...log].reverse();
             
             for(let entry of reversedLog) {
+                let cleanText = renderLogEntry(entry, false);
                 if(entry.type === 'move') {
-                    let cleanText = entry.text.replace(/<[^>]+>/g, '');
                     textToCopy.push(`${moveNum}. ${cleanText}`);
                     moveNum++;
                 } else if (entry.type === 'warning') {
-                    textToCopy.push(`[!] ${entry.text}`);
+                    textToCopy.push(`[!] ${cleanText}`);
                 } else if (entry.type === 'end') {
-                    textToCopy.push(`--- ${entry.text} ---`);
+                    textToCopy.push(`--- ${cleanText} ---`);
                 }
             }
             
