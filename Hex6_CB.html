@@ -499,7 +499,9 @@
             <li style="margin-bottom:8px;">
                 <strong><span class="cs">Párování:</span><span class="en">Pairing:</span></strong> <span class="cs">Umístíte-li na volné pole číslo a na sousedním poli je nespárované stejné číslo, dojde ke spárování, čísla se zprůhlední a stanou se neaktivními. V následujícím kroku je třeba ve stejné řadě umístit na volné pole číslo o 1 hodnotu vyšší. Pokud je řada plná, lze číslo umístit na kterékoli volné pole na hrací desce. Tímto vznikají řetězové reakce.</span><span class="en">If you place a number next to an unpaired identical number, they pair up and fade out. Immediately place a number 1 value higher in an empty hex in the same straight line. If the line is full, place it anywhere. This triggers chain reactions.</span>
             </li>
-            <li style="margin-bottom:8px;"><strong><span class="cs">Bonusy a Žolíky:</span><span class="en">Bonuses & Wilds:</span></strong> <span class="cs">Vyplnění všech polí jedné skupiny dělá z této barvy <strong>Žolíka (★)</strong>. Za žolíka můžeš použít kteroukoliv barvu.</span><span class="en">Filling all hexes of one group turns that color into a <strong>Wild (★)</strong>. You can use any color for a Wild card.</span></li>
+            <li style="margin-bottom:8px;"><strong><span class="cs">Bonusy a bonusové karty:</span><span class="en">Bonuses and bonus cards:</span></strong> <span class="cs">Jakmile jsou  všechna pole jedné barva vyplněna, stává se karta této barvy <strong>bonusovou</strong>. Pokud jedna z otočených karet zobrazuje barvu, kterou jste již
+vyplnili, můžete kamkoli umístit číslo 1. Pokud se tato barva nachází na obou kartách, můžete kamkoli umístit číslo 1 nebo 2.</span><span class="en">Once all the squares of a single color have been filled in, the card of that color becomes <strong>a bonus card</strong>. If one of the flipped cards shows a color that you have already
+filled in, you may place the number 1 anywhere. If that color appears on both cards, you may place either the number 1 or 2 anywhere.</span></li>
             <li style="margin-bottom:8px;"><strong><span class="cs">Skóre:</span><span class="en">Scoring:</span></strong> <span class="cs">Hra končí dobráním balíčku. Do celkového skóre se počítá součet nespárovaných čísel od hodnoty 2 a vyšší (včetně předdefinovaných 3 bílých polí s hodnotou 2) a body za bonusy z fáze 1 a fáze 2. Zde je přehled bodování:</span><span class="en">Game ends when the deck is empty. Final score is the sum of unpaired numbers value 2 or higher (including the 3 pre-printed white 2s) plus phase bonuses. Scoring table:</span>
                 <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9em; text-align:left;">
                     <tr style="background:#f1f3f5; border-bottom:1px solid #ccc;">
@@ -584,9 +586,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mismatch: "Toto pole neodpovídá otočeným kartám.",
             pairSelect: "Vyberte pole ke spárování (bliká modře).",
             pairHighlight: "Musíte vybrat jedno ze zvýrazněných sousedních polí (modře blikající) ke spárování!",
-            pairRowFull: "PÁROVÁNÍ! Řada je plná. Umístěte {val} na libovolné volné pole. (Fialová ukazuje spoje)",
-            pairRow: "PÁROVÁNÍ! Umístěte číslo {val} do blikající řady (zeleně).",
-            colorFull: "Barva naplněna! Získáváte bonus {b} bodů. Nyní funguje jako žolík.",
+            pairRowFull: "PÁROVÁNÍ!\nŘada je plná. Umístěte {val} na libovolné volné pole. (Fialová ukazuje spoje)",
+            pairRow: "PÁROVÁNÍ!\nUmístěte číslo {val} do blikající řady (zeleně).",
+            colorFull: "Barva naplněna!Získáváte bonus {b} bodů.\nNyní funguje jako bonusová karta.",
             starsFull: "Všechny hvězdičky naplněny! Bonus {b} bodů.",
             gameOver: "Hra skončila.",
             saved: "Hra byla úspěšně uložena.",
@@ -606,9 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mismatch: "This hex does not match the flipped cards.",
             pairSelect: "Select a hex to pair with (blinking blue).",
             pairHighlight: "You must select one of the highlighted adjacent hexes (blue) to pair!",
-            pairRowFull: "PAIRING! Row is full. Place {val} anywhere. (Purple shows links)",
-            pairRow: "PAIRING! Place number {val} in the blinking row (green).",
-            colorFull: "Color complete! Bonus {b} pts. It acts as a Wild now.",
+            pairRowFull: "PAIRING!\nRow is full. Place {val} anywhere. (Purple shows links)",
+            pairRow: "PAIRING!\nPlace number {val} in the blinking row (green).",
+            colorFull: "Color complete! Bonus {b} pts.\nIt acts as a bonus card.",
             starsFull: "All stars complete! Bonus {b} pts.",
             gameOver: "Game over.",
             saved: "Game saved successfully.",
@@ -869,12 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             ui.card1.className = `card c-${currentCards[0]}`;
             let content1 = `<div class="cb-icon">${CB_ICONS[currentCards[0]] || ''}</div>`;
-            if (w1) content1 += '<div class="wild-icon" title="★">★</div>';
             ui.card1.innerHTML = content1;
             
             ui.card2.className = `card c-${currentCards[1]}`;
             let content2 = `<div class="cb-icon">${CB_ICONS[currentCards[1]] || ''}</div>`;
-            if (w2) content2 += '<div class="wild-icon" title="★">★</div>';
             ui.card2.innerHTML = content2;
         } else {
             ui.card1.className = `card`; ui.card1.innerHTML = '?';
@@ -1064,7 +1064,20 @@ document.addEventListener('DOMContentLoaded', () => {
         restoreCardsUI();
         
         ui.btnFlip.disabled = true;
+        
+            const hasBonusCard =
+        isColorComplete(currentCards[0]) ||
+        isColorComplete(currentCards[1]);
+
+    if (hasBonusCard) {
+        ui.instr.innerText =
+            currentLang === 'cs'
+                ? 'BONUSOVÁ KARTA!\nVyberte pole pro umístění čísla.'
+                : 'BONUS CARD!\nSelect a hex to place the number.';
+    } else {
         setInstr('selectHex');
+    }
+
         updateUI();
     }
 
@@ -1125,27 +1138,46 @@ document.addEventListener('DOMContentLoaded', () => {
         let allowed = false;
         let canPlace2 = false;
 
+        // obě bonusové karty
         if (w1 && w2) {
+
             allowed = true;
-            canPlace2 = true;
-        } else if (w1 || w2) {
-            allowed = true;
-            const nonWild = w1 ? c2 : c1;
-            if (hex.c === nonWild) {
+
+            // pouze pokud původní barvy byly stejné
+            if (c1 === c2) {
                 canPlace2 = true;
             }
+
+        // jedna bonusová karta
+        } else if (w1 || w2) {
+
+            // bonus dovoluje hrát kamkoliv
+            allowed = true;
+
+            // ale nikdy nedává 2
+            canPlace2 = false;
+
+        // normální karty
         } else {
+
+            // dvě stejné barvy
             if (c1 === c2) {
+
                 if (hex.c === c1) {
                     allowed = true;
                     canPlace2 = true;
                 }
+
+            // dvě různé barvy
             } else {
+
                 if (hex.c === c1 || hex.c === c2) {
                     allowed = true;
                 }
             }
         }
+
+
 
         if (allowed) {
             if (canPlace2) {
