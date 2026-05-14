@@ -293,7 +293,7 @@
 
 <!-- Klasické Menu -->
 <div class="menu" id="menu-main">
-    <span class="icon-btn" onclick="toggleLang()" id="btn-lang" title="English">🇨🇿</span>
+    <span class="icon-btn" onclick="toggleLang()" id="btn-lang" title="English">🇬🇧</span>
     <span class="icon-btn" onclick="showHelp()" id="btn-help" title="Nápověda">💡</span>
     <span class="icon-btn" onclick="showFavorites()" id="btn-fav" title="Oblíbené hry">⭐</span>
     <span class="icon-btn" onclick="undoMove()" id="btn-undo" title="Tah zpět">↩️</span>
@@ -453,12 +453,15 @@
         difficultyUsed: 2
     };
 
-    function toggleLang() {
+        function toggleLang() {
         lang = lang === 'cs' ? 'en' : 'cs';
+
         const flag = document.getElementById('btn-lang');
-        flag.innerText = lang === 'cs' ? '🇨🇿' : '🇬🇧';
+
+        // zobrazí vlajku jazyka, NA KTERÝ se přepne
+        flag.innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
         flag.title = lang === 'cs' ? 'English' : 'Čeština';
-        
+
         document.getElementById('load-modal-text').innerText = dict[lang].loadModal;
         document.getElementById('reset-modal-text').innerText = dict[lang].resetModal;
         document.getElementById('btn-load-yes').innerText = dict[lang].yes;
@@ -490,10 +493,13 @@
         document.getElementById('btn-editor-save').innerText = dict[lang].editorSave;
         document.getElementById('btn-fav-export').innerText = dict[lang].favExport;
         document.getElementById('btn-fav-import').innerText = dict[lang].favImport;
-        
-        document.getElementById('main-title').innerText = isEditorMode ? dict[lang].titleEditor : dict[lang].titleMain;
 
-        if(document.getElementById('fav-modal').style.display === 'flex') renderFavoritesList();
+        document.getElementById('main-title').innerText =
+            isEditorMode ? dict[lang].titleEditor : dict[lang].titleMain;
+
+        if (document.getElementById('fav-modal').style.display === 'flex') {
+            renderFavoritesList();
+        }
     }
 
     function showToast(msg) {
