@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Honeycombs Game</title>
+    <style>
+        /* Odstranění problikávání dotyku na mobilních zařízeních */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            user-select: none;
+        }
+
+        :root {
+            --honey: #ffb300;
+            --honey-dark: #ff8f00;
+            --blue-dark: #1e3a8a;
+            --white: #ffffff;
+            --bg: #fafafa;
+            --text-dark: #333333;
+            
+            /* Barvy obtížností */
+            --diff-easy: #43A047;   /* Zelená */
+            --diff-medium: #F57F17; /* Žlutá/Oranžová */
+            --diff-hard: #E53935;   /* Červená */
+            --diff-custom: #8E24AA; /* Fialová pro Editor */
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* --- Nápis nad menu --- */
+        .game-title {
+            color: var(--honey-dark);
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 15px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* --- Sjednocené Menu (8 tlačítek v 1 řadě) --- */
+        .menu {
+            width: 100%;
+            max-width: 550px;
+            display: flex;
+            justify-content: space-evenly; 
+            align-items: center;
+            padding: 8px 4px;
+            box-sizing: border-box;
+            background: var(--blue-dark);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+            gap: 2px; 
+            border-radius: 0 0 10px 10px;
+            flex-wrap: nowrap; 
+        }
+
+        .menu.menu-editor {
+            background: var(--diff-custom);
+            padding: 10px;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            cursor: pointer;
+            font-size: 18px; 
+            transition: transform 0.2s, background 0.2s;
+            padding: 6px; 
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--white);
+            text-decoration: none;
+            flex-shrink: 1; 
+            font-weight: 600;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.15);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .menu-editor .icon-btn {
+            padding: 8px 15px;
+            font-size: 1rem;
+        }
+
+        /* --- Herní deska --- */
+        #board-container {
+            position: relative;
+            width: 95vw;
+            max-width: 550px;
+            aspect-ratio: 1.1 / 1;
+            margin: 0 auto 30px;
+        }
+
+        .hex-wrapper {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+
+        .hex-border {
+            position: absolute;
+            inset: 1px;
+            background-color: var(--honey);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: filter 0.2s;
+        }
+
+        .hex-wrapper:hover .hex-border {
+            filter: brightness(0.9);
+        }
+
+        .hex-inner {
+            position: absolute;
+            inset: 4px; 
+            background-color: var(--white);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 2.2rem;
+            color: var(--blue-dark);
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        /* Pevná vygenerovaná čísla */
+        .hex-wrapper.fixed .hex-inner { background-color: var(--honey); color: var(--white); }
+
+        /* Třídy pro různé obtížnosti přehrávače */
+        .hex-wrapper.solve-trigger-1 .hex-inner { background-color: var(--diff-easy); color: var(--white); }
+        .hex-wrapper.solve-trigger-2 .hex-inner { background-color: var(--diff-medium); color: var(--white); }
+        .hex-wrapper.solve-trigger-3 .hex-inner { background-color: var(--diff-hard); color: var(--white); }
+        .hex-wrapper.solve-trigger-4 .hex-inner { background-color: var(--diff-custom); color: var(--white); }
+
+        /* Pulsování přehrávače */
+        @keyframes pulse-hex {
+            0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+            50% { transform: translate(-50%, -50%) scale(1.12); filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
+            100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+        }
+
+        .hex-wrapper.is-playing { animation: pulse-hex 0.8s infinite ease-in-out; z-index: 20; }
+
+        /* Čísla doplněná hráčem */
+        .hex-wrapper.user-set .hex-inner { background-color: var(--blue-dark); color: var(--white); }
+
+        /* --- Indikátor čísel (Pool) --- */
+        .numbers-pool {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px 20px;
+            max-width: 550px;
+        }
+
+        .circle-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--white);
+            transition: opacity 0.3s, transform 0.2s, outline 0.2s;
+        }
+
+        .circle-num.num-fixed { background-color: var(--honey); }
+        .circle-num.num-normal { background-color: var(--blue-dark); }
+        .circle-num.num-trigger-1 { background-color: var(--diff-easy); }
+        .circle-num.num-trigger-2 { background-color: var(--diff-medium); }
+        .circle-num.num-trigger-3 { background-color: var(--diff-hard); }
+        .circle-num.num-trigger-4 { background-color: var(--diff-custom); }
+        .circle-num.used { opacity: 0.15; }
+
+        .circle-num.editor-selected {
+            outline: 3px solid var(--honey-dark);
+            outline-offset: 2px;
+            transform: scale(1.15);
+            opacity: 1 !important;
+            cursor: pointer;
+        }
+        .circle-num.editor-clickable { cursor: pointer; }
+
+        /* --- UI Toasty --- */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--white);
+            color: var(--blue-dark);
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 3000;
+            pointer-events: none;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.25);
+            text-align: center;
+            border-top: 4px solid var(--honey);
+        }
+
+        /* --- UI Modals --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 25px 30px;
+            border-radius: 12px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.3);
+            border-top: 4px solid var(--honey);
+            color: var(--blue-dark);
+            box-sizing: border-box;
+        }
+
+        .modal-content h2 { margin-top: 0; color: var(--blue-dark); font-size: 1.4rem; }
+        .modal-content p { font-size: 1.05rem; line-height: 1.5; color: var(--blue-dark); font-weight: 600; margin-bottom: 20px; text-align: center; }
+        .modal-content.help-content p { text-align: left; font-weight: normal; margin-bottom: 12px;}
+        
+        .modal-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+
+        .btn-text {
+            background: var(--honey); border: none; padding: 10px 20px; border-radius: 8px;
+            cursor: pointer; font-weight: 700; color: #fff; transition: 0.2s; font-size: 1rem; min-width: 90px;
+        }
+        .btn-text:hover { background: var(--honey-dark); transform: translateY(-1px); }
+        .btn-text.btn-cancel { background: #888; }
+        .btn-text.btn-cancel:hover { background: #666; }
+        .btn-text.btn-full { width: 100%; margin-bottom: 15px; }
+
+        .fav-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(30, 58, 138, 0.05); padding: 12px; margin-bottom: 8px;
+            border-radius: 8px; border: 1px solid rgba(30, 58, 138, 0.1);
+        }
+        .fav-title { font-weight: 700; color: var(--blue-dark); font-size: 1.1rem;}
+        .fav-actions span { cursor: pointer; font-size: 1.3rem; margin-left: 10px; transition: transform 0.2s; display: inline-block; }
+        .fav-actions span:hover { transform: scale(1.2); }
+        
+        .export-import-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .export-import-container .btn-full {
+            margin-bottom: 0;
+            padding: 10px;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+<h1 class="game-title" id="main-title">Honeycombs</h1>
+
+<!-- Klasické Menu -->
+<div class="menu" id="menu-main">
+    <span class="icon-btn" onclick="toggleLang()" id="btn-lang" title="English">🇨🇿</span>
+    <span class="icon-btn" onclick="showHelp()" id="btn-help" title="Nápověda">💡</span>
+    <span class="icon-btn" onclick="showFavorites()" id="btn-fav" title="Oblíbené hry">⭐</span>
+    <span class="icon-btn" onclick="undoMove()" id="btn-undo" title="Tah zpět">↩️</span>
+    <span class="icon-btn" onclick="triggerReset()" id="btn-reset" title="Resetovat desku">🔄</span>
+    <span class="icon-btn" onclick="saveGame()" id="btn-save" title="Uložit rozehranou hru">💾</span>
+    <span class="icon-btn" onclick="triggerLoad()" id="btn-load" title="Načíst rozehranou hru">📂</span>
+    <span class="icon-btn" onclick="initGame()" id="btn-new" title="Nová hra">🎲</span>
+</div>
+
+<!-- Editor Menu -->
+<div class="menu menu-editor" id="menu-editor" style="display: none;">
+    <span class="icon-btn" onclick="cancelEditor()" id="btn-editor-cancel">❌ Zrušit</span>
+    <span class="icon-btn" onclick="saveEditorBoard()" id="btn-editor-save">✅ Uložit a hrát</span>
+</div>
+
+<div id="board-container"></div>
+<div class="numbers-pool" id="pool"></div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Nápověda Modal -->
+<div id="help-modal" class="modal">
+    <div class="modal-content help-content">
+        <h2 id="help-title">Hra Honeycombs</h2>
+        <p id="help-text1">Cílem je propojit všechna pole čísly od 1 do 19 tak, aby sousední čísla (např. 5 a 6) ležela vždy vedle sebe.</p>
+        
+        <p id="help-editor-title" style="font-weight: bold; color: var(--diff-custom); margin-top: 15px;">🛠️ Editor a Oblíbené:</p>
+        <p id="help-editor-text">V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v <b>Editoru</b>. V něm stačí rozmístit libovolná čísla na desku a stisknout uložit – hra sama ověří, zda má deska řešení. Své oblíbené hry můžete také <b>Exportovat</b> do souboru .txt nebo <b>Importovat</b> od přátel.</p>
+
+        <p id="help-colors-title" style="font-weight: bold; margin-top: 15px;">🎨 Barevné úrovně:</p>
+        <p id="help-colors-text">Barevné pole na desce je tlačítko pro přehrání řešení. Barva určuje obtížnost (počet nápověd):<br>
+        🟢 <b>Zelená</b>: Snadná (6 čísel)<br>
+        🟡 <b>Žlutá</b>: Střední (5 čísel)<br>
+        🔴 <b>Červená</b>: Těžká (4 čísla)<br>
+        🟣 <b>Fialová</b>: Vlastní (Editor)</p>
+
+        <div class="modal-buttons">
+            <button class="btn-text" onclick="closeModal('help-modal')" id="btn-help-ok">Rozumím</button>
+        </div>
+    </div>
+</div>
+
+<!-- Oblíbené hry Modal -->
+<div id="fav-modal" class="modal">
+    <div class="modal-content">
+        <h2 id="fav-title">Oblíbené úrovně</h2>
+        
+        <button class="btn-text btn-full" onclick="startEditor()" id="btn-fav-editor" style="background: var(--diff-custom); margin-bottom: 10px;">🛠️ Vytvořit vlastní úroveň</button>
+        <button class="btn-text btn-full" onclick="saveCurrentToFavorites()" id="btn-fav-add" style="margin-bottom: 10px;">⭐ Uložit aktuální hru</button>
+        
+        <div class="export-import-container">
+            <button class="btn-text btn-full" onclick="exportFavorites()" id="btn-fav-export">📤 Export</button>
+            <button class="btn-text btn-full" onclick="document.getElementById('import-file').click()" id="btn-fav-import">📥 Import</button>
+            <input type="file" id="import-file" accept=".txt" style="display: none;" onchange="handleImport(event)">
+        </div>
+
+        <div id="favorites-list"></div>
+        
+        <div class="modal-buttons">
+            <button class="btn-text btn-cancel" onclick="closeModal('fav-modal')" id="btn-fav-close">Zavřít</button>
+        </div>
+    </div>
+</div>
+
+<!-- Potvrzovací Modaly -->
+<div id="load-modal" class="modal">
+    <div class="modal-content">
+        <p id="load-modal-text">Opravdu chcete načíst uloženou hru a ztratit aktuální postup?</p>
+        <div class="modal-buttons">
+            <button class="btn-text" onclick="confirmLoad()" id="btn-load-yes">Ano</button>
+            <button class="btn-text btn-cancel" onclick="closeModal('load-modal')" id="btn-load-no">Ne</button>
+        </div>
+    </div>
+</div>
+
+<div id="reset-modal" class="modal">
+    <div class="modal-content">
+        <p id="reset-modal-text">Opravdu chcete smazat všechny své tahy a začít od začátku?</p>
+        <div class="modal-buttons">
+            <button class="btn-text" onclick="confirmReset()" id="btn-reset-yes">Ano</button>
+            <button class="btn-text btn-cancel" onclick="closeModal('reset-modal')" id="btn-reset-no">Ne</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const baseCoords = [
+        {q:0, r:-2}, {q:1, r:-2}, {q:2, r:-2},
+        {q:-1, r:-1}, {q:0, r:-1}, {q:1, r:-1}, {q:2, r:-1},
+        {q:-2, r:0}, {q:-1, r:0}, {q:0, r:0}, {q:1, r:0}, {q:2, r:0},
+        {q:-2, r:1}, {q:-1, r:1}, {q:0, r:1}, {q:1, r:1},
+        {q:-2, r:2}, {q:-1, r:2}, {q:0, r:2}
+    ];
+
+    const adjList = baseCoords.map((h1, i) =>
+        baseCoords.map((h2, j) => ({j, dist: hexDist(h1, h2)}))
+        .filter(n => n.dist === 1).map(n => n.j)
+    );
+
+    function hexDist(a, b) {
+        return (Math.abs(a.q - b.q) + Math.abs(a.q + a.r - b.q - b.r) + Math.abs(a.r - b.r)) / 2;
+    }
+
+    const dict = {
+        cs: {
+            loadModal: "Opravdu chcete načíst uloženou hru a ztratit aktuální postup?",
+            resetModal: "Opravdu chcete smazat všechny své tahy a začít od začátku?",
+            yes: "Ano", no: "Ne", ok: "Rozumím", close: "Zavřít",
+            saved: "Hra uložena!", loaded: "Hra načtena!", win: "Gratulujeme! Plástev je kompletní!", resetToast: "Tahy byly resetovány.",
+            btnHelp: "Nápověda", btnFav: "Oblíbené hry", btnUndo: "Tah zpět", btnReset: "Resetovat desku", btnSave: "Uložit rozehranou hru", btnLoad: "Načíst rozehranou hru", btnNew: "Nová hra",
+            helpTitle: "Hra Honeycombs",
+            helpText1: "Cílem je propojit všechna pole čísly od 1 do 19 tak, aby sousední čísla (např. 5 a 6) ležela vždy vedle sebe.",
+            helpEditorTitle: "🛠️ Editor a Oblíbené:",
+            helpEditorText: "V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v Editoru. V něm stačí rozmístit libovolná čísla na desku a stisknout uložit – hra sama ověří, zda má deska řešení. Své oblíbené hry můžete také Exportovat do souboru .txt nebo Importovat od přátel.",
+            helpColorsTitle: "🎨 Barevné úrovně:",
+            helpColorsText: "Barevné pole na desce je tlačítko pro přehrání řešení. Barva určuje obtížnost (počet nápověd):<br>🟢 Zelená: Snadná (6 čísel)<br>🟡 Žlutá: Střední (5 čísel)<br>🔴 Červená: Těžká (4 čísla)<br>🟣 Fialová: Vlastní (Editor)",
+            favTitle: "Oblíbené úrovně", favSaveBtn: "⭐ Uložit aktuální hru", favSavedMsg: "Hra přidána do oblíbených!",
+            favEmpty: "Zatím nemáte žádné oblíbené úrovně.", level: "Hra", play: "Spustit", delete: "Smazat",
+            favEditorBtn: "🛠️ Vytvořit vlastní úroveň", titleMain: "Honeycombs", titleEditor: "Editor Úrovně",
+            editorCancel: "❌ Zrušit", editorSave: "✅ Uložit a hrát", editorNoSol: "Tato deska nemá řešení!", editorEmpty: "Umístěte alespoň jedno číslo!",
+            favExport: "📤 Export", favImport: "📥 Import", importSuccess: "Hry úspěšně importovány!", importError: "Chyba při čtení souboru!", exportEmpty: "Nemáte žádné oblíbené hry k exportu."
+        },
+        en: {
+            loadModal: "Do you really want to load your game and overwrite current progress?",
+            resetModal: "Do you really want to clear all your moves and start over?",
+            yes: "Yes", no: "No", ok: "Got it", close: "Close",
+            saved: "Game saved!", loaded: "Game loaded!", win: "Congratulations! Honeycomb is complete!", resetToast: "Moves have been reset.",
+            btnHelp: "Help", btnFav: "Favorite Games", btnUndo: "Undo", btnReset: "Reset Board", btnSave: "Save Current Game", btnLoad: "Load Game", btnNew: "New Game",
+            helpTitle: "Honeycombs Game",
+            helpText1: "The goal is to connect all fields with numbers from 1 to 19 so that neighboring numbers (e.g., 5 and 6) always lie next to each other.",
+            helpEditorTitle: "🛠️ Editor and Favorites:",
+            helpEditorText: "In the menu under the star ⭐ you can save the current game or create your own in the Editor. Simply place any numbers on the board and press save – the game will automatically verify if the board has a solution. You can also Export your favorite games to a .txt file or Import them from friends.",
+            helpColorsTitle: "🎨 Color Levels:",
+            helpColorsText: "The colored hex on the board is a button to play the solution. The color indicates the difficulty (number of hints):<br>🟢 Green: Easy (6 numbers)<br>🟡 Yellow: Medium (5 numbers)<br>🔴 Red: Hard (4 numbers)<br>🟣 Purple: Custom (Editor)",
+            favTitle: "Favorite Levels", favSaveBtn: "⭐ Save current game", favSavedMsg: "Game added to favorites!",
+            favEmpty: "No favorite levels yet.", level: "Game", play: "Play", delete: "Delete",
+            favEditorBtn: "🛠️ Create custom level", titleMain: "Honeycombs", titleEditor: "Level Editor",
+            editorCancel: "❌ Cancel", editorSave: "✅ Save & Play", editorNoSol: "This board has no solution!", editorEmpty: "Place at least one number!",
+            favExport: "📤 Export", favImport: "📥 Import", importSuccess: "Games successfully imported!", importError: "Error reading file!", exportEmpty: "No favorite games to export."
+        }
+    };
+
+    let lang = 'cs';
+    let isPlayingSolution = false;
+    let isPulsing = false;
+    let isEditorMode = false;
+    let editorSelectedNum = 1;
+    let domHexes = [];
+    let domPool = [];
+
+    let state = {
+        board: Array(19).fill(null),
+        fixed: [],
+        solution: [],
+        history: [],
+        solveTriggerIdx: null,
+        difficultyUsed: 2
+    };
+
+    function toggleLang() {
+        lang = lang === 'cs' ? 'en' : 'cs';
+        const flag = document.getElementById('btn-lang');
+        flag.innerText = lang === 'cs' ? '🇨🇿' : '🇬🇧';
+        flag.title = lang === 'cs' ? 'English' : 'Čeština';
+        
+        document.getElementById('load-modal-text').innerText = dict[lang].loadModal;
+        document.getElementById('reset-modal-text').innerText = dict[lang].resetModal;
+        document.getElementById('btn-load-yes').innerText = dict[lang].yes;
+        document.getElementById('btn-load-no').innerText = dict[lang].no;
+        document.getElementById('btn-reset-yes').innerText = dict[lang].yes;
+        document.getElementById('btn-reset-no').innerText = dict[lang].no;
+        document.getElementById('btn-help-ok').innerText = dict[lang].ok;
+        document.getElementById('btn-fav-close').innerText = dict[lang].close;
+
+        document.getElementById('btn-help').title = dict[lang].btnHelp;
+        document.getElementById('btn-fav').title = dict[lang].btnFav;
+        document.getElementById('btn-undo').title = dict[lang].btnUndo;
+        document.getElementById('btn-reset').title = dict[lang].btnReset;
+        document.getElementById('btn-save').title = dict[lang].btnSave;
+        document.getElementById('btn-load').title = dict[lang].btnLoad;
+        document.getElementById('btn-new').title = dict[lang].btnNew;
+
+        document.getElementById('help-title').innerText = dict[lang].helpTitle;
+        document.getElementById('help-text1').innerText = dict[lang].helpText1;
+        document.getElementById('help-editor-title').innerText = dict[lang].helpEditorTitle;
+        document.getElementById('help-editor-text').innerText = dict[lang].helpEditorText;
+        document.getElementById('help-colors-title').innerText = dict[lang].helpColorsTitle;
+        document.getElementById('help-colors-text').innerHTML = dict[lang].helpColorsText;
+
+        document.getElementById('fav-title').innerText = dict[lang].favTitle;
+        document.getElementById('btn-fav-add').innerText = dict[lang].favSaveBtn;
+        document.getElementById('btn-fav-editor').innerText = dict[lang].favEditorBtn;
+        document.getElementById('btn-editor-cancel').innerText = dict[lang].editorCancel;
+        document.getElementById('btn-editor-save').innerText = dict[lang].editorSave;
+        document.getElementById('btn-fav-export').innerText = dict[lang].favExport;
+        document.getElementById('btn-fav-import').innerText = dict[lang].favImport;
+        
+        document.getElementById('main-title').innerText = isEditorMode ? dict[lang].titleEditor : dict[lang].titleMain;
+
+        if(document.getElementById('fav-modal').style.display === 'flex') renderFavoritesList();
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.opacity = 1;
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(() => {
+            t.style.opacity = 0;
+            t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 2500);
+    }
+
+    function findPath() {
+        let bestPath = null;
+        function dfs(path) {
+            if (path.length === 19) return path;
+            const currentHex = baseCoords[path[path.length - 1]];
+            let neighbors = adjList[path[path.length - 1]].filter(n => !path.includes(n));
+            neighbors.sort(() => Math.random() - 0.5); 
+            for (let n of neighbors) {
+                let res = dfs([...path, n]);
+                if (res) return res;
+            }
+            return null;
+        }
+        while (!bestPath) { bestPath = dfs([Math.floor(Math.random() * 19)]); }
+        return bestPath;
+    }
+
+    function initGame() {
+        if (isPlayingSolution || isEditorMode) return;
+        state.board = Array(19).fill(null);
+        state.history = [];
+        const rand = Math.random();
+        if (rand < 0.20) state.difficultyUsed = 1; 
+        else if (rand < 0.45) state.difficultyUsed = 2; 
+        else state.difficultyUsed = 3; 
+
+        state.solution = findPath();
+        let count, minGap;
+        if (state.difficultyUsed === 1) { count = 6; minGap = 2; }
+        else if (state.difficultyUsed === 2) { count = 5; minGap = 3; }
+        else { count = 4; minGap = 4; } 
+        
+        let validIndices = false;
+        let attempts = 0;
+        while (!validIndices && attempts < 1000) {
+            state.fixed = [];
+            while (state.fixed.length < count) {
+                let r = Math.floor(Math.random() * 19);
+                if (!state.fixed.includes(r)) state.fixed.push(r);
+            }
+            state.fixed.sort((a, b) => a - b);
+            validIndices = true;
+            for (let i = 1; i < state.fixed.length; i++) {
+                if (state.fixed[i] - state.fixed[i-1] < minGap) {
+                    validIndices = false; break;
+                }
+            }
+            attempts++;
+        }
+        if (!validIndices) {
+            if (count === 4) state.fixed = [1, 6, 12, 17];
+            else if (count === 5) state.fixed = [0, 4, 9, 13, 18];
+            else state.fixed = [0, 3, 6, 9, 12, 18];
+        }
+        const triggerRandIndex = Math.floor(Math.random() * state.fixed.length);
+        state.solveTriggerIdx = state.solution[state.fixed[triggerRandIndex]];
+        state.fixed.forEach(solIndex => {
+            state.board[state.solution[solIndex]] = solIndex + 1;
+        });
+        renderAll();
+    }
+
+    function createDOM() {
+        const container = document.getElementById('board-container');
+        const pool = document.getElementById('pool');
+        baseCoords.forEach((coord, idx) => {
+            const wrapper = document.createElement('div');
+            const border = document.createElement('div');
+            border.className = 'hex-border';
+            const inner = document.createElement('div');
+            inner.className = 'hex-inner';
+            wrapper.appendChild(border);
+            wrapper.appendChild(inner);
+            wrapper.onclick = () => handleHexClick(idx);
+            container.appendChild(wrapper);
+            domHexes.push({ wrapper, inner });
+        });
+        for (let i = 1; i <= 19; i++) {
+            const div = document.createElement('div');
+            div.className = 'circle-num';
+            pool.appendChild(div);
+            domPool.push(div);
+        }
+        resizeBoard();
+    }
+
+    function resizeBoard() {
+        const container = document.getElementById('board-container');
+        const W = container.clientWidth;
+        const H = container.clientHeight;
+        const HEX_W = W / 5.2; 
+        const HEX_SIZE = HEX_W / Math.sqrt(3);
+        const HEX_H = 2 * HEX_SIZE;
+        const Y_SPACING = 1.5 * HEX_SIZE;
+        const OFFSET_X = W / 2;
+        const OFFSET_Y = H / 2;
+        baseCoords.forEach((coord, idx) => {
+            const x = OFFSET_X + HEX_W * (coord.q + coord.r / 2);
+            const y = OFFSET_Y + Y_SPACING * coord.r;
+            const wrapper = domHexes[idx].wrapper;
+            wrapper.style.left = `${x}px`;
+            wrapper.style.top = `${y}px`;
+            wrapper.style.width = `${HEX_W}px`;
+            wrapper.style.height = `${HEX_H}px`;
+        });
+    }
+
+    function renderAll() {
+        const diffClass = `solve-trigger-${state.difficultyUsed}`;
+        const numDiffClass = `num-trigger-${state.difficultyUsed}`;
+        domHexes.forEach((hex, idx) => {
+            const val = state.board[idx];
+            hex.inner.innerText = val || '';
+            hex.wrapper.className = 'hex-wrapper';
+            if (isEditorMode) {
+                if (val !== null) hex.wrapper.classList.add('fixed');
+            } else {
+                const isFixed = val !== null && state.fixed.some(f => (f + 1) === val);
+                const isTrigger = idx === state.solveTriggerIdx;
+                if (val !== null) {
+                    if (isTrigger) {
+                        hex.wrapper.classList.add(diffClass);
+                        if (isPulsing) hex.wrapper.classList.add('is-playing');
+                    } else if (isFixed) hex.wrapper.classList.add('fixed');
+                    else hex.wrapper.classList.add('user-set');
+                }
+            }
+        });
+        domPool.forEach((div, idx) => {
+            const num = idx + 1;
+            div.className = 'circle-num';
+            if (isEditorMode) {
+                div.classList.add('num-normal');
+                div.classList.add('editor-clickable');
+                if (state.board.includes(num)) div.classList.add('used');
+                if (num === editorSelectedNum) div.classList.add('editor-selected');
+                div.onclick = () => { editorSelectedNum = num; renderAll(); };
+            } else {
+                const isFixed = state.fixed.includes(num - 1);
+                const isTriggerNum = state.board[state.solveTriggerIdx] === num;
+                if (isTriggerNum) div.classList.add(numDiffClass);
+                else if (isFixed) div.classList.add('num-fixed');
+                else div.classList.add('num-normal');
+                if (state.board.includes(num)) div.classList.add('used');
+                div.onclick = null;
+            }
+            div.innerText = num;
+        });
+    }
+
+    function getNextAvailableNumber() {
+        for (let i = 1; i <= 19; i++) if (!state.board.includes(i)) return i;
+        return null;
+    }
+
+    function handleHexClick(idx) {
+        if (isPlayingSolution) return;
+        if (isEditorMode) {
+            if (state.board[idx] === editorSelectedNum) state.board[idx] = null; 
+            else {
+                const oldIdx = state.board.indexOf(editorSelectedNum);
+                if (oldIdx !== -1) state.board[oldIdx] = null;
+                state.board[idx] = editorSelectedNum;
+                if (editorSelectedNum < 19) editorSelectedNum++;
+            }
+            renderAll(); return;
+        }
+        if (idx === state.solveTriggerIdx) { playSolution(); return; }
+        const currentVal = state.board[idx];
+        const isFixed = currentVal !== null && state.fixed.some(f => (f + 1) === currentVal);
+        if (isFixed) return;
+        if (currentVal !== null) {
+            state.history.push({ idx, prevVal: currentVal });
+            state.board[idx] = null;
+        } else {
+            const nextNum = getNextAvailableNumber();
+            if (nextNum !== null) {
+                state.history.push({ idx, prevVal: null });
+                state.board[idx] = nextNum;
+            }
+        }
+        renderAll(); checkWin();
+    }
+
+    function undoMove() {
+        if (isPlayingSolution || isEditorMode || state.history.length === 0) return;
+        const lastMove = state.history.pop();
+        state.board[lastMove.idx] = lastMove.prevVal;
+        renderAll();
+    }
+
+    function triggerReset() {
+        if (isPlayingSolution || state.history.length === 0) return;
+        document.getElementById('reset-modal').style.display = 'flex';
+    }
+
+    function confirmReset() {
+        closeModal('reset-modal');
+        state.board = state.board.map((val, idx) => {
+            const isFixed = state.fixed.some(f => (f + 1) === val && state.solution[f] === idx);
+            return isFixed ? val : null;
+        });
+        state.history = [];
+        renderAll();
+        showToast(dict[lang].resetToast);
+    }
+
+    function checkWin() {
+        if (state.board.includes(null)) return;
+        for (let i = 1; i < 19; i++) {
+            let posA = state.board.indexOf(i);
+            let posB = state.board.indexOf(i + 1);
+            if (hexDist(baseCoords[posA], baseCoords[posB]) !== 1) return;
+        }
+        showToast(dict[lang].win);
+    }
+
+    function saveGame() {
+        if (isPlayingSolution || isEditorMode) return;
+        localStorage.setItem('honeycomb_save', JSON.stringify(state));
+        showToast(dict[lang].saved);
+    }
+
+    function triggerLoad() {
+        if (isPlayingSolution || isEditorMode) return;
+        if (state.history.length > 0) document.getElementById('load-modal').style.display = 'flex';
+        else confirmLoad();
+    }
+
+    function confirmLoad() {
+        closeModal('load-modal');
+        const data = localStorage.getItem('honeycomb_save');
+        if (data) { state = JSON.parse(data); renderAll(); showToast(dict[lang].loaded); }
+    }
+
+    function getFavorites() { return JSON.parse(localStorage.getItem('honeycomb_favorites') || '[]'); }
+    function saveFavoritesData(favs) { localStorage.setItem('honeycomb_favorites', JSON.stringify(favs)); }
+    function showFavorites() { if (isPlayingSolution || isEditorMode) return; renderFavoritesList(); document.getElementById('fav-modal').style.display = 'flex'; }
+    function saveCurrentToFavorites() {
+        let favs = getFavorites();
+        favs.push({ solution: state.solution, fixed: state.fixed, difficultyUsed: state.difficultyUsed });
+        saveFavoritesData(favs); renderFavoritesList(); showToast(dict[lang].favSavedMsg);
+    }
+    function renderFavoritesList() {
+        let favs = getFavorites();
+        let listStr = '';
+        favs.forEach((f, i) => {
+            let diffIcon = f.difficultyUsed === 1 ? '🟢' : (f.difficultyUsed === 2 ? '🟡' : (f.difficultyUsed === 3 ? '🔴' : '🟣'));
+            listStr += `<div class="fav-item"><span class="fav-title">${dict[lang].level} ${i+1} ${diffIcon}</span><div class="fav-actions"><span onclick="playFavorite(${i})">▶️</span><span onclick="deleteFavorite(${i})">❌</span></div></div>`;
+        });
+        if(favs.length === 0) listStr = `<p style="font-weight: normal;">${dict[lang].favEmpty}</p>`;
+        document.getElementById('favorites-list').innerHTML = listStr;
+    }
+    function playFavorite(index) {
+        let f = getFavorites()[index]; if(!f) return;
+        state.solution = f.solution; state.fixed = f.fixed; state.difficultyUsed = f.difficultyUsed;
+        state.solveTriggerIdx = state.solution[state.fixed[0]]; state.board = Array(19).fill(null); state.history = [];
+        state.fixed.forEach(solIndex => { state.board[state.solution[solIndex]] = solIndex + 1; });
+        renderAll(); closeModal('fav-modal'); showToast(dict[lang].loaded);
+    }
+    function deleteFavorite(index) { let favs = getFavorites(); favs.splice(index, 1); saveFavoritesData(favs); renderFavoritesList(); }
+
+    function exportFavorites() {
+        let favs = getFavorites(); if (favs.length === 0) { showToast(dict[lang].exportEmpty); return; }
+        const blob = new Blob([JSON.stringify(favs)], { type: "text/plain" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "honeycombs_oblibene.txt"; a.click();
+    }
+    function handleImport(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported)) { saveFavoritesData(getFavorites().concat(imported)); renderFavoritesList(); showToast(dict[lang].importSuccess); }
+            } catch (err) { showToast(dict[lang].importError); }
+            event.target.value = "";
+        };
+        reader.readAsText(file);
+    }
+
+    function startEditor() {
+        closeModal('fav-modal'); isEditorMode = true; editorSelectedNum = 1; state.board = Array(19).fill(null); state.history = [];
+        document.getElementById('main-title').innerText = dict[lang].titleEditor;
+        document.getElementById('menu-main').style.display = 'none'; document.getElementById('menu-editor').style.display = 'flex';
+        renderAll();
+    }
+    function cancelEditor() {
+        isEditorMode = false; document.getElementById('main-title').innerText = dict[lang].titleMain;
+        document.getElementById('menu-main').style.display = 'flex'; document.getElementById('menu-editor').style.display = 'none';
+        initGame(); 
+    }
+    function solveCustomBoard(fixedBoard) {
+        let board = [...fixedBoard];
+        function dfs(currentNum, prevIdx) {
+            if (currentNum > 19) return true;
+            let preplaced = board.indexOf(currentNum);
+            if (preplaced !== -1) return (currentNum === 1 || adjList[prevIdx].includes(preplaced)) ? dfs(currentNum + 1, preplaced) : false;
+            let candidates = (currentNum === 1) ? board.map((v, i) => i).filter(i => board[i] === null) : adjList[prevIdx].filter(n => board[n] === null);
+            candidates.sort((a, b) => adjList[a].filter(x => board[x] === null).length - adjList[b].filter(x => board[x] === null).length);
+            for (let n of candidates) { board[n] = currentNum; if (dfs(currentNum + 1, n)) return true; board[n] = null; }
+            return false;
+        }
+        return dfs(1, -1) ? board : null;
+    }
+    function saveEditorBoard() {
+        const userPlaced = [...state.board]; if (userPlaced.filter(x => x !== null).length === 0) { showToast(dict[lang].editorEmpty); return; }
+        const solved = solveCustomBoard(userPlaced); if (!solved) { showToast(dict[lang].editorNoSol); return; }
+        state.solution = new Array(19); for(let i=0; i<19; i++) state.solution[solved[i] - 1] = i;
+        state.fixed = []; for(let i=0; i<19; i++) if (userPlaced[i] !== null) state.fixed.push(userPlaced[i] - 1);
+        state.fixed.sort((a,b) => a-b); state.solveTriggerIdx = state.solution[state.fixed[0]]; state.difficultyUsed = 4; 
+        isEditorMode = false; document.getElementById('main-title').innerText = dict[lang].titleMain;
+        document.getElementById('menu-main').style.display = 'flex'; document.getElementById('menu-editor').style.display = 'none';
+        state.board = Array(19).fill(null); state.fixed.forEach(solIndex => { state.board[state.solution[solIndex]] = solIndex + 1; });
+        saveCurrentToFavorites(); renderAll();
+    }
+
+    function showHelp() { document.getElementById('help-modal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    async function playSolution() {
+        if (isPlayingSolution) return; isPlayingSolution = true; isPulsing = true;
+        const userBoard = [...state.board]; const userHistory = [...state.history];
+        state.board = state.board.map((val, idx) => state.fixed.some(f => (f + 1) === val && state.solution[f] === idx) ? val : null);
+        renderAll();
+        for (let i = 0; i < state.solution.length; i++) {
+            if (!state.fixed.includes(i)) { state.board[state.solution[i]] = i + 1; renderAll(); await new Promise(res => setTimeout(res, 750)); }
+        }
+        isPulsing = false; renderAll(); await new Promise(res => setTimeout(res, 1000));
+        state.board = userBoard; state.history = userHistory; renderAll(); isPlayingSolution = false;
+    }
+
+    window.addEventListener('resize', resizeBoard);
+    window.onload = () => { createDOM(); initGame(); };
+</script>
+
+</body>
+</html>
