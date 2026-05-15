@@ -6,6 +6,10 @@
     <title>Hex 6 - Solo</title>
     <style>
         * { box-sizing: border-box; }
+		html {
+			-webkit-text-size-adjust: 100%;
+			text-size-adjust: 100%;
+		}
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #2c3e50;
@@ -331,35 +335,34 @@
         body.cb-mode .removed-hex .cb-icon { display: flex; }
         .removed-hex.c-yellow .cb-icon { font-size: 34px; }
 
-        /* Posuny a velikosti piktogramů pro legendy a karty */
-        .c-yellow .cb-icon { font-size: 50px; transform: translateY(-3px); }
-        .c-green .cb-icon { font-size: 33px; transform: translateY(-2px); }
-        .c-blue .cb-icon { font-size: 33px; transform: translateY(-2px); }
-        .c-grey .cb-icon { font-size: 24px; transform: translateY(-2px); }
-        .c-orange .cb-icon { font-size: 38px; transform: translateY(-2px); }
-        .c-red .cb-icon { font-size: 30px; transform: translateY(-1px); }
-        
-		/* Specifické velikosti pro piktogramy VEDLE KARET */
-		.card-side-icon.c-yellow { font-size: 50px; transform: translateY(-16px) !important; }
-		.card-side-icon.c-green  { font-size: 33px !important; }
-		.card-side-icon.c-blue   { font-size: 33px !important; }
-		.card-side-icon.c-orange { font-size: 38px !important; }
-		.card-side-icon.c-red    { font-size: 30px !important; }
-		.card-side-icon.c-grey   { font-size: 24px !important; }
-		
+		/* Posuny a velikosti piktogramů pro legendy a desku (zmenšují se automaticky s celou deskou) */
+		.c-yellow .cb-icon { font-size: 50px; transform: translateY(-3px); }
+		.c-green .cb-icon { font-size: 33px; transform: translateY(-2px); }
+		.c-blue .cb-icon { font-size: 33px; transform: translateY(-2px); }
+		.c-grey .cb-icon { font-size: 24px; transform: translateY(-2px); }
+		.c-orange .cb-icon { font-size: 38px; transform: translateY(-2px); }
+		.c-red .cb-icon { font-size: 30px; transform: translateY(-1px); }
+
+		/* Specifické velikosti pro piktogramy VEDLE KARET (přepočítané podle zmenšení desky na mobilu) */
+		.card-side-icon.c-yellow { font-size: calc(50px * var(--board-scale, 1)) !important; transform: translateY(calc(-16px * var(--board-scale, 1))) !important; }
+		.card-side-icon.c-green  { font-size: calc(33px * var(--board-scale, 1)) !important; }
+		.card-side-icon.c-blue   { font-size: calc(33px * var(--board-scale, 1)) !important; }
+		.card-side-icon.c-orange { font-size: calc(38px * var(--board-scale, 1)) !important; }
+		.card-side-icon.c-red    { font-size: calc(30px * var(--board-scale, 1)) !important; }
+		.card-side-icon.c-grey   { font-size: calc(24px * var(--board-scale, 1)) !important; }
+
 		/* Základní zobrazení ikony pro vyřazené karty */
 		.removed-hex .cb-icon {
 			display: flex; /* Zaručí viditelnost ikony, pokud je aktivní CB mód */
 		}
 
-		/* Specifické velikosti a posuny pro jednotlivé barvy ve vyřazených kartách */
-		/* Hodnoty si můžeš upravit tak, aby přesně seděly do zmenšeného šestiúhelníku */
-		.removed-hex.c-yellow .cb-icon { font-size: 50px; transform: translateY(-5px); }
-		.removed-hex.c-green .cb-icon  { font-size: 33px; transform: translateY(-5px); }
-		.removed-hex.c-blue .cb-icon   { font-size: 33px; transform: translateY(0px); }
-		.removed-hex.c-orange .cb-icon { font-size: 38px; transform: translateY(-2px); }
-		.removed-hex.c-red .cb-icon    { font-size: 30px; transform: translateY(-2px); }
-		.removed-hex.c-grey .cb-icon   { font-size: 24px; transform: translateY(-2px); }
+		/* Specifické velikosti a posuny pro jednotlivé barvy ve vyřazených kartách (přepočítané podle měřítka) */
+		.removed-hex.c-yellow .cb-icon { font-size: calc(50px * var(--board-scale, 1)); transform: translateY(calc(-6px * var(--board-scale, 1))); }
+		.removed-hex.c-green .cb-icon  { font-size: calc(33px * var(--board-scale, 1)); transform: translateY(calc(-5px * var(--board-scale, 1))); }
+		.removed-hex.c-blue .cb-icon   { font-size: calc(33px * var(--board-scale, 1)); transform: translateY(calc(1px * var(--board-scale, 1))); }
+		.removed-hex.c-orange .cb-icon { font-size: calc(38px * var(--board-scale, 1)); transform: translateY(calc(-2px * var(--board-scale, 1))); }
+		.removed-hex.c-red .cb-icon    { font-size: calc(30px * var(--board-scale, 1)); transform: translateY(calc(-1px * var(--board-scale, 1))); }
+		.removed-hex.c-grey .cb-icon   { font-size: calc(24px * var(--board-scale, 1)); transform: translateY(calc(-1px * var(--board-scale, 1))); }
 
 
         .controls {
@@ -708,9 +711,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mismatch: "Toto pole neodpovídá otočeným kartám.",
             pairSelect: "Vyberte pole ke spárování (bliká modře).",
             pairHighlight: "Musíte vybrat jedno ze zvýrazněných sousedních polí (modře blikající) ke spárování!",
-            pairRowFull: "🔗 ✨ → {val} na libovolné volné pole.\n (Fialová ukazuje spoje)",
+            pairRowFull: "🔗 ✨ → {val} na libovolné volné pole. (Fialová ukazuje spoje)",
             pairRow: "🔗 → {val} do blikající řady (zeleně).",
-            colorFull: "Barva naplněna! Získáváte bonus {b} bodů.\nNyní funguje jako bonusová karta.",
+            colorFull: "Barva naplněna!Získáváte bonus {b} bodů.\nNyní funguje jako bonusová karta.",
             starsFull: "Všechny hvězdičky naplněny! Bonus {b} bodů.",
             gameOver: "Hra skončila.",
             saved: "Hra byla úspěšně uložena.",
@@ -1119,6 +1122,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ui.grid.style.transform = `scale(${scale})`;
         ui.gridWrapper.style.height = `${gridHeight * scale}px`;
+
+        // PŘIDEJ TENTO NOVÝ ŘÁDEK HNED POD TO:
+        document.documentElement.style.setProperty('--board-scale', scale);
 
         const scaledWidth = gridWidth * scale;
         let leftOffset = (containerWidth - scaledWidth) / 2;
