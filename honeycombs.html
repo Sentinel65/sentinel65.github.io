@@ -27,6 +27,7 @@
             --diff-custom: #8E24AA; /* Fialová pro Editor */
         }
 
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg);
@@ -50,14 +51,14 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
-        /* --- Sjednocené Menu (9 tlačítek v 1 řadě) --- */
+        /* --- Sjednocené Menu (8 tlačítek v 1 řadě) --- */
         .menu {
             width: 100%;
             max-width: 550px;
             display: flex;
             justify-content: space-evenly; 
             align-items: center;
-            padding: 8px 2px;
+            padding: 8px 4px;
             box-sizing: border-box;
             background: var(--blue-dark);
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
@@ -76,9 +77,9 @@
 
         .icon-btn {
             cursor: pointer;
-            font-size: 17px; 
+            font-size: 18px; 
             transition: transform 0.2s, background 0.2s;
-            padding: 5px; 
+            padding: 6px; 
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -285,33 +286,13 @@
             padding: 10px;
             font-size: 0.95rem;
         }
-
-        /* --- In-Board Loader --- */
-        .loader-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(250, 250, 250, 0.7);
-            z-index: 5000;
-            justify-content: center;
-            align-items: center;
-            border-radius: 12px;
-        }
-        .spinner {
-            border: 6px solid #e0e0e0;
-            border-top: 6px solid var(--honey);
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <h1 class="game-title" id="main-title">Honeycombs</h1>
 
+<!-- Klasické Menu -->
 <div class="menu" id="menu-main">
     <span class="icon-btn" onclick="toggleLang()" id="btn-lang" title="English">🇬🇧</span>
     <span class="icon-btn" onclick="showHelp()" id="btn-help" title="Nápověda">💡</span>
@@ -321,37 +302,34 @@
     <span class="icon-btn" onclick="triggerReset()" id="btn-reset" title="Resetovat desku">🔄</span>
     <span class="icon-btn" onclick="saveGame()" id="btn-save" title="Uložit rozehranou hru">💾</span>
     <span class="icon-btn" onclick="triggerLoad()" id="btn-load" title="Načíst rozehranou hru">📂</span>
-    <span class="icon-btn" onclick="triggerNewGame()" id="btn-new" title="Nová hra">🎲</span>
+    <span class="icon-btn" onclick="initGame()" id="btn-new" title="Nová hra">🎲</span>
 </div>
 
+<!-- Editor Menu -->
 <div class="menu menu-editor" id="menu-editor" style="display: none;">
     <span class="icon-btn" onclick="cancelEditor()" id="btn-editor-cancel">❌ Zrušit</span>
     <span class="icon-btn" onclick="saveEditorBoard()" id="btn-editor-save">✅ Uložit a hrát</span>
 </div>
 
-<div id="board-container">
-    <div id="loader" class="loader-overlay">
-        <div class="spinner"></div>
-    </div>
-</div>
-
+<div id="board-container"></div>
 <div class="numbers-pool" id="pool"></div>
 
 <div id="toast" class="toast"></div>
 
+<!-- Nápověda Modal -->
 <div id="help-modal" class="modal">
     <div class="modal-content help-content">
         <h2 id="help-title">Hra Honeycombs</h2>
         <p id="help-text1">Cílem je propojit všechna pole čísly od 1 do 19 tak, aby sousední čísla (např. 5 a 6) ležela vždy vedle sebe.</p>
         
         <p id="help-editor-title" style="font-weight: bold; color: var(--diff-custom); margin-top: 15px;">🛠️ Editor a Oblíbené:</p>
-        <p id="help-editor-text">V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v Editoru. Své oblíbené hry můžete také Exportovat do souboru .txt nebo Importovat od přátel.</p>
+        <p id="help-editor-text">V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v <b>Editoru</b>. V něm stačí rozmístit libovolná čísla na desku a stisknout uložit – hra sama ověří, zda má deska řešení. Své oblíbené hry můžete také <b>Exportovat</b> do souboru .txt nebo <b>Importovat</b> od přátel.</p>
 
-        <p id="help-colors-title" style="font-weight: bold; margin-top: 15px;">🎨 Barevné úrovně a tlačítko:</p>
-        <p id="help-colors-text">Kliknutím na barevné kolečko v menu přepínáte úroveň. Generátor zaručuje <b>jediné řešení</b>. Barva určuje počet záchytných bodů:<br>
-        🟢 <b>Zelená</b>: Snadná (5–6 čísel)<br>
-        🟡 <b>Žlutá</b>: Střední (4–5 čísel)<br>
-        🔴 <b>Červená</b>: Těžká (3–4 čísla rozložená po desce)<br>
+        <p id="help-colors-title" style="font-weight: bold; margin-top: 15px;">🎨 Barevné úrovně:</p>
+        <p id="help-colors-text">Barevné pole na desce je tlačítko pro přehrání řešení. Barva určuje obtížnost (počet nápověd):<br>
+        🟢 <b>Zelená</b>: Snadná (6 čísel)<br>
+        🟡 <b>Žlutá</b>: Střední (5 čísel)<br>
+        🔴 <b>Červená</b>: Těžká (4 čísla)<br>
         🟣 <b>Fialová</b>: Vlastní (Editor)</p>
 
         <div class="modal-buttons">
@@ -360,6 +338,7 @@
     </div>
 </div>
 
+<!-- Oblíbené hry Modal -->
 <div id="fav-modal" class="modal">
     <div class="modal-content">
         <h2 id="fav-title">Oblíbené úrovně</h2>
@@ -381,6 +360,7 @@
     </div>
 </div>
 
+<!-- Potvrzovací Modaly -->
 <div id="load-modal" class="modal">
     <div class="modal-content">
         <p id="load-modal-text">Opravdu chcete načíst uloženou hru a ztratit aktuální postup?</p>
@@ -421,19 +401,17 @@
 
     const dict = {
         cs: {
-            langTarget: "🇬🇧", langTitle: "English",
             loadModal: "Opravdu chcete načíst uloženou hru a ztratit aktuální postup?",
             resetModal: "Opravdu chcete smazat všechny své tahy a začít od začátku?",
             yes: "Ano", no: "Ne", ok: "Rozumím", close: "Zavřít",
             saved: "Hra uložena!", loaded: "Hra načtena!", win: "Gratulujeme! Plástev je kompletní!", resetToast: "Tahy byly resetovány.",
             btnHelp: "Nápověda", btnFav: "Oblíbené hry", btnUndo: "Tah zpět", btnReset: "Resetovat desku", btnSave: "Uložit rozehranou hru", btnLoad: "Načíst rozehranou hru", btnNew: "Nová hra",
-            diffEasy: "Obtížnost: Snadná", diffMedium: "Obtížnost: Střední", diffHard: "Obtížnost: Těžká",
             helpTitle: "Hra Honeycombs",
             helpText1: "Cílem je propojit všechna pole čísly od 1 do 19 tak, aby sousední čísla (např. 5 a 6) ležela vždy vedle sebe.",
             helpEditorTitle: "🛠️ Editor a Oblíbené:",
-            helpEditorText: "V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v Editoru. Své oblíbené hry můžete také Exportovat do souboru .txt nebo Importovat od přátel.",
-            helpColorsTitle: "🎨 Barevné úrovně a tlačítko:",
-            helpColorsText: "Kliknutím na barevné kolečko v menu přepínáte úroveň. Generátor zaručuje <b>jediné řešení</b>. Barva určuje počet záchytných bodů:<br>🟢 Zelená: Snadná (5–6 čísel)<br>🟡 Žlutá: Střední (4–5 čísel)<br>🔴 Červená: Těžká (3–4 čísla rozložená po desce)<br>🟣 Fialová: Vlastní (Editor)",
+            helpEditorText: "V menu pod hvězdičkou ⭐ můžete aktuální hru uložit nebo si vytvořit vlastní v Editoru. V něm stačí rozmístit libovolná čísla na desku a stisknout uložit – hra sama ověří, zda má deska řešení. Své oblíbené hry můžete také Exportovat do souboru .txt nebo Importovat od přátel.",
+            helpColorsTitle: "🎨 Barevné úrovně:",
+            helpColorsText: "Barevné pole na desce je tlačítko pro přehrání řešení. Barva určuje obtížnost (počet nápověd):<br>🟢 Zelená: Snadná (6 čísel)<br>🟡 Žlutá: Střední (5 čísel)<br>🔴 Červená: Těžká (4 čísla)<br>🟣 Fialová: Vlastní (Editor)",
             favTitle: "Oblíbené úrovně", favSaveBtn: "⭐ Uložit aktuální hru", favSavedMsg: "Hra přidána do oblíbených!",
             favEmpty: "Zatím nemáte žádné oblíbené úrovně.", level: "Hra", play: "Spustit", delete: "Smazat",
             favEditorBtn: "🛠️ Vytvořit vlastní úroveň", titleMain: "Honeycombs", titleEditor: "Editor Úrovně",
@@ -441,48 +419,52 @@
             favExport: "📤 Export", favImport: "📥 Import", importSuccess: "Hry úspěšně importovány!", importError: "Chyba při čtení souboru!", exportEmpty: "Nemáte žádné oblíbené hry k exportu."
         },
         en: {
-            langTarget: "🇨🇿", langTitle: "Čeština",
-            loadModal: "Overwrite current progress?",
-            resetModal: "Clear all moves and start over?",
+            loadModal: "Do you really want to load your game and overwrite current progress?",
+            resetModal: "Do you really want to clear all your moves and start over?",
             yes: "Yes", no: "No", ok: "Got it", close: "Close",
-            saved: "Game saved!", loaded: "Game loaded!", win: "Honeycomb is complete!", resetToast: "Moves reset.",
+            saved: "Game saved!", loaded: "Game loaded!", win: "Congratulations! Honeycomb is complete!", resetToast: "Moves have been reset.",
             btnHelp: "Help", btnFav: "Favorite Games", btnUndo: "Undo", btnReset: "Reset Board", btnSave: "Save Current Game", btnLoad: "Load Game", btnNew: "New Game",
-            diffEasy: "Difficulty: Easy", diffMedium: "Difficulty: Medium", diffHard: "Difficulty: Hard",
             helpTitle: "Honeycombs Game",
-            helpText1: "Connect all fields with numbers 1 to 19 so that neighboring numbers are adjacent.",
+            helpText1: "The goal is to connect all fields with numbers from 1 to 19 so that neighboring numbers (e.g., 5 and 6) always lie next to each other.",
             helpEditorTitle: "🛠️ Editor and Favorites:",
-            helpEditorText: "Use ⭐ to save games or open Editor. You can Export/Import to share.",
-            helpColorsTitle: "🎨 Color Levels & Button:",
-            helpColorsText: "Click the colored circle to switch difficulty. Generator guarantees a UNIQUE solution. Color sets the number of clues:<br>🟢 Green: Easy (5-6 numbers)<br>🟡 Yellow: Medium (4-5 numbers)<br>🔴 Red: Hard (3-4 spaced numbers)<br>🟣 Purple: Custom",
-            favTitle: "Favorite Levels", favSaveBtn: "⭐ Save current game", favSavedMsg: "Added to favorites!",
+            helpEditorText: "In the menu under the star ⭐ you can save the current game or create your own in the Editor. Simply place any numbers on the board and press save – the game will automatically verify if the board has a solution. You can also Export your favorite games to a .txt file or Import them from friends.",
+            helpColorsTitle: "🎨 Color Levels:",
+            helpColorsText: "The colored hex on the board is a button to play the solution. The color indicates the difficulty (number of hints):<br>🟢 Green: Easy (6 numbers)<br>🟡 Yellow: Medium (5 numbers)<br>🔴 Red: Hard (4 numbers)<br>🟣 Purple: Custom (Editor)",
+            favTitle: "Favorite Levels", favSaveBtn: "⭐ Save current game", favSavedMsg: "Game added to favorites!",
             favEmpty: "No favorite levels yet.", level: "Game", play: "Play", delete: "Delete",
             favEditorBtn: "🛠️ Create custom level", titleMain: "Honeycombs", titleEditor: "Level Editor",
-            editorCancel: "❌ Cancel", editorSave: "✅ Save & Play", editorNoSol: "No solution exists!", editorEmpty: "Place at least one number!",
-            favExport: "📤 Export", favImport: "📥 Import", importSuccess: "Games imported!", importError: "Error reading file!", exportEmpty: "No games to export."
+            editorCancel: "❌ Cancel", editorSave: "✅ Save & Play", editorNoSol: "This board has no solution!", editorEmpty: "Place at least one number!",
+            favExport: "📤 Export", favImport: "📥 Import", importSuccess: "Games successfully imported!", importError: "Error reading file!", exportEmpty: "No favorite games to export."
         }
     };
 
     let lang = 'cs';
     let isPlayingSolution = false;
     let isPulsing = false;
-    
-    // Defaultní výběr obtížnosti 3 = Těžká
-    let userSelectedDifficulty = 3; 
-
-    // Editor State
     let isEditorMode = false;
     let editorSelectedNum = 1;
-
     let domHexes = [];
     let domPool = [];
+    let selectedDifficulty = 3;
 
-    let state = { board: Array(19).fill(null), fixed: [], solution: [], history: [], solveTriggerIdx: null, difficultyUsed: 3 };
+    let state = {
+        board: Array(19).fill(null),
+        fixed: [],
+        solution: [],
+        history: [],
+        solveTriggerIdx: null,
+        difficultyUsed: 2
+    };
 
-    function toggleLang() {
+        function toggleLang() {
         lang = lang === 'cs' ? 'en' : 'cs';
-        document.getElementById('btn-lang').innerText = dict[lang].langTarget;
-        document.getElementById('btn-lang').title = dict[lang].langTitle;
-        
+
+        const flag = document.getElementById('btn-lang');
+
+        // zobrazí vlajku jazyka, NA KTERÝ se přepne
+        flag.innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+        flag.title = lang === 'cs' ? 'English' : 'Čeština';
+
         document.getElementById('load-modal-text').innerText = dict[lang].loadModal;
         document.getElementById('reset-modal-text').innerText = dict[lang].resetModal;
         document.getElementById('btn-load-yes').innerText = dict[lang].yes;
@@ -514,54 +496,69 @@
         document.getElementById('btn-editor-save').innerText = dict[lang].editorSave;
         document.getElementById('btn-fav-export').innerText = dict[lang].favExport;
         document.getElementById('btn-fav-import').innerText = dict[lang].favImport;
-        
-        document.getElementById('main-title').innerText = isEditorMode ? dict[lang].titleEditor : dict[lang].titleMain;
-        
-        updateDiffBtn();
 
-        if(document.getElementById('fav-modal').style.display === 'flex') renderFavoritesList();
+        document.getElementById('main-title').innerText =
+            isEditorMode ? dict[lang].titleEditor : dict[lang].titleMain;
+
+        if (document.getElementById('fav-modal').style.display === 'flex') {
+            renderFavoritesList();
+        }
     }
 
     function toggleDifficulty() {
-        userSelectedDifficulty = userSelectedDifficulty === 3 ? 1 : userSelectedDifficulty + 1;
-        updateDiffBtn();
+
+    selectedDifficulty++;
+
+    if (selectedDifficulty > 3) {
+        selectedDifficulty = 1;
     }
 
-    function updateDiffBtn() {
-        const btn = document.getElementById('btn-diff');
-        if (userSelectedDifficulty === 1) { btn.innerText = '🟢'; btn.title = dict[lang].diffEasy; }
-        if (userSelectedDifficulty === 2) { btn.innerText = '🟡'; btn.title = dict[lang].diffMedium; }
-        if (userSelectedDifficulty === 3) { btn.innerText = '🔴'; btn.title = dict[lang].diffHard; }
+    const btn = document.getElementById('btn-diff');
+
+    if (selectedDifficulty === 1) {
+
+        btn.innerText = '🟢';
+        btn.title =
+            lang === 'cs'
+            ? 'Obtížnost: Snadná'
+            : 'Difficulty: Easy';
+
     }
+    else if (selectedDifficulty === 2) {
+
+        btn.innerText = '🟡';
+        btn.title =
+            lang === 'cs'
+            ? 'Obtížnost: Střední'
+            : 'Difficulty: Medium';
+
+    }
+    else {
+
+        btn.innerText = '🔴';
+        btn.title =
+            lang === 'cs'
+            ? 'Obtížnost: Těžká'
+            : 'Difficulty: Hard';
+    }
+
+    // ULOŽENÍ
+    localStorage.setItem(
+        'honeycomb_difficulty',
+        selectedDifficulty
+    );
+}
+
 
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
-        t.style.opacity = 1; t.style.transform = 'translateX(-50%) translateY(0)';
-        setTimeout(() => { t.style.opacity = 0; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 2500);
-    }
-
-    function countSolutions(testBoard) {
-        let solutions = 0;
-        function dfs(num, prevIdx) {
-            if (solutions > 1) return; 
-            if (num > 19) { solutions++; return; }
-            
-            let preplacedIdx = testBoard.indexOf(num);
-            if (preplacedIdx !== -1) {
-                if (num === 1 || adjList[prevIdx].includes(preplacedIdx)) dfs(num + 1, preplacedIdx);
-            } else {
-                let candidates = (num === 1) ? testBoard.map((v, i) => i).filter(i => testBoard[i] === null) : adjList[prevIdx].filter(n => testBoard[n] === null);
-                for (let n of candidates) {
-                    testBoard[n] = num;
-                    dfs(num + 1, n);
-                    testBoard[n] = null;
-                    if (solutions > 1) return; 
-                }
-            }
-        }
-        dfs(1, -1);
-        return solutions;
+        t.style.opacity = 1;
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(() => {
+            t.style.opacity = 0;
+            t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 2500);
     }
 
     function findPath() {
@@ -581,116 +578,65 @@
         return bestPath;
     }
 
-    function triggerNewGame() {
-        if (isPlayingSolution || isEditorMode) return;
-        document.getElementById('loader').style.display = 'flex';
-        initGame(); // Spuštění asynchronní smyčky
-    }
+    
 
-    async function initGame() {
-        state.board = Array(19).fill(null);
-        state.history = [];
-        state.difficultyUsed = userSelectedDifficulty;
+function initGame() {
 
-        let targetMin, targetMax, requiredGap;
-        if (state.difficultyUsed === 1) { targetMin = 5; targetMax = 6; requiredGap = 2; }
-        else if (state.difficultyUsed === 2) { targetMin = 4; targetMax = 5; requiredGap = 3; }
-        else { targetMin = 3; targetMax = 4; requiredGap = 3; } 
+    if (isPlayingSolution || isEditorMode) return;
 
-        let bestBoardState = null;
-        let bestScore = -1;
+    state.board = Array(19).fill(null);
+    state.history = [];
 
-        // Asynchronní smyčka pro vynucení přesného počtu a dobrého rozestupu
-        for (let attempts = 0; attempts < 300; attempts++) {
-            // Každých 5 pokusů uvolníme vlákno, aby se animoval CSS spinner
-            if (attempts % 5 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 0));
-            }
+    // náhodná obtížnost
+    const rand = Math.random();
 
-            let solution = findPath();
-            let testBoard = Array(19).fill(null);
-            for(let i=0; i<19; i++) testBoard[solution[i]] = i+1;
+    state.difficultyUsed = selectedDifficulty;
 
-            let indices = [...Array(19).keys()];
-            indices.sort(() => Math.random() - 0.5);
+    state.solution = findPath();
 
-            for (let idx of indices) {
-                let num = testBoard[idx];
-                testBoard[idx] = null; 
-                
-                if (countSolutions(testBoard) > 1) {
-                    testBoard[idx] = num; // Museli jsme vrátit, ztratili bychom jedinečnost
-                } else {
-                    let remaining = testBoard.filter(x => x !== null).length;
-                    if (remaining <= targetMin) break; 
-                }
-            }
+    // předem připravené bezpečné patterny
+    const patterns = {
 
-            // Vyhodnocení kvality nalezeného rozložení
-            let fixedVals = [];
-            for(let i=0; i<19; i++) if(testBoard[i] !== null) fixedVals.push(testBoard[i]);
-            fixedVals.sort((a,b) => a-b);
-            let remainingCount = fixedVals.length;
+        1: [
+            [0,4,8,12,16,18],
+            [1,5,9,13,17,18],
+            [0,5,10,14,18,8]
+        ],
 
-            let minGap = 19;
-            for(let i=1; i<fixedVals.length; i++) {
-                let gap = fixedVals[i] - fixedVals[i-1];
-                if (gap < minGap) minGap = gap;
-            }
-            if (fixedVals.length <= 1) minGap = 19;
+        2: [
+            [0,4,9,14,18],
+            [1,6,10,14,18],
+            [0,5,10,15,18]
+        ],
 
-            let score = 0;
-            // Odměna za trefu do limitu počtu čísel, tvrdá penalizace pokud jich je víc
-            if (remainingCount >= targetMin && remainingCount <= targetMax) score += 1000;
-            else score += (20 - remainingCount) * 10; 
-            
-            // Bonus za co největší mezery mezi záchytnými body (ideálně chceme, aby se netvořily tunely)
-            score += minGap * 5; 
+        3: [
+            [1,6,12,18],
+            [0,5,11,17],
+            [0,6,12,18]
+        ]
+    };
 
-            if (score > bestScore) {
-                bestScore = score;
-                bestBoardState = { testBoard: [...testBoard], solution: [...solution] };
-                
-                // Early exit: Pokud jsme v limitu a mezera je super, můžeme cyklus utnout dřív
-                if (remainingCount >= targetMin && remainingCount <= targetMax && minGap >= requiredGap) {
-                    break;
-                }
-            }
-        }
+    const list = patterns[state.difficultyUsed];
 
-        // Aplikujeme nejlepší nalezený výsledek z cyklu
-        state.solution = bestBoardState.solution;
-        let finalBoard = bestBoardState.testBoard;
+    state.fixed =
+        list[Math.floor(Math.random() * list.length)];
 
-        // Pojistka: pokud by algoritmus smazal čísel příliš (extrémně vzácné), nějaká tam pro záchranu dosadíme
-        let currentRemaining = finalBoard.filter(x => x !== null).length;
-        if (currentRemaining < targetMin) {
-            let missing = targetMin - currentRemaining;
-            let emptyIndices = [];
-            for(let i=0; i<19; i++) if(finalBoard[i] === null) emptyIndices.push(i);
-            emptyIndices.sort(() => Math.random() - 0.5);
-            for(let i=0; i<missing; i++) {
-                let b_idx = emptyIndices[i];
-                finalBoard[b_idx] = state.solution.findIndex(x => x === b_idx) + 1;
-            }
-        }
+    // barevné tlačítko je jedno z těchto čísel
+    const triggerRandIndex =
+        Math.floor(Math.random() * state.fixed.length);
 
-        state.fixed = [];
-        for(let i=0; i<19; i++) {
-            if(finalBoard[i] !== null) state.fixed.push(finalBoard[i] - 1); 
-        }
-        state.fixed.sort((a,b) => a-b);
-        
-        const triggerRandIndex = Math.floor(Math.random() * state.fixed.length);
-        state.solveTriggerIdx = state.solution[state.fixed[triggerRandIndex]];
-        
-        state.fixed.forEach(solIndex => {
-            state.board[state.solution[solIndex]] = solIndex + 1;
-        });
+    state.solveTriggerIdx =
+        state.solution[state.fixed[triggerRandIndex]];
 
-        document.getElementById('loader').style.display = 'none';
-        renderAll();
-    }
+    state.fixed.forEach(solIndex => {
+
+        state.board[state.solution[solIndex]] =
+            solIndex + 1;
+    });
+
+    renderAll();
+}
+
 
     function createDOM() {
         const container = document.getElementById('board-container');
@@ -707,12 +653,6 @@
             container.appendChild(wrapper);
             domHexes.push({ wrapper, inner });
         });
-        
-        const loader = document.getElementById('loader');
-        if (loader) {
-            container.appendChild(loader); 
-        }
-
         for (let i = 1; i <= 19; i++) {
             const div = document.createElement('div');
             div.className = 'circle-num';
@@ -724,16 +664,22 @@
 
     function resizeBoard() {
         const container = document.getElementById('board-container');
-        const W = container.clientWidth; const H = container.clientHeight;
-        const HEX_W = W / 5.2; const HEX_SIZE = HEX_W / Math.sqrt(3);
-        const HEX_H = 2 * HEX_SIZE; const Y_SPACING = 1.5 * HEX_SIZE;
-        const OFFSET_X = W / 2; const OFFSET_Y = H / 2;
+        const W = container.clientWidth;
+        const H = container.clientHeight;
+        const HEX_W = W / 5.2; 
+        const HEX_SIZE = HEX_W / Math.sqrt(3);
+        const HEX_H = 2 * HEX_SIZE;
+        const Y_SPACING = 1.5 * HEX_SIZE;
+        const OFFSET_X = W / 2;
+        const OFFSET_Y = H / 2;
         baseCoords.forEach((coord, idx) => {
             const x = OFFSET_X + HEX_W * (coord.q + coord.r / 2);
             const y = OFFSET_Y + Y_SPACING * coord.r;
             const wrapper = domHexes[idx].wrapper;
-            wrapper.style.left = `${x}px`; wrapper.style.top = `${y}px`;
-            wrapper.style.width = `${HEX_W}px`; wrapper.style.height = `${HEX_H}px`;
+            wrapper.style.left = `${x}px`;
+            wrapper.style.top = `${y}px`;
+            wrapper.style.width = `${HEX_W}px`;
+            wrapper.style.height = `${HEX_H}px`;
         });
     }
 
@@ -750,8 +696,10 @@
                 const isFixed = val !== null && state.fixed.some(f => (f + 1) === val);
                 const isTrigger = idx === state.solveTriggerIdx;
                 if (val !== null) {
-                    if (isTrigger) { hex.wrapper.classList.add(diffClass); if (isPulsing) hex.wrapper.classList.add('is-playing'); }
-                    else if (isFixed) hex.wrapper.classList.add('fixed');
+                    if (isTrigger) {
+                        hex.wrapper.classList.add(diffClass);
+                        if (isPulsing) hex.wrapper.classList.add('is-playing');
+                    } else if (isFixed) hex.wrapper.classList.add('fixed');
                     else hex.wrapper.classList.add('user-set');
                 }
             }
@@ -760,7 +708,8 @@
             const num = idx + 1;
             div.className = 'circle-num';
             if (isEditorMode) {
-                div.classList.add('num-normal'); div.classList.add('editor-clickable');
+                div.classList.add('num-normal');
+                div.classList.add('editor-clickable');
                 if (state.board.includes(num)) div.classList.add('used');
                 if (num === editorSelectedNum) div.classList.add('editor-selected');
                 div.onclick = () => { editorSelectedNum = num; renderAll(); };
@@ -803,14 +752,19 @@
             state.board[idx] = null;
         } else {
             const nextNum = getNextAvailableNumber();
-            if (nextNum !== null) { state.history.push({ idx, prevVal: null }); state.board[idx] = nextNum; }
+            if (nextNum !== null) {
+                state.history.push({ idx, prevVal: null });
+                state.board[idx] = nextNum;
+            }
         }
         renderAll(); checkWin();
     }
 
     function undoMove() {
         if (isPlayingSolution || isEditorMode || state.history.length === 0) return;
-        const lastMove = state.history.pop(); state.board[lastMove.idx] = lastMove.prevVal; renderAll();
+        const lastMove = state.history.pop();
+        state.board[lastMove.idx] = lastMove.prevVal;
+        renderAll();
     }
 
     function triggerReset() {
@@ -820,14 +774,20 @@
 
     function confirmReset() {
         closeModal('reset-modal');
-        state.board = state.board.map((val, idx) => state.fixed.some(f => (f + 1) === val && state.solution[f] === idx) ? val : null);
-        state.history = []; renderAll(); showToast(dict[lang].resetToast);
+        state.board = state.board.map((val, idx) => {
+            const isFixed = state.fixed.some(f => (f + 1) === val && state.solution[f] === idx);
+            return isFixed ? val : null;
+        });
+        state.history = [];
+        renderAll();
+        showToast(dict[lang].resetToast);
     }
 
     function checkWin() {
         if (state.board.includes(null)) return;
         for (let i = 1; i < 19; i++) {
-            let posA = state.board.indexOf(i); let posB = state.board.indexOf(i + 1);
+            let posA = state.board.indexOf(i);
+            let posB = state.board.indexOf(i + 1);
             if (hexDist(baseCoords[posA], baseCoords[posB]) !== 1) return;
         }
         showToast(dict[lang].win);
@@ -835,7 +795,8 @@
 
     function saveGame() {
         if (isPlayingSolution || isEditorMode) return;
-        localStorage.setItem('honeycomb_save', JSON.stringify(state)); showToast(dict[lang].saved);
+        localStorage.setItem('honeycomb_save', JSON.stringify(state));
+        showToast(dict[lang].saved);
     }
 
     function triggerLoad() {
@@ -854,14 +815,16 @@
     function saveFavoritesData(favs) { localStorage.setItem('honeycomb_favorites', JSON.stringify(favs)); }
     function showFavorites() { if (isPlayingSolution || isEditorMode) return; renderFavoritesList(); document.getElementById('fav-modal').style.display = 'flex'; }
     function saveCurrentToFavorites() {
-        let favs = getFavorites(); favs.push({ solution: state.solution, fixed: state.fixed, difficultyUsed: state.difficultyUsed });
+        let favs = getFavorites();
+        favs.push({ solution: state.solution, fixed: state.fixed, difficultyUsed: state.difficultyUsed });
         saveFavoritesData(favs); renderFavoritesList(); showToast(dict[lang].favSavedMsg);
     }
     function renderFavoritesList() {
-        let favs = getFavorites(); let listStr = '';
+        let favs = getFavorites();
+        let listStr = '';
         favs.forEach((f, i) => {
             let diffIcon = f.difficultyUsed === 1 ? '🟢' : (f.difficultyUsed === 2 ? '🟡' : (f.difficultyUsed === 3 ? '🔴' : '🟣'));
-            listStr += `<div class="fav-item"><span class="fav-title">${dict[lang].level} ${i+1} ${diffIcon}</span><div class="fav-actions"><span onclick="playFavorite(${i})" title="${dict[lang].play}">▶️</span><span onclick="deleteFavorite(${i})" title="${dict[lang].delete}">❌</span></div></div>`;
+            listStr += `<div class="fav-item"><span class="fav-title">${dict[lang].level} ${i+1} ${diffIcon}</span><div class="fav-actions"><span onclick="playFavorite(${i})">▶️</span><span onclick="deleteFavorite(${i})">❌</span></div></div>`;
         });
         if(favs.length === 0) listStr = `<p style="font-weight: normal;">${dict[lang].favEmpty}</p>`;
         document.getElementById('favorites-list').innerHTML = listStr;
@@ -902,37 +865,82 @@
     function cancelEditor() {
         isEditorMode = false; document.getElementById('main-title').innerText = dict[lang].titleMain;
         document.getElementById('menu-main').style.display = 'flex'; document.getElementById('menu-editor').style.display = 'none';
-        triggerNewGame(); 
+        initGame(); 
     }
+    function solveCustomBoard(fixedBoard) {
+        let board = [...fixedBoard];
+        function dfs(currentNum, prevIdx) {
+            if (currentNum > 19) return true;
+            let preplaced = board.indexOf(currentNum);
+            if (preplaced !== -1) return (currentNum === 1 || adjList[prevIdx].includes(preplaced)) ? dfs(currentNum + 1, preplaced) : false;
+            let candidates = (currentNum === 1) ? board.map((v, i) => i).filter(i => board[i] === null) : adjList[prevIdx].filter(n => board[n] === null);
+            candidates.sort((a, b) => adjList[a].filter(x => board[x] === null).length - adjList[b].filter(x => board[x] === null).length);
+            for (let n of candidates) { board[n] = currentNum; if (dfs(currentNum + 1, n)) return true; board[n] = null; }
+            return false;
+        }
+        return dfs(1, -1) ? board : null;
+    }
+
+
+function countSolutions(fixedBoard, limit = 2) {
+    let board = [...fixedBoard];
+    let solutions = 0;
+
+    function dfs(currentNum, prevIdx) {
+        if (solutions >= limit) return;
+
+        if (currentNum > 19) {
+            solutions++;
+            return;
+        }
+
+        const preplaced = board.indexOf(currentNum);
+
+        if (preplaced !== -1) {
+            if (
+                currentNum === 1 ||
+                adjList[prevIdx].includes(preplaced)
+            ) {
+                dfs(currentNum + 1, preplaced);
+            }
+            return;
+        }
+
+        let candidates;
+
+        if (currentNum === 1) {
+            candidates = board
+                .map((v, i) => i)
+                .filter(i => board[i] === null);
+        } else {
+            candidates = adjList[prevIdx]
+                .filter(n => board[n] === null);
+        }
+
+        for (const n of candidates) {
+            board[n] = currentNum;
+            dfs(currentNum + 1, n);
+            board[n] = null;
+
+            if (solutions >= limit) return;
+        }
+    }
+
+    dfs(1, -1);
+
+    return solutions;
+}
+
     function saveEditorBoard() {
         const userPlaced = [...state.board]; if (userPlaced.filter(x => x !== null).length === 0) { showToast(dict[lang].editorEmpty); return; }
-        document.getElementById('loader').style.display = 'flex';
-        setTimeout(() => {
-            const solved = (function solveCustomBoard(fixedBoard) {
-                let board = [...fixedBoard];
-                function dfs(currentNum, prevIdx) {
-                    if (currentNum > 19) return true;
-                    let preplaced = board.indexOf(currentNum);
-                    if (preplaced !== -1) return (currentNum === 1 || adjList[prevIdx].includes(preplaced)) ? dfs(currentNum + 1, preplaced) : false;
-                    let candidates = (currentNum === 1) ? board.map((v, i) => i).filter(i => board[i] === null) : adjList[prevIdx].filter(n => board[n] === null);
-                    candidates.sort((a, b) => adjList[a].filter(x => board[x] === null).length - adjList[b].filter(x => board[x] === null).length);
-                    for (let n of candidates) { board[n] = currentNum; if (dfs(currentNum + 1, n)) return true; board[n] = null; }
-                    return false;
-                }
-                return dfs(1, -1) ? board : null;
-            })(userPlaced);
-
-            document.getElementById('loader').style.display = 'none';
-
-            if (!solved) { showToast(dict[lang].editorNoSol); return; }
-            state.solution = new Array(19); for(let i=0; i<19; i++) state.solution[solved[i] - 1] = i;
-            state.fixed = []; for(let i=0; i<19; i++) if (userPlaced[i] !== null) state.fixed.push(userPlaced[i] - 1);
-            state.fixed.sort((a,b) => a-b); state.solveTriggerIdx = state.solution[state.fixed[0]]; state.difficultyUsed = 4; 
-            isEditorMode = false; document.getElementById('main-title').innerText = dict[lang].titleMain;
-            document.getElementById('menu-main').style.display = 'flex'; document.getElementById('menu-editor').style.display = 'none';
-            state.board = Array(19).fill(null); state.fixed.forEach(solIndex => { state.board[state.solution[solIndex]] = solIndex + 1; });
-            saveCurrentToFavorites(); renderAll();
-        }, 50);
+        const solved = solveCustomBoard(userPlaced); if (!solved) { showToast(dict[lang].editorNoSol); return; }
+        state.solution = new Array(19); for(let i=0; i<19; i++) state.solution[solved[i] - 1] = i;
+        state.fixed = []; for(let i=0; i<19; i++) if (userPlaced[i] !== null) state.fixed.push(userPlaced[i] - 1);
+        state.fixed.sort((a,b) => a-b); state.solveTriggerIdx = state.solution[state.fixed[0]]; state.difficultyUsed = 4; 
+        isEditorMode = false; document.getElementById('main-title').innerText = dict[lang].titleMain;
+        document.getElementById('menu-main').style.display = 'flex'; document.getElementById('menu-editor').style.display = 'none';
+        state.board = Array(19).fill(null); state.fixed.forEach(solIndex => { state.board[state.solution[solIndex]] = solIndex + 1; });
+        saveCurrentToFavorites(); renderAll();
     }
 
     function showHelp() { document.getElementById('help-modal').style.display = 'flex'; }
@@ -951,7 +959,34 @@
     }
 
     window.addEventListener('resize', resizeBoard);
-    window.onload = () => { createDOM(); triggerNewGame(); };
+    window.onload = () => {
+
+    const savedDifficulty =
+        parseInt(
+            localStorage.getItem('honeycomb_difficulty')
+        );
+
+    if ([1,2,3].includes(savedDifficulty)) {
+        selectedDifficulty = savedDifficulty;
+    }
+
+    createDOM();
+
+    // nastav správnou ikonku
+    const btn = document.getElementById('btn-diff');
+
+    if (selectedDifficulty === 1) {
+        btn.innerText = '🟢';
+    }
+    else if (selectedDifficulty === 2) {
+        btn.innerText = '🟡';
+    }
+    else {
+        btn.innerText = '🔴';
+    }
+
+    initGame();
+};
 </script>
 
 </body>
