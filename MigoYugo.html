@@ -1,0 +1,3234 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Migoyugo</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: #94a3b8; 
+        color: #0f172a;
+        font-family: Inter, system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 10px;
+    }
+
+    /* --- Rozložení hlavičky --- */
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 500px;
+        margin: 10px 0 15px 0;
+        padding: 0 5px;
+    }
+
+    .center-controls {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    h1 { 
+        margin: 0 4px; 
+        font-size: clamp(14px, 4vw, 22px); 
+        text-align: center;
+        flex-shrink: 0;
+        color: #0f172a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: transform 0.2s;
+    }
+
+    h1:hover { transform: scale(1.05); }
+
+    .header-btn {
+        background: none;
+        border: none;
+        font-size: clamp(16px, 4vw, 20px);
+        cursor: pointer;
+        padding: 4px;
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+
+    .timer.timeout {
+        background: #dc2626;
+        color: #ffffff;
+        animation: none;
+        box-shadow: 0 0 12px rgba(220, 38, 38, 0.7);
+    }
+
+
+    @media (hover: hover) { .header-btn:hover { transform: scale(1.15); } }
+    .header-btn:active { transform: scale(0.9); }
+
+    /* Ukazatel hráče, skóre a časomíra */
+    .player-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        opacity: 0.65; 
+        transform: scale(0.9);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        font-size: clamp(16px, 4.5vw, 20px);
+        font-weight: bold;
+    }
+
+    .player-indicator.active {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .player-indicator.winner-pulse {
+        animation: pulseWinner 0.8s infinite alternate;
+        border-radius: 12px;
+    }
+
+    @keyframes pulseWinner {
+
+        0% {
+            filter: brightness(1);
+            box-shadow: 0 0 0px rgba(255,255,255,0);
+        }
+
+        100% {
+            filter: brightness(1.6);
+            box-shadow: 0 0 18px rgba(255,255,255,0.9);
+        }
+    }
+
+    .player-indicator.winner-pulse {
+    animation: winnerPanelPulse 0.6s infinite alternate;
+    border-radius: 12px;
+    padding: 4px 8px;
+}
+
+@keyframes winnerPanelPulse {
+
+    0% {
+        background: rgba(255, 255, 150, 0.15);
+        box-shadow: inset 0 0 0px #fde047;
+    }
+
+    100% {
+        background: rgba(254, 240, 138, 0.95);
+        box-shadow:
+            inset 0 0 15px #ca8a04,
+            0 0 20px rgba(202,138,4,0.8);
+    }
+}
+
+    .timer {
+        font-family: monospace;
+        font-size: clamp(12px, 3.5vw, 15px);
+        background: rgba(15, 23, 42, 0.1);
+        padding: 3px 6px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 5px;
+        min-width: 48px;
+        text-align: center;
+    }
+    
+    .timer.warning {
+        background: #fca5a5;
+        color: #7f1d1d;
+        animation: pulseTime 1s infinite alternate;
+    }
+
+    @keyframes pulseTime {
+        from { transform: scale(1); }
+        to { transform: scale(1.08); }
+    }
+
+    .header-piece {
+        width: clamp(18px, 4.5vw, 24px);
+        height: clamp(18px, 4.5vw, 24px);
+        border-radius: 50%;
+    }
+
+    .white { 
+        background: #ffffff; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.05); 
+        border: 1px solid #cbd5e1; 
+    }
+    .black { 
+        background: #111827; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(255,255,255,0.2); 
+        border: 1px solid #000000;
+    }
+
+    /* --- Responzivní mřížka desky --- */
+    .board-wrapper {
+        width: 100%;
+        max-width: 450px; 
+        padding: 0 10px;
+    }
+
+    .board {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 2%;
+        background: #475569; 
+        padding: 3%;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        touch-action: manipulation;
+    }
+
+    .cell {
+        background: #808080; 
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.2s;
+    }
+
+    @media (hover: hover) { .cell:hover:not(.last-move-white):not(.last-move-black) { transform: scale(1.02); background: #e2e8f0; } }
+
+    /* Náhledové barvy při najetí */
+    .cell.preview-valid { background: #34d399; }
+    .cell.preview-yugo { background: #60a5fa; }
+    .cell.preview-illegal { background: #f87171; }
+
+    /* Podbarvení posledních tahů hráčů */
+    .cell.last-move-white { background: #34d399; } /* Zelená */
+    .cell.last-move-black { background: #8fd3ff; } /* Modrá */
+
+    /* Pulsování výherní řady */
+    @keyframes pulseWin {
+        0% { background: #cbd5e1; box-shadow: inset 0 0 0px #fde047; }
+        100% { background: #fef08a; box-shadow: inset 0 0 15px #ca8a04; z-index: 2; }
+    }
+    .cell.winning-pulse {
+        animation: pulseWin 0.6s infinite alternate !important; /* !important potlačí barvu posledního tahu */
+        border: 2px solid #ca8a04;
+    }
+
+    .piece {
+        width: 80%;
+        height: 80%;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .yugo::after {
+        content: "";
+        position: absolute;
+        width: 25%; height: 25%;
+        border-radius: 50%;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .white.yugo::after { background: #ef4444; } /* Změněno na červenou podle požadavku */
+    .black.yugo::after { background: #ef4444; } /* Změněno na červenou podle požadavku */
+
+    /* --- Piktogramy (Jedna řada) --- */
+    .buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 450px;
+    padding: 5px 10px 15px 10px;
+}
+    .buttons::-webkit-scrollbar { display: none; }
+
+    .icon-btn {
+    background: #475569;
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    
+    width: clamp(38px, 10vw, 48px);
+    height: clamp(38px, 10vw, 48px);
+
+    flex: 1 1 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: clamp(16px, 4.5vw, 22px);
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s,
+        transform 0.1s,
+        box-shadow 0.2s;
+
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+    @media (hover: hover) { .icon-btn:hover { background: #334155; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); } }
+    .icon-btn:active { transform: scale(0.9); }
+    .new-piece { animation: pop 0.25s ease-out; }
+    @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* --- Herní Log --- */
+    .log-wrapper {
+        width: 100%;
+        max-width: 450px;
+        background: #1e293b;
+        border-radius: 12px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #cbd5e1;
+        font-size: 14px;
+        font-weight: bold;
+        padding: 0 5px;
+    }
+    .copy-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 12px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        transition: background 0.2s;
+    }
+    .copy-btn:active { background: #2563eb; }
+    
+    .log-content {
+        background: #0f172a;
+        height: 150px;
+        overflow-y: auto;
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Grid rozložení pro absolutní zarovnání sloupců */
+    .log-row {
+        font-family: monospace;
+        font-size: 14px;
+        margin-bottom: 4px;
+        white-space: pre;
+        display: flex;
+    }
+    .log-sys-msg {
+        color: #facc15;
+        font-family: monospace;
+        font-size: 14px;
+        margin-bottom: 6px;
+        text-align: left;
+        padding-left: 2px;
+        opacity: 0.95;
+    }
+    .yugo-star {
+        color: #ef4444; /* Červená hvězdička pro Yugo */
+        font-weight: bold;
+    }
+
+
+    /* --- Toast a Modal okna --- */
+    #toast-container {
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .toast {
+        background: #1e293b;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        opacity: 1;
+        transition: opacity 0.3s ease-out;
+        white-space: pre-wrap;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 15px;
+        backdrop-filter: blur(2px);
+    }
+
+    .modal-content {
+        background: #f8fafc;
+        padding: 20px 25px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        color: #1e293b;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 15px; right: 20px;
+        font-size: 28px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: #64748b;
+        transition: color 0.2s;
+    }
+
+    .close-modal:hover { color: #0f172a; }
+    .modal-content h2 { margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+    .modal-content h3 { margin-bottom: 5px; color: #0f172a; }
+    .modal-content ul { margin-top: 5px; padding-left: 20px; margin-bottom: 15px; }
+    
+    .radio-label {
+        display: block; 
+        margin-bottom: 12px; 
+        cursor: pointer; 
+        font-size: 16px; 
+        font-weight: bold;
+    }
+    
+    .time-options label {
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
+</head>
+<body>
+
+<div class="header-container">
+    <div class="player-indicator" id="whiteIndicator">
+        <div class="header-piece white"></div>
+        <span id="whiteScore">0</span>
+    </div>
+    
+    <span class="timer" id="whiteTimer">03:00</span>
+    
+    <div class="center-controls">
+        <button class="header-btn" onclick="showHelp()" title="Pravidla">💡</button>
+        <h1 onclick="showMenu()" title="Nastavení hry">MigoYugo <span style="font-size: 12px; opacity: 0.6;">▾</span></h1>
+        <button class="header-btn" onclick="toggleLang()" id="langBtn" title="Změnit jazyk">🇬🇧</button>
+    </div>
+
+    <span class="timer" id="blackTimer">03:00</span>
+
+    <div class="player-indicator" id="blackIndicator">
+        <span id="blackScore">0</span>
+        <div class="header-piece black"></div>
+    </div>
+</div>
+
+<div class="board-wrapper">
+    <div class="board" id="board"></div>
+</div>
+
+<div id="toast-container"></div>
+
+<div class="buttons">
+    <button class="icon-btn" onclick="newGame()">🔄</button>
+    <button class="icon-btn" onclick="undoMove()">↩️</button>
+    <button class="icon-btn" onclick="saveGame()">💾</button>
+    <button class="icon-btn" onclick="loadGame()">📂</button>
+    <button class="icon-btn" onclick="exportGame()">📤</button>
+    <button class="icon-btn" onclick="importGame()">📥</button>
+    <button class="icon-btn" onclick="toggleReplay()" id="replayBtn">▶️</button>
+</div>
+
+<div class="log-wrapper">
+    <div class="log-header">
+        <span id="logTitle">Herní log</span>
+        <button class="copy-btn" onclick="copyLog()" id="copyLogBtn">📋 Kopírovat</button>
+    </div>
+    <div class="log-content" id="logContent"></div>
+</div>
+
+<div class="modal-overlay" id="menuModal" onclick="if(event.target === this) closeMenu()">
+    <div class="modal-content" style="max-width: 320px; text-align: center;">
+        <button class="close-modal" onclick="closeMenu()">&times;</button>
+        <h2 id="menuTitle">Nastavení</h2>
+        
+        <div style="text-align: left; display: inline-block; margin: 10px 0 20px 0; width: 100%;">
+            <div style="margin-bottom: 15px;">
+                <label class="radio-label">
+                    <input type="radio" name="gamemode" id="radioPvP"> <span id="lblPvp">Hráč vs Hráč</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="gamemode" id="radioPvAI"> <span id="lblPvAI">Hráč vs AI</span>
+                </label>
+            </div>
+            <div style="
+    border-top: 1px solid #cbd5e1;
+    padding-top: 15px;
+    margin-bottom: 15px;
+">
+
+    <div id="levelAI" style="
+        font-weight: bold;
+        margin-bottom: 10px;
+    ">
+       <span id="lblAI"> 🎯 Obtížnost AI </span>
+    </div>
+
+    <div style="
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    ">
+
+        <label class="radio-label">
+            <input
+                type="radio"
+                name="difficulty"
+                id="radioAIEasy"
+                value="easy"
+            > <span id="lblAIEasy">
+            Easy </span>
+        </label>
+
+        <label class="radio-label">
+            <input
+                type="radio"
+                name="difficulty"
+                id="radioAINormal"
+                value="normal"
+                checked
+            > <span id="lblAINormal">
+            Normal </span>
+        </label>
+
+        <label class="radio-label">
+            <input
+                type="radio"
+                name="difficulty"
+                id="radioAIHard"
+                value="hard"
+            > <span id="lblAIHard">
+            Hard </span>
+        </label>
+
+    </div>
+
+</div>
+            <div style="border-top: 1px solid #cbd5e1; padding-top: 15px; margin-bottom: 15px; font-weight: bold;" id="lblTime">Časomíra (min):</div>
+            <div class="time-options" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <label><input type="radio" name="timerVal" value="0"> ∞</label>
+                <label><input type="radio" name="timerVal" value="1"> 1</label>
+                <label><input type="radio" name="timerVal" value="2"> 2</label>
+                <label><input type="radio" name="timerVal" value="3" checked> 3</label>
+                <label><input type="radio" name="timerVal" value="5"> 5</label>
+            </div>
+        </div>
+        
+        <button class="icon-btn" style="width: auto; border-radius: 8px; padding: 5px 20px; font-size: 16px; background: #34d399; color: #0f172a; margin: 0 auto;" onclick="applySettings()" id="btnApply">Použít a restartovat</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="helpModal" onclick="if(event.target === this) closeHelp()">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeHelp()">&times;</button>
+        <h2 id="helpTitle">Pravidla</h2>
+        <div id="helpBody"></div>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="importModal" onclick="if(event.target === this) document.getElementById('importModal').style.display='none'">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <button class="close-modal" onclick="document.getElementById('importModal').style.display='none'">&times;</button>
+        <h2 id="importTitle">Import hry</h2>
+        <textarea id="importTextarea" placeholder="Zde vložte zkopírovaný kód..." style="width: 100%; height: 150px; margin-bottom: 15px; font-family: monospace; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; resize: vertical;"></textarea>
+        <button class="icon-btn" style="width: auto; border-radius: 8px; padding: 8px 20px; font-size: 16px; background: #3b82f6; color: #fff; margin: 0 auto;" onclick="processImport()">Načíst</button>
+    </div>
+</div>
+
+<script>
+// --- Lokalizace ---
+const i18n = {
+    cs: {
+        invalidLine: "Neplatný tah — dlouhá řada",
+        yugo: "Yugo!",
+        whiteWins: "Bílý vyhrál IGO!",
+        blackWins: "Černý vyhrál IGO!",
+        whiteWinsWego: "Konec - Bílý vyhrál na Yugos (Wego)",
+        blackWinsWego: "Konec - Černý vyhrál na Yugos (Wego)",
+        timeOutWhite: "Bílému vypršel čas. Černý vyhrál!",
+        timeOutBlack: "Černému vypršel čas. Bílý vyhrál!",
+        draw: "Konec hry - remíza (Wego)",
+        replayStart: "Spouštím záznam...",
+        replayDone: "Replay dokončen",
+        replayStop: "Přehrávání zastaveno",
+        noReplay: "Není co přehrávat",
+        newGame: "Nová hra spuštěna",
+        saved: "Hra uložena",
+        loaded: "Hra načtena",
+        noSave: "Nenalezen žádný save",
+        undo: "Tah vrácen",
+        exportOk: "Export zkopírován do schránky",
+        exportFail: "Chyba při kopírování",
+        importPrompt: "Vlož save JSON",
+        importOk: "Hra úspěšně importována",
+        importFail: "Neplatný formát",
+        menuTitle: "Nastavení",
+        modePvP: "Hráč vs Hráč",
+        modePvAI: "Hráč vs AI",
+        logAI: "AI",
+        levelAI: "Obtížnost AI",
+        levelAIEasy: "Lehká",
+        levelAINormal: "Střední",
+        levelAIHard: "Těžká",
+        timeLabel: "Čas:",
+        btnApply: "Použít a restartovat",
+        helpTitle: "MigoYugo - Pravidla",
+        logTitle: "Herní log",
+        copyBtn: "📋 Kopírovat",
+        logCopied: "Log zkopírován",
+        helpContent: `
+    <h3>Hra</h3>
+    <ul>
+        <li>MigoYugo je strategická desková hra s úplnou informací (nezávisí na náhodě).</li>
+        <li>Hraje se na desce 8×8.</li>
+        <li>Hráči se střídají v pokládání kamenů na volná pole.</li>
+        <li>První tah se mezi partiemi automaticky střídá.</li>
+    </ul>
+
+    <h3>Kámen Migo a Yugo</h3>
+    <ul>
+        <li>Běžný kámen se nazývá <strong>Migo</strong>.</li>
+        <li>Když vytvoříte jednu nepřerušenou řadu přesně 4 kamenů vaší barvy, poslední kámen se změní na <strong>Yugo</strong>.</li>
+        <li>Ostatní běžné kameny v dané čtveřici zmizí.</li>
+        <li>Yugo je označeno <span style="color:#f87171;font-weight:bold;">červeným</span> středem.</li>
+    </ul>
+
+    <h3>Žádné dlouhé řady</h3>
+    <ul>
+        <li>Hráč nesmí vytvořit nepřerušenou řadu delší než 4 kamenů své barvy.</li>
+        <li>Takový tah je neplatný.</li>
+    </ul>
+
+    <h3>Výhra a konec hry</h3>
+    <ul>
+        <li>
+            <strong>IGO:</strong>
+            vytvořte nepřerušenou řadu 4 Yugo kamenů a okamžitě vyhráváte.
+        </li>
+
+        <li>
+            Výherní řada IGO po skončení partie pulzuje zlatým efektem.
+        </li>
+
+        <li>
+            <strong>Wego:</strong>
+            pokud se deska zaplní nebo již nejsou možné tahy,
+            vyhrává hráč s větším počtem Yugo kamenů.
+        </li>
+
+        <li>
+            Při výhře na Wego pulzuje panel vítězného hráče.
+        </li>
+
+        <li>
+            <strong>Remíza:</strong>
+            pokud mají oba hráči stejný počet Yugo kamenů.
+        </li>
+
+        <li>
+            <strong>Čas:</strong>
+            pokud některému hráči vyprší čas,
+            okamžitě prohrává.
+        </li>
+    </ul>
+
+    <h3>Indikace na desce</h3>
+    <ul>
+        <li>
+            <span style="color:#34d399;font-weight:bold;">Zelené pole</span>
+            označuje poslední tah bílého hráče.
+        </li>
+
+        <li>
+            <span style="color:#60a5fa;font-weight:bold;">Modré pole</span>
+            označuje poslední tah černého hráče.
+        </li>
+
+        <li>
+            Náhled tahu:
+            <span style="color:#34d399;font-weight:bold;">zelená</span>
+            = platný tah,
+            <span style="color:#60a5fa;font-weight:bold;">modrá</span>
+            = vznikne Yugo,
+            <span style="color:#f87171;font-weight:bold;">červená</span>
+            = neplatný tah.
+        </li>
+
+        <li>
+            Aktivní hráč je zvýrazněn v horním panelu.
+        </li>
+    </ul>
+
+    <h3>Herní log</h3>
+    <ul>
+        <li>Každý tah se zapisuje do logu pod deskou.</li>
+        <li>Hvězdička (<span style="color:#f87171;font-weight:bold;">*</span>) označuje vytvoření Yugo.</li>
+        <li>Log lze zkopírovat tlačítkem 📋.</li>
+    </ul>
+`
+    },
+    en: {
+        invalidLine: "Invalid move — line too long",
+        yugo: "Yugo!",
+        whiteWins: "White wins with IGO!",
+        blackWins: "Black wins with IGO!",
+        whiteWinsWego: "Game Over - White wins by Yugos (Wego)",
+        blackWinsWego: "Game Over - Black wins by Yugos (Wego)",
+        timeOutWhite: "White ran out of time. Black wins!",
+        timeOutBlack: "Black ran out of time. White wins!",
+        draw: "Game over - Draw (Wego)",
+        replayStart: "Starting replay...",
+        replayDone: "Replay finished",
+        replayStop: "Replay stopped",
+        noReplay: "Nothing to replay",
+        newGame: "New game started",
+        saved: "Game saved",
+        loaded: "Game loaded",
+        noSave: "No save found",
+        undo: "Move undone",
+        exportOk: "Export copied",
+        exportFail: "Copy failed",
+        importPrompt: "Paste save JSON",
+        importOk: "Game imported",
+        importFail: "Invalid format",
+        menuTitle: "Settings",
+        modePvP: "Player vs Player",
+        modePvAI: "Player vs AI",
+        logAI: "AI",
+        levelAI: "AI Difficulty",
+        levelAIEasy: "Easy",
+        levelAINormal: "Normal",
+        levelAIHard: "Hard",
+        timeLabel: "Time Limit:",
+        btnApply: "Apply & Restart",
+        helpTitle: "MigoYugo Game Rules",
+        logTitle: "Game Log",
+        copyBtn: "📋 Copy",
+        logCopied: "Log copied",
+        helpContent: `
+    <h3>The Game</h3>
+    <ul>
+        <li>MigoYugo is a strategic board game with no randomness.</li>
+        <li>The game is played on an 8×8 board.</li>
+        <li>Players alternate placing stones on empty spaces.</li>
+        <li>The starting player alternates automatically between games.</li>
+    </ul>
+
+    <h3>Migo and Yugo</h3>
+    <ul>
+        <li>A normal stone is called a <strong>Migo</strong>.</li>
+        <li>Creating an unbroken line of exactly 4 stones turns the newest stone into a <strong>Yugo</strong>.</li>
+        <li>The remaining normal stones in that line disappear.</li>
+        <li>A Yugo is marked by <span style="color:#f87171;font-weight:bold;">a red center</span>.</li>
+    </ul>
+
+    <h3>No Long Lines</h3>
+    <ul>
+        <li>You may never create an unbroken line longer than 4 stones.</li>
+        <li>Such a move is illegal.</li>
+    </ul>
+
+    <h3>Winning and Game End</h3>
+    <ul>
+        <li>
+            <strong>IGO:</strong>
+            create a line of 4 Yugos to win instantly.
+        </li>
+
+        <li>
+            The winning IGO line pulses with a golden effect.
+        </li>
+
+        <li>
+            <strong>Wego:</strong>
+            if the board fills or no legal moves remain,
+            the player with more Yugos wins.
+        </li>
+
+        <li>
+            The winning player's panel pulses after a Wego victory.
+        </li>
+
+        <li>
+            <strong>Draw:</strong>
+            equal number of Yugos.
+        </li>
+
+        <li>
+            <strong>Timeout:</strong>
+            if a player's clock reaches zero,
+            that player loses immediately.
+        </li>
+    </ul>
+
+    <h3>Board Indicators</h3>
+    <ul>
+        <li>
+            <span style="color:#34d399;font-weight:bold;">Green</span>
+            marks White's last move.
+        </li>
+
+        <li>
+            <span style="color:#60a5fa;font-weight:bold;">Blue</span>
+            marks Black's last move.
+        </li>
+
+        <li>
+            Move preview:
+            <span style="color:#34d399;font-weight:bold;">green</span>
+            = valid move,
+            <span style="color:#60a5fa;font-weight:bold;">blue</span>
+            = creates Yugo,
+            <span style="color:#f87171;font-weight:bold;">red</span>
+            = illegal move.
+        </li>
+
+        <li>
+            The active player is highlighted in the top panel.
+        </li>
+    </ul>
+
+    <h3>Game Log</h3>
+    <ul>
+        <li>All moves are recorded in the game log below the board.</li>
+        <li>An asterisk (<span style="color:#f87171;font-weight:bold;">*</span>) marks a Yugo creation.</li>
+        <li>The log can be copied with the 📋 button.</li>
+    </ul>
+`
+    }
+};
+
+let lang = 'cs';
+function t(key) { return i18n[lang][key]; }
+
+function toggleLang() {
+    lang = lang === 'cs' ? 'en' : 'cs';
+    document.getElementById('langBtn').textContent = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+    
+    document.getElementById('logTitle').innerText = t('logTitle');
+    document.getElementById('copyLogBtn').innerText = t('copyBtn');
+
+    if (document.getElementById('helpModal').style.display === 'flex') showHelp();
+    if (document.getElementById('menuModal').style.display === 'flex') showMenu();
+    renderLog();
+}
+
+function showHelp() {
+    document.getElementById('helpTitle').innerHTML = t('helpTitle');
+    document.getElementById('helpBody').innerHTML = t('helpContent');
+    document.getElementById('helpModal').style.display = 'flex';
+}
+function closeHelp() { document.getElementById('helpModal').style.display = 'none'; }
+
+function showMenu() {
+    document.getElementById('menuTitle').innerHTML = t('menuTitle');
+    document.getElementById('lblPvp').innerHTML = t('modePvP');
+    document.getElementById('lblPvAI').innerHTML = t('modePvAI');
+    document.getElementById('lblTime').innerHTML = t('timeLabel');
+    document.getElementById('btnApply').innerHTML = t('btnApply');
+    document.getElementById('lblAI').innerHTML = t('levelAI');
+    document.getElementById('lblAIEasy').innerHTML = t('levelAIEasy');
+    document.getElementById('lblAINormal').innerHTML = t('levelAINormal');
+    document.getElementById('lblAIHard').innerHTML = t('levelAIHard');    
+
+    document.getElementById('radioPvAI').checked = aiEnabled;
+    document.getElementById('radioPvP').checked = !aiEnabled;
+
+    document.getElementById('radioAIEasy').checked = (aiDifficulty === 'easy');
+    document.getElementById('radioAINormal').checked = (aiDifficulty === 'normal');
+    document.getElementById('radioAIHard').checked = (aiDifficulty === 'hard');
+    
+    const timeRadio = document.querySelector(`input[name="timerVal"][value="${timeLimitMinutes}"]`);
+    if(timeRadio) timeRadio.checked = true;
+    
+    document.getElementById('menuModal').style.display = 'flex';
+}
+function closeMenu() { document.getElementById('menuModal').style.display = 'none'; }
+
+function applySettings() {
+    aiEnabled = document.getElementById('radioPvAI').checked;
+    
+    // Zápis obtížnosti
+    const difficultyRadio = document.querySelector('input[name="difficulty"]:checked');
+    if (difficultyRadio) {
+        aiDifficulty = difficultyRadio.value;
+        localStorage.setItem("migoDifficulty", aiDifficulty);
+    }
+    
+    // Zápis časomíry
+    const timeRadios = document.getElementsByName('timerVal');
+    for (const r of timeRadios) {
+        if (r.checked) {
+            timeLimitMinutes = parseInt(r.value);
+            localStorage.setItem("migoTimeLimit", timeLimitMinutes); // Uložení do localStorage
+        }
+    }
+    
+    closeMenu();
+    newGame();
+}
+
+
+
+
+// --- Herní logika ---
+const SIZE = 8;
+const EMPTY = 0, WHITE = 1, BLACK = 2, WHITE_YUGO = 3, BLACK_YUGO = 4;
+
+let board = [], history = [], currentPlayer = WHITE, gameOver = false;
+let logData = []; // Zde se ukládá celá historie zápisů (tahy i syst. zprávy)
+
+let lastMoveWhite = null;
+let lastMoveBlack = null;
+
+let startingPlayer = BLACK; 
+let aiEnabled = true;
+let aiPlayer = BLACK; 
+
+let replayMode = false, replayTimer = null;
+let preReplayState = null; 
+
+let timeLimitMinutes = localStorage.getItem("migoTimeLimit") !== null ? parseInt(localStorage.getItem("migoTimeLimit")) : 3;
+//let timeLimitMinutes = 3; 
+let whiteTime = timeLimitMinutes * 60, blackTime = timeLimitMinutes * 60;
+let gameTimer = null;
+let aiDifficulty = localStorage.getItem("migoDifficulty") || "normal";
+
+const boardEl = document.getElementById('board');
+const whiteScoreEl = document.getElementById('whiteScore');
+const blackScoreEl = document.getElementById('blackScore');
+const whiteIndicator = document.getElementById('whiteIndicator');
+const blackIndicator = document.getElementById('blackIndicator');
+
+
+
+function getAIDepth() {
+
+    switch (aiDifficulty) {
+
+        case "easy":
+            return 1;
+
+        case "normal":
+            return 1;
+
+        case "hard":
+            return 2;
+    }
+
+    return 1;
+}
+
+
+
+function logSys(
+    msg,
+    translateKey = null,
+    extra = null
+) {
+
+    logData.push({
+
+        type: 'sys',
+
+        text: msg,
+
+        key: translateKey,
+
+        extra: extra
+    });
+
+    renderLog();
+}
+
+function copyLog() {
+
+    let text =
+        t('logTitle') + "\n\n";
+
+    // kopírování zepředu
+
+    for (
+        let i = 0;
+        i < logData.length;
+        i++
+    ) {
+
+        const entry =
+            logData[i];
+
+        // ========================
+        // SYSTEM MESSAGE
+        // ========================
+
+        if (entry.type === 'sys') {
+            text += "--- " + getSysMsgText(entry) + " ---\n";
+        }
+
+        // ========================
+        // MOVE ROUND
+        // ========================
+
+        else if (
+            entry.type === 'round'
+        ) {
+
+            const num =
+                String(entry.num)
+                .padStart(2, '0') +
+                ".";
+
+            const w =
+                entry.w +
+                (
+                    entry.wYugo
+                    ? "*"
+                    : ""
+                );
+
+            const b =
+                entry.b
+
+                ? (
+                    entry.b +
+                    (
+                        entry.bYugo
+                        ? "*"
+                        : ""
+                    )
+                )
+
+                : "";
+
+            // zarovnání sloupců
+
+            text +=
+
+                num +
+
+                " " +
+
+                w.padEnd(6, ' ') +
+
+                "   " +
+
+                b +
+
+                "\n";
+        }
+    }
+
+    navigator.clipboard
+        .writeText(text)
+
+        .then(() => {
+
+            showToast(
+                t('logCopied')
+            );
+
+        })
+
+        .catch(() => {
+
+            showToast(
+                t('exportFail')
+            );
+        });
+}
+
+
+function getSysMsgText(entry) {
+    // Dynamická zpráva o stavu hry s proměnnými
+    if (entry.key === 'gameInfo' && entry.extra) {
+        const safeDiff = entry.extra.diff ? entry.extra.diff : "normal";
+        const diffKey = "levelAI" + safeDiff.charAt(0).toUpperCase() + safeDiff.slice(1);
+        const timeVal = entry.extra.time === 0 ? "∞" : entry.extra.time + " min";
+        
+        // Znak &nbsp; vloží pevnou mezeru, čímž text na dalších řádcích posuneme pod text z prvního řádku
+        return t(entry.extra.action) + "<br>" +
+               "&nbsp;&nbsp;&nbsp;&nbsp;" + t('logAI') + ": " + t(diffKey).toUpperCase() + "<br>" +
+               "&nbsp;&nbsp;&nbsp;&nbsp;" + t('timeLabel') + ": " + timeVal;
+    }
+    // Obyčejná přeložitelná zpráva (nebo textový základ pro starší logy)
+    return entry.key ? t(entry.key) : entry.text;
+}
+
+
+// --- Zápis a Renderování logu ---
+function renderLog() {
+    const logBox = document.getElementById('logContent');
+    if (!logBox) return;
+    logBox.innerHTML = '';
+    
+    // Nejnovější záznam na vrcholu (zpětná smyčka)
+    for (let i = logData.length - 1; i >= 0; i--) {
+        const entry = logData[i];
+        
+        if (entry.type === 'sys') {
+            const div = document.createElement('div');
+            div.className = 'log-sys-msg';
+            div.innerHTML = `⚙️ ${getSysMsgText(entry)}`;
+            logBox.appendChild(div);
+        } else if (entry.type === 'round') {
+            const row = document.createElement('div');
+            row.className = 'log-row';
+
+            const num = String(entry.num).padStart(2, '0') + '. ';
+            const whiteMove = entry.w +
+    (entry.wYugo ? '<span class="yugo-star">*</span>' : '');
+
+const blackMove = entry.b
+    ? entry.b + (entry.bYugo ? '<span class="yugo-star">*</span>' : '')
+    : '';
+
+const whitePlain =
+    entry.w + (entry.wYugo ? '*' : '');
+
+const whitePadding =
+    ' '.repeat(Math.max(0, 7 - whitePlain.length));
+
+        row.innerHTML =
+            `<span style="color:#94a3b8">${num}</span>` +
+            `<span style="color:#ffffff">${whiteMove}${whitePadding}</span>` +
+            `   ` +
+            `<span style="color:#94a3b8">${blackMove}</span>`;
+            logBox.appendChild(row);
+        }
+    }
+}
+
+
+
+
+
+function startTimers() {
+    if (gameTimer) clearInterval(gameTimer);
+    if (timeLimitMinutes === 0) {
+        updateTimersUI();
+        return; 
+    }
+    gameTimer = setInterval(() => {
+        if (!gameOver && !replayMode) {
+            if (currentPlayer === WHITE) {
+                whiteTime--;
+                if (whiteTime <= 0) timeOut(BLACK);
+            } else {
+                blackTime--;
+                if (blackTime <= 0) timeOut(WHITE);
+            }
+            updateTimersUI();
+        }
+    }, 1000);
+}
+
+function timeOut(winner) {
+    whiteTime = Math.max(0, whiteTime);
+    blackTime = Math.max(0, blackTime);
+    gameOver = true;
+    clearInterval(gameTimer);
+    
+    // 1. Určíme klíč překladu podle toho, kdo vyhrál na čas
+    const msgKey = winner === WHITE ? 'timeOutBlack' : 'timeOutWhite';
+    
+    // 2. Toast potřebuje text okamžitě v aktuálním jazyce
+    showToast(t(msgKey));
+    
+    // 3. Do logu pošleme pouze klíč pro živý dynamický překlad
+    logSys("", msgKey);
+    
+    updateStatus();
+}
+
+function updateTimersUI() {
+    const wtEl = document.getElementById('whiteTimer');
+    const btEl = document.getElementById('blackTimer');
+
+    if (timeLimitMinutes === 0) {
+        wtEl.textContent = '∞';
+        btEl.textContent = '∞';
+        wtEl.classList.remove('warning');
+        btEl.classList.remove('warning');
+        return;
+    }
+
+    const formatTime = (secs) => Math.floor(secs/60).toString().padStart(2,'0') + ':' + (secs%60).toString().padStart(2,'0');
+    
+        wtEl.textContent = formatTime(whiteTime);
+        btEl.textContent = formatTime(blackTime);
+
+        wtEl.classList.remove('warning', 'timeout');
+    btEl.classList.remove('warning', 'timeout');
+
+    if (whiteTime <= 0) {
+        wtEl.classList.add('timeout');
+    } else if (whiteTime <= 30) {
+        wtEl.classList.add('warning');
+    }
+
+    if (blackTime <= 0) {
+        btEl.classList.add('timeout');
+    } else if (blackTime <= 30) {
+        btEl.classList.add('warning');
+    }
+}
+
+function initBoardDOM() {
+    boardEl.innerHTML = '';
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.id = `cell-${x}-${y}`;
+            cell.onmouseenter = () => !gameOver && !replayMode && previewMove(x, y, cell);
+            cell.onmouseleave = () => cell.classList.remove('preview-valid', 'preview-yugo', 'preview-illegal');
+            
+            cell.onclick = (e) => {
+                e.preventDefault();
+                makeMove(x, y, false);
+            }; 
+            boardEl.appendChild(cell);
+        }
+    }
+}
+
+function render() {
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            
+            cell.className = 'cell';
+
+            if (lastMoveWhite && lastMoveWhite.x === x && lastMoveWhite.y === y) {
+                cell.classList.add('last-move-white');
+            }
+            if (lastMoveBlack && lastMoveBlack.x === x && lastMoveBlack.y === y) {
+                cell.classList.add('last-move-black');
+            }
+
+            const val = board[y][x];
+            let piece = cell.querySelector('.piece');
+            
+            if (val === EMPTY) {
+                if (piece) piece.remove();
+            } else {
+                if (!piece) {
+                    piece = document.createElement('div');
+                    piece.className = 'piece new-piece';
+                    cell.appendChild(piece);
+                } else {
+                    piece.classList.remove('new-piece');
+                }
+                
+                piece.className = 'piece ' + 
+                    (val === WHITE || val === WHITE_YUGO ? 'white' : 'black') +
+                    (val === WHITE_YUGO || val === BLACK_YUGO ? ' yugo' : '');
+            }
+        }
+    }
+    updateScores();
+    updateStatus();
+    updateTimersUI();
+}
+
+function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+}
+
+function checkAndRunAI() {
+    if (aiEnabled && currentPlayer === aiPlayer && !gameOver && !replayMode) {
+        setTimeout(aiMove, 600); 
+    }
+}
+
+function highlightWinningLine() {
+    if (!gameOver) return;
+    const winW = checkIgo(WHITE);
+    const winB = checkIgo(BLACK);
+    const winningLine = winW || winB;
+    if (winningLine) {
+        winningLine.forEach(pos => {
+            const el = document.getElementById(`cell-${pos.x}-${pos.y}`);
+            if (el) el.classList.add('winning-pulse');
+        });
+    }
+}
+
+function highlightWegoWinner(winner) {
+
+    whiteIndicator.classList.remove(
+        'winner-pulse'
+    );
+
+    blackIndicator.classList.remove(
+        'winner-pulse'
+    );
+
+    if (winner === WHITE) {
+
+        whiteIndicator.classList.add(
+            'winner-pulse'
+        );
+    }
+
+    if (winner === BLACK) {
+
+        blackIndicator.classList.add(
+            'winner-pulse'
+        );
+    }
+}
+
+
+function makeMove(x, y, isAI = false) {
+    if (gameOver || replayMode || board[y][x] !== EMPTY) return;
+    
+    if (!isAI && aiEnabled && currentPlayer === aiPlayer) return;
+
+    const temp = cloneBoard(board);
+    temp[y][x] = currentPlayer;
+
+    if (hasLongLine(temp, currentPlayer)) {
+        showToast(t('invalidLine'));
+        return;
+    }
+
+    // Ukládáme hlubokou kopii stavu logu, abychom o něj při vrácení tahu nepřišli
+    history.push({ 
+        board: cloneBoard(board), 
+        currentPlayer,
+        lastMoveWhite,
+        lastMoveBlack,
+        logData: JSON.parse(JSON.stringify(logData))
+    });
+
+    board[y][x] = currentPlayer;
+
+    // Aplikace logiky Yuga a zjištění, zda nějaké vůbec vzniklo (vrací true/false)
+    const isYugo = processYugos(x, y);
+
+    // Zápis tahu do logData pole (tvorba např. a1, d5, ...)
+    const col = String.fromCharCode(97 + x); 
+    const row = y + 1; 
+    const moveStr = `${col}${row}`;
+
+    let currentRound = logData.length > 0 && logData[logData.length - 1].type === 'round' ? logData[logData.length - 1] : null;
+
+    if (currentPlayer === WHITE) {
+        let nextNum = 1;
+        for (let i = logData.length - 1; i >= 0; i--) {
+            if (logData[i].type === 'round') {
+                nextNum = logData[i].num + 1;
+                break;
+            }
+        }
+        logData.push({ type: 'round', num: nextNum, w: moveStr, wYugo: isYugo, b: '', bYugo: false });
+    } else {
+        if (!currentRound || currentRound.b !== '') {
+             let nextNum = 1;
+             if (currentRound) nextNum = currentRound.num + 1;
+             logData.push({ type: 'round', num: nextNum, w: '...', wYugo: false, b: moveStr, bYugo: isYugo });
+        } else {
+             currentRound.b = moveStr;
+             currentRound.bYugo = isYugo;
+        }
+    }
+    
+    // Překreslení panelu logu pro propíchnutí nového zápisu
+    renderLog();
+
+    if (currentPlayer === WHITE) {
+        lastMoveWhite = {x, y};
+    } else {
+        lastMoveBlack = {x, y};
+    }
+
+    render();
+
+    const winningLine = checkIgo(currentPlayer);
+    if (winningLine) {
+        gameOver = true;
+        clearInterval(gameTimer);
+        highlightWinningLine();
+        
+        // 1. Pro toast potřebujeme rovnou přeložený text
+        const msgKey = currentPlayer === WHITE ? 'whiteWins' : 'blackWins';
+        showToast(t(msgKey));
+        
+        // 2. Do logSys pošleme POUZE klíč pro dynamický překlad
+        logSys("", msgKey); 
+        
+        updateStatus();
+    } else if (isBoardFull() || !hasLegalMoves(nextPlayer(currentPlayer))) {
+        gameOver = true;
+        clearInterval(gameTimer);
+        
+        let w = 0, b = 0;
+        board.flat().forEach(v => { if(v === WHITE_YUGO) w++; if(v === BLACK_YUGO) b++; });
+        
+        // Určení klíče podle výsledku zápasu
+        let msgKey = "";
+        let wegoWinner = null;
+
+        if (w > b) {
+            msgKey = 'whiteWinsWego';
+            wegoWinner = WHITE;
+        }
+        else if (b > w) {
+            msgKey = 'blackWinsWego';
+            wegoWinner = BLACK;
+        }
+        else {
+            msgKey = 'draw';
+        }
+        
+        // Toast přeložíme hned, do logu pošleme jen klíč
+        showToast(t(msgKey));
+        logSys("", msgKey);
+
+         // ← TOTO JE DŮLEŽITÉ
+        if (wegoWinner !== null) {
+
+            highlightWegoWinner(
+                wegoWinner
+            );
+        }
+        updateStatus();
+    } else {
+        currentPlayer = nextPlayer(currentPlayer);
+        updateStatus();
+        checkAndRunAI();
+    }
+}
+
+function toggleReplay() {
+    const btn = document.getElementById('replayBtn');
+    if (replayMode) {
+        clearInterval(replayTimer);
+        replayMode = false;
+        btn.textContent = '▶️';
+        if (preReplayState) {
+            board = cloneBoard(preReplayState.board);
+            currentPlayer = preReplayState.currentPlayer;
+            lastMoveWhite = preReplayState.lastMoveWhite;
+            lastMoveBlack = preReplayState.lastMoveBlack;
+            gameOver = preReplayState.gameOver;
+        }
+        showToast(t('replayStop'));
+        render();
+        highlightWinningLine();
+        checkAndRunAI();
+    } else {
+        if (history.length === 0) {
+            showToast(t('noReplay'));
+            return;
+        }
+
+        preReplayState = { 
+            board: cloneBoard(board), 
+            currentPlayer, 
+            lastMoveWhite,
+            lastMoveBlack,
+            gameOver 
+        };
+        replayMode = true;
+        gameOver = true; 
+        btn.textContent = '⏹️';
+        showToast(t('replayStart'));
+
+        let rIdx = 0;
+        replayTimer = setInterval(() => {
+            if (rIdx >= history.length) {
+                clearInterval(replayTimer);
+                replayMode = false;
+                btn.textContent = '▶️';
+                
+                board = cloneBoard(preReplayState.board);
+                currentPlayer = preReplayState.currentPlayer;
+                lastMoveWhite = preReplayState.lastMoveWhite;
+                lastMoveBlack = preReplayState.lastMoveBlack;
+                gameOver = preReplayState.gameOver;
+                
+                showToast(t('replayDone'));
+                render();
+                highlightWinningLine();
+                checkAndRunAI();
+                return;
+            }
+            const state = history[rIdx];
+            board = cloneBoard(state.board);
+            currentPlayer = state.currentPlayer;
+            lastMoveWhite = state.lastMoveWhite;
+            lastMoveBlack = state.lastMoveBlack;
+            render();
+            rIdx++;
+        }, 600);
+    }
+}
+
+
+function cloneBoard(b) {
+    return b.map(row => [...row]);
+}
+
+
+
+function previewMove(x, y, cell) {
+    if (board[y][x] !== EMPTY) return;
+    if (aiEnabled && currentPlayer === aiPlayer) return; 
+    
+    const temp = cloneBoard(board);
+    temp[y][x] = currentPlayer;
+    if (hasLongLine(temp, currentPlayer)) cell.classList.add('preview-illegal');
+    else if (wouldCreateYugo(temp, x, y, currentPlayer)) cell.classList.add('preview-yugo');
+    else cell.classList.add('preview-valid');
+}
+
+function newGame(keepSettings = false) {
+
+    const savedDifficulty =
+    localStorage.getItem(
+        "migoDifficulty"
+    );
+
+if (savedDifficulty) {
+
+    aiDifficulty =
+        savedDifficulty;
+
+    const radio =
+        document.querySelector(
+            `input[name="difficulty"][value="${savedDifficulty}"]`
+        );
+
+    if (radio) {
+        radio.checked = true;
+    }
+}
+    board = Array.from({ length: SIZE }, () => Array(SIZE).fill(EMPTY));
+    
+    if (!keepSettings) {
+        startingPlayer = nextPlayer(startingPlayer); 
+    }
+    
+    aiPlayer = aiEnabled ? BLACK : null;
+    currentPlayer = startingPlayer;
+    
+    lastMoveWhite = null;
+    lastMoveBlack = null;
+
+    whiteIndicator.classList.remove('winner-pulse');
+    blackIndicator.classList.remove('winner-pulse');    
+
+    gameOver = false;
+    history = [];
+    
+    // Vyčištění logu při nové hře
+    logData = [];
+    renderLog();
+    
+    whiteTime = timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0; 
+    blackTime = timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
+    
+    if (replayTimer) clearInterval(replayTimer);
+    replayMode = false;
+    document.getElementById('replayBtn').textContent = '▶️';
+    
+    initBoardDOM();
+    render();
+
+    // reset timeout visual state
+    document
+        .querySelectorAll('.timer')
+        .forEach(timer => {
+
+            timer.classList.remove(
+                'timeout'
+            );
+        }); 
+
+    startTimers();
+    
+    showToast(t('newGame'));
+    logSys("", "gameInfo", { action: "newGame", diff: aiDifficulty, time: timeLimitMinutes });
+    checkAndRunAI();
+}
+
+function cloneBoard(b) { return b.map(row => [...row]); }
+function inside(x, y) { return x >= 0 && x < SIZE && y >= 0 && y < SIZE; }
+function nextPlayer(p) { return p === WHITE ? BLACK : WHITE; }
+function belongsToPlayer(v, p) { return p === WHITE ? (v === WHITE || v === WHITE_YUGO) : (v === BLACK || v === BLACK_YUGO); }
+
+function hasLongLine(tempBoard, player) {
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            if (!belongsToPlayer(tempBoard[y][x], player)) continue;
+            for (const [dx,dy] of dirs) {
+                let count = 1, cx = x + dx, cy = y + dy;
+                while (inside(cx, cy) && belongsToPlayer(tempBoard[cy][cx], player)) { count++; cx += dx; cy += dy; }
+                if (count > 4) return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+function getLine(
+    x,
+    y,
+    dx,
+    dy,
+    player
+) {
+
+    const res = [{x,y}];
+
+    [[dx,dy],[-dx,-dy]].forEach(([sx,sy]) => {
+
+        let cx = x + sx;
+        let cy = y + sy;
+
+        while (
+
+            inside(cx,cy) &&
+
+            belongsToPlayer(
+                board[cy][cx],
+                player
+            )
+
+        ) {
+
+            res.push({
+                x: cx,
+                y: cy
+            });
+
+            cx += sx;
+            cy += sy;
+        }
+    });
+
+    return res;
+}
+
+
+function processYugos(x, y) {
+    const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    let createdYugo = false;
+    let piecesToRemove = [];
+
+    for (const [dx, dy] of dirs) {
+        const line = getLine(x, y, dx, dy, currentPlayer);
+        if (line.length === 4) {
+            createdYugo = true;
+            line.forEach(p => {
+                if (!(p.x === x && p.y === y)) piecesToRemove.push(p);
+            });
+        }
+    }
+
+    if (createdYugo) {
+        board[y][x] = (currentPlayer === WHITE ? WHITE_YUGO : BLACK_YUGO);
+        piecesToRemove.forEach(p => {
+            const val = board[p.y][p.x];
+            if (val === WHITE || val === BLACK) {
+                board[p.y][p.x] = EMPTY;
+            }
+        });
+    }
+    return createdYugo;
+}
+
+
+
+function simulateMove(state, x, y) {
+
+    if (state.board[y][x] !== EMPTY) {
+        return null;
+    }
+
+    const player = state.currentPlayer;
+
+    const newState = {
+        board: cloneBoard(state.board),
+        currentPlayer: player,
+        gameOver: false
+    };
+
+    newState.board[y][x] = player;
+
+    if (hasLongLine(newState.board, player)) {
+        return null;
+    }
+
+    processYugosSim(
+        newState.board,
+        x,
+        y,
+        player
+    );
+
+    if (checkIgoSim(newState.board, player)) {
+        newState.gameOver = true;
+    }
+
+    newState.currentPlayer =
+        nextPlayer(player);
+
+    return newState;
+}
+
+
+
+function processYugosSim(
+    simBoard,
+    x,
+    y,
+    player
+) {
+
+    const dirs = [
+        [1,0],
+        [0,1],
+        [1,1],
+        [1,-1]
+    ];
+
+    let createdYugo = false;
+
+    const piecesToRemove = [];
+
+    for (const [dx,dy] of dirs) {
+
+        const line =
+            getLineSim(
+                simBoard,
+                x,
+                y,
+                dx,
+                dy,
+                player
+            );
+
+        if (line.length === 4) {
+
+            createdYugo = true;
+
+            line.forEach(p => {
+
+                if (
+                    p.x === x &&
+                    p.y === y
+                ) {
+                    return;
+                }
+
+                piecesToRemove.push(p);
+
+            });
+        }
+    }
+
+    if (createdYugo) {
+
+        simBoard[y][x] =
+            player === WHITE
+                ? WHITE_YUGO
+                : BLACK_YUGO;
+
+        piecesToRemove.forEach(p => {
+
+            const v =
+                simBoard[p.y][p.x];
+
+            if (
+                v === WHITE ||
+                v === BLACK
+            ) {
+
+                simBoard[p.y][p.x] =
+                    EMPTY;
+
+            }
+        });
+    }
+}
+
+function getLineSim(
+    simBoard,
+    x,
+    y,
+    dx,
+    dy,
+    player
+) {
+
+    const res = [{x,y}];
+
+    [[dx,dy],[-dx,-dy]].forEach(([sx,sy]) => {
+
+        let cx = x + sx;
+        let cy = y + sy;
+
+        while (
+
+            inside(cx,cy) &&
+
+            belongsToPlayer(
+                simBoard[cy][cx],
+                player
+            )
+
+        ) {
+
+            res.push({
+                x: cx,
+                y: cy
+            });
+
+            cx += sx;
+            cy += sy;
+        }
+    });
+
+    return res;
+}
+
+
+function createGameState() {
+
+    return {
+        board: cloneBoard(board),
+        currentPlayer: currentPlayer,
+        gameOver: gameOver
+    };
+}
+
+
+function checkIgoSim(simBoard, player) {
+
+    const target =
+        player === WHITE
+            ? WHITE_YUGO
+            : BLACK_YUGO;
+
+    const dirs = [
+        [1,0],
+        [0,1],
+        [1,1],
+        [1,-1]
+    ];
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            if (simBoard[y][x] !== target) {
+                continue;
+            }
+
+            for (const [dx,dy] of dirs) {
+
+                let count = 1;
+
+                let cx = x + dx;
+                let cy = y + dy;
+
+                while (
+
+                    inside(cx,cy) &&
+
+                    simBoard[cy][cx] === target
+
+                ) {
+
+                    count++;
+
+                    cx += dx;
+                    cy += dy;
+                }
+
+                if (count >= 4) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+
+
+function minimax(
+    state,
+    depth,
+    alpha,
+    beta,
+    maximizingPlayer,
+    aiPlayer
+) {
+
+    // konec hledání
+    if (
+        depth === 0 ||
+        state.gameOver
+    ) {
+
+        return evaluateState(
+            state,
+            aiPlayer
+        );
+    }
+
+    const moves =
+        generateMoves(state);
+
+    // žádné tahy
+    if (moves.length === 0) {
+
+        return evaluateState(
+            state,
+            aiPlayer
+        );
+    }
+
+    // MAX vrstva
+    if (maximizingPlayer) {
+
+        let maxEval = -Infinity;
+
+        for (const move of moves) {
+
+            const newState =
+                simulateMove(
+                    state,
+                    move.x,
+                    move.y
+                );
+
+            if (!newState) {
+                continue;
+            }
+
+            const evalScore =
+                minimax(
+                    newState,
+                    depth - 1,
+                    alpha,
+                    beta,
+                    false,
+                    aiPlayer
+                );
+
+            maxEval =
+                Math.max(
+                    maxEval,
+                    evalScore
+                );
+
+            alpha =
+                Math.max(
+                    alpha,
+                    evalScore
+                );
+
+            // alpha-beta pruning
+            if (beta <= alpha) {
+                break;
+            }
+        }
+
+        return maxEval;
+
+    } 
+    
+    // MIN vrstva
+    else {
+
+        let minEval = Infinity;
+
+        for (const move of moves) {
+
+            const newState =
+                simulateMove(
+                    state,
+                    move.x,
+                    move.y
+                );
+
+            if (!newState) {
+                continue;
+            }
+
+            const evalScore =
+                minimax(
+                    newState,
+                    depth - 1,
+                    alpha,
+                    beta,
+                    true,
+                    aiPlayer
+                );
+
+            minEval =
+                Math.min(
+                    minEval,
+                    evalScore
+                );
+
+            beta =
+                Math.min(
+                    beta,
+                    evalScore
+                );
+
+            // alpha-beta pruning
+            if (beta <= alpha) {
+                break;
+            }
+        }
+
+        return minEval;
+    }
+}
+
+
+
+
+function hasImmediateWinningMove(
+    state,
+    player
+) {
+
+    const originalPlayer =
+        state.currentPlayer;
+
+    state.currentPlayer =
+        player;
+
+    const moves =
+        generateMoves(state);
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!sim) {
+            continue;
+        }
+
+        // okamžité IGO
+        if (
+            checkIgoSim(
+                sim.board,
+                player
+            )
+        ) {
+
+            state.currentPlayer =
+                originalPlayer;
+
+            return true;
+        }
+    }
+
+    state.currentPlayer =
+        originalPlayer;
+
+    return false;
+}
+
+
+
+function findImmediateWinningMove(
+    state,
+    player
+) {
+
+    const originalPlayer =
+        state.currentPlayer;
+
+    state.currentPlayer =
+        player;
+
+    const moves =
+        generateMoves(state);
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!sim) {
+            continue;
+        }
+
+        const isWin =
+            checkIgoSim(
+                sim.board,
+                player
+            );
+
+        console.log(
+            "CHECK WIN:",
+            move.x,
+            move.y,
+            "=>",
+            isWin
+        );
+
+        if (isWin) {
+
+            console.log(
+                "FOUND WIN:",
+                move.x,
+                move.y
+            );
+
+            state.currentPlayer =
+                originalPlayer;
+
+            return move;
+        }
+    }
+
+    state.currentPlayer =
+        originalPlayer;
+
+    return null;
+}
+
+
+
+function findImmediateYugoMove(
+    state,
+    player
+) {
+
+    const originalPlayer =
+        state.currentPlayer;
+
+    state.currentPlayer =
+        player;
+
+    const moves =
+        generateMoves(state);
+
+    let bestMove = null;
+    let bestGain = 0;
+
+    const before =
+        countYugos(
+            state.board,
+            player
+        );
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!sim) {
+            continue;
+        }
+
+        const after =
+            countYugos(
+                sim.board,
+                player
+            );
+
+        const gain =
+            after - before;
+
+        if (gain > bestGain) {
+
+            bestGain = gain;
+            bestMove = move;
+        }
+    }
+
+    state.currentPlayer =
+        originalPlayer;
+
+    return bestMove;
+}
+
+
+
+function isBoardNearlyFull() {
+
+    let empty = 0;
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            if (
+                board[y][x] === EMPTY
+            ) {
+
+                empty++;
+            }
+        }
+    }
+
+    return empty <= 12;
+}
+
+
+
+function findImmediateYugoMove(
+    state,
+    player
+) {
+
+    const originalPlayer =
+        state.currentPlayer;
+
+    state.currentPlayer =
+        player;
+
+    const moves =
+        generateMoves(state);
+
+    let bestMove = null;
+    let bestGain = 0;
+
+    const before =
+        countYugos(
+            state.board,
+            player
+        );
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!sim) {
+            continue;
+        }
+
+        const after =
+            countYugos(
+                sim.board,
+                player
+            );
+
+        const gain =
+            after - before;
+
+        if (gain > bestGain) {
+
+            bestGain = gain;
+            bestMove = move;
+        }
+    }
+
+    state.currentPlayer =
+        originalPlayer;
+
+    return bestMove;
+}
+
+
+function evaluateState(
+    state,
+    player
+) {
+
+    const opponent =
+        nextPlayer(player);
+
+    // okamžitá výhra
+    if (
+
+        hasImmediateWinningMove(
+            state,
+            player
+        )
+
+    ) {
+
+        return 900000;
+    }
+
+    // okamžitá prohra
+    if (
+
+        hasImmediateWinningMove(
+            state,
+            opponent
+        )
+
+    ) {
+
+        return -900000;
+    }
+
+    // již hotové IGO
+    if (
+        checkIgoSim(
+            state.board,
+            player
+        )
+    ) {
+
+        return 1000000;
+    }
+
+    // soupeř již vyhrál
+    if (
+        checkIgoSim(
+            state.board,
+            opponent
+        )
+    ) {
+
+        return -1000000;
+    }
+
+    let score = 0;
+
+    // počet Yugo kamenů
+    score +=
+        countYugos(
+            state.board,
+            player
+        ) * 5000;
+
+    score -=
+        countYugos(
+            state.board,
+            opponent
+        ) * 5000;
+
+    // kvalita IGO linií
+    score +=
+        evaluateYugoLines(
+            state.board,
+            player
+        ) * 2000;
+
+    score -=
+        evaluateYugoLines(
+            state.board,
+            opponent
+        ) * 2500;
+
+    // kontrola středu
+    score +=
+        evaluateCenterControl(
+            state.board,
+            player
+        );
+
+    score -=
+        evaluateCenterControl(
+            state.board,
+            opponent
+        );
+
+    return score;
+}
+
+
+
+
+function countYugos(
+    simBoard,
+    player
+) {
+
+    const target =
+        player === WHITE
+            ? WHITE_YUGO
+            : BLACK_YUGO;
+
+    let count = 0;
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            if (
+                simBoard[y][x] === target
+            ) {
+
+                count++;
+
+            }
+        }
+    }
+
+    return count;
+}
+
+
+
+function evaluateYugoLines(
+    simBoard,
+    player
+) {
+
+    const target =
+        player === WHITE
+            ? WHITE_YUGO
+            : BLACK_YUGO;
+
+    const dirs = [
+        [1,0],
+        [0,1],
+        [1,1],
+        [1,-1]
+    ];
+
+    let score = 0;
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            for (const [dx,dy] of dirs) {
+
+                let count = 0;
+
+                for (
+                    let i = 0;
+                    i < 4;
+                    i++
+                ) {
+
+                    const cx =
+                        x + dx * i;
+
+                    const cy =
+                        y + dy * i;
+
+                    // mimo desku
+                    if (!inside(cx, cy)) {
+
+                        count = -999;
+                        break;
+                    }
+
+                    // Yugo kámen
+                    if (
+                        simBoard[cy][cx]
+                        === target
+                    ) {
+
+                        count++;
+                    }
+                }
+
+                // heuristika
+                if (count === 2) {
+                    score += 20;
+                }
+
+                if (count === 3) {
+                    score += 300;
+                }
+
+                if (count === 4) {
+                    score += 50000;
+                }
+            }
+        }
+    }
+
+    return score;
+}
+
+
+
+function evaluateCenterControl(
+    simBoard,
+    player
+) {
+
+    let score = 0;
+
+    const center = 3.5;
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            if (
+
+                belongsToPlayer(
+                    simBoard[y][x],
+                    player
+                )
+
+            ) {
+
+                score +=
+                    6 - (
+                        Math.abs(center - x) +
+                        Math.abs(center - y)
+                    );
+            }
+        }
+    }
+
+    return score;
+}
+
+function generateMoves(state) {
+
+    const moves = [];
+    const player = state.currentPlayer;
+
+    for (let y = 0; y < SIZE; y++) {
+
+        for (let x = 0; x < SIZE; x++) {
+
+            // pole musí být prázdné
+            if (state.board[y][x] !== EMPTY) {
+                continue;
+            }
+
+            // pouze poblíž existujících kamenů
+            let nearPiece = false;
+
+            for (let dy = -1; dy <= 1; dy++) {
+
+                for (let dx = -1; dx <= 1; dx++) {
+
+                    if (dx === 0 && dy === 0) {
+                        continue;
+                    }
+
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (!inside(nx, ny)) {
+                        continue;
+                    }
+
+                    if (state.board[ny][nx] !== EMPTY) {
+                        nearPiece = true;
+                    }
+                }
+            }
+
+            // první tah doprostřed
+            if (!nearPiece) {
+                continue;
+            }
+
+            const temp = cloneBoard(state.board);
+
+            temp[y][x] = player;
+
+            // zákaz overline
+            if (!hasLongLine(temp, player)) {
+
+                moves.push({x, y});
+
+            }
+        }
+    }
+
+    // fallback pro první tah
+    if (moves.length === 0) {
+
+        moves.push({
+            x: Math.floor(SIZE / 2),
+            y: Math.floor(SIZE / 2)
+        });
+
+    }
+
+    return moves;
+}
+
+
+
+function orderMoves(
+    state,
+    moves,
+    player
+) {
+
+    return moves.sort((a,b) => {
+
+        const scoreA =
+            evaluateMovePriority(
+                state,
+                a,
+                player
+            );
+
+        const scoreB =
+            evaluateMovePriority(
+                state,
+                b,
+                player
+            );
+
+        return scoreB - scoreA;
+    });
+}
+
+
+
+function evaluateMovePriority(
+    state,
+    move,
+    player
+) {
+
+    const sim =
+        simulateMove(
+            state,
+            move.x,
+            move.y
+        );
+
+    if (!sim) {
+        return -999999;
+    }
+
+    let score = 0;
+
+    // okamžitá výhra
+    if (
+        checkIgoSim(
+            sim.board,
+            player
+        )
+    ) {
+
+        score += 1000000;
+    }
+
+    // zisk Yugo
+    const before =
+        countYugos(
+            state.board,
+            player
+        );
+
+    const after =
+        countYugos(
+            sim.board,
+            player
+        );
+
+    score +=
+        (after - before) * 50000;
+
+    // centrum
+    score +=
+        10 - (
+            Math.abs(3.5 - move.x) +
+            Math.abs(3.5 - move.y)
+        );
+
+    return score;
+}
+
+
+function aiMove() {
+
+    console.log(
+    "AI DIFFICULTY:",
+    aiDifficulty,
+    "DEPTH:",
+    getAIDepth()
+);
+
+    if (
+        !aiEnabled ||
+        currentPlayer !== aiPlayer ||
+        gameOver ||
+        replayMode
+    ) {
+        return;
+    }
+
+    console.log("=== AI START ===");
+
+    const state = createGameState();
+
+    // ========================
+    // FORCED WIN
+    // ========================
+
+    const instantWin =
+        findImmediateWinningMove(
+            state,
+            aiPlayer
+        );
+
+    if (instantWin) {
+
+        console.log(
+            "FORCED WIN:",
+            instantWin
+        );
+
+        makeMove(
+            instantWin.x,
+            instantWin.y,
+            true
+        );
+
+        return;
+    }
+
+    // ========================
+    // FREE YUGO
+    // ========================
+
+    const freeYugo =
+        findImmediateYugoMove(
+            state,
+            aiPlayer
+        );
+
+    if (
+
+        freeYugo &&
+
+        isBoardNearlyFull()
+
+    ) {
+
+        console.log(
+            "FREE YUGO:",
+            freeYugo
+        );
+
+        makeMove(
+            freeYugo.x,
+            freeYugo.y,
+            true
+        );
+
+        return;
+    }
+
+    // ========================
+    // GENERATE MOVES
+    // ========================
+
+    let moves =
+        generateMoves(state);
+
+    // ========================
+    // EASY RANDOMNESS
+    // ========================
+
+    if (
+
+        aiDifficulty === "easy" &&
+
+        Math.random() < 0.35
+
+    ) {
+
+        const randomMove =
+            moves[
+                Math.floor(
+                    Math.random() *
+                    moves.length
+                )
+            ];
+
+        console.log(
+            "EASY RANDOM:",
+            randomMove
+        );
+
+        makeMove(
+            randomMove.x,
+            randomMove.y,
+            true
+        );
+
+        return;
+    }
+
+    // ========================
+    // MOVE ORDERING
+    // ========================
+
+    moves =
+        orderMoves(
+            state,
+            moves,
+            state.currentPlayer
+        );
+
+    console.log(
+        "MOVES:",
+        moves.length
+    );
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    // ========================
+    // SEARCH
+    // ========================
+
+    for (const move of moves) {
+
+        const newState =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!newState) {
+            continue;
+        }
+
+        const score =
+            minimax(
+                newState,
+                getAIDepth(),
+                -Infinity,
+                Infinity,
+                false,
+                aiPlayer
+            );
+
+        console.log(
+            "MOVE",
+            move.x,
+            move.y,
+            "score:",
+            score
+        );
+
+        if (score > bestScore) {
+
+            bestScore = score;
+            bestMove = move;
+        }
+    }
+
+    console.log(
+        "BEST:",
+        bestMove,
+        bestScore
+    );
+
+    // ========================
+    // PLAY MOVE
+    // ========================
+
+    if (bestMove) {
+
+        makeMove(
+            bestMove.x,
+            bestMove.y,
+            true
+        );
+
+    } else {
+
+        console.error(
+            "AI NENAŠLA TAH"
+        );
+    }
+}
+
+
+
+
+function evaluatePosition(x,y) {
+    const center = 3.5;
+    return 10 - (Math.abs(center - x) + Math.abs(center - y));
+}
+
+function wouldCreateYugo(temp, x, y, p) {
+    return [[1,0],[0,1],[1,1],[1,-1]].some(([dx,dy]) => {
+        let count = 1;
+        [[dx,dy], [-dx,-dy]].forEach(([sx,sy]) => {
+            let cx = x+sx, cy = y+sy;
+            while(inside(cx,cy) && belongsToPlayer(temp[cy][cx], p)) { count++; cx+=sx; cy+=sy; }
+        });
+        return count === 4;
+    });
+}
+
+function checkIgo(p) {
+    const target = (p === WHITE ? WHITE_YUGO : BLACK_YUGO);
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            if (board[y][x] !== target) continue;
+            
+            const winningLine = [[1,0],[0,1],[1,1],[1,-1]].map(([dx,dy]) => {
+                let line = [{x, y}];
+                let cx = x+dx, cy = y+dy;
+                while(inside(cx,cy) && board[cy][cx] === target) { 
+                    line.push({x:cx, y:cy});
+                    cx+=dx; cy+=dy; 
+                }
+                return line;
+            }).find(line => line.length === 4);
+
+            if (winningLine) return winningLine;
+        }
+    }
+    return null;
+}
+
+function updateScores() {
+    let w = 0, b = 0;
+    board.flat().forEach(v => { if(v === WHITE_YUGO) w++; if(v === BLACK_YUGO) b++; });
+    whiteScoreEl.textContent = w;
+    blackScoreEl.textContent = b;
+}
+
+function updateStatus() {
+    if (gameOver && !replayMode) {
+        whiteIndicator.classList.remove('active');
+        blackIndicator.classList.remove('active');
+        return;
+    }
+    
+    if (currentPlayer === WHITE) {
+        whiteIndicator.classList.add('active');
+        blackIndicator.classList.remove('active');
+    } else {
+        whiteIndicator.classList.remove('active');
+        blackIndicator.classList.add('active');
+    }
+}
+
+function isBoardFull() { return !board.flat().includes(EMPTY); }
+function hasLegalMoves(player) {
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            if (board[y][x] === EMPTY) {
+                const temp = cloneBoard(board);
+                temp[y][x] = player;
+                if (!hasLongLine(temp, player)) return true;
+            }
+        }
+    }
+    return false;
+}
+
+function saveGame() { 
+    localStorage.setItem('migoyugo-save', JSON.stringify({
+        board, currentPlayer, history, whiteTime, blackTime, 
+        startingPlayer, aiEnabled, timeLimitMinutes, aiDifficulty,
+        lastMoveWhite, lastMoveBlack, logData
+    })); 
+    showToast(t('saved')); 
+    logSys("", "gameInfo", { action: "saved", diff: aiDifficulty, time: timeLimitMinutes });
+}
+
+function loadGame() {
+    const s = localStorage.getItem('migoyugo-save');
+    if (s) { 
+        const d = JSON.parse(s); 
+        board = d.board; 
+        currentPlayer = d.currentPlayer; 
+        history = d.history; 
+        whiteTime = d.whiteTime || 0;
+        blackTime = d.blackTime || 0;
+        
+        if (d.startingPlayer !== undefined) startingPlayer = d.startingPlayer;
+        if (d.aiEnabled !== undefined) aiEnabled = d.aiEnabled;
+        // Načtení a propsání časomíry
+        if (d.timeLimitMinutes !== undefined) {
+            timeLimitMinutes = d.timeLimitMinutes;
+            localStorage.setItem("migoTimeLimit", timeLimitMinutes);
+        }
+        
+        // Načtení a propsání obtížnosti
+        if (d.aiDifficulty !== undefined) {
+            aiDifficulty = d.aiDifficulty;
+            localStorage.setItem("migoDifficulty", aiDifficulty);
+        }
+        
+        lastMoveWhite = d.lastMoveWhite || null;
+        lastMoveBlack = d.lastMoveBlack || null;
+        logData = (d.logData || []).filter((entry, index, arr) => {
+
+        // ponech vše kromě posledního "loaded"
+        if (
+            entry.type === 'sys' &&
+            entry.key === 'gameInfo' &&
+            entry.extra &&
+            entry.extra.action === 'loaded'
+        ) {
+
+            // smaž jen poslední loaded
+            const lastLoadedIndex = arr
+                .map((e, i) => (
+                    e.type === 'sys' &&
+                    e.key === 'gameInfo' &&
+                    e.extra &&
+                    e.extra.action === 'loaded'
+                ) ? i : -1)
+                .filter(i => i !== -1)
+                .pop();
+
+            return index !== lastLoadedIndex;
+        }
+
+        return true;
+    });
+
+        aiPlayer = aiEnabled ? BLACK : null;
+        
+        gameOver = false;
+        
+        initBoardDOM(); 
+        render(); 
+        renderLog();
+        startTimers();
+        highlightWinningLine();
+        
+        showToast(t('loaded'));
+        logSys("", "gameInfo", { action: "loaded", diff: aiDifficulty, time: timeLimitMinutes });
+        checkAndRunAI();
+    } else {
+        showToast(t('noSave'));
+    }
+}
+
+function undoMove() { 
+    if (history.length > 0 && !replayMode) { 
+        const last = history.pop(); 
+        board = last.board; 
+        currentPlayer = last.currentPlayer; 
+        lastMoveWhite = last.lastMoveWhite;
+        lastMoveBlack = last.lastMoveBlack;
+        logData = last.logData || []; // Bezpečné navrácení stavu logu
+
+        gameOver = false;
+        render(); 
+        renderLog();
+        startTimers();
+        
+        if (aiEnabled && currentPlayer === aiPlayer) {
+            undoMove(); 
+        }
+    } 
+}
+
+function exportGame() {
+    const data = JSON.stringify({ 
+        board, currentPlayer, history, whiteTime, blackTime, 
+        startingPlayer, aiEnabled, timeLimitMinutes, aiDifficulty,
+        lastMoveWhite, lastMoveBlack, logData
+    });
+
+console.log(
+    "EXPORT DATA:",
+    data
+);
+    navigator.clipboard.writeText(data).then(() => {
+        showToast(t('exportOk'));
+    }).catch(() => {
+        showToast(t('exportFail'));
+    });
+}
+
+
+
+// Otevře naše nové modální okno pro vložení kódu
+function importGame() {
+    const modal = document.getElementById('importModal');
+    const textarea = document.getElementById('importTextarea');
+    
+    if (modal && textarea) {
+        textarea.value = ''; // Vymaže předchozí obsah
+        modal.style.display = 'flex';
+    } else {
+        console.error("HTML pro modální okno importu nebylo nalezeno.");
+    }
+}
+
+// Zpracuje vložený kód po kliknutí na tlačítko "Načíst"
+function processImport() {
+    const textarea = document.getElementById('importTextarea');
+    const text = textarea.value.trim();
+    
+    if (!text) return;
+
+    try {
+        const data = JSON.parse(text);
+
+        console.log(
+            "IMPORT RAW:",
+            data
+        );
+
+        board = data.board;
+        currentPlayer = data.currentPlayer;
+        history = data.history || [];
+        whiteTime = data.whiteTime || 0;
+        blackTime = data.blackTime || 0;
+
+        if (data.startingPlayer !== undefined) startingPlayer = data.startingPlayer;
+        if (data.aiEnabled !== undefined) aiEnabled = data.aiEnabled;
+        if (data.timeLimitMinutes !== undefined) timeLimitMinutes = data.timeLimitMinutes;
+        if (data.aiDifficulty !== undefined) aiDifficulty = data.aiDifficulty;
+
+        lastMoveWhite = data.lastMoveWhite || null;
+        lastMoveBlack = data.lastMoveBlack || null;
+        
+        // --- OPRAVENÝ FILTR LOGU ---
+        logData = (data.logData || []).filter(entry => {
+            // Pojistka pro staré čistě textové logy
+            if (typeof entry === 'string') {
+                return !entry.includes('Game loaded') && !entry.includes('Game saved');
+            }
+            // Vymazání "saved" a "loaded" pro nové objektové logy
+            if (entry && entry.type === 'sys' && entry.extra) {
+                return entry.extra.action !== 'loaded' && entry.extra.action !== 'saved';
+            }
+            return true;
+        });
+
+        // Přidáme jeden čistý záznam o úspěšném načtení
+        logData.push({
+            type: "sys",
+            text: "",
+            key: "gameInfo",
+            extra: {
+                action: "loaded",
+                diff: aiEnabled ? aiDifficulty : "none",
+                time: timeLimitMinutes || 0
+            }
+        });
+
+        aiPlayer = aiEnabled ? BLACK : null;
+
+        gameOver = false;
+
+        console.log({
+            board,
+            currentPlayer,
+            history,
+            aiEnabled,
+            aiDifficulty
+        });
+
+        render();
+        renderLog();
+        startTimers();
+        highlightWinningLine();
+        saveGame();
+
+        showToast(t('importOk'));
+        checkAndRunAI();
+        
+        // Okno po úspěšném načtení zavřeme
+        document.getElementById('importModal').style.display = 'none';
+
+    } catch(e) {
+        console.error("Chyba při importu:", e);
+        showToast(t('importFail'));
+    }
+}
+
+// Spuštění první hry po načtení s výchozím nastavením
+newGame(true);
+
+</script>
+</body>
+</html>
