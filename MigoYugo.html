@@ -76,21 +76,38 @@
     .header-btn:active { transform: scale(0.9); }
 
     /* Ukazatel hráče, skóre a časomíra */
-    .player-indicator {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        opacity: 0.65; 
-        transform: scale(0.9);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        font-size: clamp(16px, 4.5vw, 20px);
-        font-weight: bold;
-    }
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
 
-    .player-indicator.active {
-        opacity: 1;
-        transform: scale(1.1);
-    }
+            opacity: 0.65;
+
+            transition:
+                opacity 0.25s ease,
+                background-color 0.25s ease;
+
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: bold;
+
+            border-radius: 12px;
+            padding: 4px 8px;
+        }
+
+        .player-indicator.active {
+
+            opacity: 1;
+        }
+
+        #whiteIndicator.active {
+
+            background: #34d399;
+        }
+
+        #blackIndicator.active {
+
+            background: #8fd3ff;
+        }
 
     .player-indicator.winner-pulse {
         animation: pulseWinner 0.8s infinite alternate;
@@ -761,7 +778,7 @@ const i18n = {
         levelAIEasy: "Easy",
         levelAINormal: "Normal",
         levelAIHard: "Hard",
-        timeLabel: "Time Limit:",
+        timeLabel: "Time Limit",
         btnApply: "Apply & Restart",
         helpTitle: "MigoYugo Game Rules",
         logTitle: "Game Log",
@@ -932,14 +949,13 @@ function applySettings() {
 
 
 
-
 // --- Herní logika ---
 const SIZE = 8;
 const EMPTY = 0, WHITE = 1, BLACK = 2, WHITE_YUGO = 3, BLACK_YUGO = 4;
 
 let board = [], history = [], currentPlayer = WHITE, gameOver = false;
 let logData = []; // Zde se ukládá celá historie zápisů (tahy i syst. zprávy)
-
+let lastMove = null;
 let lastMoveWhite = null;
 let lastMoveBlack = null;
 
@@ -954,33 +970,35 @@ let timeLimitMinutes = localStorage.getItem("migoTimeLimit") !== null ? parseInt
 //let timeLimitMinutes = 3; 
 let whiteTime = timeLimitMinutes * 60, blackTime = timeLimitMinutes * 60;
 let gameTimer = null;
+
 let aiDifficulty = localStorage.getItem("migoDifficulty") || "normal";
+
+const AI_DEBUG = {
+
+    enabled: true,
+
+    checking: false,
+
+    win: false,
+
+    threats: false,
+
+    evals: false,
+
+    minimax: false,
+
+    moveScores: false,
+
+    bestMove: true,
+
+    generatedMoves: false
+};
 
 const boardEl = document.getElementById('board');
 const whiteScoreEl = document.getElementById('whiteScore');
 const blackScoreEl = document.getElementById('blackScore');
 const whiteIndicator = document.getElementById('whiteIndicator');
 const blackIndicator = document.getElementById('blackIndicator');
-
-
-
-function getAIDepth() {
-
-    switch (aiDifficulty) {
-
-        case "easy":
-            return 1;
-
-        case "normal":
-            return 1;
-
-        case "hard":
-            return 2;
-    }
-
-    return 1;
-}
-
 
 
 function logSys(
@@ -1101,20 +1119,66 @@ function copyLog() {
 
 
 function getSysMsgText(entry) {
-    // Dynamická zpráva o stavu hry s proměnnými
-    if (entry.key === 'gameInfo' && entry.extra) {
-        const safeDiff = entry.extra.diff ? entry.extra.diff : "normal";
-        const diffKey = "levelAI" + safeDiff.charAt(0).toUpperCase() + safeDiff.slice(1);
-        const timeVal = entry.extra.time === 0 ? "∞" : entry.extra.time + " min";
-        
-        // Znak &nbsp; vloží pevnou mezeru, čímž text na dalších řádcích posuneme pod text z prvního řádku
-        return t(entry.extra.action) + "<br>" +
-               "&nbsp;&nbsp;&nbsp;&nbsp;" + t('logAI') + ": " + t(diffKey).toUpperCase() + "<br>" +
-               "&nbsp;&nbsp;&nbsp;&nbsp;" + t('timeLabel') + ": " + timeVal;
+
+    // dynamická systémová zpráva
+    if (
+        entry.key === "gameInfo" &&
+        entry.extra
+    ) {
+
+        const timeVal =
+            entry.extra.time === 0
+                ? "∞"
+                : entry.extra.time + " min";
+
+        let text =
+            t(entry.extra.action) +
+            "<br>";
+
+        // pouze pokud je AI zapnutá
+        if (entry.extra.aiEnabled) {
+
+            const safeDiff =
+                entry.extra.diff
+                    ? entry.extra.diff
+                    : "normal";
+
+            const diffKey =
+                "levelAI" +
+                safeDiff.charAt(0).toUpperCase() +
+                safeDiff.slice(1);
+
+            text +=
+                "&nbsp;&nbsp;&nbsp;&nbsp;" +
+                t("logAI") +
+                ": " +
+                t(diffKey).toUpperCase() +
+                "<br>";
+        }
+        else {
+
+            text +=
+                "&nbsp;&nbsp;&nbsp;&nbsp;" +
+                t("modePvP") +
+                "<br>";
+        }
+
+        text +=
+            "&nbsp;&nbsp;&nbsp;&nbsp;" +
+            t("timeLabel") +
+            ": " +
+            timeVal;
+
+        return text;
     }
-    // Obyčejná přeložitelná zpráva (nebo textový základ pro starší logy)
-    return entry.key ? t(entry.key) : entry.text;
+
+    // běžná zpráva
+    return entry.key
+        ? t(entry.key)
+        : entry.text;
 }
+
+
 
 
 // --- Zápis a Renderování logu ---
@@ -1159,8 +1223,6 @@ const whitePadding =
         }
     }
 }
-
-
 
 
 
@@ -1347,6 +1409,34 @@ function highlightWegoWinner(winner) {
 }
 
 
+function hasAnyLegalMove(player) {
+
+    const state = createGameState();
+
+    state.currentPlayer = player;
+
+    const moves =
+        generateMoves(state);
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (sim) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
 function makeMove(x, y, isAI = false) {
     if (gameOver || replayMode || board[y][x] !== EMPTY) return;
     
@@ -1370,6 +1460,10 @@ function makeMove(x, y, isAI = false) {
     });
 
     board[y][x] = currentPlayer;
+	lastMove = {
+    x,
+    y
+	};
 
     // Aplikace logiky Yuga a zjištění, zda nějaké vůbec vzniklo (vrací true/false)
     const isYugo = processYugos(x, y);
@@ -1462,6 +1556,21 @@ function makeMove(x, y, isAI = false) {
         }
         updateStatus();
     } else {
+
+        const whiteCanMove =
+    hasAnyLegalMove(WHITE);
+
+const blackCanMove =
+    hasAnyLegalMove(BLACK);
+
+if (
+    !whiteCanMove &&
+    !blackCanMove
+) {
+
+    endGameWego();
+    return;
+}
         currentPlayer = nextPlayer(currentPlayer);
         updateStatus();
         checkAndRunAI();
@@ -1617,7 +1726,16 @@ if (savedDifficulty) {
     startTimers();
     
     showToast(t('newGame'));
-    logSys("", "gameInfo", { action: "newGame", diff: aiDifficulty, time: timeLimitMinutes });
+    logSys(
+    "",
+    "gameInfo",
+    {
+        action: "newGame",
+        diff: aiDifficulty,
+        time: timeLimitMinutes,
+        aiEnabled: aiEnabled
+    }
+);
     checkAndRunAI();
 }
 
@@ -2064,6 +2182,39 @@ function minimax(
 }
 
 
+function hasImmediateWinningMove(
+    state,
+    player
+) {
+
+    const moves =
+        generateMoves(state);
+
+    for (const move of moves) {
+
+        const sim =
+            simulateMove(
+                state,
+                move.x,
+                move.y
+            );
+
+        if (!sim) {
+            continue;
+        }
+
+        if (
+            checkIgoSim(
+                sim.board,
+                player
+            )
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 
 function hasImmediateWinningMove(
@@ -2137,50 +2288,7 @@ function findImmediateWinningMove(
                 state,
                 move.x,
                 move.y
-            );
-
-        if (!sim) {
-            continue;
-        }
-
-        const isWin =
-            checkIgoSim(
-                sim.board,
-                player
-            );
-
-        console.log(
-            "CHECK WIN:",
-            move.x,
-            move.y,
-            "=>",
-            isWin
-        );
-
-        if (isWin) {
-
-            console.log(
-                "FOUND WIN:",
-                move.x,
-                move.y
-            );
-
-            state.currentPlayer =
-                originalPlayer;
-
-            return move;
-        }
-    }
-
-    state.currentPlayer =
-        originalPlayer;
-
-    return null;
-}
-
-
-
-function findImmediateYugoMove(
+            );function findImmediateYugoMove(
     state,
     player
 ) {
@@ -2236,6 +2344,30 @@ function findImmediateYugoMove(
         originalPlayer;
 
     return bestMove;
+}
+
+        if (!sim) {
+            continue;
+        }
+
+        if (
+            checkIgoSim(
+                sim.board,
+                player
+            )
+        ) {
+
+            state.currentPlayer =
+                originalPlayer;
+
+            return move;
+        }
+    }
+
+    state.currentPlayer =
+        originalPlayer;
+
+    return null;
 }
 
 
@@ -2724,13 +2856,6 @@ function evaluateMovePriority(
 
 function aiMove() {
 
-    console.log(
-    "AI DIFFICULTY:",
-    aiDifficulty,
-    "DEPTH:",
-    getAIDepth()
-);
-
     if (
         !aiEnabled ||
         currentPlayer !== aiPlayer ||
@@ -2745,107 +2870,65 @@ function aiMove() {
     const state = createGameState();
 
     // ========================
-    // FORCED WIN
-    // ========================
+// FORCED WIN
+// ========================
 
-    const instantWin =
-        findImmediateWinningMove(
-            state,
-            aiPlayer
-        );
+const instantWin =
+    findImmediateWinningMove(
+        state,
+        aiPlayer
+    );
 
-    if (instantWin) {
+if (instantWin) {
 
-        console.log(
-            "FORCED WIN:",
-            instantWin
-        );
+    console.log(
+        "FORCED WIN:",
+        instantWin
+    );
 
-        makeMove(
-            instantWin.x,
-            instantWin.y,
-            true
-        );
+    makeMove(
+        instantWin.x,
+        instantWin.y,
+        true
+    );
 
-        return;
-    }
+    return;
+}
 
-    // ========================
-    // FREE YUGO
-    // ========================
+// ========================
+// FREE YUGO
+// ========================
 
-    const freeYugo =
-        findImmediateYugoMove(
-            state,
-            aiPlayer
-        );
+const freeYugo =
+    findImmediateYugoMove(
+        state,
+        aiPlayer
+    );
 
-    if (
+if (
 
-        freeYugo &&
+    freeYugo &&
 
-        isBoardNearlyFull()
+    isBoardNearlyFull()
 
-    ) {
+) {
 
-        console.log(
-            "FREE YUGO:",
-            freeYugo
-        );
+    console.log(
+        "FREE YUGO:",
+        freeYugo
+    );
 
-        makeMove(
-            freeYugo.x,
-            freeYugo.y,
-            true
-        );
+    makeMove(
+        freeYugo.x,
+        freeYugo.y,
+        true
+    );
 
-        return;
-    }
-
-    // ========================
-    // GENERATE MOVES
-    // ========================
+    return;
+}
 
     let moves =
-        generateMoves(state);
-
-    // ========================
-    // EASY RANDOMNESS
-    // ========================
-
-    if (
-
-        aiDifficulty === "easy" &&
-
-        Math.random() < 0.35
-
-    ) {
-
-        const randomMove =
-            moves[
-                Math.floor(
-                    Math.random() *
-                    moves.length
-                )
-            ];
-
-        console.log(
-            "EASY RANDOM:",
-            randomMove
-        );
-
-        makeMove(
-            randomMove.x,
-            randomMove.y,
-            true
-        );
-
-        return;
-    }
-
-    // ========================
-    // MOVE ORDERING
-    // ========================
+    generateMoves(state);
 
     moves =
         orderMoves(
@@ -2854,17 +2937,10 @@ function aiMove() {
             state.currentPlayer
         );
 
-    console.log(
-        "MOVES:",
-        moves.length
-    );
+    console.log("MOVES:", moves.length);
 
     let bestMove = null;
     let bestScore = -Infinity;
-
-    // ========================
-    // SEARCH
-    // ========================
 
     for (const move of moves) {
 
@@ -2882,7 +2958,7 @@ function aiMove() {
         const score =
             minimax(
                 newState,
-                getAIDepth(),
+                1,
                 -Infinity,
                 Infinity,
                 false,
@@ -2909,10 +2985,6 @@ function aiMove() {
         bestMove,
         bestScore
     );
-
-    // ========================
-    // PLAY MOVE
-    // ========================
 
     if (bestMove) {
 
@@ -3015,7 +3087,8 @@ function saveGame() {
         lastMoveWhite, lastMoveBlack, logData
     })); 
     showToast(t('saved')); 
-    logSys("", "gameInfo", { action: "saved", diff: aiDifficulty, time: timeLimitMinutes });
+    logSys("", "gameInfo", { action: "saved", diff: aiDifficulty, time: timeLimitMinutes,
+        aiEnabled: aiEnabled });
 }
 
 function loadGame() {
@@ -3082,7 +3155,8 @@ function loadGame() {
         highlightWinningLine();
         
         showToast(t('loaded'));
-        logSys("", "gameInfo", { action: "loaded", diff: aiDifficulty, time: timeLimitMinutes });
+        logSys("", "gameInfo", { action: "loaded", diff: aiDifficulty, time: timeLimitMinutes,
+        aiEnabled: aiEnabled });
         checkAndRunAI();
     } else {
         showToast(t('noSave'));
@@ -3225,7 +3299,6 @@ function processImport() {
         showToast(t('importFail'));
     }
 }
-
 // Spuštění první hry po načtení s výchozím nastavením
 newGame(true);
 
