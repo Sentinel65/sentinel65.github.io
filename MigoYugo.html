@@ -195,6 +195,40 @@
         max-width: 450px; 
         padding: 0 10px;
     }
+	
+	
+	.board-layout {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    grid-template-rows: 1fr 20px;
+    gap: 4px;
+    width: 100%;
+    align-items: center;
+}
+
+.y-coords {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+    padding: 3% 0; /* Zarovnání s vnitřním paddingem .board */
+    font-weight: 600;
+    font-size: clamp(12px, 3.5vw, 14px);
+    color: #1e293b;
+}
+
+.x-coords {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    padding: 0 3%; /* Zarovnání s vnitřním paddingem .board */
+    font-weight: 600;
+    font-size: clamp(12px, 3.5vw, 14px);
+    color: #1e293b;
+}
+	
 
     .board {
         width: 100%;
@@ -271,6 +305,11 @@
     max-width: 450px;
     padding: 5px 10px 15px 10px;
 }
+
+     .puzzle-buttons {
+    justify-content: center;
+    gap: 12px;
+}
     .buttons::-webkit-scrollbar { display: none; }
 
     .icon-btn {
@@ -298,6 +337,10 @@
         box-shadow 0.2s;
 
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+   .puzzle-btn {
+    flex: 0 0 auto;
 }
 
     @media (hover: hover) { .icon-btn:hover { background: #334155; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); } }
@@ -491,12 +534,24 @@
 </div>
 
 <div class="board-wrapper">
-    <div class="board" id="board"></div>
+    <div class="board-layout">
+        <div class="y-coords">
+            <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+        </div>
+        
+        <div class="board" id="board"></div>
+        
+        <div></div> 
+        
+        <div class="x-coords">
+            <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span>
+        </div>
+    </div>
 </div>
 
 <div id="toast-container"></div>
 
-<div class="buttons">
+<div id="normalControls" class="buttons">
     <button class="icon-btn" onclick="newGame()">🔄</button>
     <button class="icon-btn" onclick="undoMove()">↩️</button>
     <button class="icon-btn" onclick="saveGame()">💾</button>
@@ -504,6 +559,29 @@
     <button class="icon-btn" onclick="exportGame()">📤</button>
     <button class="icon-btn" onclick="importGame()">📥</button>
     <button class="icon-btn" onclick="toggleReplay()" id="replayBtn">▶️</button>
+</div>
+
+<div id="puzzleControls" class="buttons puzzle-buttons" style="display: none;">
+
+    <button class="icon-btn puzzle-btn"
+        onclick="newGame()"
+        title="Nové puzzle">
+        🔄
+    </button>
+
+    <button class="icon-btn puzzle-btn"
+        onclick="restartCurrentPuzzle()"
+        title="Restartovat puzzle">
+        ⏮️
+    </button>
+
+    <button class="icon-btn puzzle-btn"
+        onclick="playPuzzleSolution()"
+        id="puzzleReplayBtn"
+        title="Přehrát řešení">
+        👁️
+    </button>
+
 </div>
 
 <div class="log-wrapper">
@@ -520,68 +598,36 @@
         <h2 id="menuTitle">Nastavení</h2>
         
         <div style="text-align: left; display: inline-block; margin: 10px 0 20px 0; width: 100%;">
-            <div style="margin-bottom: 15px;">
-                <label class="radio-label">
-                    <input type="radio" name="gamemode" id="radioPvP"> <span id="lblPvp">Hráč vs Hráč</span>
+            
+            <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 25px; align-items: center;">
+                <label class="radio-label" title="Hráč vs Hráč" style="margin-bottom: 0; cursor: pointer;">
+                    <input type="radio" name="gamemode" id="radioPvP" value="pvp"> <span style="font-size: 26px;">👥</span>
                 </label>
-                <label class="radio-label">
-                    <input type="radio" name="gamemode" id="radioPvAI"> <span id="lblPvAI">Hráč vs AI</span>
+                <label class="radio-label" title="Hráč vs AI" style="margin-bottom: 0; cursor: pointer;">
+                    <input type="radio" name="gamemode" id="radioPvAI" value="pvai" checked> <span style="font-size: 26px;">💻</span>
+                </label>
+                <label class="radio-label" title="Generátor Puzzle" style="margin-bottom: 0; cursor: pointer;">
+                    <input type="radio" name="gamemode" id="radioPuzzle" value="puzzle"> <span style="font-size: 26px;">🧩</span>
                 </label>
             </div>
-            <div style="
-    border-top: 1px solid #cbd5e1;
-    padding-top: 15px;
-    margin-bottom: 15px;
-">
 
-    <div id="levelAI" style="
-        font-weight: bold;
-        margin-bottom: 10px;
-    ">
-       <span id="lblAI"> 🎯 Obtížnost AI </span>
-    </div>
+            <div style="border-top: 1px solid #cbd5e1; padding-top: 15px; margin-bottom: 15px;">
+                <div id="levelAI" style="font-weight: bold; margin-bottom: 10px;">
+                   <span id="lblAI"> 🎯 Obtížnost AI </span>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                    <label class="radio-label">
+                        <input type="radio" name="difficulty" id="radioAIEasy" value="easy"> <span id="lblAIEasy"> Easy </span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="difficulty" id="radioAINormal" value="normal" checked> <span id="lblAINormal"> Normal </span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="difficulty" id="radioAIHard" value="hard"> <span id="lblAIHard"> Hard </span>
+                    </label>
+                </div>
+            </div>
 
-    <div style="
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    ">
-
-        <label class="radio-label">
-            <input
-                type="radio"
-                name="difficulty"
-                id="radioAIEasy"
-                value="easy"
-            > <span id="lblAIEasy">
-            Easy </span>
-        </label>
-
-        <label class="radio-label">
-            <input
-                type="radio"
-                name="difficulty"
-                id="radioAINormal"
-                value="normal"
-                checked
-            > <span id="lblAINormal">
-            Normal </span>
-        </label>
-
-        <label class="radio-label">
-            <input
-                type="radio"
-                name="difficulty"
-                id="radioAIHard"
-                value="hard"
-            > <span id="lblAIHard">
-            Hard </span>
-        </label>
-
-    </div>
-
-</div>
             <div style="border-top: 1px solid #cbd5e1; padding-top: 15px; margin-bottom: 15px; font-weight: bold;" id="lblTime">Časomíra (min):</div>
             <div class="time-options" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <label><input type="radio" name="timerVal" value="0"> ∞</label>
@@ -590,6 +636,7 @@
                 <label><input type="radio" name="timerVal" value="3" checked> 3</label>
                 <label><input type="radio" name="timerVal" value="5"> 5</label>
             </div>
+            
         </div>
         
         <button class="icon-btn" style="width: auto; border-radius: 8px; padding: 5px 20px; font-size: 16px; background: #34d399; color: #0f172a; margin: 0 auto;" onclick="applySettings()" id="btnApply">Použít a restartovat</button>
@@ -628,7 +675,7 @@ const i18n = {
         timeOutBlack: "Černému vypršel čas. Bílý vyhrál!",
         draw: "Konec hry - remíza (Wego)",
         replayStart: "Spouštím záznam...",
-        replayDone: "Replay dokončen",
+        replayDone: "Záznam dokončen",
         replayStop: "Přehrávání zastaveno",
         noReplay: "Není co přehrávat",
         newGame: "Nová hra spuštěna",
@@ -655,6 +702,20 @@ const i18n = {
         logTitle: "Herní log",
         copyBtn: "📋 Kopírovat",
         logCopied: "Log zkopírován",
+        modePuzzle: "🧩 Generátor Puzzle (IGO)",
+        lblPuzzleColor: "Barva: ",
+        lblWhite: "Bílý",
+        lblBlack: "Černý",
+        lblPuzzleMoves: "Tahy: ",
+        btnStartPuzzle: "Spustit Puzzle",
+		lblPuzzleOk: "Puzzle bylo vyřešeno",
+		lblPuzzleReset: "Puzzle bylo restartováno",
+		lblWrongMove: "Nesprávný tah. Zkus to znovu.",
+		lblMovesRemaining: "Zbývající tahy:",
+		lblPlaySolution: "Přehrávám správné řešení.",
+		lblPlaySolutionEnd: "Ukázka řešení dokončena.",
+        btnShowSolution: "👁️ Přehrát řešení",
+        puzzleReady: "Puzzle připraveno! Najdi vítěznou řadu.",
         helpContent: `
     <h3>Hra</h3>
     <ul>
@@ -744,6 +805,52 @@ const i18n = {
         <li>Hvězdička (<span style="color:#f87171;font-weight:bold;">*</span>) označuje vytvoření Yugo.</li>
         <li>Log lze zkopírovat tlačítkem 📋.</li>
     </ul>
+    <h3>Puzzle režim</h3>
+<ul>
+    <li>
+        V Puzzle režimu je cílem najít přesnou vítěznou sekvenci tahů.
+    </li>
+
+    <li>
+        Puzzle vždy začíná z předem připravené pozice.
+    </li>
+
+    <li>
+        Log hry zobrazuje:
+        <strong>barvu hráče</strong>
+        a celkový počet tahů.
+    </li>
+
+    <li>
+        Hráč musí najít správné řešení
+        ve stanoveném počtu tahů.
+    </li>
+
+    <li>
+        Nesprávný tah puzzle nevyřeší.
+    </li>
+
+    <li>
+        Tlačítko
+        <strong>⏮️</strong>
+        restartuje aktuální puzzle.
+    </li>
+
+    <li>
+        Tlačítko
+        <strong>👁️</strong>
+        přehraje uložené správné řešení.
+    </li>
+
+    <li>
+        Během přehrávání řešení lze přehrávání zastavit
+        opětovným kliknutím na tlačítko.
+    </li>
+
+    <li>
+        Puzzle režim nepoužívá AI ani časomíru.
+    </li>
+</ul>
 `
     },
     en: {
@@ -784,6 +891,20 @@ const i18n = {
         logTitle: "Game Log",
         copyBtn: "📋 Copy",
         logCopied: "Log copied",
+        modePuzzle: "🧩 Puzzle Generator (IGO)",
+        lblPuzzleColor: "Color: ",
+        lblWhite: "White",
+        lblBlack: "Black",
+        lblPuzzleMoves: "Moves: ",
+        btnStartPuzzle: "Start Puzzle",
+        btnShowSolution: "👁️ Play Solution",
+		lblPuzzleOk: "The puzzle has been solved",
+		lblPuzzleReset: "The puzzle was restarted",
+		lblWrongMove: "Wrong move. Try again.",
+		lblMovesRemaining: "Moves remaining:",
+		lblPlaySolution: "I'm playing the correct solution.",
+		lblPlaySolutionEnd: "The sample solution is complete.",
+        puzzleReady: "Puzzle ready! Find the winning sequence.",
         helpContent: `
     <h3>The Game</h3>
     <ul>
@@ -873,6 +994,52 @@ const i18n = {
         <li>An asterisk (<span style="color:#f87171;font-weight:bold;">*</span>) marks a Yugo creation.</li>
         <li>The log can be copied with the 📋 button.</li>
     </ul>
+    <h3>Puzzle Mode</h3>
+<ul>
+    <li>
+        In Puzzle Mode, the goal is to find the exact winning sequence.
+    </li>
+
+    <li>
+        Every puzzle starts from a predefined board position.
+    </li>
+
+    <li>
+        The game log display:
+        the player's color
+        and the total number of moves.
+    </li>
+
+    <li>
+        The player must discover the correct solution
+        within the specified move limit.
+    </li>
+
+    <li>
+        Incorrect moves will not solve the puzzle.
+    </li>
+
+    <li>
+        The
+        <strong>⏮️</strong>
+        button restarts the current puzzle.
+    </li>
+
+    <li>
+        The
+        <strong>👁️</strong>
+        button replays the stored solution.
+    </li>
+
+    <li>
+        During replay,
+        clicking the button again stops playback.
+    </li>
+
+    <li>
+        Puzzle Mode does not use AI or timers.
+    </li>
+</ul>
 `
     }
 };
@@ -901,8 +1068,12 @@ function closeHelp() { document.getElementById('helpModal').style.display = 'non
 
 function showMenu() {
     document.getElementById('menuTitle').innerHTML = t('menuTitle');
-    document.getElementById('lblPvp').innerHTML = t('modePvP');
-    document.getElementById('lblPvAI').innerHTML = t('modePvAI');
+    
+    // TYTO TŘI ŘÁDKY JSOU SMAZANÉ, PROTOŽE UŽ TAM MÁŠ JEN PIKTOGRAMY BEZ TEXTU
+    // document.getElementById('lblPvp').innerHTML = t('modePvP');
+    // document.getElementById('lblPvAI').innerHTML = t('modePvAI');
+    // document.getElementById('lblPuzzle').innerHTML = t('modePuzzle');
+
     document.getElementById('lblTime').innerHTML = t('timeLabel');
     document.getElementById('btnApply').innerHTML = t('btnApply');
     document.getElementById('lblAI').innerHTML = t('levelAI');
@@ -910,8 +1081,13 @@ function showMenu() {
     document.getElementById('lblAINormal').innerHTML = t('levelAINormal');
     document.getElementById('lblAIHard').innerHTML = t('levelAIHard');    
 
-    document.getElementById('radioPvAI').checked = aiEnabled;
-    document.getElementById('radioPvP').checked = !aiEnabled;
+    // Pro Puzzle přidáme kontrolu
+    const radioPuzzle = document.getElementById('radioPuzzle');
+    const isPuzzle = typeof isPuzzleMode !== 'undefined' ? isPuzzleMode : false;
+    
+    document.getElementById('radioPvAI').checked = aiEnabled && !isPuzzle;
+    document.getElementById('radioPvP').checked = !aiEnabled && !isPuzzle;
+    if (radioPuzzle) radioPuzzle.checked = isPuzzle;
 
     document.getElementById('radioAIEasy').checked = (aiDifficulty === 'easy');
     document.getElementById('radioAINormal').checked = (aiDifficulty === 'normal');
@@ -922,32 +1098,227 @@ function showMenu() {
     
     document.getElementById('menuModal').style.display = 'flex';
 }
-function closeMenu() { document.getElementById('menuModal').style.display = 'none'; }
 
-function applySettings() {
-    aiEnabled = document.getElementById('radioPvAI').checked;
-    
-    // Zápis obtížnosti
-    const difficultyRadio = document.querySelector('input[name="difficulty"]:checked');
-    if (difficultyRadio) {
-        aiDifficulty = difficultyRadio.value;
-        localStorage.setItem("migoDifficulty", aiDifficulty);
-    }
-    
-    // Zápis časomíry
-    const timeRadios = document.getElementsByName('timerVal');
-    for (const r of timeRadios) {
-        if (r.checked) {
-            timeLimitMinutes = parseInt(r.value);
-            localStorage.setItem("migoTimeLimit", timeLimitMinutes); // Uložení do localStorage
-        }
-    }
-    
-    closeMenu();
-    newGame();
+function closeMenu() { 
+    document.getElementById('menuModal').style.display = 'none'; 
 }
 
 
+function restartCurrentPuzzle() {
+    if (!currentPuzzle) return;
+    
+    // Zastavení případného přehrávání
+    if (typeof replayTimer !== 'undefined' && replayTimer) {
+        clearInterval(replayTimer);
+        replayTimer = null;
+        puzzleReplayActive = false;
+        const pBtn = document.getElementById('puzzleReplayBtn');
+        if (pBtn) pBtn.innerHTML = '👁️';
+    }
+
+    // Reset tahů a proměnných do výchozího stavu
+    puzzleMoveIndex = 0;
+    currentPuzzleMoves = currentPuzzle.moves;
+    board = currentPuzzle.board.slice().reverse().map(row => [...row]);
+    currentPlayer = currentPuzzle.player;
+    gameOver = false;
+    history = [];
+    lastMoveWhite = null;
+    lastMoveBlack = null;
+
+    // Ponecháme v logu pouze úvodní systémovou zprávu o startu puzzle
+    const puzzleStartEntry = logData.find(e => e.type === 'sys' && e.extra && e.extra.action === "modePuzzle");
+    logData = puzzleStartEntry ? [puzzleStartEntry] : [];
+
+    showToast(t('lblPuzzleReset') || "Puzzle bylo restartováno.");
+    render();
+    renderLog();
+    updateStatus();
+}
+
+
+function startRandomPuzzle() {
+    isPuzzleMode = true;
+    aiEnabled = false;
+    gameOver = false;
+    history = [];
+    if (typeof replayTimer !== 'undefined' && replayTimer) clearInterval(replayTimer);
+    
+    // ODSTRANĚNÍ MATOUCÍHO PODBARVENÍ KAMENE:
+    lastMoveWhite = null;
+    lastMoveBlack = null;
+    
+    let randomIndex;
+    if (PUZZLES.length > 1 && currentPuzzle) {
+        do {
+            randomIndex = Math.floor(Math.random() * PUZZLES.length);
+        } while (PUZZLES[randomIndex].name === currentPuzzle.name);
+    } else {
+        randomIndex = Math.floor(Math.random() * PUZZLES.length);
+    }
+    
+    currentPuzzle = PUZZLES[randomIndex];
+    currentPuzzleMoves = currentPuzzle.moves;
+    puzzleMoveIndex = 0; 
+    
+    board = currentPuzzle.board.slice().reverse().map(row => [...row]);
+    currentPlayer = currentPuzzle.player;
+    
+    timeLimitMinutes = 0;
+    document.getElementById('whiteTimer').textContent = '🧩';
+    document.getElementById('blackTimer').textContent = '🧩';
+    
+    logData = []; 
+    logSys("", "gameInfo", { 
+        action: "modePuzzle", 
+        puzzleName: currentPuzzle.name, 
+        colorKey: currentPlayer === WHITE ? "lblWhite" : "lblBlack", 
+        moves: currentPuzzleMoves 
+    });
+    document.getElementById('normalControls').style.display = 'none';
+    document.getElementById('puzzleControls').style.display = 'flex'; // případně 'block', podle vašeho CSS
+    //showToast(t('puzzleReady'));
+    render();
+}
+
+function playNextPuzzleOpponentMove() {
+    if (!currentPuzzle || !currentPuzzle.solution || gameOver) return;
+    
+    const moveStr = currentPuzzle.solution[puzzleMoveIndex];
+    if (!moveStr) return; // Pokud už v řešení nejsou další tahy, ignoruje
+    
+    // Převedení notace např. "c6" na souřadnice X a Y
+    const x = moveStr.charCodeAt(0) - 97;
+    const y = parseInt(moveStr.charAt(1)) - 1;
+    
+    // Zahraje automaticky tah za oponenta
+    makeMove(x, y, true);
+}
+
+
+
+
+function playPuzzleSolution() {
+    if (!currentPuzzle || !currentPuzzle.solution || currentPuzzle.solution.length === 0) {
+        showToast("Pro toto puzzle není řešení uloženo v datech.");
+        return;
+    }
+
+    // =======================================================
+    // 1. MÍSTO: Uživatel RUČNĚ ZASTAVIL probíhající přehrávání
+    // =======================================================
+    if (typeof replayTimer !== 'undefined' && replayTimer) {
+        clearInterval(replayTimer);
+        replayTimer = null;
+        puzzleReplayActive = false;
+        
+        // Zde vracíme zpět na "Oko"
+        const replayBtn = document.getElementById('puzzleReplayBtn');
+        if (replayBtn) replayBtn.innerHTML = '👁️'; 
+        
+        showToast(t('replayStop') || "Přehrávání zastaveno");
+        return;
+    }
+
+    // Reset desky
+    board = currentPuzzle.board.slice().reverse().map(row => [...row]);
+    currentPlayer = currentPuzzle.player;
+    gameOver = false;
+    history = [];
+    
+    // Zachování hlášky o startu v logu
+    const puzzleStartEntry = logData.find(e => e.type === 'sys' && e.extra && e.extra.action === "modePuzzle");
+    logData = puzzleStartEntry ? [puzzleStartEntry] : [];
+    
+    puzzleReplayActive = true; 
+    let replayMoveIndex = 0;
+    const solutionMoves = currentPuzzle.solution;
+    
+    // Zapnutí - měníme na ikonu pauzy
+    const startBtn = document.getElementById('puzzleReplayBtn');
+    if (startBtn) startBtn.innerHTML = '⏸️';
+    showToast(t('lblPlaySolution') || "👁️ Přehrávám správné řešení...");
+
+    // Časovač přehrávání
+    replayTimer = setInterval(() => {
+        
+        // =======================================================
+        // 2. MÍSTO: Přehrávač SÁM SKONČIL (došly tahy nebo je IGO)
+        // =======================================================
+        if (replayMoveIndex >= solutionMoves.length || gameOver) {
+            clearInterval(replayTimer);
+            replayTimer = null;
+            puzzleReplayActive = false;
+            
+            // Zde vracíme zpět na "Oko"
+            const doneBtn = document.getElementById('puzzleReplayBtn');
+            if (doneBtn) doneBtn.innerHTML = '👁️';
+            
+            showToast(t('lblPlaySolutionEnd') || "👁️ Řešení dokončeno...");
+            return;
+        }
+
+        const moveStr = solutionMoves[replayMoveIndex];
+        const x = moveStr.charCodeAt(0) - 97;
+        const y = parseInt(moveStr.charAt(1)) - 1;
+
+        makeMove(x, y, true); 
+        replayMoveIndex++;
+    }, 1000); 
+}
+
+
+function applySettings() {
+    // 1. Bezpečné zjištění hlavního režimu
+    const modeRadio = document.querySelector('input[name="gamemode"]:checked');
+    if (!modeRadio) return; // Ochrana: pokud není nic zaškrtnuto, kód nespadne
+    
+    const selectedMode = modeRadio.value;
+
+    if (selectedMode === 'puzzle') {
+        // ========================
+        // PUZZLE MODE
+        // ========================
+        // Stačí nastavit režim na true. Zbytek (kdo hraje, tahy, aiEnabled) 
+        // se nastaví plně automaticky uvnitř funkce startRandomPuzzle() z dat!
+        if (typeof isPuzzleMode !== 'undefined') isPuzzleMode = true;
+        if (typeof puzzleMode !== 'undefined') puzzleMode = true; // Zahrnuje obě varianty názvu
+
+    } else {
+        // ========================
+        // NORMAL GAME MODES (PvP, PvAI)
+        // ========================
+        if (typeof isPuzzleMode !== 'undefined') isPuzzleMode = false;
+        if (typeof puzzleMode !== 'undefined') puzzleMode = false;
+        
+        aiEnabled = (selectedMode === 'pvai');
+
+        // --- AI DIFFICULTY ---
+        const difficultyRadio = document.querySelector('input[name="difficulty"]:checked');
+        if (difficultyRadio) {
+            aiDifficulty = difficultyRadio.value;
+            localStorage.setItem("migoDifficulty", aiDifficulty);
+        }
+
+        // --- TIMER ---
+        const timeRadio = document.querySelector('input[name="timerVal"]:checked');
+        if (timeRadio) {
+            timeLimitMinutes = parseInt(timeRadio.value);
+            localStorage.setItem("migoTimeLimit", timeLimitMinutes);
+        }
+    }
+
+    // ========================
+    // OSTATNÍ NASTAVENÍ (Zvuky)
+    // ========================
+    const soundCheckbox = document.querySelector('input[id="soundToggle"]');
+    if (soundCheckbox) {
+        localStorage.setItem("soundEnabled", soundCheckbox.checked ? "true" : "false");
+    }
+
+    closeMenu();
+    newGame();
+}
 
 // --- Herní logika ---
 const SIZE = 8;
@@ -970,6 +1341,203 @@ let timeLimitMinutes = localStorage.getItem("migoTimeLimit") !== null ? parseInt
 //let timeLimitMinutes = 3; 
 let whiteTime = timeLimitMinutes * 60, blackTime = timeLimitMinutes * 60;
 let gameTimer = null;
+// Nové globální proměnné pro stav Puzzle
+let isPuzzleMode = false;
+let currentPuzzleMoves = 0;
+let currentPuzzle = null;
+let puzzleMoveIndex = 0;
+let puzzleReplayActive = false;
+const PUZZLES = [
+
+{
+    name: "Puzzle 01",
+
+    player: WHITE,
+
+    moves: 3,
+
+    solution: [
+        "c5",
+        "c6",
+        "f5",
+        "d5",
+        "d7"
+    ],
+
+    board: [
+
+        [0,0,0,0,0,0,0,0],
+
+        [0,0,0,0,0,0,0,0],
+
+        [0,4,0,0,3,0,0,0],
+
+        [0,4,0,1,3,0,0,0],
+
+        [0,2,3,1,4,0,3,0],
+
+        [0,0,3,4,1,3,0,2],
+
+        [0,0,2,0,1,1,2,0],
+
+        [0,0,0,0,0,2,0,0]
+
+    ]
+},
+{
+    name: "Puzzle 02",
+
+    player: WHITE,
+
+    moves: 3,
+
+    solution: [
+        "f3",
+        "f2",
+        "b2",
+        "b5",
+        "d7"
+    ],
+
+    board: [
+
+        [0,3,3,2,4,0,0,0],
+
+        [0,2,0,2,0,2,4,3],
+
+        [0,4,2,0,3,2,4,3],
+
+        [0,1,0,0,2,3,2,1],
+
+        [0,3,4,3,0,3,1,0],
+
+        [2,3,0,0,0,0,0,0],
+
+        [1,0,1,3,1,0,0,0],
+
+        [0,2,0,2,4,4,0,0]
+
+    ]
+},
+
+{
+    name: "Puzzle 03",
+
+    player: WHITE,
+
+    moves: 4,
+
+    solution: [
+        "g6",
+        "e4",
+        "d1",
+        "d4",
+        "e2",
+        "c4",
+        "c2"
+    ],
+
+    board: [
+
+        [0,0,0,2,0,0,0,0],
+
+        [0,0,4,4,0,2,2,2],
+
+        [0,2,4,4,0,0,0,0],
+
+        [0,3,0,0,1,3,0,0],
+
+        [4,1,1,0,1,1,0,3],
+
+        [4,0,0,3,0,1,0,0],
+
+        [2,3,0,3,0,0,1,4],
+
+        [1,1,0,0,1,1,3,0]
+
+    ]
+},
+
+{
+    name: "Puzzle 04",
+
+    player: BLACK,
+
+    moves: 4,
+
+    solution: [
+        "c6",
+        "a4",
+        "e8",
+        "c6",
+        "c5",
+        "a8",
+        "d5"
+    ],
+
+    board: [
+
+        [0,0,0,0,0,0,0,3],
+
+        [0,0,1,4,0,4,2,1],
+
+        [0,0,0,1,1,1,2,0],
+
+        [0,4,0,2,4,3,1,0],
+
+        [0,4,2,3,3,4,2,0],
+
+        [0,0,2,2,0,3,2,0],
+
+        [0,0,1,4,0,0,1,0],
+
+        [0,0,4,0,0,0,0,2]
+
+    ]
+},
+
+{
+    name: "Puzzle 05",
+
+    player: BLACK,
+
+    moves: 5,
+
+    solution: [
+        "e3",
+        "f4",
+        "e4",
+        "c5",
+        "f5",
+        "e7",
+        "d3",
+        "f5",
+        "c3"
+    ],
+
+    board: [
+
+        [0,0,0,0,0,3,0,0],
+
+        [0,0,0,0,0,3,0,0],
+
+        [0,0,0,1,2,0,4,4],
+
+        [0,0,0,3,2,0,4,2],
+
+        [0,0,0,0,0,2,3,0],
+
+        [0,4,0,0,0,3,0,0],
+
+        [0,0,0,0,0,0,0,0],
+
+        [0,0,0,0,0,0,0,0]
+
+    ]
+}
+
+];
+
 
 let aiDifficulty = localStorage.getItem("migoDifficulty") || "normal";
 
@@ -1119,63 +1687,65 @@ function copyLog() {
 
 
 function getSysMsgText(entry) {
-
     // dynamická systémová zpráva
-    if (
-        entry.key === "gameInfo" &&
-        entry.extra
-    ) {
+    if (entry.key === "gameInfo" && entry.extra) {
 
-        const timeVal =
-            entry.extra.time === 0
-                ? "∞"
-                : entry.extra.time + " min";
+        // ==========================================
+        // VÝJIMKA PRO PUZZLE MÓD
+        // ==========================================
+        if (entry.extra.action === "modePuzzle") {
+            const pName = entry.extra.puzzleName || "Puzzle";
+            const pColor = t(entry.extra.colorKey); // Vrátí "Bílý" nebo "Černý"
+            const pMoves = entry.extra.moves;
+            
+            // Flexibilní úprava pro text "na tahu" a skloňování "tahů"
+            let onMoveText = `${pColor} na tahu`;
+            let movesText = `Najdi za ${pMoves} tahy IGO`;
+            
+            // Podpora pro správné české skloňování
+            let wordTah = "tahy";
+            if (pMoves === 1) wordTah = "tah";
+            else if (pMoves >= 5 || pMoves === 0) wordTah = "tahů";
+            
+            movesText = `Najdi za ${pMoves} ${wordTah} IGO`;
+            
+            // Volitelná podpora pro EN mutaci, pokud by byla aktivní
+            if (typeof lang !== 'undefined' && lang === 'en') {
+                onMoveText = `${pColor} to move`;
+                movesText = `Find IGO in ${pMoves} moves`;
+            }
+			// Vrátí řádky čistě zalomené pod sebou
+            return `<span style="display: inline-block; text-align: left; vertical-align: top;">
+                        <strong>${pName}</strong><br>
+                        ${onMoveText}<br>
+                        ${movesText}
+                    </span>`;
+        }
+            
 
-        let text =
-            t(entry.extra.action) +
-            "<br>";
+        // --- Zbytek kódu pro standardní hry (PvP / PvAI) ---
+        const timeVal = entry.extra.time === 0 ? "∞" : entry.extra.time + " min";
+
+        let text = t(entry.extra.action) + "<br>";
 
         // pouze pokud je AI zapnutá
         if (entry.extra.aiEnabled) {
+            const safeDiff = entry.extra.diff ? entry.extra.diff : "normal";
+            const diffKey = "levelAI" + safeDiff.charAt(0).toUpperCase() + safeDiff.slice(1);
 
-            const safeDiff =
-                entry.extra.diff
-                    ? entry.extra.diff
-                    : "normal";
-
-            const diffKey =
-                "levelAI" +
-                safeDiff.charAt(0).toUpperCase() +
-                safeDiff.slice(1);
-
-            text +=
-                "&nbsp;&nbsp;&nbsp;&nbsp;" +
-                t("logAI") +
-                ": " +
-                t(diffKey).toUpperCase() +
-                "<br>";
+            text += "&nbsp;&nbsp;&nbsp;&nbsp;" + t("logAI") + ": " + t(diffKey).toUpperCase() + "<br>";
         }
         else {
-
-            text +=
-                "&nbsp;&nbsp;&nbsp;&nbsp;" +
-                t("modePvP") +
-                "<br>";
+            text += "&nbsp;&nbsp;&nbsp;&nbsp;" + t("modePvP") + "<br>";
         }
 
-        text +=
-            "&nbsp;&nbsp;&nbsp;&nbsp;" +
-            t("timeLabel") +
-            ": " +
-            timeVal;
+        text += "&nbsp;&nbsp;&nbsp;&nbsp;" + t("timeLabel") + " " + timeVal;
 
         return text;
     }
 
     // běžná zpráva
-    return entry.key
-        ? t(entry.key)
-        : entry.text;
+    return entry.key ? t(entry.key) : entry.text;
 }
 
 
@@ -1299,8 +1869,8 @@ function updateTimersUI() {
 
 function initBoardDOM() {
     boardEl.innerHTML = '';
-    for (let y = 0; y < SIZE; y++) {
-        for (let x = 0; x < SIZE; x++) {
+    for (let y = SIZE - 1; y >= 0; y--) {
+    for (let x = 0; x < SIZE; x++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.id = `cell-${x}-${y}`;
@@ -1440,7 +2010,41 @@ function hasAnyLegalMove(player) {
 function makeMove(x, y, isAI = false) {
     if (gameOver || replayMode || board[y][x] !== EMPTY) return;
     
+    // Blokace, pokud zkusíte kliknout, když hraje generátor puzzle
+    if (typeof isPuzzleMode !== 'undefined' && isPuzzleMode && !isAI && currentPlayer !== currentPuzzle.player) return;
+    
     if (!isAI && aiEnabled && currentPlayer === aiPlayer) return;
+
+    // =========================================================================
+    // KONTROLA NESPRÁVNÉHO TAHU (Pouze pro živého hráče v Puzzle režimu)
+    // =========================================================================
+    if (typeof isPuzzleMode !== 'undefined' && isPuzzleMode && !isAI) {
+        const expectedMove = currentPuzzle.solution[puzzleMoveIndex];
+        const col = String.fromCharCode(97 + x); 
+        const row = y + 1; 
+        const moveStr = `${col}${row}`;
+        
+        if (expectedMove && moveStr !== expectedMove) {
+            showToast(t('lblWrongMove') || "Nesprávný tah, zkus to znovu.");
+            
+            // Najdeme buňku v DOM a necháme ji na 500ms červeně bliknout
+            const boardEl = document.getElementById('board');
+            if (boardEl) {
+                // Pokus o nalezení buňky podle indexu mřížky (zohledňuje spodní otočení řad)
+                const cellIndex = (7 - y) * 8 + x;
+                const cellDOM = boardEl.children[cellIndex];
+                if (cellDOM) {
+                    const originalBg = cellDOM.style.backgroundColor;
+                    cellDOM.style.backgroundColor = '#f87171'; // Červené podbarvení
+                    setTimeout(() => {
+                        cellDOM.style.backgroundColor = originalBg;
+                    }, 500);
+                }
+            }
+            return; // Přerušíme funkci, kámen se nepoloží
+        }
+    }
+    // =========================================================================
 
     const temp = cloneBoard(board);
     temp[y][x] = currentPlayer;
@@ -1450,7 +2054,7 @@ function makeMove(x, y, isAI = false) {
         return;
     }
 
-    // Ukládáme hlubokou kopii stavu logu, abychom o něj při vrácení tahu nepřišli
+    // Ukládáme hlubokou kopii stavu logu
     history.push({ 
         board: cloneBoard(board), 
         currentPlayer,
@@ -1460,15 +2064,10 @@ function makeMove(x, y, isAI = false) {
     });
 
     board[y][x] = currentPlayer;
-	lastMove = {
-    x,
-    y
-	};
+    lastMove = { x, y };
 
-    // Aplikace logiky Yuga a zjištění, zda nějaké vůbec vzniklo (vrací true/false)
     const isYugo = processYugos(x, y);
 
-    // Zápis tahu do logData pole (tvorba např. a1, d5, ...)
     const col = String.fromCharCode(97 + x); 
     const row = y + 1; 
     const moveStr = `${col}${row}`;
@@ -1495,7 +2094,6 @@ function makeMove(x, y, isAI = false) {
         }
     }
     
-    // Překreslení panelu logu pro propíchnutí nového zápisu
     renderLog();
 
     if (currentPlayer === WHITE) {
@@ -1514,70 +2112,145 @@ function makeMove(x, y, isAI = false) {
         
         // 1. Pro toast potřebujeme rovnou přeložený text
         const msgKey = currentPlayer === WHITE ? 'whiteWins' : 'blackWins';
-        showToast(t(msgKey));
+        //showToast(t(msgKey));
         
         // 2. Do logSys pošleme POUZE klíč pro dynamický překlad
         logSys("", msgKey); 
         
         updateStatus();
-    } else if (isBoardFull() || !hasLegalMoves(nextPlayer(currentPlayer))) {
-        gameOver = true;
-        clearInterval(gameTimer);
-        
-        let w = 0, b = 0;
-        board.flat().forEach(v => { if(v === WHITE_YUGO) w++; if(v === BLACK_YUGO) b++; });
-        
-        // Určení klíče podle výsledku zápasu
-        let msgKey = "";
-        let wegoWinner = null;
+} else if (
 
-        if (w > b) {
-            msgKey = 'whiteWinsWego';
-            wegoWinner = WHITE;
-        }
-        else if (b > w) {
-            msgKey = 'blackWinsWego';
-            wegoWinner = BLACK;
-        }
-        else {
-            msgKey = 'draw';
-        }
-        
-        // Toast přeložíme hned, do logu pošleme jen klíč
-        showToast(t(msgKey));
-        logSys("", msgKey);
+    isBoardFull() ||
 
-         // ← TOTO JE DŮLEŽITÉ
-        if (wegoWinner !== null) {
+    !hasLegalMoves(
+        nextPlayer(currentPlayer)
+    )
 
-            highlightWegoWinner(
-                wegoWinner
-            );
-        }
-        updateStatus();
-    } else {
-
-        const whiteCanMove =
-    hasAnyLegalMove(WHITE);
-
-const blackCanMove =
-    hasAnyLegalMove(BLACK);
-
-if (
-    !whiteCanMove &&
-    !blackCanMove
 ) {
 
-    endGameWego();
-    return;
-}
-        currentPlayer = nextPlayer(currentPlayer);
-        updateStatus();
-        checkAndRunAI();
+    gameOver = true;
+
+    clearInterval(gameTimer);
+
+    let w = 0;
+    let b = 0;
+
+    board.flat().forEach(v => {
+
+        if (v === WHITE_YUGO) w++;
+        if (v === BLACK_YUGO) b++;
+    });
+
+    let msgKey = "";
+    let wegoWinner = null;
+
+    if (w > b) {
+
+        msgKey = 'whiteWinsWego';
+        wegoWinner = WHITE;
+
+    } else if (b > w) {
+
+        msgKey = 'blackWinsWego';
+        wegoWinner = BLACK;
+
+    } else {
+
+        msgKey = 'draw';
     }
+
+    //showToast(
+     //   t(msgKey)
+   // );
+
+    logSys(
+        "",
+        msgKey
+    );
+
+    if (wegoWinner !== null) {
+
+        highlightWegoWinner(
+            wegoWinner
+        );
+    }
+
+    updateStatus();
+    } else {
+
+    currentPlayer = nextPlayer(currentPlayer);
+
+    updateStatus();
+
+    // =====================================================
+    // PUZZLE AUTO TAH
+    // =====================================================
+
+    if (
+
+        typeof isPuzzleMode !== 'undefined' &&
+
+        isPuzzleMode &&
+
+        !isAI
+
+    ) {
+
+        // další tah v řešení
+        puzzleMoveIndex++;
+
+        // má puzzle odpověď?
+        if (
+
+            puzzleMoveIndex <
+
+            currentPuzzle.solution.length
+
+        ) {
+
+            setTimeout(() => {
+
+                const nextMove =
+                    currentPuzzle.solution[
+                        puzzleMoveIndex
+                    ];
+
+                const nx =
+                    nextMove.charCodeAt(0) - 97;
+
+                const ny =
+                    parseInt(nextMove[1]) - 1;
+
+                // posun po AI tahu
+                puzzleMoveIndex++;
+
+                makeMove(
+                    nx,
+                    ny,
+                    true
+                );
+
+            }, 750);
+        }
+
+        return;
+    }
+
+    // =====================================================
+
+    checkAndRunAI();
+}
 }
 
+
+
 function toggleReplay() {
+
+	// Pokud jsme v režimu Puzzle, spustíme řešení
+    if (isPuzzleMode) {
+        playPuzzleSolution();
+        return;
+    }	
     const btn = document.getElementById('replayBtn');
     if (replayMode) {
         clearInterval(replayTimer);
@@ -1638,7 +2311,7 @@ function toggleReplay() {
             lastMoveBlack = state.lastMoveBlack;
             render();
             rIdx++;
-        }, 600);
+        }, 1000);
     }
 }
 
@@ -1661,6 +2334,18 @@ function previewMove(x, y, cell) {
 }
 
 function newGame(keepSettings = false) {
+
+	// --- NOVÉ: Zachycení Puzzle režimu ---
+    if (typeof isPuzzleMode !== 'undefined' && isPuzzleMode) {
+        startRandomPuzzle();
+        return; // Okamžitě ukončíme tuto funkci, zbytek se neprovede
+    }
+	
+	const normCtrl = document.getElementById('normalControls');
+    const puzzCtrl = document.getElementById('puzzleControls');
+    if (normCtrl) normCtrl.style.display = 'flex'; // Vrátí běžná tlačítka
+    if (puzzCtrl) puzzCtrl.style.display = 'none'; // Skryje puzzle tlačítka
+    // -------------------------------------
 
     const savedDifficulty =
     localStorage.getItem(
@@ -1725,7 +2410,7 @@ if (savedDifficulty) {
 
     startTimers();
     
-    showToast(t('newGame'));
+    //showToast(t('newGame'));
     logSys(
     "",
     "gameInfo",
@@ -1738,6 +2423,8 @@ if (savedDifficulty) {
 );
     checkAndRunAI();
 }
+
+
 
 function cloneBoard(b) { return b.map(row => [...row]); }
 function inside(x, y) { return x >= 0 && x < SIZE && y >= 0 && y < SIZE; }
@@ -3086,7 +3773,7 @@ function saveGame() {
         startingPlayer, aiEnabled, timeLimitMinutes, aiDifficulty,
         lastMoveWhite, lastMoveBlack, logData
     })); 
-    showToast(t('saved')); 
+    //showToast(t('saved')); 
     logSys("", "gameInfo", { action: "saved", diff: aiDifficulty, time: timeLimitMinutes,
         aiEnabled: aiEnabled });
 }
@@ -3154,7 +3841,7 @@ function loadGame() {
         startTimers();
         highlightWinningLine();
         
-        showToast(t('loaded'));
+        //showToast(t('loaded'));
         logSys("", "gameInfo", { action: "loaded", diff: aiDifficulty, time: timeLimitMinutes,
         aiEnabled: aiEnabled });
         checkAndRunAI();
@@ -3163,25 +3850,60 @@ function loadGame() {
     }
 }
 
+
+
 function undoMove() { 
+
     if (history.length > 0 && !replayMode) { 
+
         const last = history.pop(); 
+
         board = last.board; 
         currentPlayer = last.currentPlayer; 
         lastMoveWhite = last.lastMoveWhite;
         lastMoveBlack = last.lastMoveBlack;
-        logData = last.logData || []; // Bezpečné navrácení stavu logu
+        logData = last.logData || [];
 
         gameOver = false;
+
+        // odstranění IGO pulsování
+        document
+            .querySelectorAll('.cell')
+            .forEach(cell => {
+
+                cell.classList.remove(
+                    'winning-pulse'
+                );
+            });
+
+        // odstranění Wego pulsování
+        whiteIndicator.classList.remove(
+            'winner-pulse'
+        );
+
+        blackIndicator.classList.remove(
+            'winner-pulse'
+        );
+
         render(); 
         renderLog();
+
+        // obnoví aktivního hráče
+        updateStatus();
+
         startTimers();
-        
-        if (aiEnabled && currentPlayer === aiPlayer) {
+
+        if (
+            aiEnabled &&
+            currentPlayer === aiPlayer
+        ) {
+
             undoMove(); 
         }
     } 
 }
+
+
 
 function exportGame() {
     const data = JSON.stringify({ 
