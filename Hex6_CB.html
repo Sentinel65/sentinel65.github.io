@@ -686,6 +686,76 @@
                         <td style="padding:6px;"><span class="cs">Všech 12 hvězdiček</span><span class="en">All 12 stars</span></td>
                         <td style="padding:6px; text-align:right;">7 <span class="cs">b.</span><span class="en">pts</span> | 5 <span class="cs">b.</span><span class="en">pts</span></td>
                     </tr>
+                    <tr style="background:#f1f3f5; border-bottom:1px solid #ccc; border-top:1px solid #ccc;">
+    <th style="padding:6px;" colspan="2">
+        <span class="cs">Hodnocení výsledku</span>
+        <span class="en">Score Rating</span>
+    </th>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">&lt;30 — Prohra</span>
+        <span class="en">&lt;30 — Loss</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">30+ — Uchází</span>
+        <span class="en">30+ — OK-ish</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">33+ — Solidní</span>
+        <span class="en">33+ — Decent</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">36+ — Pěkné</span>
+        <span class="en">36+ — Nice</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">40+ — Skvělé</span>
+        <span class="en">40+ — Great</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">44+ — Špičkové</span>
+        <span class="en">44+ — Top notch</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr style="border-bottom:1px solid #eee;">
+    <td style="padding:6px;">
+        <span class="cs">48+ — Úžasné</span>
+        <span class="en">48+ — Amazing</span>
+    </td>
+    <td></td>
+</tr>
+
+<tr>
+    <td style="padding:6px;">
+        <span class="cs">52+ — Spektakulární</span>
+        <span class="en">52+ — Spectacular</span>
+    </td>
+    <td></td>
+</tr>
                 </table>
             </li>
             <li><strong><span class="cs">Taktika:</span><span class="en">Tactics:</span></strong> <span class="cs">Plánujte si umístění čísel tak, abyste spouštěli řetězové reakce a získali vysoce bodovaná čísla (5 a 6). Zároveň se snažte v první fázi hry prioritně uzavírat menší barevné skupiny – získáte tím více bodů a vytvoříte si flexibilní žolíky pro snazší párování ve zbytku hry.</span><span class="en">Plan placements to trigger chain reactions and score highly valued numbers (5 & 6). Also, try to complete smaller color groups in Phase 1 to maximize points and secure flexible Wilds for the rest of the game.</span></li>
@@ -1493,13 +1563,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let rankKey = "";
-        if (final < 26) rankKey = "rankLose";
-        else if (final <= 29) rankKey = "rankOK";
-        else if (final <= 33) rankKey = "rankDecent";
-        else if (final <= 37) rankKey = "rankNice";
-        else if (final <= 41) rankKey = "rankGreat";
-        else if (final <= 45) rankKey = "rankTop";
-        else if (final <= 49) rankKey = "rankAmazing";
+        if (final < 30) rankKey = "rankLose";
+        else if (final <= 33) rankKey = "rankOK";
+        else if (final <= 36) rankKey = "rankDecent";
+        else if (final <= 40) rankKey = "rankNice";
+        else if (final <= 44) rankKey = "rankGreat";
+        else if (final <= 48) rankKey = "rankTop";
+        else if (final <= 52) rankKey = "rankAmazing";
         else rankKey = "rankSpectacular";
 
         document.getElementById('game-controls').style.display = 'none';
