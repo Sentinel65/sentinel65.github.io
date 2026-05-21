@@ -5,424 +5,1007 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hra Trezor</title>
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-family: Arial, sans-serif;
-    }
-    #gameContainer {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto 1fr auto;
-      gap: 5px;
-      grid-template-areas: 
-      "letters letters letters"
-      "left board right"
-      "bottom bottom bottom"
-      "skimmers skimmers skimmers";
-      
-    }
-    #board {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      grid-gap: 5px;
-      justify-content: center;
-      margin: 10px;
-      grid-area: board;
-    }
-    .cell {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #000;
-      font-size: 14px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .cell.clicked { background-color: #4B4C4B; color: #fff;cursor: not-allowed;pointer-events: none;} /* Styl označených políček */
-    .disabled { background-color: #000; cursor: default; } /* Nehratelná políčka */
-    .used { background-color: #d3d3d3; cursor: default; color: #333; } /* Styl použitých kostek */
-    .odd { background-color: #e0ffe0; } /* Lichá čísla */
-    .even { background-color: #e0e0ff; } /* Sudá čísla */
-    .double { background-color: #ffe0e0; } /* Double */
-    #letters, #left, #right, #bottom {
-      display: grid;
-      font-weight: bold;
-      font-size: 16px;
-      text-align: center;
-    }
-    #letters {
-	  grid-column: 2 / 3;
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      justify-items: center;
-    }
-    #left {
-      grid-template-rows: repeat(6, 1fr);
-      grid-area: left;
-      justify-content: end;
-      margin-top: 22px;
-    }
-    #right {
-      grid-template-rows: repeat(6, 1fr);
-      grid-area: right;
-      margin-top: 22px;
-    }
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
 
-	#bottom {
-	  grid-column: 2 / 3;
-	  display: grid;
-	  grid-template-columns: repeat(7, 1fr);
-	  justify-items: center;
-	}
-    #skimmers {
-      grid-area: skimmers;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .lock {
-      color: black;
-    }
-    .score {
-      font-size: 14px;
-      font-weight: bold;
-    }
-    .highscore {
-      font-size: 14px;
-      font-weight: bold;
-    }
-    .skimmer {
-      padding: 5px 10px;
-      border: 2px solid #333;
-      border-radius: 5px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .skimmer.clicked { background-color: #90cfff; } /* Styl označených skimmerů */
-    #diceContainer {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .skimmer.disabled {
-	  background-color: #d3d3d3;
-	  color: #888;
-	  cursor: not-allowed;
-	  pointer-events: none;
-	  border-color: #888;
-	}
-    
-      /* Stylování pro tlačítka nápovědy  */
-	.help-button {
-	  padding: 5px 10px;
-	  border: 2px solid #333;
-	  border-radius: 5px;
-	  cursor: pointer;
-	  color: white;
-	  background-color: #4B4C4B;
-	  font-size: 20px;
-	  font-weight: bold;
-	  user-select: none;
-	}
-    
-      /* Stylování pro tlačítka ReRoll */
-	.reroll-button {
-	  padding: 5px 10px;
-	  border: 2px solid #333;
-	  border-radius: 5px;
-	  cursor: pointer;
-	  background-color: #90cfff;
-	  font-size: 14px;
-	  font-weight: bold;
-	  user-select: none;
-	}
+/* MENU NAD DESKOU */
+.controls {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px; /* Zvětšená mezera mezi tlačítky z 4px na 10px */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px; /* Větší prostor kolem celého menu */
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
 
-	  /* Styl pro deaktivovaná tlačítka */
-	.reroll-button.disabled {
-	  background-color: #d3d3d3;
-	  color: #888;
-	  cursor: not-allowed;
-	  pointer-events: none;
-	  border-color: #888;
-	}
-	.highlight {
-	  background-color: lightgreen;
-	  color: black;
-	  font-weight: bold;
-	} 
-	.highlight-empty {
-	  background-color: #fcba03;
-	  color: black;
-	  font-weight: bold;
-	}
+.controls::-webkit-scrollbar {
+  display: none;
+}
 
-	.highlight-filled {
-	  background-color: #4B4C4B;
-	  color: yellow;
-	  font-weight: bold;
-	}
-	.die {
-	  width: 40px;
-	  height: 40px;
-	  display: flex;
-	  align-items: center;
-	  justify-content: center;
-	  border: 2px solid #333;
-	  border-radius: 5px;
-	  font-size: 18px;
-	  font-weight: bold;
-	  cursor: pointer;
-	  user-select: none;
-	  transition: transform 0.3s;
-	}
-    .die.clicked { background-color: #90cfff; } /* Styl označených kostek */
-    #rollButton {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+/* TLAČÍTKA MENU */
+.controls button {
+  flex: 0 0 auto;
+  padding: 6px 8px; 
+  font-size: 15px; 
+  font-weight: bold; 
+  color: white; /* Vrácená bílá barva ikon/textu */
+  white-space: nowrap;
+  border: none; /* Přepíše nebo nahradí původní border: 2px solid #333 *
+  cursor: pointer;
+  background-color: #4B4C4B; /* Vrácené původní tmavé pozadí */
+  border: 2px solid #333;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
 
-	.die.rolling {
-      animation: roll 0.5s ease-in-out;
-	}
+/* Efekt mírného promáčknutí při kliku na tlačítko v menu */
+.controls button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
 
-	@keyframes roll {
-      0% { transform: rotate(0deg); }
-      25% { transform: rotate(90deg); }
-      50% { transform: rotate(180deg); }
-      75% { transform: rotate(270deg); }
-      100% { transform: rotate(360deg); }
-	}
-    @media (max-width: 600px) {
-    .cell, .die {
-	  width: 30px;
-      height: 30px;
-      font-size: 12px;
-    }
-    #letters, #left, #right, #bottom, #skimmers {
-      font-size: 14px;
-    }
-    .skimmer { padding: 5px; }
-    }
+/* HLAVNÍ OBAL HRY */
+#gameContainer {
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  grid-template-areas: 
+    ". letters ."
+    "left board right"
+    ". bottom ."
+    "skimmers skimmers skimmers";
+  gap: 5px; 
+  justify-content: center;
+  align-items: center;
+  margin: 5px auto;
+}
 
-	 
-	/* Základní styl pro modální okno */
-    .modal {
-      display: none; /* Skryté ve výchozím stavu */
-      position: fixed; /* Zůstane na jednom místě i při skrolování */
-      z-index: 1; /* Zajištění, že bude nad ostatním obsahem */
-      padding-top: 60px;
-      left: 0;
-      top: 0;
-      width: 100%; /* Plná šířka */
-      height: 100%; /* Plná výška */
-      overflow: auto; /* Povolí skrolování v případě potřeby */
-      background-color: rgb(0,0,0); /* Fallback barva */
-      background-color: rgba(0,0,0,0.4); /* Černý s průhledností */
-    }
+#board {
+  display: grid;
+  grid-template-columns: repeat(7, 45px);
+  grid-template-rows: repeat(6, 45px);
+  gap: 5px; 
+  grid-area: board;
+  margin: 0; 
+}
 
-	/* Obsah modálního okna */
-	.modal-content {
-	  background-color: #fefefe;
-	  margin: 5% auto; /* 5% odshora a vystředění */
-	  padding: 20px;
-	  border: 1px solid #888;
-	  border-radius: 15px; /* Zaoblené rohy */
-	  width: 80%;
-	}
+.cell {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #555;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s, transform 0.1s;
+}
 
-	/* Tlačítko pro zavření modálního okna */
-	.close {
-	  color: #aaa;
-	  float: right;
-	  font-size: 28px;
-	  font-weight: bold;
-	}
+.cell:active:not(.disabled):not(.used) {
+  transform: scale(0.92);
+}
 
-	.close:hover,
-	.close:focus {
-	  color: black;
-	  text-decoration: none;
-	  cursor: pointer;
-	}
+.odd { background-color: #e0ffe0; }
+.even { background-color: #e0e0ff; }
+.double { background-color: #ffe0e0; }
+
+/* PÍSMENA A POPISKY */
+#letters, #left, #right, #bottom {
+  display: grid;
+  font-weight: bold;
+  font-size: 16px;
+  text-align: center;
+}
+
+#letters { grid-area: letters; grid-template-columns: repeat(7, 45px); gap: 5px; align-items: end; }
+#bottom { grid-area: bottom; grid-template-columns: repeat(7, 45px); gap: 5px; align-items: start; }
+#left { grid-area: left; grid-template-rows: repeat(6, 45px); gap: 5px; align-items: center; justify-items: end; padding-right: 5px; }
+#right { grid-area: right; grid-template-rows: repeat(6, 45px); gap: 5px; align-items: center; justify-items: start; padding-left: 5px; }
+
+/* ŠPERHÁKY */
+#skimmers {
+  grid-area: skimmers;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 2px; /* Odsazení zmenšeno na minimum */
+}
+
+.skimmer {
+  padding: 10px 15px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  background-color: #fff;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+}
+
+.skimmer:active:not(.disabled):not(.used) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.lock { color: black; }
+.score, .highscore { font-size: 14px; font-weight: bold; }
+
+/* KOSTKY A HODY */
+#diceContainer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 2px; /* Odsazení zmenšeno na minimum */
+}
+
+#rerolls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 2px; /* Odsazení zmenšeno na minimum */
+}
+
+.help-button {
+  padding: 5px 10px;
+  border: 2px solid #333;
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+  background-color: #4B4C4B;
+  font-size: 20px;
+  font-weight: bold;
+  user-select: none;
+}
+
+.reroll-button {
+  padding: 10px 20px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #90cfff;
+  font-size: 15px;
+  font-weight: bold;
+  user-select: none;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.15);
+  transition: transform 0.1s, filter 0.2s;
+}
+
+.reroll-button:active:not(.disabled):not(.used) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.die {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #333;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  background-color: #fff;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.die:active:not(.disabled):not(.used) {
+  transform: scale(0.9);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+#rollButton {
+  margin-top: 2px; /* Odsazení zmenšeno na minimum */
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ANIMACE KOSTEK */
+.die.rolling { 
+  animation: roll 0.5s ease-in-out !important; 
+}
+@keyframes roll {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* =========================================
+   STAVY PRVKŮ (JS LOGIKA)
+   ========================================= */
+
+/* 1. Zvýraznění nápovědy (políčka) */
+.highlight { background-color: lightgreen !important; color: black !important; font-weight: bold; } 
+.highlight-empty { background-color: #fcba03 !important; color: black !important; font-weight: bold; }
+.highlight-filled { background-color: #4B4C4B !important; color: yellow !important; font-weight: bold; }
+
+/* 2. Vybrané prvky (Kostky, Šperháky, Tlačítka atd.) */
+.selected, .clicked, .cell.clicked, .die.clicked, .skimmer.clicked { 
+  background-color: #90cfff !important; 
+  border-color: #0056b3 !important;
+}
+
+.cell.clicked {
+  background-color: #4B4C4B !important;
+  color: #fff !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* 3. Použité prvky (Vyčerpané kostky, rerolly, šperháky, zaplněná políčka) */
+.used, .die.used, .skimmer.used, .reroll-button.used {
+  background-color: #d3d3d3 !important;
+  color: #888 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  border-color: #888 !important;
+  box-shadow: none !important;
+}
+.cell.used {
+  color: #333 !important; 
+}
+
+/* 4. Deaktivované prvky (Hranice hrací desky, zakázaná pole s křížkem) */
+.disabled, .cell.disabled {
+  background-color: #000 !important;
+  color: transparent !important; /* SKRYTÍ PÍSMENA X (průhledný text) */
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+.skimmer.disabled, .reroll-button.disabled {
+  background-color: #d3d3d3 !important;
+  color: #888 !important;
+  border-color: #888 !important;
+}
+
+
+/* ZAJIŠTĚNÍ RESPONZIVITY NA MOBILECH */
+@media (max-width: 600px) {
+  .cell, .die { width: 38px; height: 38px; font-size: 14px; }
+  #board { grid-template-columns: repeat(7, 38px); grid-template-rows: repeat(6, 38px); }
+  #letters, #bottom { grid-template-columns: repeat(7, 38px); }
+  #left, #right { grid-template-rows: repeat(6, 38px); }
+  #letters, #left, #right, #bottom, #skimmers { font-size: 14px; }
+  .skimmer { padding: 8px 12px; }
+  .reroll-button { padding: 8px 15px; font-size: 13px; }
+  #rerolls { gap: 10px; }
+}
+
+/* MODÁLNÍ OKNA A TOASTY */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999; 
+  padding-top: 5vh; 
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 0 auto; 
+  padding: 20px;
+  border: 1px solid #888;
+  border-radius: 15px;
+  width: 85%;
+  max-width: 500px; /* Zaručí úzké okno i na počítači/tabletu */
+  max-height: 70vh; /* Pokud okno přesáhne 70 % výšky obrazovky... */
+  overflow-y: auto; /* ...zapne se svislý posuvník */
+  margin: 10vh auto;
+  padding: 15px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+
+/* STYLY PRO TABULKU STATISTIK (Přidej kamkoliv do stylů) */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px; /* Menší písmo šetří místo */
+}
+.stats-table th, .stats-table td {
+  border: 1px solid #888;
+  padding: 6px 4px;
+}
+.stats-table td:first-child {
+  text-align: left; /* První sloupec doleva (kvůli textům) */
+}
+.stats-table td {
+  text-align: center; /* Ostatní sloupce (čísla) na střed */
+}
+.stats-table th {
+  background-color: #4B4C4B;
+  color: white;
+  text-align: center;
+  font-size: 18px; /* Trochu větší pro piktogramy */
+}
+.stats-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+/* ZAJIŠTĚNÍ RESPONZIVITY NA MOBILECH */
+@media (max-width: 600px) {
+  /* ... Tvé existující mobilní styly ... */
+
+  /* Zúžení modálního okna (Nápověda a Statistiky), aby bylo vidět rolovátko */
+  .modal-content {
+    width: 85%; 
+    max-height: 80vh; 
+    margin: 10vh auto; /* Okno nebude úplně přilepené k hornímu okraji */
+    padding: 15px;
+    -webkit-overflow-scrolling: touch; /* Plynulé scrollování na mobilech */
+  }
+
+  /* Zmenšení obsahu tabulky na mobilech, aby nepřetékala */
+  .stats-table th, .stats-table td {
+    padding: 5px 2px;
+    font-size: 13px; 
+  }
+}
+
+
+
+#toast-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: 260px;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  color: #f5f1e8;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(4px);
+  background-color: #4B4C4B;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.info { background: linear-gradient(180deg, #4b4032 0%, #352c22 100%); }
+.toast.success { background: linear-gradient(180deg, #556b2f 0%, #3d4f22 100%); }
+.toast.warning { background: linear-gradient(180deg, #8b5a1e 0%, #5f3d14 100%); }
+.toast.error { background: linear-gradient(180deg, #7a2d2d 0%, #4f1d1d 100%); }
+
+.prompt-content {
+    text-align: center;
+    max-width: 320px;
+}
+
+.prompt-ok-button {
+    padding: 6px 18px;
+    font-size: 16px;
+    min-width: 80px;
+}
+
+.board-input {
+    width: 120px;
+    padding: 10px;
+    font-size: 16px;
+    text-align: center;
+    border-radius: 10px;
+    border: 2px solid #555;
+}
+
+#gameContainer,
+#diceContainer,
+#rerolls,
+.controls,
+.score-table {
+    display: none;
+}
+
+.stats-reset-btn {
+    margin-top: 15px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #c62828;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.stats-reset-btn:hover {
+    background: #e53935;
+    transform: scale(1.04);
+}
+
+.stats-reset-btn:active {
+    transform: scale(0.96);
+}
   </style>
 </head>
 <body>
+<div id="toast-container"></div>
 
+<div id="customPromptModal" class="modal">
+  <div class="modal-content prompt-content">
 
-	<p><button class="help-button" onclick="selectBoardMenu()">🏠</button>&nbsp;<button id="helpButton" class="help-button" onclick="showHelp()">💡</button>&nbsp;<button class="help-button" >TREZOR</button>&nbsp;<button class="help-button" onclick="displayGameStatsInModal()">🏆</button>&nbsp;<button id="helpButton" class="help-button" onclick="manualEndRound()">🚫</button></p>
-	<div id="helpModal" class="modal">
-	<div class="modal-content">
+    <p id="customPromptText"></p>
+    <input
+        type="text"
+        inputmode="numeric"
+        id="customPromptInput"
+		pattern="[0-9]*"
+        class="board-input"
+    >
+    <br><br>	
+    <button class="help-button prompt-ok-button" onclick="confirmCustomPrompt()">
+     OK
+    </button>
+
+  </div>
+</div>
+<div id="boardPromptModal" class="modal">
+  <div class="modal-content prompt-content">
+    <p id="promptText" style="font-weight: bold;"></p>
+    <input type="number" id="boardInput" min="1" max="18" class="board-input" placeholder="#">
+    <br><br>
+    <button class="help-button" onclick="confirmBoardSelection()">OK</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="help-button" onclick="selectBoardMenu()">🏠</button>
+    <button id="btn-save" class="help-button" onclick="saveGame()" title="Uložit hru">💾</button>
+  <button id="btn-load" class="help-button" onclick="loadGame()" title="Načíst hru">📂</button>
+  <button id="helpButton" class="help-button" onclick="showHelp()">💡</button>
+  <button id="langToggle" class="help-button" onclick="toggleLanguage()">🇨🇿</button>
+  <button class="help-button" onclick="displayGameStatsInModal()">🏆</button>
+  <button id="endRoundBtn" class="help-button" onclick="manualEndRound()">🚫</button>
+</div>
+
+<div id="helpModal" class="modal">
+  <div class="modal-content">
     <span class="close" onclick="closeHelp()">&times;</span>
-	<h2>TREZOR</h2>
-		<p>Kostková solitaire hra. Autorem papírové verze (PnP) hry s názvem <b>"Vault: A Solitaire Dice Game (2021)"</b> je <b>Wayne Koenig</b>.</p>
-		<p>Ve hře představujete bankovního lupiče, který se snaží prolomit specializovaný trezor. Pomocí hodu kostkami a pečlivého plánování doufáte, že se vám podaří dostat ven s co největším počtem diamantů dříve, než se všechny zámky na trezoru zavřou. Některé zámky obsahují více diamantů než jiné, takže je na vás, abyste se rozhodli, na kterém zámku strávíte svůj čas s ohledem na hozené hodnoty na kostkách.</p>
-	<h3>Průběh hry</h3>
-		<p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L).</p>
-		<p>V každém kole je třeba splnit 4 kroky:
-		<ol>
-         <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
-         <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
-         <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zámku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color:  #fcba03; ">oranžovou barvou</span>, písmeno aktuálního zámku je nahrazeno znakem 🔔.</li>
-         <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
-		</ol>
-
-		<h3>Označení polí</h3>
-			<p>K označení polí, které se nacházejí v Trezoru, nebo polí ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na poli v Trezoru. 
-Na některá pole stačí pouze jedna kostka. Na většině polí v Trezoru je uvedeno číslo. U některých je ale hodnota daná znakem „<span style="background-color: #e0ffe0";><b>L</b>“ (lichá)</span>, „<span style="background-color: #e0e0ff";><b>S</b>“ (sudá)</span> nebo „<span style="background-color: #ffe0e0";><b>D</b>“ (double)</span>.
-Na pole „Lichá“ nebo „Sudá“ lze označit pouze „<b>jednu</b>“ kostku, její hodnota pak musí být buď lichá nebo sudá.
-Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“.</p>
-
-	<h3>Šperháky </h3>
-		<p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Tlačítka Šperháků jsou pod hrací deskou označená jako S1, S2 a S3. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodnotu 20.</p>
-		<p>Šperhák můžeme kdykoli v daném kole použít k označení políčka v Trezoru jako další "virtuální" kostku, která má pevně danou hodnotu, jakou má vybraný Šperhák. Můžeme jej  použít samostatně nebo v kombinaci (součet, odečet) s jakoukoli jinou označenou kostkou nebo jiným Šperhákem aktivovaným jako virtuální kostka.</p>
-		<p>Je-li aktivována virtuální kostka, <b>nelze</b> použít tlačítka pro opakovaný hod a dále <b>nelze</b> v tuto chvíli přidávat hodnoty označených kostek do Šperháku. Chceme-li tedy použít více Šperháků najednou jako virtuální kostku, musíme nejdříve Šperháky naplnit a poté je aktivovat jako virtulní kostky.</p>
-		<p>⚠️ <b>Aktivace Šperháku je nevratný úkon.</b></p>
-		<p>⚠️ <b>Jakmile je Šperhák již jednou použit, nelze do něj již přidávat, ani jej znovu použít.</b></p> 
-
-	<h3>Opakované hody</h3>
-		<p>V průběhu hry můžete kdykoli 3x opakovat hod (i v průběhu jednoho kola). Při opakovaném hodu můžete použít libovolný počet nepoužitých kostek (1 – 5).</p>
-  
-	<h3>Krádež diamantů</h3>
-		<p>Podaří-li se vám v daném kole označit všechna políčka v příslušném sloupci či řádku daného zámku, získáváte tento počet diamantů:
-		<ul>
-		 <li>1 u zámků A, B, C, D, E, F</li>
-		 <li>2 u zámků G, H, I</li>
-		 <li>3 u zámků J, K, L</li>
-		</ul>
-		Poznámka: některé zámky mají více diamantů, z hlediska taktiky je tedy lepší označit dříve políčka ve sloupci či řádku těchto zámků. 
-		</p>
     
-	<h3>Konec hry</h3>  
-		<p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
-		<p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
-		<ul>
-         <li>Jdeš do vězení</li>		  
-         <li>&#11088;&nbsp;&nbsp; Lapka</li>
-         <li>&#11088;&#11088;&nbsp;&nbsp;Kapsář</li>
-         <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Zloděj</li>
-         <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bankovní lupič</li>
-         <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
-		</ul>
-		<p><b>Poznámka:</b> ikony v horním řádku obrazovky s názvem hry</p> 
-		<ul>
-		 <li>🏠 menu s výběrem hrací desky</li> 
-		 <li>💡 nápověda</li>
-		 <li>🏆 statistiky hry </li>
-		 <li>🚫 ruční ukončení kola (v posledních kolech se může stát, že hráč již nebude mít k dispozici žádný Šperhák, opakovaný hod a hodnoty kostek neumožní dokončit standardní cestou kolo).</li>
-		</ul>
-		<p>&nbsp;</p>
-		<p>&nbsp;</p>
-	</div>
-	</div>
+    <div id="help-cs">
+      <h2>TREZOR</h2>
+      <p>Digitalizovaná verze kostková solitaire hry. Autorem papírové verze (PnP) hry s názvem <b>"Vault: A Solitaire Dice Game (2021)"</b> je <b>Wayne Koenig</b>. Hru jsem našel na BGG.</p>
+      <p>Ve hře představujete bankovního lupiče, který se snaží prolomit specializovaný trezor. Pomocí hodu kostkami a pečlivého plánování doufáte, že se vám podaří dostat ven s co největším počtem diamantů dříve, než se všechny zámky na trezoru zavřou. Některé zámky obsahují více diamantů než jiné, takže je na vás, abyste se rozhodli, na kterém zámku strávíte svůj čas s ohledem na hozené hodnoty na kostkách.</p>
+      
+      <h3>Průběh hry</h3>
+      <p>Trezor, který se snažíte rozlousknout, má 12 zámků, na každém z nich je písmeno, které představuje jedno kolo (A – L).</p>
+      <p>V každém kole je třeba splnit 4 kroky:</p>
+      <ol>
+        <li>Na začátku každého kola program automaticky vygeneruje hod 5 kostek</li>
+        <li>Kliknutím označte kostky, poté kliknutím označte pole (zeleně podbarvená), která odpovídají hodnotám (nebo jejich kombinaci) na označených kostkách</li>
+        <li>Jakmile použijete všechny kostky, kolo končí. <b>Poznámka:</b> pokud nelze použít všechny kostky, ukončete kolo ručně pomocí tlačítka 🚫 . Zámek zůstane <b>otevřený</b> (písmeno daného zámku se zbarví <span style="color: limegreen;">zeleně</span>) nebo se <b>uzamkne</b> (písmeno daného zámku se zbarví <span style="color: red;">červeně</span>) v závislosti na tom, zda v daném kole budou u řešeného zámku (v řádku nebo sloupci) označena všechna pole. Pokud ano, hodnota polí daného zámku se změní na znak ✔️. Aktuálně řešený zámek má podbarvená pole <span style="color: #fcba03;">oranžovou barvou</span>, písmeno aktuálního zámku je nahrazeno znakem 🔔.</li>
+        <li>Postup opakujeme až do kola se zámkem „L“, poté hra končí.</li>
+      </ol>
 
-	<div id="statsModal" class="modal">
-	<div class="modal-content">
-		<span class="close" onclick="closeStatsModal()">&times;</span>
-		<h2>Statistiky hry</h2>
-	<div id="totalStats"></div>
+      <h3>Označení polí</h3>
+      <p>K označení polí, které se nacházejí v Trezoru, nebo polí ve všech třech „Šperhácích“, můžete v daném kole použít libovolný počet nepoužitých hozených kostek (hodnoty můžete sčítat nebo odečítat), jejichž celková hodnota se shoduje s konkrétní číselnou hodnotou na poli v Trezoru. Na některá pole stačí pouze jedna kostka. Na většině polí v Trezoru je uvedeno číslo. U některých je ale hodnota daná znakem „<span style="background-color: #e0ffe0;"><b>L</b>“ (lichá)</span>, „<span style="background-color: #e0e0ff;"><b>S</b>“ (sudá)</span> nebo „<span style="background-color: #ffe0e0;"><b>D</b>“ (double)</span>. Na pole „Lichá“ nebo „Sudá“ lze označit pouze „<b>jednu</b>“ kostku, její hodnota pak musí být buď lichá nebo sudá. Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezáleží, ale hodnota musí být na obou kostkách „<b>stejná</b>“.</p>
+
+      <h3>Šperháky</h3>
+      <p>Šperháky jsou zařízení, která jsou používaná k prolamování elektronických trezorů. Nechceme-li nebo nemůžeme-li použít všechny kostky k označení políček v trezoru, můžete kostky použít k nabíjení Šperháku. Nabíjení Šperháku umožňuje ukládat nepoužité kostky v daném kole tak, že se jejich hodnoty „<b>sečtou</b>“ a výsledná hodnota se uloží do kteréhokoli ze tří Šperháků, který označíme. Tlačítka Šperháků jsou pod hrací deskou označená jako S1, S2 a S3. Každou kostku lze použít pouze do jednoho Šperháku. Každý Šperhák má maximální hodnotu 20.</p>
+      <p>Šperhák můžeme kdykoli v daném kole použít k označení políčka v Trezoru jako další "virtuální" kostku, která má pevně danou hodnotu, jakou má vybraný Šperhák. Můžeme jej použít samostatně nebo v kombinaci (součet, odečet) s jakoukoli jinou označenou kostkou nebo jiným Šperhákem aktivovaným jako virtuální kostka.</p>
+      <p>Je-li aktivována virtuální kostka, <b>nelze</b> použít tlačítka pro opakovaný hod a dále <b>nelze</b> v tuto chvíli přidávat hodnoty označených kostek do Šperháku. Chceme-li tedy použít více Šperháků najednou jako virtuální kostku, musíme nejdříve Šperháky naplnit a poté je aktivovat jako virtulní kostky.</p>
+      <p>⚠️ <b>Aktivace Šperháku je nevratný úkon.</b></p>
+      <p>⚠️ <b>Jakmile je Šperhák již jednou použit, nelze do něj již přidávat, ani jej znovu použít.</b></p> 
+
+      <h3>Opakované hody</h3>
+      <p>V průběhu hry můžete kdykoli 3x opakovat hod (i v průběhu jednoho kola). Při opakovaném hodu můžete použít libovolný počet nepoužitých kostek (1 – 5).</p>
+  
+      <h3>Krádež diamantů</h3>
+      <p>Podaří-li se vám v daném kole označit všechna políčka v příslušném sloupci či řádku daného zámku, získáváte tento počet diamantů:</p>
+      <ul>
+        <li>1 u zámků A, B, C, D, E, F</li>
+        <li>2 u zámků G, H, I</li>
+        <li>3 u zámků J, K, L</li>
+      </ul>
+      <p>Poznámka: některé zámky mají více diamantů, z hlediska taktiky je tedy lepší označit dříve políčka ve sloupci či řádku těchto zámků.</p>
+    
+      <h3>Konec hry</h3>  
+      <p>Hra končí, jakmile dokončíte kolo se zámkem „L“. Program spočítá všechny diamanty u otevřených zámků (za každý 1 bod) a nepoužité Šperháky (za každý 1 bod).</p>
+      <p>Po ukončení hry se ve spodní části zobrazí v závislosti na počtu získaných bodů řádek s hodnocením:</p>
+      <ul>
+        <li>Jdeš do vězení</li>    
+        <li>&#11088;&nbsp;&nbsp; Lapka</li>
+        <li>&#11088;&#11088;&nbsp;&nbsp;Kapsář</li>
+        <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Zloděj</li>
+        <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bankovní lupič</li>
+        <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
+        <p><b>Ikony</b> v horním řádku obrazovky:</p> 
+        <li>🏠 menu s výběrem hrací desky</li>
+		<li>💾 uloží hrací desku</li>
+		<li>📂 uloží hrací desku</li>
+        <li>💡 nápověda</li>
+		<li>🇨🇿 výběr jazyka</li>
+        <li>🏆 statistiky hry </li>
+        <li>🚫 ruční ukončení kola</li>
+      </ul>
+    </div>
+
+    <div id="help-en" style="display: none;">
+      <h2>VAULT</h2>
+      <p>A digital version of the solitaire dice game. The author of the print-and-play (PnP) version of <b>"Vault: A Solitaire Dice Game (2021)"</b> is <b>Wayne Koenig</b>. I found the game on BGG.</p>
+      <p>In the game, you play as a bank robber trying to crack a specialized vault. Through dice rolling and careful planning, you hope to get away with as many diamonds as possible before all the vault locks close. Some locks contain more diamonds than others, so it's up to you to decide where to spend your time based on the rolled dice values.</p>
+      
+      <h3>Gameplay</h3>
+      <p>The vault you are trying to crack has 12 locks, each represented by a letter corresponding to one round (A – L).</p>
+      <p>In each round, you must complete 4 steps:</p>
+      <ol>
+        <li>At the beginning of each round, the program automatically rolls 5 dice.</li>
+        <li>Click to select dice, then click to mark the matching highlighted (green) cells in the vault based on the values (or combinations) of the selected dice.</li>
+        <li>Once all dice are used, the round ends. <b>Note:</b> If you cannot use all dice, end the round manually using the 🚫 button. The lock will remain <b>open</b> (letter turns <span style="color: limegreen;">green</span>) or <b>locked</b> (letter turns <span style="color: red;">red</span>) depending on whether all cells for that lock (in its row or column) are marked during the round. If they are, the cells will change to a ✔️. The current lock has its cells highlighted in <span style="color: #fcba03;">orange</span>, and the lock letter is replaced by a 🔔.</li>
+        <li>Repeat this process until round "L" is completed, after which the game ends.</li>
+      </ol>
+
+      <h3>Marking Cells</h3>
+      <p>To mark cells in the Vault or the three "Skimmers", you can use any number of unused dice in a round (values can be added or subtracted). Their total value must match the number on the Vault cell. Some cells only require one die. Most cells show a specific number, but some show „<span style="background-color: #e0ffe0;"><b>L</b>“ (Odd)</span>, „<span style="background-color: #e0e0ff;"><b>S</b>“ (Even)</span>, or „<span style="background-color: #ffe0e0;"><b>D</b>“ (Double)</span>. For "Odd" or "Even" cells, you can only use <b>one</b> die, and its value must be odd or even respectively. For "D" cells, you need <b>two</b> dice; the value doesn't matter, but both dice must show the <b>same</b> number.</p>
+
+      <h3>Skimmers</h3>
+      <p>Skimmers are devices used to crack electronic vaults. If you don't want to or can't use all dice to mark vault cells, you can use them to charge a Skimmer. Charging a Skimmer allows you to save unused dice by <b>adding</b> their values together and storing the total in any of the three Skimmers (S1, S2, or S3 below the board). Each die can only be used in one Skimmer. Each Skimmer has a maximum value of 20.</p>
+      <p>You can use a Skimmer at any time during a round as a "virtual" die with a fixed value equal to the Skimmer's total. It can be used alone or combined (added/subtracted) with any other selected die or another activated Skimmer.</p>
+      <p>When a virtual die is activated, you <b>cannot</b> use the re-roll buttons, nor can you add values to Skimmers. If you want to use multiple Skimmers at once, you must fill them first and then activate them.</p>
+      <p>⚠️ <b>Activating a Skimmer is irreversible.</b></p>
+      <p>⚠️ <b>Once a Skimmer is used, you cannot add to it or use it again.</b></p> 
+
+      <h3>Re-rolls</h3>
+      <p>You can re-roll the dice 3 times during the game (even multiple times in a single round). You can re-roll any number of unused dice (1 – 5).</p>
+  
+      <h3>Stealing Diamonds</h3>
+      <p>If you successfully mark all cells in a lock's corresponding row or column during its round, you earn diamonds:</p>
+      <ul>
+        <li>1 for locks A, B, C, D, E, F</li>
+        <li>2 for locks G, H, I</li>
+        <li>3 for locks J, K, L</li>
+      </ul>
+      <p>Note: Some locks offer more diamonds, so tactically, it's better to prioritize their rows/columns.</p>
+    
+      <h3>End of Game</h3>  
+      <p>The game ends once you finish the "L" lock round. The program counts all diamonds from open locks (1 point each) and unused Skimmers (1 point each).</p>
+      <p>At the end, your rank is displayed based on your score:</p>
+      <ul>
+        <li>Go to Jail</li>    
+        <li>&#11088;&nbsp;&nbsp;Petty Thief</li>
+        <li>&#11088;&#11088;&nbsp;&nbsp;Pickpocket</li>
+        <li>&#11088;&#11088;&#11088;&nbsp;&nbsp;Burglar</li>
+        <li>&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Bank Robber</li>
+        <li>&#11088;&#11088;&#11088;&#11088;&#11088;&nbsp;&nbsp;Arsène Lupin</li>
+        <p><b>Icons</b> in the top row of the screen:</p> 
+        <li>🏠 Select game board</li>
+		<li>💾 Save gameu</li>
+		<li>📂 Load game</li>
+        <li>💡 Help</li>
+		<li>🇨🇿 Select a language</li>
+        <li>🏆 Game Statistics</li>
+        <li>🚫 End of the round</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div id="statsModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeStatsModal()">&times;</span>
+    <h2 id="statsTitle">Statistiky hry</h2>
+    <div id="totalStats"></div>
     <div id="boardStats"></div>
-	</div>
-	</div>
+  </div>
+</div>
 
-	<div id="gameContainer">
-	<!-- Označení sloupců nahoře -->
-	<div id="letters">
+<div id="gameContainer">
+  <div id="letters">
     <div></div><div></div><div id="lockA">A</div><div></div><div id="lockB">B</div><div></div><div id="lockC">C</div>
-	</div>
+  </div>
 
-	<!-- Označení řádků vlevo a vpravo -->
-	<div id="left">
+  <div id="left">
     <div id="lockL">L</div>
     <div></div>
     <div id="lockK">K</div>
     <div></div>
     <div id="lockJ">J</div>
     <div></div>
-	</div>
+  </div>
 
-	<!-- Hrací deska -->
-	<div id="board"></div>
+  <div id="board"></div>
 
-	<div id="right">
+  <div id="right">
     <div></div>
     <div id="lockD">D</div>
     <div></div>
     <div id="lockE">E</div>
     <div></div>
     <div id="lockF">F</div>
-	</div>
+  </div>
 
-	<!-- Označení sloupců dole -->
-	<div id="bottom">
+  <div id="bottom">
     <div></div><div id="lockI">I</div><div></div><div id="lockH">H</div><div></div><div id="lockG">G</div><div></div>
-	</div>
+  </div>
 
-	<!-- Skimmery jako tlačítka -->
-	<div id="skimmers">
-    <div class="skimmer" onclick="showSkimmerOptions(0)">S1:&nbsp;&nbsp;<span id="skimmer1">0</span>&nbsp;|&nbsp;20</div>
-    <div class="skimmer" onclick="showSkimmerOptions(1)">S2:&nbsp;&nbsp;<span id="skimmer2">0</span>&nbsp;|&nbsp;20</div>
-    <div class="skimmer" onclick="showSkimmerOptions(2)">S3:&nbsp;&nbsp;<span id="skimmer3">0</span>&nbsp;|&nbsp;20</div>
-	</div>
-	</div>
-	</br>
-	<!-- Tlačítka ReRoll -->
-	<div id="rerolls">
-	<button id="reRoll1" onclick="reRollDice(1)" class="reroll-button">Hod 1</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-	<button id="reRoll2" onclick="reRollDice(2)" class="reroll-button">Hod 2</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-	<button id="reRoll3" onclick="reRollDice(3)" class="reroll-button">Hod 3</button>
-	</div>
-	</br>
-	<!-- Kostky -->
-	<div id="diceContainer">
-	<div class="die" onclick="toggleDie(0)">1</div>
-	<div class="die" onclick="toggleDie(1)">2</div>
-	<div class="die" onclick="toggleDie(2)">3</div>
-	<div class="die" onclick="toggleDie(3)">4</div>
-	<div class="die" onclick="toggleDie(4)">5</div>
-	</div></br>
+  <div id="skimmers">
+    <div class="skimmer" onclick="showSkimmerOptions(0)"><span class="s-label">S1</span>:&nbsp;&nbsp;<span id="skimmer1">0</span>&nbsp;|&nbsp;20</div>
+    <div class="skimmer" onclick="showSkimmerOptions(1)"><span class="s-label">S2</span>:&nbsp;&nbsp;<span id="skimmer2">0</span>&nbsp;|&nbsp;20</div>
+    <div class="skimmer" onclick="showSkimmerOptions(2)"><span class="s-label">S3</span>:&nbsp;&nbsp;<span id="skimmer3">0</span>&nbsp;|&nbsp;20</div>
+  </div>
+</div>
+<br>
 
+<div id="rerolls">
+  <button id="reRoll1" onclick="reRollDice(1)" class="reroll-button r-label">Hod 1</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <button id="reRoll2" onclick="reRollDice(2)" class="reroll-button r-label">Hod 2</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <button id="reRoll3" onclick="reRollDice(3)" class="reroll-button r-label">Hod 3</button>
+</div>
+<br>
 
-	<table border="0">
-	<tr>
-	<td class="score"></td>
-	<td class="score" id="score">0</td>
-	</tr>
-	<tr>
-	<td class="highscore"></td>
-	<td class="highscore" id="high-score">0</td>
-	<tr>
-	<td class="highscore"></td>
-	<td class="highscore" id="final-rating"></td>
-	</tr>
+<div id="diceContainer">
+  <div class="die" onclick="toggleDie(0)">1</div>
+  <div class="die" onclick="toggleDie(1)">2</div>
+  <div class="die" onclick="toggleDie(2)">3</div>
+  <div class="die" onclick="toggleDie(3)">4</div>
+  <div class="die" onclick="toggleDie(4)">5</div>
+</div>
+<br>
 
-	</tr>
-	</table>
-
+<table border="0" class="score-table">
+  <tr>
+    <td class="score"></td>
+    <td class="score" id="score">0</td>
+  </tr>
+  <tr>
+    <td class="highscore"></td>
+    <td class="highscore" id="high-score">0</td>
+  </tr>
+  <tr>
+    <td class="highscore"></td>
+    <td class="highscore" id="final-rating"></td>
+  </tr>
+</table>
 
 	<script type="text/javascript">
 
 
-	// Spuštění první kola při načtení stránky
-	document.addEventListener('DOMContentLoaded', () => {
-	startRound();
-	});
 
+	
+	// === JAZYKOVÁ MUTACE ===
+const i18n = {
+  cs: {
+    prompt: "Hra Trezor - vyber desku:\n(zadej číslo 1 - 18)",
+    invalid: "Neplatná volba. Zkuste to znovu.",
+    scoreText: "Deska {0} - počet bodů: {1}",
+    highScoreText: "Deska {0} - nejvyšší skóre: {1}",
+    rollBtn: "Hod",
+    statsTitle: "Statistiky hry",
+    statsBoard: "Statistiky desek",
+    board: 'Deska: {0}',
+    bestBoard: 'Nejlepší deska: {0}',
+    badBoard: 'Nejhorší deska: {0}',
+    oftenBoard: 'Nejvíce hraná deska: {0}',
+    gamesPlayed: 'Odehraných her: {0}',
+    bestScore: 'nejlepší skóre: {0}',
+    averageScore: 'průměrné skóre: {0}',
+    totalScore: 'celkové skóre: {0}',  
+    wins: 'Výher: {0}',
+    losses: 'Proher: {0}',
+    roundsPlayed: 'Odehraných kol: {0}',
+    bestBoard: 'Nejlepší deska: {0}',
+    lastGame: 'Poslední hra: {0}',        
+    saveGameBtn: "Uložit hru",
+    loadGameBtn: "Načíst hru",
+    gameSaved: "Hra uložena!",
+    gameLoaded: "Hra načtena.",
+    noSavedGame: "Hra nebyla nalezena.",    
+    finalRating: "Jdeš do vězení",
+    finalRating2: "Lapka&nbsp;&nbsp;&#11088;",
+    finalRating3: "Kapsář&nbsp;&nbsp;&#11088;&#11088;",
+    finalRating4: "Zloděj&nbsp;&nbsp;&#11088;&#11088;&#11088;",
+    finalRating5: "Bankovní lupič&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;",
+    finalRating6: "Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;",
+    finalScore: "Konečné skóre: {0} (včetně nepoužitých Šperháků: {1})",
+    newHighScore: "Nové nejvyšší skóre pro desku {1}: {0} bodů!",      
+	scoreText: "#{0} Deska {1} - počet bodů: {2}",
+	highScoreText: "#{0} Deska {1} - nejvyšší skóre: {2}",	
+    selectDieReroll: "Vyberte alespoň jednu kostku pro opakovaný hod.",
+    invalidCell: "Hodnota kostek neodpovídá požadavkům na toto pole.",
+    skimmerDisabled: "Tento Šperhák již nelze použít.",
+    skimmerVirtualExists: "Jeden ze Šperháků je již použit jako virtuální kostka.",
+    skimmerNeedDice: "Vyberte alespoň jednu kostku pro přesun do Šperháku.",
+    skimmerTooHigh: "Nelze přidat: hodnota kostek [{0}] překračuje kapacitu [{1}] šperháku.",
+    skimmerVirtualUsed: "Šperhák {0} byl použit jako virtuální kostka s hodnotou [{1}].",
+    skimmerMin: "Hodnota Šperháku musí být minimálně 1.",
+	boardSelectionCanceled: "Výběr desky byl zrušen.",
+	loadingError: "Chyba při načítání hry.",
+	gameOver: "Konec hry: {0}",
+	newRound: "Zahajuje se kolo {0}: Řešíme zámek {1} na desce {2}",
+	lockOpened: "Zámek {0} zůstává otevřený, počet získaných bodů: {1}.",
+	lockClosed: "Zámek {0} se uzamknul.",
+	invalidOption:  "Neplatná volba.",
+	skimmerName: "Šperhák {0}",
+	skimmerMenu: "{0}\nZadej číslo volby:\n1) Ulož hodnotu\n2) Vytvoř kostku\n⚠️ Tato akce je nevratná ⚠️",	
+	virtualDieInfo: "Šperhák {0} byl použit jako virtuální kostka s hodnotou [{1}].\n💡 Vyber pole na hrací desce,\nmůžeš kombinovat s jinými kostkami.",
+	loadingHighScore: "Načítání nejvyššího skóre pro desku {0}: {1}",
+	savingHighScore: "Ukládání nového nejvyššího skóre pro desku {0}: {1}",
+	comparingScore: "Porovnání aktuálního skóre {0} s nejvyšším skóre {1} pro desku {2}",
+	lockStatus: "Lock {0} status determined: isOpen={1}",
+	updatingReroll: "Aktualizace tlačítek ReRoll",
+	activeDice: "Aktivní hodnoty pro zvýraznění:",
+	noActiveDice: "Žádné aktivní kostky, odstraněno všechno zvýraznění kromě zámků.",
+	possibleValues: "Možné součty a rozdíly:",
+	singleOdd: "Obsahuje jednu lichou hodnotu:",
+	singleEven: "Obsahuje jednu sudou hodnotu:",
+	highlightedCell: "Zvýrazněno pole: {0} s hodnotou {1}",
+	selectedDice: "Aktuální vybrané kostky:",
+	markCellCalled: "--- markCell called ---",
+	selectedCell: "Vybrané políčko řádek: {0}, sloupec: {1}, hodnota: {2}",
+	locksNotInitialized: "Chyba: locks nejsou inicializovány.",
+	boardIdUndefined: "boardId není definováno při načítání skóre",
+	toastContainerMissing: "toast-container nebyl nalezen"	
+  },
+
+  en: {
+    prompt: "Vault Game - select board:\n(enter number 1 - 18)",
+    invalid: "Invalid choice. Try again.",
+    rollBtn: "Roll",
+    statsTitle: "Game Statistics",
+    statsTitle: "Statistiky hry",
+    statsBoard: "Statistiky desek",
+    board: 'Deska: {0}',
+    bestBoard: 'Nejlepší deska: {0}',
+    badBoard: 'Nejhorší deska: {0}',
+    oftenBoard: 'Nejvíce hraná deska: {0}',
+    gamesPlayed: 'Odehraných her: {0}',
+    bestScore: 'nejlepší skóre: {0}',
+    averageScore: 'průměrné skóre: {0}',
+    totalScore: 'celkové skóre: {0}',  
+    wins: 'Výher: {0}',
+    losses: 'Proher: {0}',
+    roundsPlayed: 'Odehraných kol: {0}',
+    bestBoard: 'Nejlepší deska: {0}',
+    lastGame: 'Poslední hra: {0}',        
+    saveGameBtn: "Save game",
+    loadGameBtn: "Load game",
+    gameSaved: "Game saved!",
+    gameLoaded: "Game loaded!",
+    noSavedGame: "No save game.",    
+    finalRating: "Go to Jail",
+    finalRating2: "Petty Thief&nbsp;&nbsp;&#11088;",
+    finalRating3: "Pickpocket&nbsp;&nbsp;&#11088;&#11088;",
+    finalRating4: "Burglar&nbsp;&nbsp;&#11088;&#11088;&#11088;",
+    finalRating5: "Bank Robber&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;",
+    finalRating6: "Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;",
+    finalScore: "Final score: {0} (includes unused skimmer bonus: {1})",
+    newHighScore: "New high score for board {1}: {0} points!",
+	scoreText: "#{0} Board {1} - score: {2}",
+	highScoreText: "#{0} Board {1} - high score: {2}",	
+    selectDieReroll: "Select at least one die for reroll.",
+    invalidCell: "Dice values do not match this cell.",
+    skimmerDisabled: "This skimmer can no longer be used.",
+    skimmerVirtualExists: "One skimmer is already used as a virtual die.",
+    skimmerNeedDice: "Select at least one die to move into the skimmer.",
+    skimmerTooHigh: "Cannot add: dice value [{0}] exceeds remaining capacity [{1}].",
+    skimmerVirtualUsed: "Skimmer {0} was used as a virtual die with value [{1}].",
+    skimmerMin: "Skimmer value must be at least 1.",
+	boardSelectionCanceled: "Board selection was canceled.",
+	loadingError: "Error while loading the game.",
+	gameOver: "Game Over: {0}",
+	newRound: "Starting round {0}: Solving lock {1} on board {2}",
+	lockOpened: "Lock {0} remains open, points gained: {1}.",
+	lockClosed: "Lock {0} has been locked.",
+	invalidOption: "Invalid option.",
+	skimmerName: "Skimmer {0}",
+	skimmerMenu: "{0}\nEnter option number:\n1) Store dice values\n5) Create virtual die\n⚠️ This action cannot be undone ⚠️",
+	virtualDieInfo: "Skimmer {0} was used as a virtual die with value [{1}].\n💡 Select a board cell,\nyou can combine it with other dice.",
+	loadingHighScore: "Loading high score for board {0}: {1}",
+	savingHighScore: "Saving new high score for board {0}: {1}",
+	comparingScore: "Comparing current score {0} with high score {1} for board {2}",
+	lockStatus: "Lock {0} status determined: isOpen={1}",
+	updatingReroll: "Updating ReRoll buttons",
+	activeDice: "Active values for highlighting:",
+	noActiveDice: "No active dice, all highlights removed except locks.",
+	possibleValues: "Possible sums and differences:",
+	singleOdd: "Contains one odd value:",
+	singleEven: "Contains one even value:",
+	highlightedCell: "Highlighted cell: {0} with value {1}",
+	selectedDice: "Currently selected dice:",
+	markCellCalled: "--- markCell called ---",
+	selectedCell: "Selected cell row: {0}, column: {1}, value: {2}",
+	locksNotInitialized: "Error: locks are not initialized.",
+	boardIdUndefined: "boardId is undefined while loading score",
+	toastContainerMissing: "toast-container was not found"	
+  }
+};
+
+    let lang = localStorage.getItem('trezor_lang') || 'cs';
+
+    function toggleLanguage() {
+
+      // Uložení do localStorage
+      localStorage.setItem('trezor_lang', lang);
+
+
+      // Přepnutí jazyka
+      lang = lang === 'cs' ? 'en' : 'cs';
+
+       // přeložení final ratingu
+    if (lastFinalRating) {
+
+        document.getElementById('final-rating').innerHTML =
+            t(
+                'gameOver',
+                t(lastFinalRating)
+            );
+    }
+
+
+      // Změna vlaječky
+      const langBtn = document.getElementById('langToggle');
+      if (langBtn) {
+        langBtn.innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+      }
+
+      // Přepnutí textů nápovědy
+      const helpCs = document.getElementById('help-cs');
+      const helpEn = document.getElementById('help-en');
+
+      if (helpCs) {
+        helpCs.style.display = lang === 'cs' ? 'block' : 'none';
+      }
+
+      if (helpEn) {
+        helpEn.style.display = lang === 'en' ? 'block' : 'none';
+      }
+
+      // Statistiky
+      const statsTitle = document.getElementById('statsTitle');
+
+      if (statsTitle) {
+        statsTitle.innerText = i18n[lang].statsTitle;
+      }
+
+      // Překlad tlačítek hodů
+      document.querySelectorAll('.reroll-button').forEach((el, idx) => {
+        el.innerText = `${i18n[lang].rollBtn} ${idx + 1}`;
+      });
+    // Překlad skóre pomocí vaší funkce t()
+    if (typeof boardId !== 'undefined' && boardId !== null) {
+
+      const scoreEl = document.getElementById('score');
+      if (scoreEl) {
+        // Použijeme vaši funkci t() – předpokládám, že selectedOption je "kolo" a boardId je "číslo desky"
+        document.getElementById('score').innerText =  t('scoreText', selectedOption, boardId, score);
+      }
+
+      const highScoreEl = document.getElementById('high-score');
+      if (highScoreEl && typeof loadHighScore === 'function') {
+        const hScore = loadHighScore(boardId); // Zde načtete hodnotu do proměnné hScore
+        
+        // OPRAVA: Místo "highScore" použijte "hScore"
+        document.getElementById('high-score').innerText = t('highScoreText', selectedOption, boardId, Math.max(score, hScore));
+      }
+    }
+    }
+
+
+
+function t(key, ...args) {
+  let text = i18n[lang][key] || key;
+
+  args.forEach((arg, index) => {
+    text = text.replace(`{${index}}`, arg);
+  });
+
+  return text;
+}
+
+
+function showToast(message, type = 'info', duration = 3500) {
+
+    const container = document.getElementById('toast-container');
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast ${type}`;
+    toast.innerHTML = message;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+
+        toast.classList.remove('show');
+
+        setTimeout(() => {
+            toast.remove();
+        }, 250);
+
+    }, duration);
+}
+
+	document.addEventListener('DOMContentLoaded', () => {
+
+  const langBtn = document.getElementById('langToggle');
+
+  if (langBtn) {
+    langBtn.innerText = lang === 'cs' ? '🇨🇿' : '🇬🇧';
+  }
+
+  toggleLanguage();
+  
+});
+
+
+// === KONEC JAZYKOVÉ MUTACE ===
+
+
+// Spuštění první kola při načtení stránky
+document.addEventListener('DOMContentLoaded', () => {
+    initGame(); // TADY JE ZMĚNA: voláme startGame místo startRound
+});
 
 	// Funkce pro aktualizaci barev zámků po ukončení kola
 	function updateLockColors() {
 		for (const lock of locks) {
 		const lockElement = document.getElementById(`lock${lock.name}`);
 		if (lockElement) {
-		console.log(`Updating color for lock ${lock.name}: isDetermined=${lock.isDetermined}, isOpen=${lock.isOpen}`);
+		//console.log(`Updating color for lock ${lock.name}: isDetermined=${lock.isDetermined}, isOpen=${lock.isOpen}`);
       
     // Reset textového obsahu na původní písmeno
 		lockElement.textContent = lock.name;
@@ -455,20 +1038,72 @@ Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezále
 	let dice = [0, 0, 0, 0, 0]; // Hodnoty kostek
 	let selectedDice = []; // Uchování vybraných kostek
 	let virtualDice = null; // Uchování virtuální kostky ze skimmeru
-	let BoardId = null;
+	let boardId = null;
 	let currentRound = 1; // Aktuální kolo
 	let score = 0; // Body hráče
 	let skimmers = [0, 0, 0]; // Hodnoty pro skimmery
 	let unusedSkimmers = 0; // Pocet nepoužitých Skimmerů
 	let anySkimmerAsDie = false; // Přidání proměnné pro sledování stavu virtuální kostky
+    let lastFinalRating = '';
+    let gameOver = false;
 	const totalRounds = 12; // Počet kol
+	let customPromptCallback = null;
+
+function showCustomPrompt(title, text, callback) {
+
+    customPromptCallback = callback;
+
+    
+    document.getElementById('customPromptText').innerText = text;
+
+    const input = document.getElementById('customPromptInput');
+
+    input.value = '';
+
+    input.onkeydown = function(e) {
+
+        if (e.key === 'Enter') {
+
+            e.preventDefault();
+
+            confirmCustomPrompt();
+        }
+    };
+
+        document.getElementById('customPromptModal').style.display = 'block';
+
+        setTimeout(() => {
+            input.focus();
+        }, 100);
+    }
+
+function confirmCustomPrompt() {
+
+    const value =
+        document.getElementById('customPromptInput').value;
+
+    document.getElementById('customPromptModal').style.display = 'none';
+
+    if (customPromptCallback) {
+        customPromptCallback(value);
+        }
+    }
+
+    function closeCustomPrompt() {
+
+        document.getElementById('customPromptModal').style.display = 'none';
+    }
 
 
 
 	// Funkce pro výběr hrací desky 
 	function selectBoard() {
-		const option = prompt(`Hra Trezor - vyber desku:\n(zadej číslo 1 - 18)`);
-		if (option === "1" || option === "01") {
+	showCustomPrompt(
+    "TREZOR",
+    t('prompt'),
+    option => {
+
+        if (option === "1" || option === "01") {
 		boardLayout = boardLayoutA;
 		locks = locksA;  // Definice zamku pro desku A
 		boardId = 'A'; // Nastavíme boardId pro desku A
@@ -541,13 +1176,27 @@ Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezále
 		locks = locksR;  //Definice zamku pro desku R
 		boardId = 'R'; // Nastavíme boardId pro desku R
 		} else {
-		confirm("Neplatná volba. Zkuste to znovu.");
+		showToast(t('invalid'), 'error');
 		selectBoard(); // Opakování výběru
 		return ;
 		}
 		// Uložíme text vybrané desky do proměnné
 		selectedOption = option;
-		}
+		
+
+        createBoard();
+
+        document.querySelector('.controls').style.display = 'flex';
+        document.getElementById('gameContainer').style.display = 'grid';
+        document.getElementById('diceContainer').style.display = 'flex';
+        document.getElementById('rerolls').style.display = 'flex';
+        document.querySelector('.score-table').style.display = 'table';
+
+         startGame();
+    }
+);
+}
+	
 
 	// Vytvoření herní desky
 	function createBoard() {
@@ -585,21 +1234,30 @@ Na pole „<b>D</b>“ jsou třeba „<b>dvě</b>“ kostky, na hodnotě nezále
   
 	// Funkce pro zahájení hry
 	function startGame() {
-
+	
 		if (!locks) {
-		console.error("Chyba: locks nejsou inicializovány.");
-		return;
-		}
+        console.error("Chyba: locks nejsou inicializovány.");
+        return;
+    }
+
+    // Reset stavů zámků
+    locks.forEach(lock => {
+
+        lock.isOpen = false;
+        lock.isDetermined = false;
+
+    });
 		currentRound = 1;
 		score = 0;
 		rollDice();
 		startRound();
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('score').innerText =  t('scoreText', selectedOption, boardId, score);
+
  
 	// Ověřte, že boardId je nastavené před načítáním skóre
 		if (boardId) {
 		const highScore = loadHighScore(boardId);
-		document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${highScore}`;
+		document.getElementById('high-score').innerText =  t('highScoreText', selectedOption, boardId, Math.max(score, highScore));
 		} else {
 		console.error("boardId není definováno při načítání skóre");
 		}
@@ -986,6 +1644,9 @@ const locksR = [
 
 	// Uložení statistik do localStorage
 	function saveGameStats(stats) {
+        if (!boardId || boardId === 'null' || boardId === 'undefined') {
+            return;
+        }
 		localStorage.setItem('gameStats', JSON.stringify(stats));
 		}
 
@@ -1013,103 +1674,243 @@ const locksR = [
 
 	// Zajistíme, že getLowestScoreBoard používá loadHighScore:
 	function getLowestScoreBoard(stats) {
-		let lowestScore = Infinity;
-		let worstBoardId = '';
+    let lowestScore = Infinity;
+    let worstBoardIds = [];
 
-		Object.keys(stats.boards).forEach(boardId => {
-		const highScore = loadHighScore(boardId);
-		if (highScore < lowestScore) {
-		lowestScore = highScore;
-		worstBoardIds = [boardId];
-		} else if (highScore === lowestScore) {
-		worstBoardIds.push(boardId);
-		}
-		});
-		worstBoardIds.sort(); // Seřadíme desky abecedně
-		return { worstBoardIds, lowestScore };
-		}
+    Object.keys(stats.boards).forEach(boardId => {
+        const highScore = loadHighScore(boardId);
+
+        if (highScore < lowestScore) {
+            lowestScore = highScore;
+            worstBoardIds = [boardId];
+
+        } else if (highScore === lowestScore) {
+            worstBoardIds.push(boardId);
+        }
+    });
+
+    worstBoardIds.sort();
+
+    return {
+        worstBoardIds,
+        lowestScore
+    };
+}
 
 	//Zajistíme, že getHighestScoreBoard používá loadHighScore:
 	function getHighestScoreBoard(stats) {
-		let highestScore = -Infinity;
-		let bestBoardId = '';
+    let highestScore = -Infinity;
+    let bestBoardIds = [];
 
-		Object.keys(stats.boards).forEach(boardId => {
-		const highScore = loadHighScore(boardId);
-		if (highScore > highestScore) {
-		highestScore = highScore;
-		bestBoardIds = [boardId];
-		} else if (highScore === highestScore) {
-		bestBoardIds.push(boardId);
-		}
-		});
-		bestBoardIds.sort(); // Seřadíme desky abecedně
-		return { bestBoardIds, highestScore };
-		}
+    Object.keys(stats.boards).forEach(boardId => {
+        const highScore = loadHighScore(boardId);
+
+        if (highScore > highestScore) {
+            highestScore = highScore;
+            bestBoardIds = [boardId];
+
+        } else if (highScore === highestScore) {
+            bestBoardIds.push(boardId);
+        }
+    });
+
+    bestBoardIds.sort();
+
+    return {
+        bestBoardIds,
+        highestScore
+    };
+}
+
+
+    function resetAllStats() {
+         const isEn = lang === 'en';
+        // hlavní statistiky
+        localStorage.removeItem('gameStats');
+
+        // highscores jednotlivých desek
+        Object.keys(localStorage).forEach(key => {
+
+            if (key.startsWith('highScore_')) {
+                localStorage.removeItem(key);
+            }
+
+        });
+        showToast(isEn ? "Statistics deleted" : "Statistiky byly vymazány",'success');
+        console.log('Statistiky i highscores byly smazány.');
+        displayGameStatsInModal();
+    }
 
 	function displayGameStatsInModal() {
-		const stats = loadGameStats();
+    const stats = loadGameStats();
 
-		const totalStatsDiv = document.getElementById('totalStats');
-		totalStatsDiv.innerHTML = `<p><strong>Celkový počet her:</strong> ${stats.totalGames}</p>`;
-	
-	// Získání desky s nejvyšším skóre
-		const { bestBoardId, highestScore } = getHighestScoreBoard(stats);
-		totalStatsDiv.innerHTML += `<p><strong>Nejlepší deska:</strong> ${highestScore} (${bestBoardIds.join(', ')})</p>`;
-  
-	// Získání desky s nejnižším skóre
-		const { worstBoardId, lowestScore } = getLowestScoreBoard(stats);
-		totalStatsDiv.innerHTML += `<p><strong>Nejhorší deska:</strong> ${lowestScore} (${worstBoardIds.join(', ')})</p>`;
+    // Detekce jazyka
+    const langBtn = document.getElementById('langToggle');
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || 
+                 (langBtn && langBtn.innerText.includes('🇬🇧'));
 
-	// Dynamické zjištění nejčastěji hrané desky
-		let mostPlayedBoardId = '';
-		let mostPlayedGames = 0;
+    // Překlady
+    const t = {
+        title: isEn ? "Statistiky" : "Game Statistics" ,
+        total: isEn ? "Celkový počet her" : "Total games",
+        best: isEn ? "Nejlepší deska" : "Best board",
+        worst: isEn ? "Nejhorší deska" : "Worst board",
+        mostPlayed: isEn ? "Nejčastěji hraná deska" : "Most played",
+        tableTitle: isEn ? "Statistiky jednotlivých desek" : "Board Stats",
+        board: isEn ? "Deska" : "Board",
+        reset: isEn ? "Reset statistik" : "Reset Statistics",
+        resetButton: isEn ? "Statistics deleted" : "Statistiky byly vymazány"
+    };
 
-		Object.keys(stats.boards).forEach(boardId => {
-		const boardStats = stats.boards[boardId];
-		if (boardStats.gamesPlayed > mostPlayedGames) {
-		mostPlayedBoardId = boardId;
-		mostPlayedGames = boardStats.gamesPlayed;
-		}
-		});
+    // Vycentrování a nastavení hlavního nadpisu
+    const statsTitleEl = document.getElementById('statsTitle');
+    if (statsTitleEl) {
+        statsTitleEl.innerText = t.title;
+        statsTitleEl.style.textAlign = 'center';
+    }
 
-		totalStatsDiv.innerHTML += `<p><strong>Nejvíce hraná deska:</strong> ${mostPlayedGames} (${mostPlayedBoardId})</p>`;
+    const totalStatsDiv = document.getElementById('totalStats');
+    
+    // Získání dat pro celkové statistiky
+    const { bestBoardIds, highestScore } = getHighestScoreBoard(stats);
+    const { worstBoardIds, lowestScore } = getLowestScoreBoard(stats);
 
-		const boardStatsDiv = document.getElementById('boardStats');
-		boardStatsDiv.innerHTML = '<h3>Statistiky jednotlivých desek</h3>';
+    const bestScoreText =
+        highestScore === -Infinity
+            ? "-"
+            : `${highestScore} <small>(${bestBoardIds.join(', ')})</small>`;
 
-	// Získáme všechny desky, seřadíme je podle `boardId` abecedně
-		const sortedBoards = Object.keys(stats.boards).sort();
+    const worstScoreText =
+        lowestScore === Infinity
+            ? "-"
+            : `${lowestScore} <small>(${worstBoardIds.join(', ')})</small>`;
 
-		sortedBoards.forEach(boardId => {
-		const boardStats = stats.boards[boardId];
-		const highScore = loadHighScore(boardId); // Načtení nejvyššího skóre
-		const averageScore = (boardStats.totalScore / boardStats.gamesPlayed).toFixed(2);
+    let mostPlayedBoardId = '';
+    let mostPlayedGames = 0;
+    Object.keys(stats.boards).forEach(boardId => {
+        const boardStats = stats.boards[boardId];
+        if (boardStats.gamesPlayed > mostPlayedGames) {
+            mostPlayedBoardId = boardId;
+            mostPlayedGames = boardStats.gamesPlayed;
+        }
+    });
 
-		boardStatsDiv.innerHTML += `
-    <div>
-        <strong>Deska ${boardId}:</strong>
-		<ul>
-        <li>počet her: ${boardStats.gamesPlayed}</li>
-        <li>průměrné skóre: ${averageScore}</li>
-        <li>nejvyšší skóre: ${boardStats.highestScore}</li>
-		</ul>
-    </div>
-    </br>
-		`;
-	});
+    // 1. ČÁST: Celkové statistiky zabalené do tabulky
+    totalStatsDiv.innerHTML = `
+        <table class="stats-table">
+            <tbody>
+                <tr><td><strong>${t.total}:</strong></td><td>${stats.totalGames}</td></tr>
+                <tr><td><strong>${t.best}:</strong></td><td>${bestScoreText}</td></tr> 
+                <tr><td><strong>${t.worst}:</strong></td><td>${worstScoreText}</td></tr>
+                <tr>
+                    <td><strong>${t.mostPlayed}:</strong></td>
+                    <td>
+                        ${
+                            mostPlayedGames === 0
+                                ? "-"
+                                : `${mostPlayedGames} <small>(${mostPlayedBoardId})</small>`
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    `;
 
-		const modal = document.getElementById('statsModal');
-		modal.style.display = 'block';
-	}
+    const boardStatsDiv = document.getElementById('boardStats');
+    
+    // 2. ČÁST: Statistiky desek s piktogramy v záhlaví
+    // 🎲 = Deska, ∑ = Počet her (světlejší piktogram), 📊 = Průměr, 🏆 = Nejvyšší skóre
+    let tableHTML = `
+        <h3 style="text-align: center; margin-top: 25px; margin-bottom: 5px;">${t.tableTitle}</h3>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th title="${isEn ? 'Board' : 'Deska'}">🎲</th>
+                    <th title="${isEn ? 'Games played' : 'Počet her'}">∑</th>
+                    <th title="${isEn ? 'Average score' : 'Průměr'}">📊</th>
+                    <th title="${isEn ? 'High score' : 'Nejvyšší skóre'}">🏆</th>
+                </tr>
+
+            </thead>
+            <tbody>
+    `;
+
+    // Získáme desky a seřadíme je
+    const sortedBoards = Object.keys(stats.boards).sort((a, b) => {
+        return isNaN(a) || isNaN(b) ? a.localeCompare(b) : Number(a) - Number(b);
+    });
+
+    // Přidání dat do řádků tabulky s počítadlem (index)
+sortedBoards.forEach((boardId, index) => {
+
+    const boardStats = stats.boards[boardId];
+
+    const averageScore =
+        boardStats.gamesPlayed > 0
+            ? (boardStats.totalScore / boardStats.gamesPlayed).toFixed(2)
+            : "0.00";
+
+    const boardNumbers = {
+        A: 1,
+        B: 2,
+        C: 3,
+        D: 4,
+        E: 5,
+        F: 6,
+        G: 7,
+        H: 8,
+        I: 9,
+        J: 10,
+        K: 11,
+        L: 12,
+        M: 13,
+        N: 14,
+        O: 15,
+        P: 16,
+        Q: 17,
+        R: 18
+    };
+
+    tableHTML += `
+        <tr>
+            <td>
+                <strong>
+                    
+                    ${isEn ? 'Deska' : 'Board'} ${boardId}
+					#${boardNumbers[boardId]}
+                </strong>
+            </td>
+            <td>${boardStats.gamesPlayed}</td>
+            <td>${averageScore}</td>
+            <td>${boardStats.highestScore}</td>
+        </tr>
+    `;
+});
+
+    tableHTML += `
+            </tbody>
+        </table>
+        <div style="text-align:center;">
+            <button class="stats-reset-btn"
+                    onclick="resetAllStats()">
+                ${t.reset}
+            </button>
+        </div>
+    `;
+
+    boardStatsDiv.innerHTML = tableHTML;
+
+    // Zobrazení okna
+    const modal = document.getElementById('statsModal');
+    modal.style.display = 'block';
+}
 
 
-	// Zavření modal okna
-	function closeStatsModal() {
-		const modal = document.getElementById('statsModal');
-		modal.style.display = 'none';
-		}
 
+function closeStatsModal() {
+    const modal = document.getElementById('statsModal');
+    modal.style.display = 'none';
+}
 
 	function loadHighScore(boardId) {
 		const savedScore = localStorage.getItem(`highScore_${boardId}`);
@@ -1138,7 +1939,7 @@ const locksR = [
 		setTimeout(() => {
 		diceElements[index].innerText = value;
 		diceElements[index].classList.remove('rolling', 'clicked', 'used');
-		}, 300); // Čas pro animaci
+		}, 500); // Čas pro animaci
 		});
 		selectedDice = [];
 		}
@@ -1191,57 +1992,83 @@ const locksR = [
 		}
 
 
-	function getRating(score) {
+
+
+function getRating(score) {
 		if (score < 10) {
-		return "Jdeš do vězení";
+		return 'finalRating';
 		} else if (score <= 12) {
-		return "Lapka&nbsp;&nbsp;&#11088;";
+		return 'finalRating2';
 		} else if (score <= 15) {
-		return "Kapsář&nbsp;&nbsp;&#11088;&#11088;";
+		return 'finalRating3';
 		} else if (score <= 18) {
-		return "Zloděj&nbsp;&nbsp;&#11088;&#11088;&#11088;";
+		return 'finalRating4';
 		} else if (score <= 21) {
-		return "Bankovní lupič&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;";
+		return 'finalRating5';
 		} else {
-		return "Arsène Lupin&nbsp;&nbsp;&#11088;&#11088;&#11088;&#11088;&#11088;";
+		return 'finalRating6';
 		}
 		}
 
 
 	// Funkce pro výpočet závěrečného skóre včetně nepoužitých skimmerů
-	function calculateFinalScore() {
-		let unusedSkimmers = 0;
-	
-		document.querySelectorAll('.skimmer').forEach((skimmer) => {
-		if (!skimmer.classList.contains('disabled')) {
-		unusedSkimmers++;
-		}
-		});
+function calculateFinalScore() {
 
-	// Přičtení bodů za nepoužité skimmery
-		score += unusedSkimmers;
+    let unusedSkimmers = 0;
 
-		confirm(`Konečné skóre: ${score} (zahrnuje počet bodů za nepoužité Šperháky: ${unusedSkimmers})`);
-	// Výpočet hodnocení na základě skóre
-		const rating = getRating(score);
-		document.getElementById('final-rating').innerHTML = `Konec hry: ${rating}`;	
-	// Aktualizace barev zámků
-        updateLockColors();
+    document.querySelectorAll('.skimmer').forEach((skimmer) => {
 
+        if (!skimmer.classList.contains('disabled')) {
+            unusedSkimmers++;
+        }
+    });
 
-	// Načtěte nejvyšší skóre pro aktuální desku
-		const highScore = loadHighScore(boardId);
-		console.log(`Porovnání aktuálního skóre ${score} s nejvyšším skóre ${highScore} pro desku ${boardId}`);
+    // Přičtení bodů za nepoužité skimmery
+    score += unusedSkimmers;
 
-		if (score > highScore) {
-		saveHighScore(score, boardId);
-		confirm(`Gratulujeme! Dosáhli jste nového vysokého skóre: ${score}`);
-		}
+    showToast(
+        t('finalScore', score, unusedSkimmers)
+    );
 
-	// Aktualizace zobrazení skóre na obrazovce
- 
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
-		document.getElementById('high-score').innerText = `#${selectedOption} Deska ${boardId} - nejvyšší skóre: ${Math.max(score, highScore)}`;
+    // Výpočet hodnocení
+    const ratingKey = getRating(score);
+
+    // uložení pro přepínání jazyků
+    lastFinalRating = ratingKey;
+
+    // zobrazení textu
+    document.getElementById('final-rating').innerHTML =
+        t(
+            'gameOver',
+            t(ratingKey)
+        );
+
+    // Aktualizace barev zámků
+    updateLockColors();
+
+    // Načtení high score
+    const highScore = Number(loadHighScore(boardId)) || 0;
+
+    if (score > highScore) {
+
+        saveHighScore(score, boardId);
+
+        showToast(
+            t('newHighScore', score, boardId)
+        );
+    }
+
+    // Aktualizace textů pod deskou
+    document.getElementById('score').innerText =
+        t('scoreText', selectedOption, boardId, score);
+
+    document.getElementById('high-score').innerText =
+        t(
+            'highScoreText',
+            selectedOption,
+            boardId,
+            loadHighScore(boardId)
+        );
 
 	// Aktualizace statistik
 		updateGameStats(boardId, score);
@@ -1249,6 +2076,11 @@ const locksR = [
 
 	// Funkce pro manuální ukončení kola, pokud nelze použít všechny kostky
 	function manualEndRound() {
+          const currentLock = locks[currentRound - 1];
+
+         if (gameOver || currentRound > totalRounds) {
+            return;
+        }
 		const lock = locks[currentRound - 1];
 
 	// Zkontrolujeme, zda jsou všechny relevantní buňky pro tento zámek vyplněny
@@ -1277,7 +2109,8 @@ const locksR = [
   
 
 	// Aktualizujeme skóre na obrazovce
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('score').innerText = t('scoreText', selectedOption, boardId, score);
+		
 
 	// Posun na další kolo
 		currentRound++;
@@ -1286,7 +2119,7 @@ const locksR = [
 		startRound();     // Připraví hrací desku na nové kolo
 		} else {
 		calculateFinalScore();
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('score').innerText = t('scoreText', selectedOption, boardId, score);
 		updateGameStats(boardId, score);
 	//confirm("Hra skončila!");
    
@@ -1325,13 +2158,13 @@ const locksR = [
 		currentRound++;
   
 		if (currentRound <= locks.length) {
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('score').innerText = t('scoreText', selectedOption, boardId, score);
 		rollDice();
 		startRound();
    
 		} else {   
 		calculateFinalScore();
-		document.getElementById('score').innerText = `#${selectedOption} Deska ${boardId} - počet bodů: ${score}`;
+		document.getElementById('score').innerText = t('scoreText', selectedOption, boardId, score);
 		updateGameStats(boardId, score);
     //confirm("Hra skončila!");
 		}
@@ -1369,7 +2202,7 @@ const locksR = [
 
 		highlightPossibleCells();
 		} else {
-		confirm("Vyberte alespoň jednu kostku pro opakovaný hod.");
+		showToast(t('selectDieReroll'));
 		}
 	}
 
@@ -1399,25 +2232,33 @@ const locksR = [
 
 	// Zobrazi nabidku při kliknutí na Skimmer (uložení hodnoty do Skimmeru nebo použití Skimmeru jako virtuální kostky)
 	function showSkimmerOptions(index) {
-		const skimmerName = `Šperhák ${index + 1}`;
-		const option = prompt(`${skimmerName}\nZadej číslo volby:\n1) Uložit hodnotu kostek \n5) Vytvořit virtuální kostku\n⚠️ Tato akce je nevratná ⚠️`);
+		const skimmerName = t('skimmerName', index + 1);
+		//const option = prompt(t('skimmerMenu', skimmerName));
+		showCustomPrompt(
+    "TREZOR",
+    t('skimmerMenu', skimmerName),
+    option => {	
+		
 		if (option === "1") {
 		addDiceToSkimmer(index);
 		} else if (option === "5") {
 		useSkimmerAsDie(index);
 		} else {
-		confirm ("Neplatná volba. Zkuste to znovu.");
+		showToast(t('invalid'), 'error');
 		}
 	}
+	)
+}
+
 
 	// Přidání vybraných kostek do skimmeru
 	function addDiceToSkimmer(index) {
 		if (document.querySelectorAll('.skimmer')[index].classList.contains('disabled')) {
-		confirm ("Tento Šperhák již nelze použít.");
+		showToast(t('invalid'), 'error');
 		return;
 		}  
 		if (anySkimmerAsDie) {
-		confirm("Jeden ze Šperháků je již použit jako virtuální kostka. Nelze přidávat hodnoty do ostatních Šperháků.");
+		showToast(t('skimmerVirtualExists'));
 		return;
 		}
 		if (selectedDice.length > 0) {
@@ -1427,7 +2268,7 @@ const locksR = [
 
     // Kontrola, zda vybrané kostky nepřesahují zbývající kapacitu skimmeru
 		if (diceSum > remainingCapacity) {
-		confirm (`Nelze přidat: hodnota kostek [${diceSum}] překračuje zbývající kapacitu [${remainingCapacity}] šperháku. Max hodnota je 20.`);
+		showToast(t('skimmerTooHigh'));
 		} else {
     // Přidání kostek do skimmeru a aktualizace UI
 		skimmers[index] += diceSum;
@@ -1445,7 +2286,7 @@ const locksR = [
 		checkAllDiceUsed();
 		}
 		} else {
-		confirm ("Vyberte alespoň jednu kostku pro přesun do Šperháku.");
+		showToast(t('skimmerNeedDice'));
 		}
 	}
 
@@ -1456,11 +2297,11 @@ const locksR = [
 		document.querySelectorAll('.skimmer')[index].classList.add('clicked');
 		document.querySelectorAll('.skimmer')[index].onclick = null; // Zamezení opětovnému použití skimmeru
 		anySkimmerAsDie = true; // Nastavení stavu, že je jeden ze Skimmerů použit jako kostka
-		confirm (`Šperhák ${index + 1} byl použit jako virtuální kostka s hodnotou [${skimmers[index]}].\n💡 Vyber pole na hrací desce,\nmůžeš kombinovat s jinými kostkami.`);
+		showToast(t('virtualDieInfo', index + 1, skimmers[index]));
 		updateReRollButtons();
 		highlightPossibleCells(); // Aktualizace zvýraznění po použití skimmeru
 		} else {
-		confirm ("Hodnota Šperháku musí být minimálně 1.");
+		showToast(t('skimmerMin'));
 		}
 	}
 
@@ -1476,6 +2317,9 @@ const locksR = [
 	// funkce pro zvýraznění kombinací hodnot aktivních kostek (včetně virtuálních) na hrací desce
 	function highlightPossibleCells() {
 		const currentLock = locks[currentRound - 1]; // Získání aktuálního zámku
+         if (gameOver || currentRound > totalRounds) {
+            return;
+        }
 		const lockCoordinates = new Set(
 		currentLock.coordinates.map(({ row, col }) => `cell-${row}-${col}`)
 		);
@@ -1558,7 +2402,7 @@ const locksR = [
 	}
 
 
-
+	
 	// Přepnutí stavu kostky (označení/odznačení) a přidání/odebrání její hodnoty do/z vybraných kostek
 	function toggleDie(index) {
 		const die = document.querySelectorAll('.die')[index];
@@ -1580,6 +2424,10 @@ const locksR = [
 
 	// Funkce pro označení políčka na desce podle pravidel pro 'L', 'S' a 'D'
 	function markCell(row, col, cellValue) {
+        if (currentRound > totalRounds) {
+        return;
+    }
+
 		const cell = document.getElementById(`cell-${row}-${col}`);
 		console.log(`--- markCell called ---`);
 		console.log(`Vybrané políčko řádek: ${row}, sloupec: ${col}, hodnota: ${cellValue}`);
@@ -1589,12 +2437,7 @@ const locksR = [
 		const isSingleEven = selectedDice.length === 1 && selectedDice[0] % 2 === 0;
 		const isDoubleSame = selectedDice.length === 2 && selectedDice[0] === selectedDice[1];
   	
-	
 
-	// Funkce pro generování všech možných součtů a rozdílů z vybraných kostek
-	function generatePossibleSumsAndDiffs(diceArray) {
-		const results = new Set();
-    
     // Rekurzivní funkce pro generování všech kombinací sčítání a odečítání
     function calculateCombinations(dice, currentSum, currentDiff) {
 		if (dice.length === 0) {
@@ -1613,7 +2456,7 @@ const locksR = [
         // Představuje možnost odečíst aktuální kostku
         calculateCombinations(remainingDice, currentSum - dice[i], currentDiff - dice[i]);
 		}
-	}
+	
 
     // Začneme rekurzivní výpočty pro všechny kostky
 		calculateCombinations(diceArray, 0, 0);
@@ -1655,19 +2498,393 @@ const locksR = [
 		updateReRollButtons();
 		resetSkimmerState();
 		} else {
-		confirm ("Hodnota kostek neodpovídá požadavkům na toto pole.");
+		showToast(t('invalidCell'));
 		}
 	}
+
+
+
+
+
+// =====================================================
+// ULOŽENÍ HRY
+// =====================================================
+function saveGame() {
+
+    console.log('--- UKLÁDÁNÍ HRY ---');
+
+    const gameState = {
+
+        // základ hry
+        selectedOption,
+        boardId,
+        currentRound,
+        score,
+
+        // kostky
+        dice: [...dice],
+        selectedDice: [...selectedDice],
+        virtualDice,
+        anySkimmerAsDie,
+
+        // šperháky
+        skimmers: [...skimmers],
+
+        // stav políček desky
+        cells: Array.from(document.querySelectorAll('.cell')).map(cell => ({
+            id: cell.id,
+            text: cell.innerText,
+            classes: [...cell.classList]
+        })),
+
+        // stav kostek DOM
+        diceDOM: Array.from(document.querySelectorAll('.die')).map((die, index) => ({
+            index,
+            text: die.innerText,
+            classes: [...die.classList]
+        })),
+
+        // stav šperháků DOM
+        skimmerDOM: Array.from(document.querySelectorAll('.skimmer')).map((skimmer, index) => ({
+            index,
+            html: skimmer.innerHTML,
+            classes: [...skimmer.classList]
+        })),
+
+        // reroll tlačítka
+        rerolls: Array.from(document.querySelectorAll('.reroll-button')).map(btn => ({
+            id: btn.id,
+            disabled: btn.classList.contains('disabled'),
+            used: btn.classList.contains('used')
+        })),
+
+        // zámky
+        locksState: locks.map(lock => ({
+            name: lock.name,
+            isOpen: lock.isOpen,
+            isDetermined: lock.isDetermined
+        }))
+    };
+
+    localStorage.setItem(
+        'trezor_saved_game',
+        JSON.stringify(gameState)
+    );
+
+    console.log(gameState);
+
+    showToast(t('gameSaved'), 'success');
+}
+
+function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
+// =====================================================
+// NAČTENÍ HRY
+// =====================================================
+function loadGame() {
+
+    console.log('--- NAČÍTÁNÍ HRY ---');
+
+    const savedData = localStorage.getItem('trezor_saved_game');
+
+    if (!savedData) {
+        showToast(t('noSavedGame'), 'error');
+        return;
+    }
+
+    const gameState = JSON.parse(savedData);
+
+
+    // =====================================================
+    // OBNOVENÍ DESKY
+    // =====================================================
+
+    selectedOption = gameState.selectedOption;
+
+    // znovu nastaví boardLayout + locks + boardId
+    const option = String(selectedOption).padStart(2, '0');
+
+    if (option === '01') {
+        boardLayout = boardLayoutA;
+        locks = deepClone(locksA);
+        boardId = 'A';
+    }
+    else if (option === '02') {
+        boardLayout = boardLayoutB;
+        locks = deepClone(locksB);
+        boardId = 'B';
+    }
+    else if (option === '03') {
+        boardLayout = boardLayoutC;
+        locks = deepClone(locksB);
+        boardId = 'C';
+    }
+    else if (option === '04') {
+        boardLayout = boardLayoutD;
+        locks = deepClone(locksB);
+        boardId = 'D';
+    }
+    else if (option === '05') {
+        boardLayout = boardLayoutE;
+        locks = deepClone(locksB);
+        boardId = 'E';
+    }
+    else if (option === '06') {
+        boardLayout = boardLayoutF;
+        locks = deepClone(locksF);
+        boardId = 'F';
+    }
+    else if (option === '07') {
+        boardLayout = boardLayoutG;
+        locks = deepClone(locksG);
+        boardId = 'G';
+    }
+    else if (option === '08') {
+        boardLayout = boardLayoutH;
+        locks = deepClone(locksG);
+        boardId = 'H';
+    }
+    else if (option === '09') {
+        boardLayout = boardLayoutI;
+        locks = deepClone(locksI);
+        boardId = 'I';
+    }
+    else if (option === '10') {
+        boardLayout = boardLayoutJ;
+        locks = deepClone(locksG);
+        boardId = 'J';
+    }
+    else if (option === '11') {
+        boardLayout = boardLayoutK;
+        locks = deepClone(locksG);
+        boardId = 'K';
+    }
+    else if (option === '12') {
+        boardLayout = boardLayoutL;
+        locks = deepClone(locksG);
+        boardId = 'L';
+    }
+    else if (option === '13') {
+        boardLayout = boardLayoutM;
+        locks = deepClone(locksB);
+        boardId = 'M';
+    }
+    else if (option === '14') {
+        boardLayout = boardLayoutN;
+        locks = deepClone(locksB);
+        boardId = 'N';
+    }
+    else if (option === '15') {
+        boardLayout = boardLayoutO;
+        locks = deepClone(locksO);
+        boardId = 'O';
+    }
+    else if (option === '16') {
+        boardLayout = boardLayoutP;
+        locks = deepClone(locksP);
+        boardId = 'P';
+    }
+    else if (option === '17') {
+        boardLayout = boardLayoutQ;
+        locks = deepClone(locksQ);
+        boardId = 'Q';
+    }
+    else if (option === '18') {
+        boardLayout = boardLayoutR;
+        locks = deepClone(locksR);
+        boardId = 'R';
+    }
+
+
+    // =====================================================
+    // VYTVOŘENÍ DESKY
+    // =====================================================
+
+    createBoard();
+
+
+    // =====================================================
+    // OBNOVENÍ PROMĚNNÝCH
+    // =====================================================
+
+    currentRound = gameState.currentRound;
+    score = gameState.score;
+
+    dice = [...gameState.dice];
+    selectedDice = [...gameState.selectedDice];
+
+    virtualDice = gameState.virtualDice;
+    anySkimmerAsDie = gameState.anySkimmerAsDie;
+
+    skimmers = [...gameState.skimmers];
+
+
+    // =====================================================
+    // OBNOVENÍ ZÁMKŮ
+    // =====================================================
+
+    gameState.locksState.forEach(savedLock => {
+
+        const lock = locks.find(l => l.name === savedLock.name);
+
+        if (lock) {
+            lock.isOpen = savedLock.isOpen;
+            lock.isDetermined = savedLock.isDetermined;
+        }
+    });
+
+
+    // =====================================================
+    // OBNOVENÍ POLÍČEK
+    // =====================================================
+
+    gameState.cells.forEach(savedCell => {
+
+        const cell = document.getElementById(savedCell.id);
+
+        if (!cell) return;
+
+        cell.innerText = savedCell.text;
+
+        cell.className = '';
+
+        savedCell.classes.forEach(cls => {
+            cell.classList.add(cls);
+        });
+    });
+
+
+    // =====================================================
+    // OBNOVENÍ KOSTEK
+    // =====================================================
+
+    gameState.diceDOM.forEach(savedDie => {
+
+        const die = document.querySelectorAll('.die')[savedDie.index];
+
+        if (!die) return;
+
+        die.innerText = savedDie.text;
+
+        die.className = 'die';
+
+        savedDie.classes.forEach(cls => {
+            die.classList.add(cls);
+        });
+    });
+
+
+    // =====================================================
+    // OBNOVENÍ ŠPERHÁKŮ
+    // =====================================================
+
+    gameState.skimmerDOM.forEach(savedSkimmer => {
+
+        const skimmer = document.querySelectorAll('.skimmer')[savedSkimmer.index];
+
+        if (!skimmer) return;
+
+        skimmer.innerHTML = savedSkimmer.html;
+
+        skimmer.className = 'skimmer';
+
+        savedSkimmer.classes.forEach(cls => {
+            skimmer.classList.add(cls);
+        });
+
+        skimmer.onclick = () => {
+            showSkimmerOptions(savedSkimmer.index);
+        };
+    });
+
+
+    // =====================================================
+    // OBNOVENÍ REROLLŮ
+    // =====================================================
+
+    gameState.rerolls.forEach(savedBtn => {
+
+        const btn = document.getElementById(savedBtn.id);
+
+        if (!btn) return;
+
+        btn.classList.remove('disabled', 'used');
+
+        if (savedBtn.disabled) {
+            btn.classList.add('disabled');
+        }
+
+        if (savedBtn.used) {
+            btn.classList.add('used');
+        }
+    });
+
+
+    // =====================================================
+    // OBNOVENÍ SCORE
+    // =====================================================
+
+    document.getElementById('score').innerText =
+        t('scoreText', selectedOption, boardId, score);
+
+
+    const highScore = loadHighScore(boardId);
+
+    document.getElementById('high-score').innerText =
+        t('highScoreText', selectedOption, boardId, highScore);
+
+
+    // =====================================================
+    // OBNOVENÍ ZVONEČKU + BAREV ZÁMKŮ
+    // =====================================================
+
+    updateLockColors();
+
+
+    // =====================================================
+    // OBNOVENÍ NÁPOVĚDY ZELENÝCH POLÍ
+    // =====================================================
+
+    highlightPossibleCells();
+
+
+    // =====================================================
+    // OBNOVENÍ REROLLŮ
+    // =====================================================
+
+    updateReRollButtons();
+
+
+    console.log(gameState);
+
+    showToast(t('gameLoaded'), 'success');
+}
+
+
+function updateScoreTexts() {
+
+    document.getElementById('score').innerText =
+        t('scoreText', selectedOption, boardId, score);
+
+    const highScore = loadHighScore(boardId);
+
+    document.getElementById('high-score').innerText =
+        t('highScoreText', selectedOption, boardId, highScore);
+}
+
 
 	// Inicializace hry
 	function initGame() {
 		selectBoard(); // umožní výběr desky
-		createBoard(); // vytvoří vybranou desku
-		startGame();   // zahájí hru s vybranou deskou
+		//createBoard(); // vytvoří vybranou desku
+		//startGame();   // zahájí hru s vybranou deskou
 		}
 
-	initGame();
+	//initGame();
 
 </script>
+
 </body>
 </html>
