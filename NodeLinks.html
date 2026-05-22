@@ -16,7 +16,7 @@
     --c3: #FFE119;
     --c4: #4363D8;
     --c5: #F032E6;
-    --c6: #42D4F4;
+    --c6: #F58231;
 }
 
 html, body {
@@ -29,6 +29,14 @@ html, body {
     touch-action: none;
 }
 
+.toolbar-wrapper {
+    position: relative;
+    width: 100%;
+    z-index: 10;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 .toolbar {
     display: flex;
     justify-content: flex-start;
@@ -37,9 +45,6 @@ html, body {
     overflow-x: auto;
     gap: 15px;
     padding: 8px 10px;
-    background: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    z-index: 10;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -49,6 +54,52 @@ html, body {
 .toolbar::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 4px;
+}
+
+/* Oboustranná nápověda scrollování */
+.scroll-hint {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 20;
+}
+.scroll-hint.left {
+    left: 0;
+    background: linear-gradient(to left, rgba(255,255,255,0), rgba(255,255,255,1) 60%);
+    justify-content: flex-start;
+    padding-left: 10px;
+}
+.scroll-hint.right {
+    right: 0;
+    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1) 60%);
+    justify-content: flex-end;
+    padding-right: 10px;
+}
+.scroll-hint.visible {
+    opacity: 1;
+}
+.scroll-hint.left .arrow {
+    animation: swipeAnimLeft 1.2s infinite ease-in-out;
+}
+.scroll-hint.right .arrow {
+    animation: swipeAnimRight 1.2s infinite ease-in-out;
+}
+
+@keyframes swipeAnimRight {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+}
+@keyframes swipeAnimLeft {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-4px); }
 }
 
 .btn-group {
@@ -79,7 +130,8 @@ button.action-btn.active-toggle {
 
 .die-wrapper {
     display: flex; flex-direction: column;
-    align-items: center; gap: 2px; flex-shrink: 0;
+    align-items: center; justify-content: center;
+    flex-shrink: 0; height: 40px;
 }
 
 .die {
@@ -88,8 +140,8 @@ button.action-btn.active-toggle {
     background: #444; color: white;
     font-size: 18px; font-weight: bold;
     display: flex; align-items: center; justify-content: center;
-    user-select: none;
-    transition: all 0.3s;
+    user-select: none; cursor: pointer;
+    transition: all 0.2s;
 }
 
 #colorDie {
@@ -100,26 +152,12 @@ button.action-btn.active-toggle {
     color: white; gap: 4px;
 }
 
-.mod-btn {
-    width: 32px; height: 16px;
-    font-size: 11px; border-radius: 4px;
-    border: 1px solid #ccc; cursor: pointer; padding: 0;
-}
-
-.mod-btn:disabled {
-    opacity: 0.3; cursor: not-allowed;
-}
-
 .disabled-dice .die {
     background: #2b2b2b !important;
     border-color: #555 !important;
-    opacity: 0.6;
+    opacity: 0.6; cursor: not-allowed;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.5) !important;
     text-shadow: none !important;
-}
-.disabled-dice .mod-btn {
-    opacity: 0.2;
-    pointer-events: none;
 }
 
 .status-bar {
@@ -192,7 +230,6 @@ canvas {
     align-items: center; justify-content: center;
 }
 
-/* Nápověda modal */
 .modal-content {
     background: white; padding: 20px;
     width: 90%; max-width: 600px; max-height: 80vh;
@@ -201,7 +238,6 @@ canvas {
     font-size: 14px; line-height: 1.5; color: #333;
 }
 
-/* Sjednocený styl Confirm modalu s Toast hláškami */
 #confirmModal .modal-content {
     background: rgba(0, 0, 0, 0.85);
     color: white;
@@ -225,53 +261,58 @@ canvas {
 .confirm-btns button.yes { background: #2ecc71; color: white; }
 .confirm-btns button.no { background: #e74c3c; color: white; }
 
-/* Toast Notifications */
 #toastContainer {
-    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none;
+    position: fixed; top: 75px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 10px; z-index: 1000; pointer-events: none;
+    width: max-content;
+    max-width: 90vw;
 }
 
 .toast {
-    background: rgba(0, 0, 0, 0.85); color: white;
-    padding: 10px 20px; border-radius: 8px; font-size: 14px;
-    animation: toastIn 0.3s, toastOut 0.3s 2.7s forwards;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); text-align: center;
+    background: rgba(0, 0, 0, 0.95); color: #fff;
+    padding: 14px 24px; border-radius: 8px; 
+    font-size: 16px; font-weight: bold;
+    animation: toastIn 0.3s, toastOut 0.4s 3s forwards;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4); text-align: center;
+    border: 1px solid rgba(255,255,255,0.25);
+    letter-spacing: 0.5px;
+    word-wrap: break-word;
 }
 
-@keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 </style>
 </head>
 
 <body>
 
-<div class="toolbar">
-    <div class="btn-group">
-        <button id="rollBtn" class="action-btn">🎲</button>
-        <div class="die-wrapper" id="colorDieWrapper">
-            <button class="mod-btn" onclick="applyToken('color',1)">▲</button>
-            <div id="colorDie" class="die">?</div>
-            <button class="mod-btn" onclick="applyToken('color',-1)">▼</button>
-        </div>
-        <div class="die-wrapper" id="dirDieWrapper">
-            <button class="mod-btn" onclick="applyToken('dir',1)">▲</button>
-            <div id="dirDie" class="die dir">
-                <span id="dirNum">?</span>
-                <span id="dirArr"></span>
+<div class="toolbar-wrapper">
+    <div id="scrollHintLeft" class="scroll-hint left"><span class="arrow">❮</span></div>
+    <div class="toolbar" id="toolbar">
+        <div class="btn-group">
+            <button id="rollBtn" class="action-btn">🎲</button>
+            <div class="die-wrapper" id="colorDieWrapper">
+                <div id="colorDie" class="die">?</div>
             </div>
-            <button class="mod-btn" onclick="applyToken('dir',-1)">▼</button>
+            <div class="die-wrapper" id="dirDieWrapper">
+                <div id="dirDie" class="die dir">
+                    <span id="dirNum">?</span>
+                    <span id="dirArr"></span>
+                </div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <div id="tokenDisplay">🪙 <span id="tokenCount">0</span></div>
+            <button id="undoBtn" class="action-btn">↩️</button>
+            <button id="hintBtn" class="action-btn">💡</button>
+            <button id="newBtn" class="action-btn">🔄</button>
+            <button id="langBtn" class="action-btn">🇬🇧</button>
+            <button id="helpBtn" class="action-btn">📖</button>
+            <button id="saveBtn" class="action-btn">💾</button>
+            <button id="loadBtn" class="action-btn">📂</button>
         </div>
     </div>
-    <div class="btn-group">
-        <div id="tokenDisplay">🪙 <span id="tokenCount">0</span></div>
-        <button id="undoBtn" class="action-btn">↩️</button>
-        <button id="hintBtn" class="action-btn">💡</button>
-        <button id="newBtn" class="action-btn">🔄</button>
-        <button id="langBtn" class="action-btn">🇬🇧</button>
-        <button id="helpBtn" class="action-btn">📖</button>
-        <button id="saveBtn" class="action-btn">💾</button>
-        <button id="loadBtn" class="action-btn">📂</button>
-    </div>
+    <div id="scrollHintRight" class="scroll-hint right"><span class="arrow">❯</span></div>
 </div>
 
 <div class="status-bar">
@@ -311,8 +352,9 @@ canvas {
 <script>
 // --- JAZYK A TEXTY ---
 let isCzech = true;
-let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
 let showHint = false;
+
+const colorCircles = ['', '🔴', '🟢', '🟡', '🔵', '🟣', '🟠'];
 
 const uiTexts = {
     cs: {
@@ -330,14 +372,14 @@ const uiTexts = {
 };
 
 const confirmTexts = {
-    cs: { yes: "Ano", no: "Ne", newGame: "Opravdu chcete začít novou hru?", forfeit: "Máte platný tah!\nOpravdu chcete tah vzdát a zapsat chybu?" },
-    en: { yes: "Yes", no: "No", newGame: "Do you really want to start a new game?", forfeit: "Valid move exists!\nReally forfeit and log mistake?" }
+    cs: { yes: "Ano", no: "Ne", newGame: "Opravdu chcete začít novou hru?", forfeit: "Máte platný tah, nebo můžete hod upravit!\nOpravdu chcete tah vzdát a zapsat chybu?" },
+    en: { yes: "Yes", no: "No", newGame: "Do you really want to start a new game?", forfeit: "You can move or modify roll!\nReally forfeit and log mistake?" }
 };
 
 const texts = {
     cs: {
         langFlag: "🇬🇧", statusRoll: "Hoďte kostkami (🎲).", statusSelect: "Vyberte výchozí bod na mapě.",
-        statusDouble: "Dvojitý hod! Klikáním na kostku (nebo šipkami) změňte její hodnotu.",
+        statusDouble: "Dvojitý hod! Klikáním na kostku změňte její hodnotu.",
         statusDeadTurnAuto: "Nemožný tah - hoď znovu kostkami.",
         statusDeadTurn: "Nemožný tah - hoď znovu kostkami.",
         statusDeadTurnBtn: "Nemožný tah! Klikněte na 🎲 pro zapsání chyby a další hod.",
@@ -350,10 +392,10 @@ const texts = {
                 <li>Uzel může mít max 6 spojnic, a <strong>nesmí mít více než 1 od stejné barvy</strong>.</li>
                 <li>Všechny čáry musí tvořit jedinou souvislou síť. <strong>Nová čára musí navazovat</strong>.</li>
                 <li><strong>Tah:</strong> Barevná kostka = barva, bílá kostka = směr. Stačí kliknout na výchozí bod a čára se narýsuje automaticky.</li>
-                <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete šipkami libovolně změnit hodnotu jedné kostky, druhé zůstane původní hodnota.</li>
-                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton. Ten slouží k úpravě hodu (+1/-1).</li>
+                <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete klikáním libovolně změnit hodnotu jedné kostky, druhé zůstane původní hodnota.</li>
+                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton. Ten slouží k úpravě hodu rotací klikáním (+1 nebo -1).</li>
                 <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Platí vždy poslední volba (kliknutí).</li>
-                <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás vyzve k záchraně tahu (pokud žeton máte). Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
+                <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás nechá tah zachránit úpravou kostek. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
             </ul>
             <h3>Bodování</h3>
             <ul>
@@ -363,6 +405,11 @@ const texts = {
                 <li><strong>4 vazby:</strong> 3x velikost skupiny</li>
                 <li><strong>5 vazeb:</strong> 5x velikost skupiny</li>
                 <li><strong>6 vazeb:</strong> 10x velikost skupiny</li>
+            </ul>
+            <h3>Chybové kruhy</h3>
+            <ul>
+                <li>Na okraji mapy je 6 prázdných kruhů, které slouží jako ukazatel zbývajících pokusů.</li>
+                <li>Při každém <strong>Nemožném tahu</strong> se jeden z nich vybarví příslušnou barvou (🔴🟢🟡🔵🟣🟠). Jakmile se vybarví všech 6, hra definitivně končí.</li>
             </ul>
             <h3>Hodnocení (Tiers)</h3>
             <ul>
@@ -389,21 +436,21 @@ const texts = {
     },
     en: {
         langFlag: "🇨🇿", statusRoll: "Roll the dice (🎲).", statusSelect: "Select starting node on the board.",
-        statusDouble: "Doubles! Click arrows or die to change value.",
+        statusDouble: "Doubles! Click die to change value.",
         statusDeadTurnAuto: "Dead turn - roll again.",
         statusDeadTurn: "Dead turn - roll again.",
         statusDeadTurnBtn: "Dead turn! Click 🎲 to log mistake and roll again.",
         statusOver: "Game Over!",
         helpHtml: `
             <h2 style="margin-top:0;">Node Links</h2>
-            <p><em>An abstract solitaire "roll-and-draw" game about making a colorful network.<br><strong>By Stuart Jantzen © 2026</strong></em></p>
+            <p><em>An abstract solitaire "roll-and-draw" game about making a colorful network.<br>Author: <strong>Stuart Jantzen © 2026</strong></em></p>
             <p><strong>Objective:</strong> The objective is to connect the nodes together by drawing lines (links) between a node and a neighbor. The more nodes connected together that all have the same number of links, the more points you’ll score.</p>
             <ul>
                 <li>Node max 6 links, and <strong>max 1 of each color</strong>.</li>
                 <li>Must connect to the one contiguous network. <strong>New lines cannot be isolated</strong>.</li>
                 <li><strong>Turn:</strong> Color die = color, white die = direction. Just click the starting node.</li>
-                <li><strong>Doubles:</strong> If the same numbers are rolled, you can use arrows to freely change the value of one die, the other keeps its original value.</li>
-                <li><strong>Tokens (🪙):</strong> Link a node with all 6 colors to earn a modifier token. Modify roll by +1/-1.</li>
+                <li><strong>Doubles:</strong> If the same numbers are rolled, you can cycle one die to freely change its value, the other keeps its original value.</li>
+                <li><strong>Tokens (🪙):</strong> Link a node with all 6 colors to earn a modifier token. Modify roll by clicking (+1/-1).</li>
                 <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The last click always applies.</li>
                 <li><strong>Mistakes:</strong> 6 mistakes end the game. If you have no valid move, the system will log a mistake (if no token) or prompt for rescue. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
@@ -415,6 +462,11 @@ const texts = {
                 <li><strong>4th degree:</strong> 3x cluster size</li>
                 <li><strong>5th degree:</strong> 5x cluster size</li>
                 <li><strong>6th degree:</strong> 10x cluster size</li>
+            </ul>
+            <h3>Error Circles</h3>
+            <ul>
+                <li>There are 6 empty circles on the board's edge. They serve as a health indicator.</li>
+                <li>Each time a <strong>Dead turn</strong> is logged, one of them fills with color (🔴🟢🟡🔵🟣🟠). Once all 6 are filled, the game ends.</li>
             </ul>
             <h3>Score Tiers</h3>
             <ul>
@@ -484,6 +536,38 @@ let camera = { x: 0, y: 0 };
 let L = 50; 
 let visualScale = 1;
 
+// --- Oboustranná Nápověda Scrollování ---
+const toolbarEl = document.getElementById('toolbar');
+const scrollHintLeft = document.getElementById('scrollHintLeft');
+const scrollHintRight = document.getElementById('scrollHintRight');
+
+function updateScrollHints() {
+    if (!toolbarEl) return;
+    const maxScroll = toolbarEl.scrollWidth - toolbarEl.clientWidth;
+    
+    if (toolbarEl.scrollLeft > 5) {
+        scrollHintLeft.classList.add('visible');
+    } else {
+        scrollHintLeft.classList.remove('visible');
+    }
+
+    if (maxScroll > 0 && toolbarEl.scrollLeft < maxScroll - 5) {
+        scrollHintRight.classList.add('visible');
+    } else {
+        scrollHintRight.classList.remove('visible');
+    }
+}
+toolbarEl.addEventListener('scroll', updateScrollHints);
+window.addEventListener('resize', updateScrollHints);
+
+// --- Helper for Czech Declension ---
+function formatVazby(count, isCz) {
+    if (!isCz) return "links";
+    if (count === 1) return "vazba";
+    if (count >= 2 && count <= 4) return "vazby";
+    return "vazeb";
+}
+
 // --- Custom Confirm Modal ---
 let pendingConfirm = null;
 function showConfirm(type, callback) {
@@ -503,7 +587,6 @@ document.getElementById('confirmNo').onclick = () => {
     pendingConfirm = null;
 };
 
-// --- Toast Notifications ---
 function showToast(msg) {
     const container = document.getElementById('toastContainer');
     const t = document.createElement('div');
@@ -512,10 +595,9 @@ function showToast(msg) {
     container.appendChild(t);
     setTimeout(() => { 
         if (container.contains(t)) container.removeChild(t); 
-    }, 3000);
+    }, 3500);
 }
 
-// --- Status Bar ---
 function updateStatus(text) {
     document.getElementById('statusText').innerText = text;
 }
@@ -557,18 +639,25 @@ function refreshStatus() {
 function translateLogEntry(entry) {
     const c = isCzech;
     switch(entry.code) {
-        case 'roll': return (c ? 'Hod: barva ' : 'Roll: color ') + entry.color + (c ? ', směr ' : ', dir ') + entry.dir;
-        case 'doubles': return c ? '🎲 Nastal režim dvojitý hod!' : '🎲 Double roll mode activated!';
-        case 'dead_turn': return (c ? '❌ Nemožný tah | barva ' : '❌ Dead turn | color ') + entry.color + (c ? ', směr ' : ', dir ') + entry.dir + (c ? ' | kruh ' : ' | circle ') + entry.errorCount;
-        case 'game_over': return c ? '=========================\nKonec hry! Vyhodnocení:' : '=========================\nGame Over! Evaluation:';
-        case 'cluster': return c ? `• Skupina ${entry.size} uzlů (${entry.degree} vazby): ${entry.pts} b.` : `• Cluster of ${entry.size} nodes (${entry.degree} links): ${entry.pts} pts.`;
-        case 'no_clusters': return c ? 'Žádné bodované skupiny.' : 'No scoring clusters.';
+        case 'roll': 
+            return (c ? `Hod: barva ${colorCircles[entry.color]} [${entry.color}], směr ${directions[entry.dir]} [${entry.dir}]` : `Roll: color ${colorCircles[entry.color]} [${entry.color}], dir ${directions[entry.dir]} [${entry.dir}]`);
+        case 'doubles': 
+            return c ? '🎲 Nastal režim dvojitý hod!' : '🎲 Double roll mode activated!';
+        case 'dead_turn': 
+            return (c ? `❌ Nemožný tah | barva ${colorCircles[entry.color]} [${entry.color}], směr ${directions[entry.dir]} [${entry.dir}] | kruh ${entry.errorCount}` : `❌ Dead turn | color ${colorCircles[entry.color]} [${entry.color}], dir ${directions[entry.dir]} [${entry.dir}] | circle ${entry.errorCount}`);
+        case 'game_over': 
+            return c ? '=========================\nKonec hry! Vyhodnocení:' : '=========================\nGame Over! Evaluation:';
+        case 'cluster': 
+            return c ? `• Skupina ${entry.size} uzlů (${entry.degree} ${formatVazby(entry.degree, c)}): ${entry.pts} b.` : `• Cluster of ${entry.size} nodes (${entry.degree} links): ${entry.pts} pts.`;
+        case 'no_clusters': 
+            return c ? 'Žádné bodované skupiny.' : 'No scoring clusters.';
         case 'degree_score':
             let dName = c ? `${entry.d}. stupeň` : `${entry.d}nd degree`;
             if (!c && entry.d === 3) dName = '3rd degree';
             if (!c && entry.d > 3) dName = `${entry.d}th degree`;
             return `${dName}: ${entry.pts}`;
-        case 'total_score': return (c ? 'Celkové skóre: ' : 'Total score: ') + entry.score;
+        case 'total_score': 
+            return (c ? 'Celkové skóre: ' : 'Total score: ') + entry.score;
         case 'tier': 
             let rank = '';
             if (entry.score <= 29) rank = c ? "Nevzdávej to, zkus to znovu" : "Don't give up, try again";
@@ -578,16 +667,22 @@ function translateLogEntry(entry) {
             else if (entry.score <= 93) rank = c ? "Mistr" : "Master";
             else rank = c ? "Perfektní skóre" : "Perfect score";
             return (c ? 'Hodnocení / Tier: ' : 'Rank / Tier: ') + rank;
-        case 'separator': return '---';
+        case 'separator': 
+            return '---';
         case 'double_mod': 
             const typeStrD = entry.type === 'color' ? (c ? 'barvy' : 'color') : (c ? 'směru' : 'direction');
-            return (c ? '🎲 Dvojitý hod: úprava ' : '🎲 Double roll: ') + typeStrD + (c ? ' na ' : ' changed to ') + entry.val;
+            const valStrD = entry.type === 'color' ? `${colorCircles[entry.val]} [${entry.val}]` : `${directions[entry.val]} [${entry.val}]`;
+            return (c ? `🎲 Dvojitý hod: úprava ${typeStrD} na ${valStrD}` : `🎲 Double roll: ${typeStrD} changed to ${valStrD}`);
         case 'token_mod':
             const typeStrT = entry.type === 'color' ? (c ? 'barvy' : 'color') : (c ? 'směru' : 'direction');
-            return (c ? '🪙 Použit žeton: úprava ' : '🪙 Token used: ') + typeStrT + (c ? ' na ' : ' changed to ') + entry.val + ` [${entry.tokensNow}]`;
-        case 'move': return (c ? 'Tah: ' : 'Move: ') + `(${entry.n1q},${entry.n1r}) → (${entry.n2q},${entry.n2r}) | ` + (c ? 'barva ' : 'color ') + entry.color;
-        case 'token_earned': return (c ? `🪙 Získán žeton! Uzel (${entry.q},${entry.r}) dokončen.` : `🪙 Token earned! Node (${entry.q},${entry.r}) completed.`) + ` [${entry.tokensNow}]`;
-        case 'undo': return c ? '↩️ Krok zpět (tah vrácen)' : '↩️ Undo (move reverted)';
+            const valStrT = entry.type === 'color' ? `${colorCircles[entry.val]} [${entry.val}]` : `${directions[entry.val]} [${entry.val}]`;
+            return (c ? `🪙 Použit žeton: úprava ${typeStrT} na ${valStrT} [${entry.tokensNow}]` : `🪙 Token used: ${typeStrT} changed to ${valStrT} [${entry.tokensNow}]`);
+        case 'move': 
+            return (c ? `Tah: (${entry.n1q},${entry.n1r}) → (${entry.n2q},${entry.n2r}) | barva ${colorCircles[entry.color]} [${entry.color}]` : `Move: (${entry.n1q},${entry.n1r}) → (${entry.n2q},${entry.n2r}) | color ${colorCircles[entry.color]} [${entry.color}]`);
+        case 'token_earned': 
+            return (c ? `🪙 Získán žeton! Uzel (${entry.q},${entry.r}) dokončen.` : `🪙 Token earned! Node (${entry.q},${entry.r}) completed.`) + ` [${entry.tokensNow}]`;
+        case 'undo': 
+            return c ? '↩️ Krok zpět (tah vrácen)' : '↩️ Undo (move reverted)';
     }
     return '';
 }
@@ -729,17 +824,7 @@ function popHistory() {
 
     addLogEntry({ code: 'undo' });
 
-    if (!currentRoll.active) {
-        currentRoll.color = state.roll.originalColor;
-        currentRoll.dir = state.roll.originalDir;
-        currentRoll.originalColor = state.roll.originalColor;
-        currentRoll.originalDir = state.roll.originalDir;
-        currentRoll.isDoubles = state.roll.isDoubles;
-        currentRoll.tokenChoice = null;
-        currentRoll.tokenUsed = false;
-        currentRoll.doubleChoice = null;
-        currentRoll.active = true;
-    }
+    currentRoll = JSON.parse(JSON.stringify(state.roll));
 
     updateUI(); drawBoard(); refreshStatus();
     showToast(isCzech ? 'Krok vzat zpět.' : 'Undo applied.');
@@ -798,20 +883,26 @@ function drawBoard() {
 
             ctx.beginPath();
             ctx.arc(n1.x, n1.y, 14 * visualScale, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+            ctx.fillStyle = 'rgba(210, 210, 210, 0.5)';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 5;
             ctx.fill();
+            ctx.shadowBlur = 0;
             ctx.lineWidth = 2 * visualScale;
-            ctx.strokeStyle = '#2ecc71';
+            ctx.strokeStyle = '#aaaaaa';
             ctx.stroke();
 
             ctx.beginPath();
             ctx.moveTo(n1.x, n1.y);
             ctx.lineTo(n2.x, n2.y);
-            ctx.strokeStyle = 'rgba(46, 204, 113, 0.6)';
+            ctx.strokeStyle = 'rgba(180, 180, 180, 0.7)';
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 4;
             ctx.setLineDash([5, 5]);
             ctx.lineWidth = 4 * visualScale;
             ctx.stroke();
             ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
         });
     }
 
@@ -935,6 +1026,30 @@ function canSaveWithDoubleRoll() {
     }
     currentRoll.dir = origDir;
     return false;
+}
+
+function checkBoardLock() {
+    let tempC = currentRoll.color;
+    let tempD = currentRoll.dir;
+    let locked = true;
+    for (let c = 1; c <= 6; c++) {
+        for (let d = 1; d <= 6; d++) {
+            currentRoll.color = c;
+            currentRoll.dir = d;
+            if (hasAnyValidMove()) {
+                locked = false;
+                break;
+            }
+        }
+        if (!locked) break;
+    }
+    currentRoll.color = tempC;
+    currentRoll.dir = tempD;
+    
+    if (locked && !gameOver) {
+        showToast(isCzech ? 'Deska je zcela zaplněna! Konec hry.' : 'Board is completely locked! Game over.');
+        setTimeout(() => calculateScores(true), 1500);
+    }
 }
 
 function logDeadTurn(autoEval = false) {
@@ -1066,82 +1181,115 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     refreshStatus();
 });
 
+function getNextTokenValue(orig, current) {
+    let p1 = orig + 1; if (p1 > 6) p1 = 1;
+    let m1 = orig - 1; if (m1 < 1) m1 = 6;
+    
+    if (current === orig) return p1;
+    if (current === p1) return m1;
+    return orig;
+}
+
+// --- OPRAVENÁ LOGIKA KOSTEK ---
+
 document.getElementById('colorDie').addEventListener('click', () => {
-    if (!currentRoll.active || !currentRoll.isDoubles) return;
-    if (currentRoll.tokenUsed) {
-        currentRoll.tokenUsed = false; currentRoll.tokenChoice = null;
-        currentRoll.dir = currentRoll.originalDir;
+    if (!currentRoll.active || gameOver) return;
+    
+    if (currentRoll.isDoubles) {
+        // Dvojitý hod - plynulé cyklování 1 až 6 (opraveno)
+        currentRoll.tokenUsed = false;
+        currentRoll.tokenChoice = null;
+        if (currentRoll.doubleChoice === 'dir') {
+            currentRoll.dir = currentRoll.originalDir;
+        }
+        currentRoll.doubleChoice = 'color';
+        // Správný cyklus 1-6
+        currentRoll.color = (currentRoll.color % 6) + 1;
+        
+    } else if (tokens > 0) {
+        // Žeton - rotace orig -> +1 -> -1 -> orig
+        if (currentRoll.tokenChoice === 'dir') {
+            currentRoll.dir = currentRoll.originalDir;
+        }
+        currentRoll.doubleChoice = null;
+        currentRoll.tokenChoice = 'color';
+        currentRoll.tokenUsed = true;
+        currentRoll.color = getNextTokenValue(currentRoll.originalColor, currentRoll.color);
+        
+        if (currentRoll.color === currentRoll.originalColor) {
+            currentRoll.tokenUsed = false;
+            currentRoll.tokenChoice = null;
+        }
     }
-    if (currentRoll.doubleChoice !== 'color') currentRoll.dir = currentRoll.originalDir;
-    currentRoll.doubleChoice = 'color';
-    currentRoll.color = (Number(currentRoll.color) % 6) + 1;
+    
     updateUI(); drawBoard(); refreshStatus();
 });
 
 document.getElementById('dirDie').addEventListener('click', () => {
-    if (!currentRoll.active || !currentRoll.isDoubles) return;
-    if (currentRoll.tokenUsed) {
-        currentRoll.tokenUsed = false; currentRoll.tokenChoice = null;
-        currentRoll.color = currentRoll.originalColor;
+    if (!currentRoll.active || gameOver) return;
+
+    if (currentRoll.isDoubles) {
+        // Dvojitý hod - plynulé cyklování 1 až 6
+        currentRoll.tokenUsed = false;
+        currentRoll.tokenChoice = null;
+        if (currentRoll.doubleChoice === 'color') {
+            currentRoll.color = currentRoll.originalColor;
+        }
+        currentRoll.doubleChoice = 'dir';
+        // Správný cyklus 1-6
+        currentRoll.dir = (currentRoll.dir % 6) + 1;
+
+    } else if (tokens > 0) {
+        // Žeton - rotace orig -> +1 -> -1 -> orig
+        if (currentRoll.tokenChoice === 'color') {
+            currentRoll.color = currentRoll.originalColor;
+        }
+        currentRoll.doubleChoice = null;
+        currentRoll.tokenChoice = 'dir';
+        currentRoll.tokenUsed = true;
+        currentRoll.dir = getNextTokenValue(currentRoll.originalDir, currentRoll.dir);
+        
+        if (currentRoll.dir === currentRoll.originalDir) {
+            currentRoll.tokenUsed = false;
+            currentRoll.tokenChoice = null;
+        }
     }
-    if (currentRoll.doubleChoice !== 'dir') currentRoll.color = currentRoll.originalColor;
-    currentRoll.doubleChoice = 'dir';
-    currentRoll.dir = (Number(currentRoll.dir) % 6) + 1;
+    
     updateUI(); drawBoard(); refreshStatus();
 });
 
-function applyToken(type, amount) {
+
+document.getElementById('dirDie').addEventListener('click', () => {
     if (!currentRoll.active || gameOver) return;
 
-    if (currentRoll.isDoubles && !currentRoll.tokenUsed) {
-        if (currentRoll.doubleChoice && currentRoll.doubleChoice !== type) {
-            if (type === 'color') currentRoll.dir = currentRoll.originalDir;
-            else currentRoll.color = currentRoll.originalColor;
+    if (currentRoll.isDoubles) {
+        // Dvojitý hod - cyklování 1 -> 6
+        currentRoll.tokenUsed = false;
+        currentRoll.tokenChoice = null;
+        if (currentRoll.doubleChoice === 'color') {
+            currentRoll.color = currentRoll.originalColor;
         }
-        currentRoll.doubleChoice = type;
-        
-        let base = (type === 'color') ? currentRoll.color : currentRoll.dir;
-        let value = Number(base) + amount;
-        if (value > 6) value = 1; 
-        if (value < 1) value = 6;
-        
-        if (type === 'color') currentRoll.color = value; 
-        else currentRoll.dir = value;
-        
-        updateUI(); drawBoard();
-        
-        if (hasAnyValidMove()) refreshStatus();
-        else showToast(isCzech ? 'Tato úprava neobsahuje platný tah. Zkuste jinou.' : 'No move with this modifier.');
-        
-        return; 
-    }
+        currentRoll.doubleChoice = 'dir';
+        currentRoll.dir = (Number(currentRoll.dir) % 6) + 1;
 
-    if (tokens <= 0) return; 
-
-    if (currentRoll.doubleChoice) {
+    } else if (tokens > 0) {
+        // Žeton - rotace orig -> +1 -> -1 -> orig
+        if (currentRoll.tokenChoice === 'color') {
+            currentRoll.color = currentRoll.originalColor;
+        }
         currentRoll.doubleChoice = null;
-        currentRoll.color = currentRoll.originalColor;
-        currentRoll.dir = currentRoll.originalDir;
+        currentRoll.tokenChoice = 'dir';
+        currentRoll.tokenUsed = true;
+        currentRoll.dir = getNextTokenValue(currentRoll.originalDir, currentRoll.dir);
+        
+        if (currentRoll.dir === currentRoll.originalDir) {
+            currentRoll.tokenUsed = false;
+            currentRoll.tokenChoice = null;
+        }
     }
-
-    if (currentRoll.tokenChoice && currentRoll.tokenChoice !== type) {
-        currentRoll.color = currentRoll.originalColor; currentRoll.dir = currentRoll.originalDir;
-    }
-
-    currentRoll.tokenChoice = type; currentRoll.tokenUsed = true;
-    let base = (type === 'color') ? currentRoll.originalColor : currentRoll.originalDir;
-    let value = Number(base) + amount;
-    if (value > 6) value = 1; if (value < 1) value = 6;
-
-    if (type === 'color') currentRoll.color = value; else currentRoll.dir = value;
-    updateUI(); drawBoard();
-
-    if (hasAnyValidMove()) {
-        refreshStatus();
-    } else {
-        showToast(isCzech ? 'Tato úprava neobsahuje platný tah. Zkuste jinou.' : 'No move with this modifier.');
-    }
-}
+    
+    updateUI(); drawBoard(); refreshStatus();
+});
 
 function attemptLink(n1, n2) {
     if (links.some(l => (l.n1 === n1 && l.n2 === n2) || (l.n1 === n2 && l.n2 === n1))) {
@@ -1192,6 +1340,8 @@ function attemptLink(n1, n2) {
     updateUI(); drawBoard(); refreshStatus();
     
     if (earned) showToast(isCzech ? 'Získán žeton!' : 'Token earned!');
+    
+    checkBoardLock(); 
 }
 
 wrapper.addEventListener('click', e => {
@@ -1283,6 +1433,8 @@ applyTranslations();
 resizeCanvas(); 
 updateUI();
 refreshStatus();
+
+setTimeout(updateScrollHints, 150);
 </script>
 </body>
 </html>
