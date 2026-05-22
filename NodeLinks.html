@@ -616,6 +616,19 @@ function updateStatus(text) {
 
 function refreshStatus() {
 
+    console.log(
+    'refreshStatus',
+    {
+        color: currentRoll.color,
+        dir: currentRoll.dir,
+        isDoubles: currentRoll.isDoubles,
+        doubleChoice: currentRoll.doubleChoice,
+        tokenChoice: currentRoll.tokenChoice,
+        tokenUsed: currentRoll.tokenUsed,
+        isModifying: currentRoll.isModifying
+    }
+);
+
      if (currentRoll.isModifying) {
         return;
     }
@@ -1294,39 +1307,124 @@ function getNextTokenValue(orig, current) {
 
 // --- OPRAVENÁ LOGIKA KOSTEK ---
 
-function handleDieModification(type) {
-    currentRoll.isModifying = true;
-    if (!currentRoll.active || gameOver) return;
+function debugRollState(label = '') {
 
-    const isColor = type === 'color';
+    console.log('==============================');
+    console.log('DEBUG ROLL STATE:', label);
+
+    console.log({
+        originalColor: currentRoll.originalColor,
+        originalDir: currentRoll.originalDir,
+
+        color: currentRoll.color,
+        dir: currentRoll.dir,
+
+        isDoubles: currentRoll.isDoubles,
+        doubleChoice: currentRoll.doubleChoice,
+
+        tokenChoice: currentRoll.tokenChoice,
+        tokenUsed: currentRoll.tokenUsed,
+
+        isModifying: currentRoll.isModifying,
+
+        active: currentRoll.active
+    });
+
+    console.log('==============================');
+}
+
+function handleDieModification(type) {
+
+    debugRollState('PŘED ÚPRAVOU');
+
+    if (!currentRoll.active || gameOver) {
+        return;
+    }
+
+    currentRoll.isModifying = true;
+
+    const isColor =
+        type === 'color';
 
     // =====================================================
-    // PRIORITA: DVOJITÝ HOD
+    // DVOJITÝ HOD MÁ PRIORITU
     // =====================================================
 
     if (currentRoll.isDoubles) {
 
-        // vypnutí režimu žetonu
+        console.log('REŽIM: DVOJITÝ HOD');
+
+        // reset token režimu
         currentRoll.tokenUsed = false;
         currentRoll.tokenChoice = null;
 
-        // reset druhé kostky na původní hodnotu
+        // =================================================
+        // ROTACE BARVY
+        // =================================================
+
         if (isColor) {
-            currentRoll.dir = currentRoll.originalDir;
-            currentRoll.doubleChoice = 'color';
 
-            // cyklus 1 → 6
-            currentRoll.color =
-                (Number(currentRoll.color) % 6) + 1;
+            console.log('KLIK NA BARVU');
 
-        } else {
-
-            currentRoll.color = currentRoll.originalColor;
-            currentRoll.doubleChoice = 'dir';
-
-            // cyklus 1 → 6
+            // reset druhé kostky
             currentRoll.dir =
-                (Number(currentRoll.dir) % 6) + 1;
+                currentRoll.originalDir;
+
+            // reset interního režimu
+            currentRoll.doubleChoice =
+                'color';
+
+            // rotace 1 → 6
+            currentRoll.color++;
+
+            if (currentRoll.color > 6) {
+                currentRoll.color = 1;
+            }
+
+            console.log(
+                'NOVÁ BARVA:',
+                currentRoll.color
+            );
+
+            console.log(
+                'SMĚR RESET NA:',
+                currentRoll.dir
+            );
+
+        }
+
+        // =================================================
+        // ROTACE SMĚRU
+        // =================================================
+
+        else {
+
+            console.log('KLIK NA SMĚR');
+
+            // reset druhé kostky
+            currentRoll.color =
+                currentRoll.originalColor;
+
+            // reset interního režimu
+            currentRoll.doubleChoice =
+                'dir';
+
+            // rotace 1 → 6
+            currentRoll.dir++;
+
+            if (currentRoll.dir > 6) {
+                currentRoll.dir = 1;
+            }
+
+            console.log(
+                'NOVÝ SMĚR:',
+                currentRoll.dir
+            );
+
+            console.log(
+                'BARVA RESET NA:',
+                currentRoll.color
+            );
         }
     }
 
@@ -1336,15 +1434,25 @@ function handleDieModification(type) {
 
     else if (tokens > 0) {
 
+        console.log('REŽIM: ŽETON');
+
+        // reset double režimu
         currentRoll.doubleChoice = null;
 
+        // =================================================
+        // ŽETON BARVA
+        // =================================================
+
         if (isColor) {
+
+            console.log('ŽETON BARVA');
 
             // reset druhé kostky
             currentRoll.dir =
                 currentRoll.originalDir;
 
-            currentRoll.tokenChoice = 'color';
+            currentRoll.tokenChoice =
+                'color';
 
             currentRoll.color =
                 getNextTokenValue(
@@ -1352,43 +1460,92 @@ function handleDieModification(type) {
                     currentRoll.color
                 );
 
-        } else {
+            console.log(
+                'NOVÁ BARVA:',
+                currentRoll.color
+            );
+
+            console.log(
+                'SMĚR RESET NA:',
+                currentRoll.dir
+            );
+        }
+
+        // =================================================
+        // ŽETON SMĚR
+        // =================================================
+
+        else {
+
+            console.log('ŽETON SMĚR');
 
             // reset druhé kostky
             currentRoll.color =
                 currentRoll.originalColor;
 
-            currentRoll.tokenChoice = 'dir';
+            currentRoll.tokenChoice =
+                'dir';
 
             currentRoll.dir =
                 getNextTokenValue(
                     currentRoll.originalDir,
                     currentRoll.dir
                 );
-        }
 
-        // aktivace/deaktivace použití žetonu
-        currentRoll.tokenUsed =
-            (
-                currentRoll.tokenChoice === 'color'
-                    ? currentRoll.color !== currentRoll.originalColor
-                    : currentRoll.dir !== currentRoll.originalDir
+            console.log(
+                'NOVÝ SMĚR:',
+                currentRoll.dir
             );
 
-        // návrat do původního stavu
-        if (!currentRoll.tokenUsed) {
+            console.log(
+                'BARVA RESET NA:',
+                currentRoll.color
+            );
+        }
+
+        // aktivace žetonu
+        currentRoll.tokenUsed = true;
+
+        // návrat na originál
+        if (
+            (
+                currentRoll.tokenChoice === 'color' &&
+                currentRoll.color === currentRoll.originalColor
+            )
+            ||
+            (
+                currentRoll.tokenChoice === 'dir' &&
+                currentRoll.dir === currentRoll.originalDir
+            )
+        ) {
+
+            console.log(
+                'ŽETON VRÁCEN NA PŮVODNÍ HODNOTU'
+            );
+
+            currentRoll.tokenUsed = false;
             currentRoll.tokenChoice = null;
         }
     }
-   
+
+    debugRollState('PO ÚPRAVĚ');
+
     updateUI();
     drawBoard();
 
     setTimeout(() => {
+
         currentRoll.isModifying = false;
+
+        console.log(
+            'KONEC MODIFIKACE'
+        );
+
         refreshStatus();
+
     }, 0);
 }
+
 
 // =====================================================
 // LISTENERY
