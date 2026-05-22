@@ -519,10 +519,22 @@ let scoreLabels = [];
 let logEntries = []; 
 
 let currentRoll = {
-    originalColor: null, originalDir: null,
-    color: null, dir: null, tokenChoice: null, tokenUsed: false,
-    active: false, isDoubles: false, doubleChoice: null
-};
+    originalColor: null,
+    originalDir: null,
+
+    color: null,
+    dir: null,
+
+    tokenChoice: null,
+    tokenUsed: false,
+
+    active: false,
+
+    isDoubles: false,
+    doubleChoice: null,
+
+    isModifying: false
+};  
 
 let nodes = [];
 let errorNodes = [];
@@ -603,37 +615,127 @@ function updateStatus(text) {
 }
 
 function refreshStatus() {
-    if (gameOver) {
-        updateStatus(texts[isCzech ? 'cs' : 'en'].statusOver);
-        return;
-    }
-    
-    if (!currentRoll.active && currentRoll.color !== null) {
-        updateStatus(texts[isCzech ? 'cs' : 'en'].statusDeadTurn);
+
+     if (currentRoll.isModifying) {
         return;
     }
 
-    if (!currentRoll.active) {
-        updateStatus(texts[isCzech ? 'cs' : 'en'].statusRoll);
+    // =====================================================
+    // GAME OVER
+    // =====================================================
+
+    if (gameOver) {
+
+        updateStatus(
+            texts[isCzech ? 'cs' : 'en'].statusOver
+        );
+
         return;
     }
-    
-    if (!hasAnyValidMove()) {
-        let canSaveToken = tokens > 0 && canSaveWithToken();
-        let canSaveDouble = currentRoll.isDoubles && canSaveWithDoubleRoll();
-        if (canSaveToken || canSaveDouble) {
-            updateStatus(isCzech ? 'Neplatný hod! Upravte hod pro záchranu tahu.' : 'Dead roll! Modify roll to save your turn.');
-        } else {
-            updateStatus(texts[isCzech ? 'cs' : 'en'].statusDeadTurnBtn);
-        }
-    } else {
-        if (currentRoll.isDoubles) {
-            updateStatus(texts[isCzech ? 'cs' : 'en'].statusDouble);
-        } else {
-            updateStatus(texts[isCzech ? 'cs' : 'en'].statusSelect);
-        }
+
+    // =====================================================
+    // NENÍ AKTIVNÍ HOD
+    // =====================================================
+
+    if (
+        currentRoll.color === null ||
+        currentRoll.dir === null ||
+        !currentRoll.active
+    ) {
+
+        updateStatus(
+            texts[isCzech ? 'cs' : 'en'].statusRoll
+        );
+
+        return;
     }
+
+    // =====================================================
+    // NEEXISTUJE PLATNÝ TAH
+    // =====================================================
+
+    if (!hasAnyValidMove()) {
+
+        // aktivní dvojitý hod
+        if (
+            currentRoll.isDoubles &&
+            currentRoll.doubleChoice
+        ) {
+
+            updateStatus(
+                isCzech
+                    ? 'Dvojitý hod - upravte kostku.'
+                    : 'Double roll - modify die.'
+            );
+
+            return;
+        }
+
+        // aktivní žeton
+        if (
+            currentRoll.tokenUsed &&
+            currentRoll.tokenChoice
+        ) {
+
+            updateStatus(
+                isCzech
+                    ? 'Žeton - upravte kostku.'
+                    : 'Token - modify die.'
+            );
+
+            return;
+        }
+
+        // lze ještě zachránit
+        const canSaveToken =
+            tokens > 0 &&
+            canSaveWithToken();
+
+        const canSaveDouble =
+            currentRoll.isDoubles &&
+            canSaveWithDoubleRoll();
+
+        if (canSaveToken || canSaveDouble) {
+
+            updateStatus(
+                isCzech
+                    ? 'Neplatný hod! Upravte hod pro záchranu tahu.'
+                    : 'Dead roll! Modify roll to save your turn.'
+            );
+
+        } else {
+
+            updateStatus(
+                texts[isCzech ? 'cs' : 'en'].statusDeadTurnBtn
+            );
+        }
+
+        return;
+    }
+
+    // =====================================================
+    // DVOJITÝ HOD
+    // =====================================================
+
+    if (currentRoll.isDoubles) {
+
+        updateStatus(
+            texts[isCzech ? 'cs' : 'en'].statusDouble
+        );
+
+        return;
+    }
+
+    // =====================================================
+    // STANDARDNÍ TAH
+    // =====================================================
+
+    updateStatus(
+        texts[isCzech ? 'cs' : 'en'].statusSelect
+    );
 }
+
+
 
 // --- Dynamic Log ---
 function translateLogEntry(entry) {
@@ -1192,104 +1294,118 @@ function getNextTokenValue(orig, current) {
 
 // --- OPRAVENÁ LOGIKA KOSTEK ---
 
-document.getElementById('colorDie').addEventListener('click', () => {
+function handleDieModification(type) {
+    currentRoll.isModifying = true;
     if (!currentRoll.active || gameOver) return;
-    
+
+    const isColor = type === 'color';
+
+    // =====================================================
+    // PRIORITA: DVOJITÝ HOD
+    // =====================================================
+
     if (currentRoll.isDoubles) {
-        // Dvojitý hod - plynulé cyklování 1 až 6 (opraveno)
+
+        // vypnutí režimu žetonu
         currentRoll.tokenUsed = false;
         currentRoll.tokenChoice = null;
-        if (currentRoll.doubleChoice === 'dir') {
+
+        // reset druhé kostky na původní hodnotu
+        if (isColor) {
             currentRoll.dir = currentRoll.originalDir;
+            currentRoll.doubleChoice = 'color';
+
+            // cyklus 1 → 6
+            currentRoll.color =
+                (Number(currentRoll.color) % 6) + 1;
+
+        } else {
+
+            currentRoll.color = currentRoll.originalColor;
+            currentRoll.doubleChoice = 'dir';
+
+            // cyklus 1 → 6
+            currentRoll.dir =
+                (Number(currentRoll.dir) % 6) + 1;
         }
-        currentRoll.doubleChoice = 'color';
-        // Správný cyklus 1-6
-        currentRoll.color = (currentRoll.color % 6) + 1;
-        
-    } else if (tokens > 0) {
-        // Žeton - rotace orig -> +1 -> -1 -> orig
-        if (currentRoll.tokenChoice === 'dir') {
-            currentRoll.dir = currentRoll.originalDir;
-        }
+    }
+
+    // =====================================================
+    // ŽETON
+    // =====================================================
+
+    else if (tokens > 0) {
+
         currentRoll.doubleChoice = null;
-        currentRoll.tokenChoice = 'color';
-        currentRoll.tokenUsed = true;
-        currentRoll.color = getNextTokenValue(currentRoll.originalColor, currentRoll.color);
-        
-        if (currentRoll.color === currentRoll.originalColor) {
-            currentRoll.tokenUsed = false;
+
+        if (isColor) {
+
+            // reset druhé kostky
+            currentRoll.dir =
+                currentRoll.originalDir;
+
+            currentRoll.tokenChoice = 'color';
+
+            currentRoll.color =
+                getNextTokenValue(
+                    currentRoll.originalColor,
+                    currentRoll.color
+                );
+
+        } else {
+
+            // reset druhé kostky
+            currentRoll.color =
+                currentRoll.originalColor;
+
+            currentRoll.tokenChoice = 'dir';
+
+            currentRoll.dir =
+                getNextTokenValue(
+                    currentRoll.originalDir,
+                    currentRoll.dir
+                );
+        }
+
+        // aktivace/deaktivace použití žetonu
+        currentRoll.tokenUsed =
+            (
+                currentRoll.tokenChoice === 'color'
+                    ? currentRoll.color !== currentRoll.originalColor
+                    : currentRoll.dir !== currentRoll.originalDir
+            );
+
+        // návrat do původního stavu
+        if (!currentRoll.tokenUsed) {
             currentRoll.tokenChoice = null;
         }
     }
-    
-    updateUI(); drawBoard(); refreshStatus();
-});
+   
+    updateUI();
+    drawBoard();
 
-document.getElementById('dirDie').addEventListener('click', () => {
-    if (!currentRoll.active || gameOver) return;
+    setTimeout(() => {
+        currentRoll.isModifying = false;
+        refreshStatus();
+    }, 0);
+}
 
-    if (currentRoll.isDoubles) {
-        // Dvojitý hod - plynulé cyklování 1 až 6
-        currentRoll.tokenUsed = false;
-        currentRoll.tokenChoice = null;
-        if (currentRoll.doubleChoice === 'color') {
-            currentRoll.color = currentRoll.originalColor;
-        }
-        currentRoll.doubleChoice = 'dir';
-        // Správný cyklus 1-6
-        currentRoll.dir = (currentRoll.dir % 6) + 1;
+// =====================================================
+// LISTENERY
+// =====================================================
 
-    } else if (tokens > 0) {
-        // Žeton - rotace orig -> +1 -> -1 -> orig
-        if (currentRoll.tokenChoice === 'color') {
-            currentRoll.color = currentRoll.originalColor;
-        }
-        currentRoll.doubleChoice = null;
-        currentRoll.tokenChoice = 'dir';
-        currentRoll.tokenUsed = true;
-        currentRoll.dir = getNextTokenValue(currentRoll.originalDir, currentRoll.dir);
-        
-        if (currentRoll.dir === currentRoll.originalDir) {
-            currentRoll.tokenUsed = false;
-            currentRoll.tokenChoice = null;
-        }
-    }
-    
-    updateUI(); drawBoard(); refreshStatus();
-});
+document
+    .getElementById('colorDie')
+    .addEventListener('click', () => {
+        handleDieModification('color');
+    });
 
+document
+    .getElementById('dirDie')
+    .addEventListener('click', () => {
+        handleDieModification('dir');
+    });
 
-document.getElementById('dirDie').addEventListener('click', () => {
-    if (!currentRoll.active || gameOver) return;
-
-    if (currentRoll.isDoubles) {
-        // Dvojitý hod - cyklování 1 -> 6
-        currentRoll.tokenUsed = false;
-        currentRoll.tokenChoice = null;
-        if (currentRoll.doubleChoice === 'color') {
-            currentRoll.color = currentRoll.originalColor;
-        }
-        currentRoll.doubleChoice = 'dir';
-        currentRoll.dir = (Number(currentRoll.dir) % 6) + 1;
-
-    } else if (tokens > 0) {
-        // Žeton - rotace orig -> +1 -> -1 -> orig
-        if (currentRoll.tokenChoice === 'color') {
-            currentRoll.color = currentRoll.originalColor;
-        }
-        currentRoll.doubleChoice = null;
-        currentRoll.tokenChoice = 'dir';
-        currentRoll.tokenUsed = true;
-        currentRoll.dir = getNextTokenValue(currentRoll.originalDir, currentRoll.dir);
-        
-        if (currentRoll.dir === currentRoll.originalDir) {
-            currentRoll.tokenUsed = false;
-            currentRoll.tokenChoice = null;
-        }
-    }
-    
-    updateUI(); drawBoard(); refreshStatus();
-});
 
 function attemptLink(n1, n2) {
     if (links.some(l => (l.n1 === n1 && l.n2 === n2) || (l.n1 === n2 && l.n2 === n1))) {
