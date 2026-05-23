@@ -1235,14 +1235,7 @@ ctx.fillText(
     // NOVÉ: HUD: Plaketa celkového skóre (Vykresleno fixně na obrazovku nahoře uprostřed)
     if (gameOver) {
         ctx.save();
-        const text =
-        errorNodes.length >= 6
-            ? (isCzech
-                ? 'PROHRÁL JSI. ZKUS TO ZNOVU!'
-                : 'YOU LOST. TRY AGAIN!')
-            : (isCzech
-                ? `CELKOVÉ SKÓRE: ${finalTotalScore}`
-                : `TOTAL SCORE: ${finalTotalScore}`);
+        const text = isCzech ? `CELKOVÉ SKÓRE: ${finalTotalScore}` : `TOTAL SCORE: ${finalTotalScore}`;
         const fontSize = Math.max(14, 18 * visualScale);
         ctx.font = `bold ${fontSize}px 'Segoe UI', sans-serif`;
         ctx.textAlign = "center";
@@ -1278,14 +1271,10 @@ ctx.shadowBlur = 18;
             ctx.rect(rectX, rectY, rectW, rectH);
         }
         ctx.fill();
-        ctx.stroke();
         ctx.shadowBlur = 0;
         
         // Zlatý text
-        ctx.fillStyle =
-    errorNodes.length >= 6
-        ? "#e74c3c"
-        : "#f1c40f"; 
+        ctx.fillStyle = "#f1c40f"; 
         ctx.fillText(text, canvas.width / 2, rectY + rectH / 2 + 2);
         ctx.restore();
     }
