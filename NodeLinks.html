@@ -892,6 +892,46 @@ function initGrid() {
         });
     }
     
+        // Souřadnice vrcholů počátečního šestiúhelníku
+    const hexCoords = [
+        { q: 2, r: 3 },
+        { q: 3, r: 2 },
+        { q: 4, r: 3 },
+        { q: 4, r: 5 },
+        { q: 3, r: 6 },
+        { q: 2, r: 5 }
+    ];
+
+    // Propojení vrcholů a přiřazení barev 1 až 6
+    for (let i = 0; i < 6; i++) {
+        // Získání aktuálního uzlu a následujícího uzlu (s cyklickým přechodem na první)
+        const q1 = hexCoords[i].q;
+        const r1 = hexCoords[i].r;
+        const q2 = hexCoords[(i + 1) % 6].q;
+        const r2 = hexCoords[(i + 1) % 6].r;
+
+        // Nalezení odpovídajících objektů uzlů v existujícím poli nodes
+        const node1 = nodes.find(n => n.q === q1 && n.r === r1);
+        const node2 = nodes.find(n => n.q === q2 && n.r === r2);
+
+        if (node1 && node2) {
+            const color = i + 1; // Tímto zajistíme, že každá strana má jinou barvu (1 až 6)
+            
+            // Vytvoření objektu propojení ve stejném formátu, jaký hra používá
+            const newLink = { 
+                n1: node1, 
+                n2: node2, 
+                color: color, 
+                colorStr: `--c${color}` 
+            };
+            
+            // Přidání propojení do globálního pole a k oběma dotčeným uzlům
+            links.push(newLink);
+            node1.links.push(newLink);
+            node2.links.push(newLink);
+        }
+    }
+    
     const boardWidth = maxX - minX;
     const boardHeight = maxY - minY;
     
