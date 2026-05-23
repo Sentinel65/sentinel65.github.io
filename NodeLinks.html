@@ -317,10 +317,10 @@ canvas {
         <div class="btn-group">
             <div id="tokenDisplay">🪙 <span id="tokenCount">0</span></div>
             <button id="undoBtn" class="action-btn">↩️</button>
-            <button id="hintBtn" class="action-btn">💡</button>
+            <button id="hintBtn" class="action-btn">👁️</button>
             <button id="newBtn" class="action-btn">🔄</button>
             <button id="langBtn" class="action-btn">🇬🇧</button>
-            <button id="helpBtn" class="action-btn">📖</button>
+            <button id="helpBtn" class="action-btn">💡</button>
             <button id="saveBtn" class="action-btn">💾</button>
             <button id="loadBtn" class="action-btn">📂</button>
         </div>
@@ -364,7 +364,7 @@ canvas {
 
 <script>
 // --- JAZYK A TEXTY ---
-let isCzech = false;
+let isCzech = true;
 let showHint = false;
 
 const colorCircles = ['', '🔴', '🟢', '🟡', '🔵', '🟣', '🟠'];
@@ -398,15 +398,20 @@ const texts = {
         statusDeadTurnBtn: "Nemožný tah! Klikněte na 🎲 pro zapsání chyby a další hod.",
         statusOver: "Hra skončila!",
         helpHtml: `
+            <style>
+                @keyframes helpPulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+                .help-pulse { display: inline-block; animation: helpPulse 1.2s infinite; }
+                .help-highlight { background-color: rgba(255, 235, 59, 0.5); border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 5px rgba(255, 235, 59, 0.8); }
+            </style>
             <h2 style="margin-top:0;">Node Links</h2>
             <p><em>Abstraktní solitérní hra typu „hoď a táhni“ o vytváření barevné sítě.<br>Autor: <strong>Stuart Jantzen © 2026</strong></em></p>
             <p><strong>Cíl:</strong> Propojit uzly kreslením čar. Čím více uzlů se stejným počtem vazeb propojíte, tím více bodů získáte.</p>
             <ul>
-                <li>Uzel může mít max 6 spojnic, a <strong>nesmí mít více než 1 od stejné barvy</strong>.</li>
-                <li>Všechny čáry musí tvořit jedinou souvislou síť. <strong>Nová čára musí navazovat</strong>.</li>
-                <li><strong>Tah:</strong> Barevná kostka = barva, bílá kostka = směr. Stačí kliknout na výchozí bod a čára se narýsuje automaticky.</li>
+                <li>Uzel může mít max 6 spojnic, a <strong>nesmí mít více než 1 spojnici stejné barvy</strong>.</li>
+                <li>Všechny čáry musí tvořit jedinou souvislou síť. <strong>Nová čára musí navazovat. Nemohu se napojovat z výchozího bodu, který není s ničím spojen.</strong></li>
+                <li><strong>Tah:</strong> Barevná kostka určuje barvu, bílá kostka určuje směr. Stačí kliknout na výchozí bod a čára se narýsuje automaticky. Zobrazení platných tahů z výchozího bodu na hrací desce po hodu kostkami je možné zobrazit kliknutím na tlačítko 👁️, aktivní tlačítko pak vypadá <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete klikáním libovolně změnit hodnotu jedné kostky, druhé zůstane původní hodnota.</li>
-                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton. Ten slouží k úpravě hodu rotací klikáním (+1 nebo -1).</li>
+                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton, který umožňuje změnit hodnotu jedné kostky o +1 nebo -1. Druhé zůstane původní hodnota. Je-li aktivní režim ŽETON, je indikován blikáním piktogramu v menu nad hrací deskou do doby umístění spojnice na hrací desku. <span class="help-pulse">🪙</span></li>
                 <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Platí vždy poslední volba (kliknutí).</li>
                 <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás nechá tah zachránit úpravou kostek. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
             </ul>
@@ -418,6 +423,15 @@ const texts = {
                 <li><strong>4 vazby:</strong> 3x velikost skupiny</li>
                 <li><strong>5 vazeb:</strong> 5x velikost skupiny</li>
                 <li><strong>6 vazeb:</strong> 10x velikost skupiny</li>
+            </ul>
+            <h3>Barevné označení uzlů</h3>
+            <p>Na konci hry budou na hrací desce zobrazeny jednotlivé barevné clustery. Podle nich hráč vizuálně pozná, které skóre patří ke kterému uzlu a jak silná byla skupina.</p>
+            <ul>
+                <li><strong>2 vazby:</strong> zelené</li>
+                <li><strong>3 vazby:</strong> modré</li>
+                <li><strong>4 vazby:</strong> fialové</li>
+                <li><strong>5 vazeb:</strong> oranžové</li>
+                <li><strong>6 vazeb:</strong> zlaté</li>
             </ul>
             <h3>Chybové kruhy</h3>
             <ul>
@@ -438,10 +452,10 @@ const texts = {
                 <li><strong>🎲</strong> Hodit kostkami / Vzdát tah (zapsat chybu)</li>
                 <li><strong>🪙</strong> Aktuální počet žetonů</li>
                 <li><strong>↩️</strong> Krok zpět</li>
-                <li><strong>💡</strong> Zobrazit / skrýt nápovědu tahu</li>
+                <li><strong>👁️</strong> Zobrazit / skrýt nápovědu tahu</li>
                 <li><strong>🔄</strong> Nová hra</li>
                 <li><strong>🇬🇧 / 🇨🇿</strong> Přepnout jazyk</li>
-                <li><strong>📖</strong> Nápověda (tato obrazovka)</li>
+                <li><strong>💡</strong> Nápověda (tato obrazovka)</li>
                 <li><strong>💾</strong> Uložit hru do paměti</li>
                 <li><strong>📂</strong> Načíst uloženou hru</li>
             </ul>
@@ -455,15 +469,20 @@ const texts = {
         statusDeadTurnBtn: "Dead turn! Click 🎲 to log mistake and roll again.",
         statusOver: "Game Over!",
         helpHtml: `
+            <style>
+                @keyframes helpPulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+                .help-pulse { display: inline-block; animation: helpPulse 1.2s infinite; }
+                .help-highlight { background-color: rgba(255, 235, 59, 0.5); border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 5px rgba(255, 235, 59, 0.8); }
+            </style>
             <h2 style="margin-top:0;">Node Links</h2>
             <p><em>An abstract solitaire "roll-and-draw" game about making a colorful network.<br>Author: <strong>Stuart Jantzen © 2026</strong></em></p>
             <p><strong>Objective:</strong> The objective is to connect the nodes together by drawing lines (links) between a node and a neighbor. The more nodes connected together that all have the same number of links, the more points you’ll score.</p>
             <ul>
-                <li>Node max 6 links, and <strong>max 1 of each color</strong>.</li>
-                <li>Must connect to the one contiguous network. <strong>New lines cannot be isolated</strong>.</li>
-                <li><strong>Turn:</strong> Color die = color, white die = direction. Just click the starting node.</li>
+                <li>A node can have a maximum of 6 links, and <strong>cannot have more than 1 link of the same color</strong>.</li>
+                <li>All lines must form a single contiguous network. <strong>A new line must connect to an existing one. You cannot connect from a starting point that is not connected to anything.</strong></li>
+                <li><strong>Turn:</strong> The colored die determines the color, the white die determines the direction. Just click the starting node and the line will be drawn automatically. Valid moves from the starting point on the board after rolling the dice can be displayed by clicking the 👁️ button, an active button then looks like <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Doubles:</strong> If the same numbers are rolled, you can cycle one die to freely change its value, the other keeps its original value.</li>
-                <li><strong>Tokens (🪙):</strong> Link a node with all 6 colors to earn a modifier token. Modify roll by clicking (+1/-1).</li>
+                <li><strong>Tokens (🪙):</strong> If you link a node with all 6 colors, you earn a token that allows you to change the value of one die by +1 or -1. The other die keeps its original value. If the TOKEN mode is active, it is indicated by a flashing pictogram in the menu above the board until the link is placed on the board. <span class="help-pulse">🪙</span></li>
                 <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The last click always applies.</li>
                 <li><strong>Mistakes:</strong> 6 mistakes end the game. If you have no valid move, the system will log a mistake (if no token) or prompt for rescue. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
@@ -475,6 +494,15 @@ const texts = {
                 <li><strong>4th degree:</strong> 3x cluster size</li>
                 <li><strong>5th degree:</strong> 5x cluster size</li>
                 <li><strong>6th degree:</strong> 10x cluster size</li>
+            </ul>
+            <h3>Node Color Coding</h3>
+            <p>At the end of the game, individual color clusters will be displayed on the board. This allows the player to visually identify which score belongs to which node and how strong the group was.</p>
+            <ul>
+                <li><strong>2 links:</strong> green</li>
+                <li><strong>3 links:</strong> blue</li>
+                <li><strong>4 links:</strong> purple</li>
+                <li><strong>5 links:</strong> orange</li>
+                <li><strong>6 links:</strong> gold</li>
             </ul>
             <h3>Error Circles</h3>
             <ul>
@@ -495,16 +523,18 @@ const texts = {
                 <li><strong>🎲</strong> Roll dice / Forfeit turn (log mistake)</li>
                 <li><strong>🪙</strong> Current token count</li>
                 <li><strong>↩️</strong> Undo move</li>
-                <li><strong>💡</strong> Toggle move hint</li>
+                <li><strong>👁️</strong> Toggle move hint</li>
                 <li><strong>🔄</strong> New game</li>
                 <li><strong>🇬🇧 / 🇨🇿</strong> Switch language</li>
-                <li><strong>📖</strong> Help (this screen)</li>
+                <li><strong>💡</strong> Help (this screen)</li>
                 <li><strong>💾</strong> Save game to device memory</li>
                 <li><strong>📂</strong> Load saved game</li>
             </ul>
         `
     }
 };
+
+
 
 function applyTranslations() {
     const t = uiTexts[isCzech ? 'cs' : 'en'];
