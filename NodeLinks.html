@@ -173,6 +173,19 @@ button.action-btn.active-toggle {
     background: #fdf2e9; border: 2px solid #e67e22;
     color: #d35400; font-size: 16px; font-weight: bold;
     flex-shrink: 0;
+    transition: all 0.2s; /* Přidáno pro plynulost */
+}
+
+/* NOVÉ: Animace pro pulzující žeton */
+@keyframes pulseToken {
+    0% { transform: scale(1); box-shadow: 0 0 5px #e67e22; border-color: #e67e22; }
+    50% { transform: scale(1.08); box-shadow: 0 0 15px #f1c40f, inset 0 0 8px #f1c40f; border-color: #f1c40f; }
+    100% { transform: scale(1); box-shadow: 0 0 5px #e67e22; border-color: #e67e22; }
+}
+.pulsing {
+    animation: pulseToken 1.2s infinite ease-in-out !important;
+    background: #fff3e0 !important;
+    color: #d35400 !important;
 }
 
 #canvas-wrapper {
@@ -517,7 +530,8 @@ let gameOver = false;
 let historyStack = []; 
 let scoreLabels = []; 
 let logEntries = []; 
-
+let scoredNodes = []; // NOVÉ: Uchovává uzly, které získaly body
+let finalTotalScore = 0; // NOVÉ CELKOVÉ SCǑRE NA KONCI HRY
 let currentRoll = {
     originalColor: null,
     originalDir: null,
@@ -892,7 +906,13 @@ function initGrid() {
         });
     }
     
-        // Souřadnice vrcholů počátečního šestiúhelníku
+// =====================================================
+// POČÁTEČNÍ ŠESTIÚHELNÍK
+// =====================================================
+
+// vytvořit pouze pokud ještě nejsou žádné linky
+if (links.length === 0) {
+
     const hexCoords = [
         { q: 2, r: 3 },
         { q: 3, r: 2 },
@@ -902,36 +922,49 @@ function initGrid() {
         { q: 2, r: 5 }
     ];
 
-    // Propojení vrcholů a přiřazení barev 1 až 6
+    // náhodné pořadí barev 1-6
+    const colors = [1,2,3,4,5,6];
+
+    for (let i = colors.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [colors[i], colors[j]] = [colors[j], colors[i]];
+    }
+
+    // vytvoření hexagonu
     for (let i = 0; i < 6; i++) {
-        // Získání aktuálního uzlu a následujícího uzlu (s cyklickým přechodem na první)
+
         const q1 = hexCoords[i].q;
         const r1 = hexCoords[i].r;
+
         const q2 = hexCoords[(i + 1) % 6].q;
         const r2 = hexCoords[(i + 1) % 6].r;
 
-        // Nalezení odpovídajících objektů uzlů v existujícím poli nodes
-        const node1 = nodes.find(n => n.q === q1 && n.r === r1);
-        const node2 = nodes.find(n => n.q === q2 && n.r === r2);
+        const node1 =
+            nodes.find(n => n.q === q1 && n.r === r1);
+
+        const node2 =
+            nodes.find(n => n.q === q2 && n.r === r2);
 
         if (node1 && node2) {
-            const color = i + 1; // Tímto zajistíme, že každá strana má jinou barvu (1 až 6)
-            
-            // Vytvoření objektu propojení ve stejném formátu, jaký hra používá
-            const newLink = { 
-                n1: node1, 
-                n2: node2, 
-                color: color, 
-                colorStr: `--c${color}` 
+
+            const color = colors[i];
+
+            const newLink = {
+                n1: node1,
+                n2: node2,
+                color: color,
+                colorStr: `--c${color}`
             };
-            
-            // Přidání propojení do globálního pole a k oběma dotčeným uzlům
+
             links.push(newLink);
+
             node1.links.push(newLink);
             node2.links.push(newLink);
         }
     }
-    
+}    
     const boardWidth = maxX - minX;
     const boardHeight = maxY - minY;
     
@@ -992,6 +1025,7 @@ document.getElementById('newBtn').addEventListener('click', () => {
         scoreLabels = []; logEntries = [];
         nodes.forEach(n => { n.links = []; n.tokenAwarded = false; });
         errorNodes.forEach(en => delete en.color);
+        initGrid();
         renderLog();
         currentRoll = {
             originalColor: null, originalDir: null, color: null, dir: null, 
@@ -1015,6 +1049,66 @@ function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(camera.x, camera.y);
+    // NOVÉ: Vykreslení zlaté záře pod bodovanými shluky (když je konec hry)
+if (gameOver && scoredNodes.length > 0) {
+
+    const glowColors = {
+
+        2: {
+            fill: 'rgba(46, 204, 113, 0.35)',
+            stroke: 'rgba(39, 174, 96, 0.9)'
+        },
+
+        3: {
+            fill: 'rgba(52, 152, 219, 0.35)',
+            stroke: 'rgba(41, 128, 185, 0.9)'
+        },
+
+        4: {
+            fill: 'rgba(155, 89, 182, 0.35)',
+            stroke: 'rgba(142, 68, 173, 0.9)'
+        },
+
+        5: {
+            fill: 'rgba(230, 126, 34, 0.35)',
+            stroke: 'rgba(211, 84, 0, 0.9)'
+        },
+
+        6: {
+            fill: 'rgba(241, 196, 15, 0.35)',
+            stroke: 'rgba(243, 156, 18, 0.95)'
+        }
+    };
+
+    scoredNodes.forEach(entry => {
+
+        const n = entry.node;
+
+        if (!n) return;
+
+        const colors =
+            glowColors[entry.degree];
+
+        ctx.beginPath();
+
+        ctx.arc(
+            n.x,
+            n.y,
+            18 * visualScale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = colors.fill;
+        ctx.fill();
+
+        ctx.lineWidth = 3 * visualScale;
+
+        ctx.strokeStyle = colors.stroke;
+
+        ctx.stroke();
+    });
+}
 
     links.forEach(link => {
         ctx.beginPath();
@@ -1088,12 +1182,61 @@ function drawBoard() {
             ctx.lineWidth = 4 * visualScale;
             ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
             ctx.strokeText(label.text, label.x, label.y - (20 * visualScale));
-            ctx.fillStyle = "#e67e22";
-            ctx.fillText(label.text, label.x, label.y - (20 * visualScale));
+            const textColors = {
+    2: '#2ecc71',
+    3: '#3498db',
+    4: '#9b59b6',
+    5: '#e67e22',
+    6: '#f1c40f'
+};
+
+ctx.fillStyle =
+    textColors[label.degree] || '#ffffff';
+
+ctx.fillText(
+    label.text,
+    label.x,
+    label.y - (20 * visualScale)
+);
         });
     }
 
     ctx.restore();
+    // NOVÉ: HUD: Plaketa celkového skóre (Vykresleno fixně na obrazovku nahoře uprostřed)
+    if (gameOver) {
+        ctx.save();
+        const text = isCzech ? `CELKOVÉ SKÓRE: ${finalTotalScore}` : `TOTAL SCORE: ${finalTotalScore}`;
+        const fontSize = Math.max(14, 18 * visualScale);
+        ctx.font = `bold ${fontSize}px 'Segoe UI', sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        
+        const metrics = ctx.measureText(text);
+        const padX = 25 * visualScale;
+        const padY = 12 * visualScale;
+        const rectW = metrics.width + padX * 2;
+        const rectH = fontSize + padY * 2;
+        const rectX = canvas.width / 2 - rectW / 2;
+        const rectY = 5 * visualScale; 
+        
+        // Pozadí plakety
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(rectX, rectY, rectW, rectH, 12);
+        } else {
+            ctx.rect(rectX, rectY, rectW, rectH);
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Zlatý text
+        ctx.fillStyle = "#f1c40f"; 
+        ctx.fillText(text, canvas.width / 2, rectY + rectH / 2 + 2);
+        ctx.restore();
+    }
 }
 
 function updateUI() {
@@ -1124,6 +1267,25 @@ function updateUI() {
     }
     
     document.getElementById('tokenCount').innerText = tokens;
+    // Logika pro pulzování žetonu
+    const tokenDisp = document.getElementById('tokenDisplay');
+    let needsTokenPulse = false;
+    
+    if (currentRoll.active && !gameOver) {
+        // Pulzuje buď pokud se žeton už právě upravuje, 
+        // NEBO pokud padl nemožný tah, máme žetony a nejedná se o dvojitý hod
+        if (currentRoll.tokenUsed) {
+            needsTokenPulse = true;
+        } else if (!hasAnyValidMove() && tokens > 0 && !currentRoll.isDoubles && canSaveWithToken()) {
+            needsTokenPulse = true;
+        }
+    }
+    
+    if (needsTokenPulse) {
+        tokenDisp.classList.add('pulsing');
+    } else {
+        tokenDisp.classList.remove('pulsing');
+    }
 }
 
 function getNeighborCount(node) {
@@ -1230,7 +1392,7 @@ function calculateScores(doLog = true) {
     let totalScore = 0;
     let visited = new Set();
     let degreeScores = {2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
-    
+
     if (doLog) {
         refreshStatus();
         addLogEntry({ code: 'game_over' });
@@ -1264,11 +1426,31 @@ function calculateScores(doLog = true) {
                     let multiplier = [0, 0, 1, 2, 3, 5, 10][d];
                     let pts = clusterSize * multiplier;
                     degreeScores[d] += pts;
+                    // NOVÉ: Uložení bodovaných uzlů pro vizuální zvýraznění (zlatá záře)
+                    scoredNodes.push(...clusterNodes);clusterNodes.forEach(n => {
+                        scoredNodes.push({
+                            node: n,
+                            degree: d
+                        });
+                    });
                     
                     let avgX = clusterNodes.reduce((sum, n) => sum + n.x, 0) / clusterNodes.length;
                     let avgY = clusterNodes.reduce((sum, n) => sum + n.y, 0) / clusterNodes.length;
-                    scoreLabels.push({x: avgX, y: avgY, text: `+${pts}`});
-                    
+                    //scoreLabels.push({x: avgX, y: avgY,  text: `${d}L +${pts}`});
+                    const degreeColors = {
+                        2: 'rgba(46, 204, 113, 0.45)',   // zelená
+                        3: 'rgba(52, 152, 219, 0.45)',   // modrá
+                        4: 'rgba(155, 89, 182, 0.45)',   // fialová
+                        5: 'rgba(230, 126, 34, 0.45)',   // oranžová
+                        6: 'rgba(241, 196, 15, 0.45)'    // zlatá
+                    };
+
+                    scoreLabels.push({
+    x: avgX,
+    y: avgY,
+    text: `+${pts}`,
+    degree: d
+});
                     if (doLog) {
                         addLogEntry({ code: 'cluster', size: clusterSize, degree: d, pts: pts });
                     }
@@ -1277,7 +1459,7 @@ function calculateScores(doLog = true) {
         });
         totalScore += degreeScores[d];
     }
-
+        finalTotalScore = totalScore; // Uložíme do paměti pro zobrazení na displeji
     if (doLog) {
         if (!foundClusters) addLogEntry({ code: 'no_clusters' });
         addLogEntry({ code: 'separator' });
@@ -1677,7 +1859,8 @@ document.getElementById('langBtn').addEventListener('click', (e) => {
     isCzech = !isCzech; e.target.innerText = texts[isCzech ? 'cs' : 'en'].langFlag;
     applyTranslations();
     refreshStatus();
-    renderLog(); 
+    renderLog();
+    drawBoard(); // <-- TOTO JE TEN PŘIDANÝ ŘÁDEK, který opravil překlad plakety 
 });
 
 document.getElementById('helpBtn').addEventListener('click', () => {
