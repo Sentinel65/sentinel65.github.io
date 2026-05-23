@@ -411,7 +411,7 @@ const texts = {
                 <li>Všechny čáry musí tvořit jedinou souvislou síť. <strong>Nová čára musí navazovat. Nemohu se napojovat z výchozího bodu, který není s ničím spojen.</strong></li>
                 <li><strong>Tah:</strong> Barevná kostka určuje barvu, bílá kostka určuje směr. Stačí kliknout na výchozí bod a čára se narýsuje automaticky. Zobrazení platných tahů z výchozího bodu na hrací desce po hodu kostkami je možné zobrazit kliknutím na tlačítko 👁️, aktivní tlačítko pak vypadá <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete klikáním libovolně změnit hodnotu jedné kostky, druhé zůstane původní hodnota.</li>
-                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton, který umožňuje změnit hodnotu jedné kostky o +1 nebo -1. Druhé zůstane původní hodnota. Je-li aktivní režim ŽETON, je indikován blikáním piktogramu v menu nad hrací deskou do doby umístění spojnice na hrací desku. <span class="help-pulse">🪙</span></li>
+                <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton, který umožňuje změnit hodnotu jedné kostky o +1 nebo -1. Druhé zůstane původní hodnota. Kliknutím na tlačítko ŽETON jej aktivujeme ručně. Je-li aktivní režim ŽETON, je indikován blikáním piktogramu v menu nad hrací deskou do doby umístění spojnice na hrací desku. <span class="help-pulse">🪙</span></li>
                 <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Platí vždy poslední volba (kliknutí).</li>
                 <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás nechá tah zachránit úpravou kostek. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
             </ul>
@@ -482,7 +482,7 @@ const texts = {
                 <li>All lines must form a single contiguous network. <strong>A new line must connect to an existing one. You cannot connect from a starting point that is not connected to anything.</strong></li>
                 <li><strong>Turn:</strong> The colored die determines the color, the white die determines the direction. Just click the starting node and the line will be drawn automatically. Valid moves from the starting point on the board after rolling the dice can be displayed by clicking the 👁️ button, an active button then looks like <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Doubles:</strong> If the same numbers are rolled, you can cycle one die to freely change its value, the other keeps its original value.</li>
-                <li><strong>Tokens (🪙):</strong> If you link a node with all 6 colors, you earn a token that allows you to change the value of one die by +1 or -1. The other die keeps its original value. If the TOKEN mode is active, it is indicated by a flashing pictogram in the menu above the board until the link is placed on the board. <span class="help-pulse">🪙</span></li>
+                <li><strong>Tokens (🪙):</strong> If you link a node with all 6 colors, you earn a token that allows you to change the value of one die by +1 or -1. The other die keeps its original value. Click the TOKEN button to activate it manually. If the TOKEN mode is active, it is indicated by a flashing pictogram in the menu above the board until the link is placed on the board. <span class="help-pulse">🪙</span></li>
                 <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The last click always applies.</li>
                 <li><strong>Mistakes:</strong> 6 mistakes end the game. If you have no valid move, the system will log a mistake (if no token) or prompt for rescue. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
@@ -710,6 +710,19 @@ function refreshStatus() {
     // =====================================================
     // NEEXISTUJE PLATNÝ TAH
     // =====================================================
+    if (
+    currentRoll.tokenUsed &&
+    currentRoll.tokenChoice
+) {
+
+    updateStatus(
+        isCzech
+            ? 'Žeton aktivní — upravte hod.'
+            : 'Token active — modify your roll.'
+    );
+
+    return;
+}
 
     if (!hasAnyValidMove()) {
 
@@ -1329,6 +1342,40 @@ function updateUI() {
     }
 }
 
+
+document.getElementById('tokenDisplay')
+.addEventListener('click', () => {
+
+    if (gameOver) return;
+    if (!currentRoll.active) return;
+    if (tokens <= 0) return;
+
+    // vypnutí tokenu
+    if (currentRoll.tokenUsed) {
+        currentRoll.tokenUsed = false;
+        currentRoll.tokenChoice = null; // Změněno na null pro konzistenci s vnitřní logikou
+
+        // PŘIDÁNO: Reset kostek do původního stavu
+        currentRoll.color = currentRoll.originalColor;
+        currentRoll.dir = currentRoll.originalDir;
+
+        refreshStatus();
+        updateUI();
+        drawBoard(); // Přidáno pro aktualizaci desky (odstranění falešných nápověd)
+
+        return;
+    }
+
+    // zapnutí tokenu
+    currentRoll.tokenUsed = true;
+    currentRoll.tokenChoice = null; // Ještě nevíme, kterou kostku bude měnit, proto null
+
+    refreshStatus();
+    updateUI();
+});
+
+
+
 function getNeighborCount(node) {
     let count = 0;
     for (let i = 1; i <= 6; i++) {
@@ -1855,6 +1902,7 @@ function attemptLink(n1, n2) {
 
     const newLink = { n1, n2, color: currentRoll.color, colorStr: `--c${currentRoll.color}` };
     links.push(newLink); n1.links.push(newLink); n2.links.push(newLink);
+
     
     addLogEntry({ code: 'move', n1q: n1.q, n1r: n1.r, n2q: n2.q, n2r: n2.r, color: currentRoll.color });
 
@@ -1872,6 +1920,8 @@ function attemptLink(n1, n2) {
     currentRoll.color = null;
     currentRoll.dir = null;
     currentRoll.active = false;
+    currentRoll.tokenUsed = false;
+    currentRoll.tokenChoice = null;
     
     updateUI(); drawBoard(); refreshStatus();
     
