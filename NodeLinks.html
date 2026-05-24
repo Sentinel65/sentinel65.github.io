@@ -561,6 +561,7 @@ let historyStack = [];
 let scoreLabels = []; 
 let logEntries = []; 
 let scoredNodes = []; // NOVÉ: Uchovává uzly, které získaly body
+let inactiveNodes = [];  // NOVÉ: Uchovává uzly, které ne   získaly body
 let finalTotalScore = 0; // NOVÉ CELKOVÉ SCǑRE NA KONCI HRY
 let currentRoll = {
     originalColor: null,
@@ -1092,6 +1093,69 @@ function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(camera.x, camera.y);
+
+// TLUMENÉ NEBODOVANÉ SHLUKY
+if (gameOver && inactiveNodes.length > 0) {
+
+    const inactiveColors = {
+
+        2: {
+            fill: 'rgba(46, 204, 113, 0.10)',
+            stroke: 'rgba(46, 204, 113, 0.35)'
+        },
+
+        3: {
+            fill: 'rgba(52, 152, 219, 0.10)',
+            stroke: 'rgba(52, 152, 219, 0.35)'
+        },
+
+        4: {
+            fill: 'rgba(155, 89, 182, 0.10)',
+            stroke: 'rgba(155, 89, 182, 0.35)'
+        },
+
+        5: {
+            fill: 'rgba(230, 126, 34, 0.10)',
+            stroke: 'rgba(230, 126, 34, 0.35)'
+        },
+
+        6: {
+            fill: 'rgba(241, 196, 15, 0.10)',
+            stroke: 'rgba(241, 196, 15, 0.35)'
+        }
+    };
+
+    inactiveNodes.forEach(entry => {
+
+        const n = entry.node;
+
+        if (!n) return;
+
+        const colors =
+            inactiveColors[entry.degree];
+
+        ctx.beginPath();
+
+        ctx.arc(
+            n.x,
+            n.y,
+            15 * visualScale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = colors.fill;
+
+        ctx.fill();
+
+        ctx.lineWidth = 2 * visualScale;
+
+        ctx.strokeStyle = colors.stroke;
+
+        ctx.stroke();
+    });
+}
+
     // NOVÉ: Vykreslení zlaté záře pod bodovanými shluky (když je konec hry)
 if (gameOver && scoredNodes.length > 0) {
 
@@ -1477,6 +1541,8 @@ function logDeadTurn(autoEval = false) {
 function calculateScores(doLog = true) {
     if (doLog) gameOver = true;
     scoreLabels = [];
+    scoredNodes = [];
+    inactiveNodes = [];
     let totalScore = 0;
     let visited = new Set();
     let degreeScores = {2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
@@ -1509,41 +1575,74 @@ function calculateScores(doLog = true) {
                     });
                 }
                 
-                if (clusterSize > 1) {
-                    foundClusters = true;
-                    let multiplier = [0, 0, 1, 2, 3, 5, 10][d];
-                    let pts = clusterSize * multiplier;
-                    degreeScores[d] += pts;
-                    // NOVÉ: Uložení bodovaných uzlů pro vizuální zvýraznění (zlatá záře)
-                    scoredNodes.push(...clusterNodes);clusterNodes.forEach(n => {
-                        scoredNodes.push({
-                            node: n,
-                            degree: d
-                        });
-                    });
-                    
-                    let avgX = clusterNodes.reduce((sum, n) => sum + n.x, 0) / clusterNodes.length;
-                    let avgY = clusterNodes.reduce((sum, n) => sum + n.y, 0) / clusterNodes.length;
-                    //scoreLabels.push({x: avgX, y: avgY,  text: `${d}L +${pts}`});
-                    const degreeColors = {
-                        2: 'rgba(46, 204, 113, 0.45)',   // zelená
-                        3: 'rgba(52, 152, 219, 0.45)',   // modrá
-                        4: 'rgba(155, 89, 182, 0.45)',   // fialová
-                        5: 'rgba(230, 126, 34, 0.45)',   // oranžová
-                        6: 'rgba(241, 196, 15, 0.45)'    // zlatá
-                    };
+if (clusterSize > 1) {
 
-                    scoreLabels.push({
+    foundClusters = true;
+
+    let multiplier =
+        [0, 0, 1, 2, 3, 5, 10][d];
+
+    let pts =
+        clusterSize * multiplier;
+
+    degreeScores[d] += pts;
+
+    // BODOVANÉ SHLUKY
+    if (clusterSize >= 2) {
+
+        clusterNodes.forEach(n => {
+
+            scoredNodes.push({
+                node: n,
+                degree: d
+            });
+        });
+    }
+
+    let avgX =
+        clusterNodes.reduce(
+            (sum, n) => sum + n.x,
+            0
+        ) / clusterNodes.length;
+
+    let avgY =
+        clusterNodes.reduce(
+            (sum, n) => sum + n.y,
+            0
+        ) / clusterNodes.length;
+
+    scoreLabels.push({
+
     x: avgX,
     y: avgY,
     text: `+${pts}`,
     degree: d
 });
-                    if (doLog) {
-                        addLogEntry({ code: 'cluster', size: clusterSize, degree: d, pts: pts });
-                    }
+
+    if (doLog) {
+
+        addLogEntry({
+            code: 'cluster',
+            size: clusterSize,
+            degree: d,
+            pts: pts
+        });
+    }
+
+} else if (clusterSize === 1) {
+
+    // NEBODOVANÉ SHLUKY
+
+    clusterNodes.forEach(n => {
+
+        inactiveNodes.push({
+            node: n,
+            degree: d
+        });
+    });
+}                    
                 }
-            }
+            
         });
         totalScore += degreeScores[d];
     }
