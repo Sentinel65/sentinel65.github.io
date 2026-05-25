@@ -193,7 +193,7 @@ button.action-btn.active-toggle {
     overflow: hidden; background: var(--board-bg);
 }
 
-canvas {
+#gameCanvas {
     position: absolute; top: 0; left: 0;
     transform-origin: 0 0;
 }
@@ -294,6 +294,15 @@ canvas {
 
 @keyframes toastIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+/* Modal specifikace pro Statistiku */
+.stat-section { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fdfdfd; }
+.stat-header { background: #f1f2f6; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; border-bottom: 1px solid #eee; }
+.stat-content { padding: 15px; background: #fff; }
+.toggle-link { color: #3498db; text-decoration: none; font-size: 14px; font-weight: bold; cursor: pointer; }
+.toggle-link:hover { text-decoration: underline; }
+.stat-canvas { width: 100%; display: block; margin: 0 auto 15px auto; background: var(--board-bg); border: 1px solid #eee; border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
+.stat-log { font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; color: #333; margin: 0; border: 1px solid #e0e0e0; }
+.clear-section label { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 </style>
 </head>
 
@@ -316,11 +325,12 @@ canvas {
         </div>
         <div class="btn-group">
             <div id="tokenDisplay">🪙 <span id="tokenCount">0</span></div>
+			<button id="hintBtn" class="action-btn">👁️</button>
+			<button id="helpBtn" class="action-btn">💡</button>
+			<button id="statsBtn" class="action-btn">🏆</button>
             <button id="undoBtn" class="action-btn">↩️</button>
-            <button id="hintBtn" class="action-btn">👁️</button>
             <button id="newBtn" class="action-btn">🔄</button>
             <button id="langBtn" class="action-btn">🇬🇧</button>
-            <button id="helpBtn" class="action-btn">💡</button>
             <button id="saveBtn" class="action-btn">💾</button>
             <button id="loadBtn" class="action-btn">📂</button>
         </div>
@@ -352,6 +362,44 @@ canvas {
     </div>
 </div>
 
+<div id="statsModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <button class="modal-close" id="closeStatsBtn">✖</button>
+        <h2 id="statsTitleText" style="margin-top:0;">Statistiky</h2>
+        
+        <div class="stat-section">
+            <div class="stat-header">
+                <span><span id="lblBestScore">Nejlepší výsledek:</span> <b id="statBestScoreVal">-</b></span>
+                <a href="#" id="toggleBestLink" class="toggle-link">Zobrazit data</a>
+            </div>
+            <div id="statBestContent" class="stat-content" style="display:none;">
+                <canvas id="statBestCanvas" class="stat-canvas"></canvas>
+                <pre id="statBestLog" class="stat-log"></pre>
+            </div>
+        </div>
+        
+        <div class="stat-section">
+            <div class="stat-header">
+                <span><span id="lblLastGame">Poslední hra:</span> <b id="statLastScoreVal">-</b></span>
+                <a href="#" id="toggleLastLink" class="toggle-link">Zobrazit data</a>
+            </div>
+            <div id="statLastContent" class="stat-content" style="display:none;">
+                <canvas id="statLastCanvas" class="stat-canvas"></canvas>
+                <pre id="statLastLog" class="stat-log"></pre>
+            </div>
+        </div>
+        
+        <hr style="border-color: #eee; margin: 20px 0;">
+        
+        <div class="clear-section">
+            <label><input type="radio" name="clearMode" value="stats" checked> <span id="lblClearStats">Vymazat statistiky</span></label>
+            <label><input type="radio" name="clearMode" value="save"> <span id="lblClearSave">Vymazat uloženou hru</span></label>
+            <label><input type="radio" name="clearMode" value="all"> <span id="lblClearAll">Vymazat vše</span></label>
+            
+            <button id="execClearBtn" style="margin-top:15px; background: #e74c3c; color: white; padding: 10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size: 15px; width:100%;">Vymazat</button>
+        </div>
+    </div>
+</div>
 <div id="confirmModal" class="modal">
     <div class="modal-content">
         <div id="confirmText" style="font-size: 16px; margin-bottom: 10px; white-space: pre-wrap;"></div>
@@ -374,19 +422,27 @@ const uiTexts = {
         rollBtn: "Hodit kostkami", undoBtn: "Krok zpět", newBtn: "Nová hra",
         hintBtn: "Zobrazit nápovědu tahu", langBtn: "Přepnout jazyk", 
         helpBtn: "Nápověda", saveBtn: "Uložit", loadBtn: "Načíst",
-        logHeader: "Log hry", tokenTitle: "Žetony"
+        logHeader: "Log hry", tokenTitle: "Žetony",
+        statsBtn: "Statistiky", statsTitle: "Statistiky", 
+        lblBestScore: "Nejlepší výsledek:", lblLastGame: "Poslední hra:", 
+        lblClearStats: "Vymazat statistiky", lblClearSave: "Vymazat uloženou hru", 
+        lblClearAll: "Vymazat vše", btnExecClear: "Vymazat"
     },
     en: {
         rollBtn: "Roll dice", undoBtn: "Undo", newBtn: "New game",
         hintBtn: "Toggle move hint", langBtn: "Switch language", 
         helpBtn: "Help", saveBtn: "Save", loadBtn: "Load",
-        logHeader: "Game Log", tokenTitle: "Tokens"
+        logHeader: "Game Log", tokenTitle: "Tokens",
+        statsBtn: "Statistics", statsTitle: "Statistics", 
+        lblBestScore: "Best score:", lblLastGame: "Last game:", 
+        lblClearStats: "Clear statistics", lblClearSave: "Clear saved game", 
+        lblClearAll: "Clear all", btnExecClear: "Clear"
     }
 };
 
 const confirmTexts = {
-    cs: { yes: "Ano", no: "Ne", newGame: "Opravdu chcete začít novou hru?", forfeit: "Máte platný tah, nebo můžete hod upravit!\nOpravdu chcete tah vzdát a zapsat chybu?" },
-    en: { yes: "Yes", no: "No", newGame: "Do you really want to start a new game?", forfeit: "You can move or modify roll!\nReally forfeit and log mistake?" }
+    cs: { yes: "Ano", no: "Ne", newGame: "Opravdu chcete začít novou hru?", forfeit: "Máte platný tah, nebo můžete hod upravit!\nOpravdu chcete tah vzdát a zapsat chybu?", clearAction: "Opravdu chcete vymazat vybraná data? Akci nelze vrátit." },
+    en: { yes: "Yes", no: "No", newGame: "Do you really want to start a new game?", forfeit: "You can move or modify roll!\nReally forfeit and log mistake?", clearAction: "Really clear selected data? This cannot be undone." }
 };
 
 const texts = {
@@ -415,6 +471,11 @@ const texts = {
                 <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Platí vždy poslední volba (kliknutí).</li>
                 <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás nechá tah zachránit úpravou kostek. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
             </ul>
+            <h3>Chybové kruhy</h3>
+            <ul>
+                <li>Na okraji mapy je 6 prázdných kruhů, které slouží jako ukazatel zbývajících pokusů.</li>
+                <li>Při každém <strong>Nemožném tahu</strong> se jeden z nich vybarví příslušnou barvou (🔴🟢🟡🔵🟣🟠). Jakmile se vybarví všech 6, hra definitivně končí.</li>
+            </ul>        
             <h3>Bodování</h3>
             <ul>
                 <li>Samostatné uzly bez vazeb nebo s 1 vazbou: 0 bodů</li>
@@ -424,7 +485,7 @@ const texts = {
                 <li><strong>5 vazeb:</strong> 5x velikost skupiny</li>
                 <li><strong>6 vazeb:</strong> 10x velikost skupiny</li>
             </ul>
-            <h3>Barevné označení uzlů</h3>
+                       <h3>Barevné označení uzlů</h3>
             <p>Na konci hry budou na hrací desce zobrazeny jednotlivé barevné clustery. Podle nich hráč vizuálně pozná, které skóre patří ke kterému uzlu a jak silná byla skupina.</p>
             <ul>
                 <li><strong>2 vazby:</strong> zelené</li>
@@ -432,12 +493,49 @@ const texts = {
                 <li><strong>4 vazby:</strong> fialové</li>
                 <li><strong>5 vazeb:</strong> oranžové</li>
                 <li><strong>6 vazeb:</strong> zlaté</li>
-            </ul>
-            <h3>Chybové kruhy</h3>
-            <ul>
-                <li>Na okraji mapy je 6 prázdných kruhů, které slouží jako ukazatel zbývajících pokusů.</li>
-                <li>Při každém <strong>Nemožném tahu</strong> se jeden z nich vybarví příslušnou barvou (🔴🟢🟡🔵🟣🟠). Jakmile se vybarví všech 6, hra definitivně končí.</li>
-            </ul>
+            </ul>    
+
+<p>Grafické rozlišení na konci hry bude v barvě daného uzlu.<p>
+<div style="display: flex; flex-direction: column; gap: 10px; margin: 10px 0;">
+    
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="width: 50px; display: flex; justify-content: center;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(241, 196, 15, 0.4); border: 3px solid rgba(243, 156, 18, 0.8); display:flex; align-items:center; justify-content:center;">
+                <div style="width: 14px; height: 14px; background: #444; border-radius: 50%;"></div>
+            </div>
+        </div>
+        <span>Bodovaný uzel (se zlatou září)</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="width: 50px; display: flex; justify-content: center;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #eee; border: 3px solid #ccc; display:flex; align-items:center; justify-content:center;">
+                <div style="width: 14px; height: 14px; background: #444; border-radius: 50%;"></div>
+            </div>
+        </div>
+        <span>Nebodovaný uzel (standardní)</span>
+    </div>
+</div>
+            <h3>Log hry</h3>
+            <p>Na konci hry se v logu hry vypíše bodové hodnocení s podrobným výčtem bodů za jednotlivé uzly a stupně.</p>
+            <pre style="font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap;">=========================
+Konec hry! Hodnocení:
+• Skupina 2 uzlů (4 vazby): 6 b.
+• Skupina 2 uzlů (4 vazby): 6 b.
+• Skupina 2 uzlů (5 vazeb): 10 b.
+• Skupina 6 uzlů (6 vazeb): 60 b.
+---
+2. stupeň: 0
+3. stupeň: 0
+4. stupeň: 12
+5. stupeň: 10
+6. stupeň: 60
+---
+Celkové skóre: 82
+Hodnocení: Mistr
+---</pre>
+			<h3>Statistiky</h3>
+            <p>Po skončení hry se na hrací desce graficky znázorní bodované a nebodované uzly. Podrobná data s výčtem bodů se uloží do Logu hry a také do Statistik, kde se bude ukládat hra s nejlepším skóre a poslední hra. U obou bude vidět hrací deska ve stavu na konci hry a výpis, za jaké uzly byl daný počet bodů přidělen.</p>
             <h3>Hodnocení (Tiers)</h3>
             <ul>
                 <li><strong>0-29:</strong> Nevzdávej to, zkus to znovu</li>
@@ -451,11 +549,12 @@ const texts = {
             <ul>
                 <li><strong>🎲</strong> Hodit kostkami / Vzdát tah (zapsat chybu)</li>
                 <li><strong>🪙</strong> Aktuální počet žetonů</li>
+				<li><strong>👁️</strong> Zobrazit / skrýt nápovědu tahu</li>
+				<li><strong>💡</strong> Nápověda (tato obrazovka)</li>
+				<li><strong>🏆</strong> Statistiky</li>
                 <li><strong>↩️</strong> Krok zpět</li>
-                <li><strong>👁️</strong> Zobrazit / skrýt nápovědu tahu</li>
                 <li><strong>🔄</strong> Nová hra</li>
                 <li><strong>🇬🇧 / 🇨🇿</strong> Přepnout jazyk</li>
-                <li><strong>💡</strong> Nápověda (tato obrazovka)</li>
                 <li><strong>💾</strong> Uložit hru do paměti</li>
                 <li><strong>📂</strong> Načíst uloženou hru</li>
             </ul>
@@ -486,6 +585,11 @@ const texts = {
                 <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The last click always applies.</li>
                 <li><strong>Mistakes:</strong> 6 mistakes end the game. If you have no valid move, the system will log a mistake (if no token) or prompt for rescue. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
+            <h3>Error Circles</h3>
+            <ul>
+                <li>There are 6 empty circles on the board's edge. They serve as a health indicator.</li>
+                <li>Each time a <strong>Dead turn</strong> is logged, one of them fills with color (🔴🟢🟡🔵🟣🟠). Once all 6 are filled, the game ends.</li>
+            </ul>
             <h3>Scoring</h3>
             <ul>
                 <li>1st degree nodes and single nodes (cluster size 1): 0 points</li>
@@ -504,11 +608,49 @@ const texts = {
                 <li><strong>5 links:</strong> orange</li>
                 <li><strong>6 links:</strong> gold</li>
             </ul>
-            <h3>Error Circles</h3>
-            <ul>
-                <li>There are 6 empty circles on the board's edge. They serve as a health indicator.</li>
-                <li>Each time a <strong>Dead turn</strong> is logged, one of them fills with color (🔴🟢🟡🔵🟣🟠). Once all 6 are filled, the game ends.</li>
-            </ul>
+            
+            <p>The graphical resolution at the end of the game will be in the color of that node.<p>
+<div style="display: flex; flex-direction: column; gap: 10px; margin: 10px 0;">
+    
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="width: 50px; display: flex; justify-content: center;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(241, 196, 15, 0.4); border: 3px solid rgba(243, 156, 18, 0.8); display:flex; align-items:center; justify-content:center;">
+                <div style="width: 14px; height: 14px; background: #444; border-radius: 50%;"></div>
+            </div>
+        </div>
+        <span>Scoring node (with gold glow)</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="width: 50px; display: flex; justify-content: center;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #eee; border: 3px solid #ccc; display:flex; align-items:center; justify-content:center;">
+                <div style="width: 14px; height: 14px; background: #444; border-radius: 50%;"></div>
+            </div>
+        </div>
+        <span>Non-scoring node (standard)</span>
+    </div>
+</div>
+            <h3>Log game</h3>
+            <p>At the end of the game, the game log displays the final score, including a detailed breakdown of points for each node and level.</p>
+            <pre style="font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap;">=========================
+Game Over! Evaluation:
+• Cluster of 2 nodes (4 links): 6 b.
+• Cluster of 2 nodes (4 links): 6 b.
+• Cluster of 2 nodes (5 links): 10 b.
+• Cluster of 6 nodes (6 links): 60 b.
+---
+2nd degree: 0
+3rd degree: 0
+4th degree: 12
+5th degree: 10
+6th degree: 60
+---
+Total score: 82
+Rank / Tier: Master
+---</pre>
+
+			<h3>Statistics</h3>
+            <p>Once the game ends, the game board will display a graphical representation of the scored and unscored nodes. Detailed data, including a breakdown of the points, will be saved to the Game Log and also to Statistics, where the game with the highest score and the most recent game will be stored. For both, you will be able to see the game board as it appeared at the end of the game and a list of which nodes were awarded the given number of points.</p>
             <h3>Score Tiers</h3>
             <ul>
                 <li><strong>0-29:</strong> Don't give up, try again</li>
@@ -522,11 +664,12 @@ const texts = {
             <ul>
                 <li><strong>🎲</strong> Roll dice / Forfeit turn (log mistake)</li>
                 <li><strong>🪙</strong> Current token count</li>
+				<li><strong>👁️</strong> Toggle move hint</li>
+				<li><strong>💡</strong> Help (this screen)</li>
+				<li><strong>🏆</strong> Statistics</li>
                 <li><strong>↩️</strong> Undo move</li>
-                <li><strong>👁️</strong> Toggle move hint</li>
                 <li><strong>🔄</strong> New game</li>
                 <li><strong>🇬🇧 / 🇨🇿</strong> Switch language</li>
-                <li><strong>💡</strong> Help (this screen)</li>
                 <li><strong>💾</strong> Save game to device memory</li>
                 <li><strong>📂</strong> Load saved game</li>
             </ul>
@@ -546,9 +689,23 @@ function applyTranslations() {
     document.getElementById('helpBtn').title = t.helpBtn;
     document.getElementById('saveBtn').title = t.saveBtn;
     document.getElementById('loadBtn').title = t.loadBtn;
+    document.getElementById('statsBtn').title = t.statsBtn;
     document.getElementById('tokenDisplay').title = t.tokenTitle;
     document.getElementById('logHeaderText').innerText = t.logHeader;
     document.getElementById('helpText').innerHTML = texts[isCzech ? 'cs' : 'en'].helpHtml;
+    
+    document.getElementById('statsTitleText').innerText = t.statsTitle;
+    document.getElementById('lblBestScore').innerText = t.lblBestScore;
+    document.getElementById('lblLastGame').innerText = t.lblLastGame;
+    document.getElementById('lblClearStats').innerText = t.lblClearStats;
+    document.getElementById('lblClearSave').innerText = t.lblClearSave;
+    document.getElementById('lblClearAll').innerText = t.lblClearAll;
+    document.getElementById('execClearBtn').innerText = t.btnExecClear;
+    
+    // Obnovení stavu v otevřeném okně statistik
+    if (document.getElementById('statsModal').style.display === 'flex') {
+        openStatsModal(true);
+    }
 }
 
 const directions = [null, '↘', '↗', '↑', '↖', '↙', '↓'];
@@ -563,6 +720,7 @@ let logEntries = [];
 let scoredNodes = []; // NOVÉ: Uchovává uzly, které získaly body
 let inactiveNodes = [];  // NOVÉ: Uchovává uzly, které ne   získaly body
 let finalTotalScore = 0; // NOVÉ CELKOVÉ SCǑRE NA KONCI HRY
+let gameLogStartIndex = 0; 
 let currentRoll = {
     originalColor: null,
     originalDir: null,
@@ -950,6 +1108,17 @@ function initGrid() {
         });
     }
     
+// Pro renderovani - hack, prepis barvy na hex aby stroke a round line fungovaly dobře s shadow a blur. (Volitelne, zatim se ridi pres css proměnné). Ale css barvy mame v hlavičce, ok.
+    if (isNew) {
+        const colors = [1,2,3,4,5,6,1,2,3,4,5,6]; // just pro debug statického pohledu ne... to vymažeme
+    } else {
+        // Převedení linků do nového layoutu je automatické, protože x, y se změnily. Jen je musíme překreslit (viz resizeCanvas->drawBoard)
+        // Můžeme resetovat barvy atd, ale my už je máme uložené.
+    }
+
+    // Centering camera
+
+
 // =====================================================
 // POČÁTEČNÍ ŠESTIÚHELNÍK
 // =====================================================
@@ -1131,8 +1300,8 @@ if (gameOver && inactiveNodes.length > 0) {
 
         if (!n) return;
 
-        const colors =
-            inactiveColors[entry.degree];
+        // PŘIDÁNO: Pokud neexistuje barva pro daný stupeň (např. 1 vazba), použije se šedá
+        const colors = inactiveColors[entry.degree] || { fill: 'rgba(150, 150, 150, 0.10)', stroke: 'rgba(150, 150, 150, 0.35)' };
 
         ctx.beginPath();
 
@@ -1193,8 +1362,7 @@ if (gameOver && scoredNodes.length > 0) {
 
         if (!n) return;
 
-        const colors =
-            glowColors[entry.degree];
+        const colors = glowColors[entry.degree] || glowColors[6]; // Použije zlatou jako zálohu
 
         ctx.beginPath();
 
@@ -1217,6 +1385,7 @@ if (gameOver && scoredNodes.length > 0) {
     });
 }
 
+    // Nakreslit čáry
     links.forEach(link => {
         ctx.beginPath();
         ctx.moveTo(link.n1.x, link.n1.y);
@@ -1262,6 +1431,7 @@ if (gameOver && scoredNodes.length > 0) {
         });
     }
 
+    // Chybové tečky
     errorNodes.forEach((en, idx) => {
         ctx.beginPath();
         ctx.arc(en.x, en.y, 16 * visualScale, 0, Math.PI * 2);
@@ -1275,12 +1445,14 @@ if (gameOver && scoredNodes.length > 0) {
         }
     });
 
+    // Nakreslit černé středy uzlů
     nodes.forEach(n => {
         ctx.beginPath();
         ctx.arc(n.x, n.y, 7 * visualScale, 0, Math.PI * 2);
         ctx.fillStyle = '#444'; ctx.fill();
     });
 
+    // Score popisy (+6, +10 atd.) nad uzly
     if (gameOver && scoreLabels.length > 0) {
         ctx.font = `bold ${Math.max(16, 24 * visualScale)}px 'Segoe UI', sans-serif`;
         ctx.textAlign = "center";
@@ -1542,13 +1714,14 @@ function calculateScores(doLog = true) {
     if (doLog) gameOver = true;
     scoreLabels = [];
     scoredNodes = [];
-    inactiveNodes = [];
+    inactiveNodes = []; // Vyčištění před novým výpočtem
     let totalScore = 0;
     let visited = new Set();
     let degreeScores = {2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
-
+    
     if (doLog) {
         refreshStatus();
+        gameLogStartIndex = logEntries.length;
         addLogEntry({ code: 'game_over' });
     }
 
@@ -1575,79 +1748,48 @@ function calculateScores(doLog = true) {
                     });
                 }
                 
-if (clusterSize > 1) {
-
-    foundClusters = true;
-
-    let multiplier =
-        [0, 0, 1, 2, 3, 5, 10][d];
-
-    let pts =
-        clusterSize * multiplier;
-
-    degreeScores[d] += pts;
-
-    // BODOVANÉ SHLUKY
-    if (clusterSize >= 2) {
-
-        clusterNodes.forEach(n => {
-
-            scoredNodes.push({
-                node: n,
-                degree: d
-            });
-        });
-    }
-
-    let avgX =
-        clusterNodes.reduce(
-            (sum, n) => sum + n.x,
-            0
-        ) / clusterNodes.length;
-
-    let avgY =
-        clusterNodes.reduce(
-            (sum, n) => sum + n.y,
-            0
-        ) / clusterNodes.length;
-
-    scoreLabels.push({
-
-    x: avgX,
-    y: avgY,
-    text: `+${pts}`,
-    degree: d
-});
-
-    if (doLog) {
-
-        addLogEntry({
-            code: 'cluster',
-            size: clusterSize,
-            degree: d,
-            pts: pts
-        });
-    }
-
-} else if (clusterSize === 1) {
-
-    // NEBODOVANÉ SHLUKY
-
-    clusterNodes.forEach(n => {
-
-        inactiveNodes.push({
-            node: n,
-            degree: d
-        });
-    });
-}                    
+                if (clusterSize > 1) {
+                    foundClusters = true;
+                    let multiplier = [0, 0, 1, 2, 3, 5, 10][d];
+                    let pts = clusterSize * multiplier;
+                    degreeScores[d] += pts;
+                    
+                    if (clusterSize >= 2) {
+                        clusterNodes.forEach(n => {
+                            scoredNodes.push({ node: n, degree: d });
+                        });
+                    }
+                    
+                    let avgX = clusterNodes.reduce((sum, n) => sum + n.x, 0) / clusterNodes.length;
+                    let avgY = clusterNodes.reduce((sum, n) => sum + n.y, 0) / clusterNodes.length;
+                    
+                    // Uložení souřadnic sítě (q, r) a stupně pro správné umístění i obarvení ve statistikách
+                    let qrList = clusterNodes.map(n => ({q: n.q, r: n.r}));
+                    scoreLabels.push({ x: avgX, y: avgY, text: `+${pts}`, degree: d, qrList: qrList });
+                    
+                    if (doLog) {
+                        addLogEntry({ code: 'cluster', size: clusterSize, degree: d, pts: pts });
+                    }
                 }
-            
+            }
         });
         totalScore += degreeScores[d];
     }
-        finalTotalScore = totalScore; // Uložíme do paměti pro zobrazení na displeji
+
+    // NOVÉ: Vyhledání nebodovaných uzlů (TLUMENÉ SHLUKY)
+    nodes.forEach(n => {
+        if (n.links.length > 0) {
+            // Pokud tento uzel NENÍ v seznamu scoredNodes
+            if (!scoredNodes.some(sn => sn.node === n)) {
+                // Přidáme ho do inactiveNodes a zaznamenáme jeho stupeň (počet vazeb)
+                inactiveNodes.push({ node: n, degree: n.links.length });
+            }
+        }
+    });
+    
     if (doLog) {
+        finalTotalScore = totalScore; 
+
         if (!foundClusters) addLogEntry({ code: 'no_clusters' });
         addLogEntry({ code: 'separator' });
         for (let d = 2; d <= 6; d++) {
@@ -1657,6 +1799,28 @@ if (clusterSize > 1) {
         addLogEntry({ code: 'total_score', score: totalScore });
         addLogEntry({ code: 'tier', score: totalScore });
         addLogEntry({ code: 'separator' });
+        
+        let currentStats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
+        let summaryEntries = logEntries.slice(gameLogStartIndex); 
+        
+        // Zápis VŠECH grafických vizuálů do paměti (vč. inactiveNodes a barev)
+        let gameData = {
+            score: totalScore,
+            summaryEntries: summaryEntries,
+            links: links.map(l => ({ n1q: l.n1.q, n1r: l.n1.r, n2q: l.n2.q, n2r: l.n2.r, colorStr: l.colorStr })),
+            errors: errors,
+            errorNodes: errorNodes.map(en => ({ q: en.q, r: en.r, color: en.color })),
+            scoredNodes: scoredNodes.map(sn => ({ q: sn.node.q, r: sn.node.r, degree: sn.degree })),
+            inactiveNodes: inactiveNodes.map(inN => ({ q: inN.node.q, r: inN.node.r, degree: inN.degree })),
+            scoreLabels: scoreLabels.map(sl => ({ text: sl.text, degree: sl.degree, qrList: sl.qrList }))
+        };
+        
+        currentStats.last = gameData;
+        if (!currentStats.best || gameData.score >= currentStats.best.score) {
+            currentStats.best = gameData;
+        }
+        localStorage.setItem('nodeLinksStats', JSON.stringify(currentStats));
+        
         drawBoard(); 
     }
 }
@@ -2114,6 +2278,290 @@ document.getElementById('loadBtn').addEventListener('click', () => {
     showToast(isCzech ? 'Hra načtena.' : 'Game loaded.');
 });
 
+// =====================================================
+// STATISTIKY (MODÁLNÍ OKNO A VYKRESLENÍ)
+// =====================================================
+function renderStatCanvas(canvasId, gameData) {
+    const statCanvas = document.getElementById(canvasId);
+    if (!statCanvas || !gameData) return;
+    const ctxS = statCanvas.getContext('2d');
+    
+    const cw = statCanvas.parentElement.clientWidth - 30;
+    statCanvas.width = cw;
+    statCanvas.height = cw / 1.18; 
+    
+    const L_w = statCanvas.width / 6.5; 
+    const L_h = statCanvas.height / 5.5;
+    let sL = Math.min(L_w, L_h); sL = Math.max(15, Math.min(sL, 80));
+    const vScale = sL / 60;
+    
+    const sqrt3_2 = Math.sqrt(3) / 2;
+    let sNodes = [], sErrorNodes = [];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    boardDefinition.forEach(col => {
+        let c = col.c;
+        col.r_axes.forEach(r_ax => {
+            let nx = c * sL * sqrt3_2, ny = r_ax * sL / 2;
+            sNodes.push({ x: nx, y: ny, q: c, r: r_ax });
+            if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
+            if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
+        });
+        col.errors.forEach(r_ax => {
+            let nx = c * sL * sqrt3_2, ny = r_ax * sL / 2;
+            sErrorNodes.push({ x: nx, y: ny, q: c, r: r_ax });
+            if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
+            if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
+        });
+    });
+    
+    const camX = statCanvas.width / 2 - ((maxX - minX) / 2) - minX;
+    const camY = statCanvas.height / 2 - ((maxY - minY) / 2) - minY;
+    
+    ctxS.clearRect(0, 0, statCanvas.width, statCanvas.height);
+    ctxS.save(); ctxS.translate(camX, camY);
+    
+    // 1. TLUMENÉ NEBODOVANÉ SHLUKY
+    if (gameData.inactiveNodes && gameData.inactiveNodes.length > 0) {
+        const inactiveColors = {
+            1: { fill: 'rgba(150, 150, 150, 0.10)', stroke: 'rgba(150, 150, 150, 0.35)' }, // Pojistka pro osamocené čáry
+            2: { fill: 'rgba(46, 204, 113, 0.10)', stroke: 'rgba(46, 204, 113, 0.35)' },
+            3: { fill: 'rgba(52, 152, 219, 0.10)', stroke: 'rgba(52, 152, 219, 0.35)' },
+            4: { fill: 'rgba(155, 89, 182, 0.10)', stroke: 'rgba(155, 89, 182, 0.35)' },
+            5: { fill: 'rgba(230, 126, 34, 0.10)', stroke: 'rgba(230, 126, 34, 0.35)' },
+            6: { fill: 'rgba(241, 196, 15, 0.10)', stroke: 'rgba(241, 196, 15, 0.35)' }
+        };
+        gameData.inactiveNodes.forEach(inN => {
+            let n = sNodes.find(x => x.q === inN.q && x.r === inN.r);
+            if (n) {
+                const colors = inactiveColors[inN.degree] || inactiveColors[2];
+                ctxS.beginPath();
+                ctxS.arc(n.x, n.y, 15 * vScale, 0, Math.PI * 2);
+                ctxS.fillStyle = colors.fill; ctxS.fill();
+                ctxS.lineWidth = 2 * vScale; ctxS.strokeStyle = colors.stroke; ctxS.stroke();
+            }
+        });
+    }
+
+    // 2. ZLATÁ ZÁŘE POD BODOVANÝMI SHLUKY
+    if (gameData.scoredNodes && gameData.scoredNodes.length > 0) {
+        const glowColors = {
+            2: { fill: 'rgba(46, 204, 113, 0.35)', stroke: 'rgba(39, 174, 96, 0.9)' },
+            3: { fill: 'rgba(52, 152, 219, 0.35)', stroke: 'rgba(41, 128, 185, 0.9)' },
+            4: { fill: 'rgba(155, 89, 182, 0.35)', stroke: 'rgba(142, 68, 173, 0.9)' },
+            5: { fill: 'rgba(230, 126, 34, 0.35)', stroke: 'rgba(211, 84, 0, 0.9)' },
+            6: { fill: 'rgba(241, 196, 15, 0.35)', stroke: 'rgba(243, 156, 18, 0.95)' }
+        };
+        gameData.scoredNodes.forEach(sn => {
+            let n = sNodes.find(x => x.q === sn.q && x.r === sn.r);
+            if (n) {
+                const colors = glowColors[sn.degree] || glowColors[6];
+                ctxS.beginPath();
+                ctxS.arc(n.x, n.y, 18 * vScale, 0, Math.PI * 2);
+                ctxS.fillStyle = colors.fill; ctxS.fill();
+                ctxS.lineWidth = 3 * vScale; ctxS.strokeStyle = colors.stroke; ctxS.stroke();
+            }
+        });
+    }
+
+    // 3. Nakreslení čar a chybových teček
+    gameData.links.forEach(l => {
+        let n1 = sNodes.find(x => x.q === l.n1q && x.r === l.n1r);
+        let n2 = sNodes.find(x => x.q === l.n2q && x.r === l.n2r);
+        if (n1 && n2) {
+            ctxS.beginPath(); ctxS.moveTo(n1.x, n1.y); ctxS.lineTo(n2.x, n2.y);
+            ctxS.strokeStyle = getComputedStyle(document.body).getPropertyValue(l.colorStr).trim() || l.colorStr;
+            ctxS.lineWidth = 7 * vScale; ctxS.lineCap = 'round'; ctxS.stroke();
+        }
+    });
+
+    gameData.errorNodes.forEach((en, idx) => {
+        let n = sErrorNodes.find(x => x.q === en.q && x.r === en.r);
+        if (n) {
+            ctxS.beginPath(); ctxS.arc(n.x, n.y, 16 * vScale, 0, Math.PI * 2);
+            if (idx < gameData.errors) {
+                ctxS.fillStyle = en.color ? getComputedStyle(document.body).getPropertyValue(en.color).trim() : '#fff';
+                ctxS.fill(); ctxS.strokeStyle = '#222'; ctxS.lineWidth = 3 * vScale; ctxS.stroke();
+            } else {
+                ctxS.fillStyle = 'rgba(255,255,255,0.6)'; ctxS.fill();
+                ctxS.strokeStyle = '#aaa'; ctxS.lineWidth = 2 * vScale; ctxS.setLineDash([4,4]); ctxS.stroke(); ctxS.setLineDash([]);
+            }
+        }
+    });
+
+    // Černé středy
+    sNodes.forEach(n => { ctxS.beginPath(); ctxS.arc(n.x, n.y, 7 * vScale, 0, Math.PI * 2); ctxS.fillStyle = '#444'; ctxS.fill(); });
+
+    // 4. TEXTOVÉ POPISKY (+6, +10) nad uzly v příslušných barvách
+    if (gameData.scoreLabels) {
+        ctxS.font = `bold ${Math.max(16, 24 * vScale)}px 'Segoe UI', sans-serif`;
+        ctxS.textAlign = "center";
+        ctxS.textBaseline = "middle";
+        gameData.scoreLabels.forEach(label => {
+            if (label.qrList) {
+                // Najdeme virtuální body na zmenšeném plátně
+                let cNodes = label.qrList.map(qr => sNodes.find(n => n.q === qr.q && n.r === qr.r)).filter(Boolean);
+                if (cNodes.length > 0) {
+                    let avgX = cNodes.reduce((sum, n) => sum + n.x, 0) / cNodes.length;
+                    let avgY = cNodes.reduce((sum, n) => sum + n.y, 0) / cNodes.length;
+                    
+                    ctxS.lineWidth = 4 * vScale;
+                    ctxS.strokeStyle = "rgba(255, 255, 255, 0.9)";
+                    ctxS.strokeText(label.text, avgX, avgY - (20 * vScale));
+                    
+                    const textColors = {
+                        2: '#2ecc71',
+                        3: '#3498db',
+                        4: '#9b59b6',
+                        5: '#e67e22',
+                        6: '#f1c40f'
+                    };
+                    ctxS.fillStyle = textColors[label.degree] || '#ffffff';
+                    ctxS.fillText(label.text, avgX, avgY - (20 * vScale));
+                }
+            }
+        });
+    }
+
+    ctxS.restore();
+
+    // 5. HUD: Plaketa celkového skóre ve statistikách
+    ctxS.save();
+    const text = isCzech ? `CELKOVÉ SKÓRE: ${gameData.score}` : `TOTAL SCORE: ${gameData.score}`;
+    const fontSize = Math.max(14, 18 * vScale);
+    ctxS.font = `bold ${fontSize}px 'Segoe UI', sans-serif`;
+    ctxS.textAlign = "center";
+    ctxS.textBaseline = "middle";
+    
+    const metrics = ctxS.measureText(text);
+    const padX = 25 * vScale;
+    const padY = 12 * vScale;
+    const rectW = metrics.width + padX * 2;
+    const rectH = fontSize + padY * 2;
+    const rectX = statCanvas.width / 2 - rectW / 2;
+    const rectY = 5 * vScale; 
+    
+    // Zčervenání pokud hra skončila chybami
+    const hasLost = gameData.errors >= 6;
+    
+    ctxS.fillStyle = hasLost ? "rgba(80, 0, 0, 0.92)" : "rgba(20, 20, 20, 0.92)";
+    ctxS.strokeStyle = hasLost ? "rgba(231, 76, 60, 0.9)" : "rgba(241, 196, 15, 0.9)";
+    ctxS.lineWidth = 3 * vScale;
+    
+    ctxS.shadowColor = "rgba(0,0,0,0.7)";
+    ctxS.shadowBlur = 18;
+    ctxS.beginPath();
+    if (ctxS.roundRect) {
+        ctxS.roundRect(rectX, rectY, rectW, rectH, 12);
+    } else {
+        ctxS.rect(rectX, rectY, rectW, rectH);
+    }
+    ctxS.fill();
+    ctxS.stroke(); // Nakreslí okraj plakety
+    ctxS.shadowBlur = 0;
+    
+    ctxS.fillStyle = "#f1c40f"; 
+    ctxS.fillText(text, statCanvas.width / 2, rectY + rectH / 2 + 2);
+    ctxS.restore();
+}
+
+
+
+function openStatsModal(isRefresh = false) {
+    let stats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
+    
+    document.getElementById('statBestScoreVal').innerText = stats.best ? stats.best.score : '-';
+    document.getElementById('statLastScoreVal').innerText = stats.last ? stats.last.score : '-';
+    
+    let btnTextShow = isCzech ? "Zobrazit data" : "Show data";
+    let btnTextHide = isCzech ? "Skrýt data" : "Hide data";
+    
+    if (!isRefresh) {
+        document.getElementById('statBestContent').style.display = 'none';
+        document.getElementById('statLastContent').style.display = 'none';
+        document.getElementById('toggleBestLink').innerText = btnTextShow;
+        document.getElementById('toggleLastLink').innerText = btnTextShow;
+        
+        if (stats.last) {
+            document.getElementById('statLastContent').style.display = 'block';
+            document.getElementById('toggleLastLink').innerText = btnTextHide;
+        } else if (stats.best) {
+            document.getElementById('statBestContent').style.display = 'block';
+            document.getElementById('toggleBestLink').innerText = btnTextHide;
+        }
+    }
+    
+    if (stats.best) document.getElementById('statBestLog').innerText = stats.best.summaryEntries.map(e => translateLogEntry(e)).join('\n');
+    if (stats.last) document.getElementById('statLastLog').innerText = stats.last.summaryEntries.map(e => translateLogEntry(e)).join('\n');
+    
+    document.getElementById('statsModal').style.display = 'flex';
+    
+    setTimeout(() => {
+        if (stats.last && document.getElementById('statLastContent').style.display === 'block') renderStatCanvas('statLastCanvas', stats.last);
+        if (stats.best && document.getElementById('statBestContent').style.display === 'block') renderStatCanvas('statBestCanvas', stats.best);
+    }, 10);
+}
+
+document.getElementById('statsBtn').addEventListener('click', () => openStatsModal(false));
+document.getElementById('closeStatsBtn').addEventListener('click', () => document.getElementById('statsModal').style.display = 'none');
+
+window.addEventListener('click', e => { 
+    if (e.target === document.getElementById('helpModal')) document.getElementById('helpModal').style.display = 'none'; 
+    if (e.target === document.getElementById('statsModal')) document.getElementById('statsModal').style.display = 'none'; 
+    if (e.target === document.getElementById('confirmModal')) document.getElementById('confirmModal').style.display = 'none'; 
+});
+
+document.getElementById('toggleBestLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    let stats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
+    if (!stats.best) {
+        showToast(isCzech ? 'Zatím nejsou k dispozici žádná data.' : 'No data available yet.');
+        return;
+    }
+    let content = document.getElementById('statBestContent');
+    let isShowing = content.style.display === 'none';
+    content.style.display = isShowing ? 'block' : 'none';
+    e.target.innerText = isShowing ? (isCzech ? "Skrýt data" : "Hide data") : (isCzech ? "Zobrazit data" : "Show data");
+    
+    if (isShowing) {
+        document.getElementById('statLastContent').style.display = 'none';
+        document.getElementById('toggleLastLink').innerText = isCzech ? "Zobrazit data" : "Show data";
+        setTimeout(() => renderStatCanvas('statBestCanvas', stats.best), 10);
+    }
+});
+
+document.getElementById('toggleLastLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    let stats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
+    if (!stats.last) {
+        showToast(isCzech ? 'Zatím nejsou k dispozici žádná data.' : 'No data available yet.');
+        return;
+    }
+    let content = document.getElementById('statLastContent');
+    let isShowing = content.style.display === 'none';
+    content.style.display = isShowing ? 'block' : 'none';
+    e.target.innerText = isShowing ? (isCzech ? "Skrýt data" : "Hide data") : (isCzech ? "Zobrazit data" : "Show data");
+    
+    if (isShowing) {
+        document.getElementById('statBestContent').style.display = 'none';
+        document.getElementById('toggleBestLink').innerText = isCzech ? "Zobrazit data" : "Show data";
+        setTimeout(() => renderStatCanvas('statLastCanvas', stats.last), 10);
+    }
+});
+
+document.getElementById('execClearBtn').addEventListener('click', () => {
+    let mode = document.querySelector('input[name="clearMode"]:checked').value;
+    showConfirm('clearAction', () => {
+        if (mode === 'stats' || mode === 'all') {
+            localStorage.removeItem('nodeLinksStats');
+        }
+        if (mode === 'save' || mode === 'all') {
+            localStorage.removeItem('nodeLinksSave');
+        }
+        showToast(isCzech ? 'Vymazáno.' : 'Cleared.');
+        document.getElementById('statsModal').style.display = 'none';
+    });
+});
 // START
 applyTranslations();
 resizeCanvas(); 
