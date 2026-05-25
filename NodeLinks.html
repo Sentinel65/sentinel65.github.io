@@ -469,12 +469,12 @@ const texts = {
                 <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete klikáním libovolně změnit hodnotu jedné kostky, druhé zůstane původní hodnota.</li>
                 <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton, který umožňuje změnit hodnotu jedné kostky o +1 nebo -1. Druhé kostce zůstane původní hodnota. Režim 🪙 aktivujeme / deaktivujeme ručně kliknutím na jednu z kostek nebo tlačítko 🪙. Aktivace  je indikována blikáním piktogramu. <span class="help-pulse">🪙</span></li>
                 <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Platí vždy poslední volba (kliknutí).</li>
-                <li><strong>Chyby:</strong> 6 chyb znamená konec hry. Pokud nemáte platný tah, systém buď zapíše chybu rovnou (pokud nemáte žeton), nebo vás nechá tah zachránit úpravou kostek. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
+                <li><strong>Chyby:</strong> Pokud nemáte platný tah, systém vylní chybový kruh automaticky, nebo vás nechá tah zachránit úpravou kostek, pokud máte v zásobníku ŽETON. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
             </ul>
             <h3>Chybové kruhy</h3>
             <ul>
-                <li>Na okraji mapy je 6 prázdných kruhů, které slouží jako ukazatel zbývajících pokusů.</li>
-                <li>Při každém <strong>Nemožném tahu</strong> se jeden z nich vybarví příslušnou barvou (🔴🟢🟡🔵🟣🟠). Jakmile se vybarví všech 6, hra definitivně končí.</li>
+                <li>Na okraji mapy je 6 prázdných kruhů, které se postupně při každém tahu, kdy program nenajde žádný platný tah, vyplní příslušnou barvou (🔴🟢🟡🔵🟣🟠). Jakmile se barvou vyplní všech 6 kruhů, hra končí. </li>
+                <li>Program po každém hodu kostkami kontroluje dle hodnoty kostek všechny varianty platných tahů na hrací desce, včetně všech variant platných tahů Dvojitého tahu a použití ŽETONU.</li>
             </ul>        
             <h3>Bodování</h3>
             <ul>
@@ -583,12 +583,12 @@ Hodnocení: Mistr
                 <li><strong>Doubles:</strong> If the same numbers are rolled, you can cycle one die to freely change its value, the other keeps its original value.</li>
                 <li><strong>Tokens (🪙):</strong> If you link a node with all 6 colors, you earn a token that allows you to change the value of one die by +1 or -1. The other die keeps its original value. You can manually enable or disable 🪙 mode by clicking on one of the dice or the 🪙 button. When enabled, the icon will flash. <span class="help-pulse">🪙</span></li>
                 <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The last click always applies.</li>
-                <li><strong>Mistakes:</strong> 6 mistakes end the game. If you have no valid move, the system will log a mistake (if no token) or prompt for rescue. You can forfeit rescue by clicking (🎲) again.</li>
+                <li><strong>Mistakes:</strong> If you don't have a valid move, the system will automatically fill in the error circle, or it will let you save your turn by adjusting the dice if you have a TOKEN in your stack. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
             <h3>Error Circles</h3>
             <ul>
-                <li>There are 6 empty circles on the board's edge. They serve as a health indicator.</li>
-                <li>Each time a <strong>Dead turn</strong> is logged, one of them fills with color (🔴🟢🟡🔵🟣🟠). Once all 6 are filled, the game ends.</li>
+                <li>There are 6 empty circles at the edge of the map, which are gradually filled with the corresponding color (🔴🟢🟡🔵🟣🟠) on every turn where the program cannot find a valid move. Once all 6 circles are filled with color, the game ends</li>
+                <li>After each roll of the dice, the program checks all possible valid moves on the game board based on the dice values, including all valid Double Move options and the use of the TOKEN.</li>
             </ul>
             <h3>Scoring</h3>
             <ul>
