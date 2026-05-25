@@ -301,7 +301,7 @@ button.action-btn.active-toggle {
 .toggle-link { color: #3498db; text-decoration: none; font-size: 14px; font-weight: bold; cursor: pointer; }
 .toggle-link:hover { text-decoration: underline; }
 .stat-canvas { width: 100%; display: block; margin: 0 auto 15px auto; background: var(--board-bg); border: 1px solid #eee; border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
-.stat-log { font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; color: #333; margin: 0; border: 1px solid #e0e0e0; }
+.stat-log { font-style: italic; font-size: 10px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; color: #333; margin: 0; border: 1px solid #e0e0e0; }
 .clear-section label { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 </style>
 </head>
@@ -706,6 +706,7 @@ function applyTranslations() {
     if (document.getElementById('statsModal').style.display === 'flex') {
         openStatsModal(true);
     }
+	document.getElementById('langBtn').innerText = isCzech ? "🇬🇧" : "🇨🇿";	
 }
 
 const directions = [null, '↘', '↗', '↑', '↖', '↙', '↓'];
@@ -1189,6 +1190,7 @@ if (links.length === 0) {
     }
 }
 
+/*
 function saveStateToHistory() {
     historyStack.push({
         errors, tokens, gameOver,
@@ -1198,7 +1200,87 @@ function saveStateToHistory() {
         logEntries: JSON.parse(JSON.stringify(logEntries))
     });
 }
+*/
+// Změna: Místo stacku (pole) budeme mít jen jednu proměnnou a bude možné jít jen o 1 tah zpět!
+let lastTurnState = null;
 
+function saveStateToHistory() {
+    // Uložíme stav PŘED provedením tahu
+    lastTurnState = {
+        errors, tokens, gameOver,
+        links: links.map(l => ({ n1q: l.n1.q, n1r: l.n1.r, n2q: l.n2.q, n2r: l.n2.r, color: l.color })),
+        errorNodesColor: errorNodes.map(en => en.color),
+        roll: JSON.parse(JSON.stringify(currentRoll)),
+        logEntries: JSON.parse(JSON.stringify(logEntries))
+    };
+}
+
+
+function popHistory() {
+    // Pokud lastTurnState neexistuje, nic nedělej
+    if (!lastTurnState) {
+        showToast(isCzech ? 'Nelze provést krok zpět.' : 'Cannot undo.');
+        return;
+    }
+    
+    // Obnovíme data ze snapshotu
+    errors = lastTurnState.errors;
+    tokens = lastTurnState.tokens;
+    gameOver = lastTurnState.gameOver;
+    errorNodes.forEach((en, i) => { en.color = lastTurnState.errorNodesColor[i]; });
+    scoreLabels = []; 
+    logEntries = lastTurnState.logEntries; 
+
+    links = [];
+    nodes.forEach(n => { n.links = []; n.tokenAwarded = false; });
+
+    lastTurnState.links.forEach(l => {
+        const n1 = nodes.find(n => n.q === l.n1q && n.r === l.n1r);
+        const n2 = nodes.find(n => n.q === l.n2q && n.r === l.n2r);
+        const newLink = { n1, n2, color: l.color, colorStr: `--c${l.color}` };
+        links.push(newLink); n1.links.push(newLink); n2.links.push(newLink);
+    });
+
+    nodes.forEach(node => {
+        const colors = new Set(node.links.map(l => l.color));
+        if (colors.size === 6) node.tokenAwarded = true;
+    });
+
+    addLogEntry({ code: 'undo' });
+    currentRoll = JSON.parse(JSON.stringify(lastTurnState.roll));
+
+    // Klíčová změna: Po provedení zpětného kroku smažeme lastTurnState, aby nešlo kliknout znovu
+    lastTurnState = null;
+    document.getElementById('undoBtn').style.opacity = '0.5';
+
+    updateUI(); drawBoard(); refreshStatus();
+    showToast(isCzech ? 'Krok vzat zpět.' : 'Undo applied.');
+}
+
+// Napojení tlačítka zpět
+document.getElementById('undoBtn').addEventListener('click', popHistory);
+
+document.getElementById('newBtn').addEventListener('click', () => {
+    showConfirm('newGame', () => {
+        // Resetujeme historii a obnovíme tlačítko zpět
+        lastTurnState = null;
+        document.getElementById('undoBtn').style.opacity = '1';
+
+        errors = 0; tokens = 0; links = []; gameOver = false;
+        scoreLabels = []; logEntries = []; scoredNodes = [];
+        nodes.forEach(n => { n.links = []; n.tokenAwarded = false; });
+        errorNodes.forEach(en => delete en.color);
+        renderLog();
+        currentRoll = {
+            originalColor: null, originalDir: null, color: null, dir: null, 
+            tokenChoice: null, tokenUsed: false, active: false, isDoubles: false, doubleChoice: null
+        };
+        updateUI(); drawBoard(); refreshStatus();
+    });
+});
+
+
+/*
 function popHistory() {
     if (historyStack.length === 0) return;
     const state = historyStack.pop();
@@ -1247,6 +1329,7 @@ document.getElementById('newBtn').addEventListener('click', () => {
         updateUI(); drawBoard(); refreshStatus();
     });
 });
+*/
 
 document.getElementById('hintBtn').addEventListener('click', (e) => {
     showHint = !showHint;
@@ -1694,6 +1777,7 @@ function checkBoardLock() {
 }
 
 function logDeadTurn(autoEval = false) {
+		document.getElementById('undoBtn').style.opacity = '1';
     saveStateToHistory(); 
     errors++;
     const errorNode = errorNodes[errors - 1];
@@ -2138,6 +2222,7 @@ document
 
 
 function attemptLink(n1, n2) {
+	document.getElementById('undoBtn').style.opacity = '1';
     if (links.some(l => (l.n1 === n1 && l.n2 === n2) || (l.n1 === n2 && l.n2 === n1))) {
         showToast(isCzech ? 'Spojení již existuje.' : 'Link already exists.'); return;
     }
@@ -2210,7 +2295,7 @@ wrapper.addEventListener('click', e => {
 });
 
 document.getElementById('langBtn').addEventListener('click', (e) => {
-    isCzech = !isCzech; e.target.innerText = texts[isCzech ? 'cs' : 'en'].langFlag;
+    isCzech = !isCzech;
     applyTranslations();
     refreshStatus();
     renderLog();
