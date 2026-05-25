@@ -1271,6 +1271,7 @@ document.getElementById('newBtn').addEventListener('click', () => {
         nodes.forEach(n => { n.links = []; n.tokenAwarded = false; });
         errorNodes.forEach(en => delete en.color);
         renderLog();
+        initGrid();
         currentRoll = {
             originalColor: null, originalDir: null, color: null, dir: null, 
             tokenChoice: null, tokenUsed: false, active: false, isDoubles: false, doubleChoice: null
@@ -1278,7 +1279,6 @@ document.getElementById('newBtn').addEventListener('click', () => {
         updateUI(); drawBoard(); refreshStatus();
     });
 });
-
 
 /*
 function popHistory() {
