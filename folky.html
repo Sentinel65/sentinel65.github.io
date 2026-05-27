@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FOLKY® - Desková hra</title>
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --text: #ffffff;
+            --board-light: #f0d9b5;
+            --board-dark: #b58863;
+            --highlight: rgba(128, 128, 128, 0.6);
+            --hint-pawn: rgba(255, 255, 120, 0.9);
+            --panel-bg: #2d2d2d;
+            --border: #444;
+            --active-color: #ffeb3b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* --- Menu Bar --- */
+        #menu-bar {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            gap: 4px;
+            padding: 6px;
+            background-color: var(--panel-bg);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .menu-btn, .menu-select {
+            background: #3a3a3a;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 5px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .menu-btn:hover, .menu-select:hover { background-color: #444; }
+        
+        .menu-select {
+            appearance: none;
+            -webkit-appearance: none;
+            text-align: center;
+            text-align-last: center;
+            font-family: inherit;
+        }
+
+        /* --- Hlavní responzivní kontejner --- */
+        #main-content {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 500px;
+            flex: 1;
+            box-sizing: border-box;
+            padding: 5px;
+            overflow-y: auto; /* Na mobilu se posouvá */
+            overflow-x: hidden;
+            gap: 10px;
+        }
+
+        #left-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        #right-col {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex: 1;
+        }
+
+        /* --- Status Bar --- */
+        #status-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            /* Synchronizace max. šířky s deskou na mobilu */
+            max-width: min(100%, calc(100vh - 280px)); 
+            padding: 6px 12px;
+            box-sizing: border-box;
+            background: var(--panel-bg);
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+        
+        .player-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            opacity: 0.4;
+            border: 2px solid transparent;
+        }
+
+        .player-inline.active-turn {
+            opacity: 1;
+            background: rgba(255, 235, 59, 0.15);
+            border-color: var(--active-color);
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.35);
+        }
+
+        .status-rook { font-size: 1.4rem; line-height: 1; }
+
+        /* --- Hrací Plocha (Board) --- */
+        #board-wrapper {
+            display: grid;
+            grid-template-columns: 24px 1fr;
+            grid-template-rows: 1fr 24px;
+            gap: 2px;
+            width: 100%;
+            /* Ochrana proti deformaci - vybírá si užší hodnotu */
+            max-width: min(100%, calc(100vh - 280px));
+            aspect-ratio: 1; /* Uzamčeno do čtverce */
+            margin: 0 auto;
+        }
+
+        #y-coords {
+            display: grid;
+            grid-template-rows: repeat(8, 1fr);
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            align-items: center;
+            color: #aaa;
+        }
+
+        #x-coords {
+            grid-column: 2;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            align-items: center;
+            color: #aaa;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 3px solid #111;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 100%;
+            height: 100%;
+        }
+
+        .square {
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    aspect-ratio: 1;
+
+    overflow: hidden;
+
+    padding: 0;
+
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+        .light { background-color: var(--board-light); }
+        .dark { background-color: var(--board-dark); }
+        
+    .piece-svg {
+
+    width: 94%;
+    height: 94%;
+
+    display: block;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    filter:
+        drop-shadow(
+            0 2px 2px rgba(0,0,0,0.35)
+        );
+}
+
+        .selected { outline: 3px solid var(--active-color); outline-offset: -3px; z-index: 2; }
+        
+        .move-hint::after {
+            content: ''; position: absolute; width: 28%; height: 28%; background-color: var(--highlight); border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        .pawn-hint {
+            background-color: var(--hint-pawn) !important; box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- Záznam hry (Log) --- */
+        #log-container {
+            width: 100%;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            /* Na mobilu pevná výška, na PC se natáhne */
+            height: 140px; 
+        }
+        
+        #log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            min-height: 28px;
+        }
+
+        #log-content {
+            flex: 1;
+            padding: 6px 0;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.05rem;
+            font-weight: bold;
+        }
+
+        .log-row {
+            display: grid;
+            grid-template-columns: 35px 55px 55px; 
+            gap: 12px;
+            justify-content: start;
+            align-items: baseline; 
+            padding: 2px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .log-num { color: #888; text-align: right; font-size: 0.95rem; }
+        .log-w { text-align: left; }
+        .log-b { text-align: left; }
+
+        /* --- TOAST & MODAL --- */
+        #toast {
+            visibility: hidden; min-width: 200px; background-color: rgba(40, 40, 40, 0.95); color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 1rem; font-weight: bold; border: 1px solid var(--active-color); box-shadow: 0px 4px 15px rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.3s, bottom 0.3s, visibility 0.3s;
+        }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal-content {
+            background: var(--panel-bg); padding: 20px; border-radius: 10px; max-width: 400px; width: 90%; text-align: center;
+        }
+
+
+        /* ==================================================
+           MEDIA QUERIES - Rozložení pro PC / Tablety
+           ================================================== */
+        @media (min-width: 768px) {
+            #menu-bar { 
+                max-width: 900px; 
+            }
+            #main-content {
+                flex-direction: row;
+                max-width: 900px;
+                align-items: stretch;
+                padding: 15px 10px;
+                gap: 20px;
+                overflow: hidden; /* Na PC zrušíme vnější posuvník */
+            }
+            #left-col {
+                flex: 1.5;
+                justify-content: flex-start;
+                height: 100%;
+            }
+            #right-col {
+                flex: 1;
+                height: 100%; /* Pravý sloupec natáhneme na celou výšku */
+            }
+            #status-bar, #board-wrapper {
+                /* Na PC je více místa na výšku, protože log je vedle */
+                max-width: min(100%, calc(100vh - 120px));
+            }
+            #log-container {
+                height: 100%; /* Log vyplní veškerý volný prostor napravo */
+            }
+        }
+    </style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+
+<!-- WHITE ROOK -->
+<symbol id="wR" viewBox="0 0 45 45">
+<g fill="#fff"
+   fill-rule="evenodd"
+   stroke="#000"
+   stroke-linecap="round"
+   stroke-linejoin="round"
+   stroke-width="1.5">
+
+    <path stroke-linecap="butt"
+          d="M9 39h27v-3H9zm3-3v-4h21v4zm-1-22V9h4v2h5V9h5v2h5V9h4v5"/>
+
+    <path d="m34 14-3 3H14l-3-3"/>
+
+    <path stroke-linecap="butt"
+          stroke-linejoin="miter"
+          d="M31 17v12.5H14V17"/>
+
+    <path d="m31 29.5 1.5 2.5h-20l1.5-2.5"/>
+
+    <path fill="none"
+          stroke-linejoin="miter"
+          d="M11 14h23"/>
+
+</g>
+</symbol>
+<!-- WHITE KNIGHT -->
+<symbol id="wN" viewBox="0 0 45 45">
+
+<g
+    fill="none"
+    fill-rule="evenodd"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.5">
+
+    <path
+        fill="#fff"
+
+        d="M22 10
+           c10.5 1 16.5 8 16 29
+           H15
+           c0-9 10-6.5 8-21"
+    />
+
+    <path
+        fill="#fff"
+
+        d="M24 18
+           c.38 2.91-5.55 7.37-8 9
+           -3 2-2.82 4.34-5 4
+           -1.042-.94 1.41-3.04 0-3
+           -1 0 .19 1.23-1 2
+           -1 0-4.003 1-4-4
+           0-2 6-12 6-12
+           s1.89-1.9 2-3.5
+           c-.73-.994-.5-2-.5-3
+           1-1 3 2.5 3 2.5
+           h2
+           s.78-1.992 2.5-3
+           c1 0 1 3 1 3"
+    />
+
+    <path
+        fill="#000"
+
+        d="M9.5 25.5
+           a.5.5 0 1 1-1 0
+           .5.5 0 1 1 1 0"
+
+    />
+
+    <path
+        fill="#000"
+
+        d="M14.933 15.75
+           a.5 1.5 30 1 1-.866-.5
+           .5 1.5 30 1 1 .866.5"
+    />
+
+</g>
+
+</symbol>
+<symbol id="wB" viewBox="0 0 45 45">
+
+<g
+    fill="none"
+    fill-rule="evenodd"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.5">
+
+    <g fill="#fff" stroke-linecap="butt">
+
+        <path
+            d="M9 36
+               c3.39-.97 10.11.43 13.5-2
+               3.39 2.43 10.11 1.03 13.5 2
+               0 0 1.65.54 3 2
+               -.68.97-1.65.99-3 .5
+               -3.39-.97-10.11.46-13.5-1
+               -3.39 1.46-10.11.03-13.5 1
+               -1.35.49-2.32.47-3-.5
+               1.35-1.94 3-2 3-2z"
+        />
+
+        <path
+            d="M15 32
+               c2.5 2.5 12.5 2.5 15 0
+               .5-1.5 0-2 0-2
+               0-2.5-2.5-4-2.5-4
+               5.5-1.5 6-11.5-5-15.5
+               -11 4-10.5 14-5 15.5
+               0 0-2.5 1.5-2.5 4
+               0 0-.5.5 0 2z"
+        />
+
+        <path
+            d="M25 8
+               a2.5 2.5 0 1 1-5 0
+               2.5 2.5 0 1 1 5 0z"
+        />
+
+    </g>
+
+    <path
+        stroke-linejoin="miter"
+        d="M17.5 26h10
+           M15 30h15
+           m-7.5-14.5v5
+           M20 18h5"
+    />
+
+</g>
+
+</symbol>
+<!-- WHITE PAWN -->
+<symbol id="wP" viewBox="0 0 45 45">
+
+<path
+    fill="#fff"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-width="1.5"
+
+    d="M22.5 9c-2.21 0-4 1.79-4 4
+       0 .89.29 1.71.78 2.38
+       C17.33 16.5 16 18.59 16 21
+       c0 2.03.94 3.84 2.41 5.03
+       -3 1.06-7.41 5.55-7.41 13.47
+       h23
+       c0-7.92-4.41-12.41-7.41-13.47
+       1.47-1.19 2.41-3 2.41-5.03
+       0-2.41-1.33-4.5-3.28-5.62
+       .49-.67.78-1.49.78-2.38
+       0-2.21-1.79-4-4-4z"
+/>
+
+</symbol>
+<!-- BLACK ROOK -->
+<symbol id="bR" viewBox="0 0 45 45">
+
+<g
+    fill-rule="evenodd"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.5">
+
+    <path
+        stroke-linecap="butt"
+
+        d="M9 39h27v-3H9
+           zm3.5-7
+           1.5-2.5h17
+           l1.5 2.5
+           zm-.5 4v-4h21v4z"
+    />
+
+    <path
+        stroke-linecap="butt"
+        stroke-linejoin="miter"
+
+        d="M14 29.5v-13h17v13z"
+    />
+
+    <path
+        stroke-linecap="butt"
+
+        d="M14 16.5
+           11 14h23
+           l-3 2.5z
+
+           M11 14V9h4v2h5V9h5v2h5V9h4v5z"
+    />
+
+    <path
+        fill="none"
+        stroke="#ececec"
+        stroke-linejoin="miter"
+        stroke-width="1"
+
+        d="M12 35.5h21
+           m-20-4h19
+           m-18-2h17
+           m-17-13h17
+           M11 14h23"
+    />
+
+</g>
+
+</symbol>
+<!-- BLACK KNIGHT -->
+<symbol id="bN" viewBox="0 0 45 45">
+
+<g
+    fill="none"
+    fill-rule="evenodd"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.5">
+
+    <path
+        fill="#000"
+
+        d="M22 10
+           c10.5 1 16.5 8 16 29
+           H15
+           c0-9 10-6.5 8-21"
+    />
+
+    <path
+        fill="#000"
+
+        d="M24 18
+           c.38 2.91-5.55 7.37-8 9
+           -3 2-2.82 4.34-5 4
+           -1.04-.94 1.41-3.04 0-3
+           -1 0 .19 1.23-1 2
+           -1 0-4 1-4-4
+           0-2 6-12 6-12
+           s1.89-1.9 2-3.5
+           c-.73-1-.5-2-.5-3
+           1-1 3 2.5 3 2.5
+           h2
+           s.78-2 2.5-3
+           c1 0 1 3 1 3"
+    />
+
+    <path
+        fill="#ececec"
+        stroke="#ececec"
+
+        d="M9.5 25.5
+           a.5.5 0 1 1-1 0
+           .5.5 0 1 1 1 0
+
+           m5.43-9.75
+           a.5 1.5 30 1 1-.86-.5
+           .5 1.5 30 1 1 .86.5"
+    />
+
+    <path
+        fill="#ececec"
+        stroke="none"
+
+        d="m24.55 10.4
+           -.45 1.45
+           .5.15
+           c3.15 1 5.65 2.49 7.9 6.75
+           S35.75 29.06 35.25 39
+           l-.05.5
+           h2.25
+           l.05-.5
+           c.5-10.06-.88-16.85-3.25-21.34
+           s-5.79-6.64-9.19-7.16z"
+    />
+
+</g>
+
+</symbol>
+<!-- BLACK BISHOP -->
+<symbol id="bB" viewBox="0 0 45 45">
+
+<g
+    fill="none"
+    fill-rule="evenodd"
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.5">
+
+    <g fill="#000" stroke-linecap="butt">
+
+        <path
+            d="M9 36
+               c3.4-1 10.1.4 13.5-2
+               3.4 2.4 10.1 1 13.5 2
+               0 0 1.6.5 3 2
+               -.7 1-1.6 1-3 .5
+               -3.4-1-10.1.5-13.5-1
+               -3.4 1.5-10.1 0-13.5 1
+               -1.4.5-2.3.5-3-.5
+               1.4-2 3-2 3-2z"
+        />
+
+        <path
+            d="M15 32
+               c2.5 2.5 12.5 2.5 15 0
+               .5-1.5 0-2 0-2
+               0-2.5-2.5-4-2.5-4
+               5.5-1.5 6-11.5-5-15.5
+               -11 4-10.5 14-5 15.5
+               0 0-2.5 1.5-2.5 4
+               0 0-.5.5 0 2z"
+        />
+
+        <path
+            d="M25 8
+               a2.5 2.5 0 1 1-5 0
+               2.5 2.5 0 1 1 5 0z"
+        />
+
+    </g>
+
+    <path
+        stroke="#ececec"
+        stroke-linejoin="miter"
+
+        d="M17.5 26h10
+           M15 30h15
+           m-7.5-14.5v5
+           M20 18h5"
+    />
+
+</g>
+
+</symbol>
+<!-- BLACK PAWN -->
+<symbol id="bP" viewBox="0 0 45 45">
+
+<path
+    stroke="#000"
+    stroke-linecap="round"
+    stroke-width="1.5"
+
+    d="M22.5 9
+       a4 4 0 0 0-3.22 6.38
+       6.48 6.48 0 0 0-.87 10.65
+       c-3 1.06-7.41 5.55-7.41 13.47
+       h23
+       c0-7.92-4.41-12.41-7.41-13.47
+       a6.46 6.46 0 0 0-.87-10.65
+       A4.01 4.01 0 0 0 22.5 9z"
+/>
+
+</symbol>
+</svg>
+    <div id="menu-bar">
+        <button class="menu-btn" onclick="saveGame()" title="Uložit hru">💾</button>
+        <button class="menu-btn" onclick="loadGame()" title="Načíst hru">📂</button>
+        <button class="menu-btn" onclick="toggleMode()" id="btn-mode" title="Režim">🖥️</button>
+        <button class="menu-btn" onclick="toggleDifficulty()" id="btn-diff" title="Obtížnost AI">🧠 2</button>
+        <button class="menu-btn" onclick="resetGame()" title="Nová hra">🔄</button>
+        <select id="time-select" class="menu-select" onchange="setTime(this.value)">
+            <option value="0">∞</option>
+            <option value="60">1m</option>
+            <option value="180">3m</option>
+            <option value="300">5m</option>
+        </select>
+        <button class="menu-btn" onclick="showHelp()" title="Nápověda">💡</button>
+        <button class="menu-btn" onclick="toggleLang()" id="btn-lang" title="Jazyk">🇬🇧</button>
+    </div>
+
+    <div id="main-content">
+        <div id="left-col">
+            <div id="status-bar">
+                <div class="player-inline" id="info-w">
+                    <span class="status-rook piece-white">♜</span>
+                    <span id="time-w">--:--</span>
+                    <span id="pawns-w">♟ 8</span>
+                </div>
+                <div class="player-inline" id="info-b">
+                    <span class="status-rook piece-black">♜</span>
+                    <span id="time-b">--:--</span>
+                    <span id="pawns-b">♟ 8</span>
+                </div>
+            </div>
+
+            <div id="board-wrapper">
+                <div id="y-coords">
+                    <div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div>
+                </div>
+                <div id="board"></div>
+                <div id="x-coords">
+                    <div>A</div><div>B</div><div>C</div><div>D</div><div>E</div><div>F</div><div>G</div><div>H</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="right-col">
+            <div id="log-container">
+                <div id="log-header">
+                    <span id="lbl-log">Záznam hry FOLKY®</span>
+                    <button class="menu-btn" style="padding:2px 6px; font-size:1rem; flex:none;" onclick="copyLog()" title="Kopírovat">📋</button>
+                </div>
+                <div id="log-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <div id="help-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 id="lbl-help-title">Pravidla FOLKY®</h2>
+            <p id="lbl-help-text" style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                Hraje se na šachovnici 8x8. Cílem je umístit na plochu svých 8 pěšců.<br><br>
+                1. Figury se hýbou jako v šachu (nelze vyhazovat).<br>
+                2. Pokud 3 vaše figury míří na stejné volné pole, označí se <strong>světle žlutě</strong>.<br>
+                3. <strong>Dvojklikem</strong> na toto pole umístíte pěšce.<br>
+                4. Pěšci se po umístění již nehýbou.<br>
+                Hra končí umístěním všech 8 pěšců, nebo nemožností tahu.
+            </p>
+            <button class="menu-btn" style="margin-top: 15px; width: 100%; justify-content:center;" onclick="document.getElementById('help-modal').style.display='none'">OK</button>
+        </div>
+    </div>
+
+    <script>
+        
+        const DIRS = {
+            'R': [[0,1],[0,-1],[1,0],[-1,0]],
+            'B': [[1,1],[1,-1],[-1,1],[-1,-1]],
+            'N': [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]
+        };
+
+        let lang = 'cs';
+        let vsAI = true;
+        let aiDepth = 2; 
+        let whiteStartsNext = true;
+        
+        let board = Array(8).fill(null).map(() => Array(8).fill(null));
+        let turn = 'w';
+        let pawns = { 'w': 8, 'b': 8 };
+        let selectedSquare = null;
+        let validMoves = [];
+        let pawnHints = [];
+        
+        let timeLimit = 0; 
+        let timeLeft = { 'w': 0, 'b': 0 };
+        let timerInterval = null;
+        let gameOver = false;
+        let boardHistory = [];
+        let movesHistory = [];
+
+        let lastClickTime = 0;
+        let lastClickSquare = null;
+        
+
+        const i18n = {
+    'cs': { 
+        modeAI: '🖥️', modePvP: '👤', log: 'Záznam hry FOLKY®', helpTitle: 'Pravidla FOLKY®', 
+        winW: 'Bílý vyhrál!', winB: 'Černý vyhrál!', draw: 'Remíza!', timeout: 'Vypršel čas!', 
+        copied: 'Záznam zkopírován', saved: 'Hra uložena', loaded: 'Hra načtena', noSave: 'Žádná uložená hra',
+        helpText: 'Hraje se na šachovnici 8x8. Cílem je umístit na plochu svých 8 pěšců.<br><br>1. Figury se hýbou jako v šachu (nelze vyhazovat).<br>2. Pokud 3 vaše figury míří na stejné volné pole, označí se <strong>světle žlutě</strong>.<br>3. <strong>Dvojklikem</strong> na toto pole umístíte pěšce.<br>4. Pěšci se po umístění již nehýbou.<br>Hra končí umístěním všech 8 pěšců, nebo nemožností tahu.'
+    },
+    'en': { 
+        modeAI: '🖥️', modePvP: '👤', log: 'Game Log FOLKY®', helpTitle: 'FOLKY® Rules', 
+        winW: 'White wins!', winB: 'Black wins!', draw: 'Draw!', timeout: 'Time out!', 
+        copied: 'Log copied', saved: 'Game saved', loaded: 'Game loaded', noSave: 'No saved game found',
+        helpText: 'Played on an 8x8 board. The goal is to place all 8 of your pawns.<br><br>1. Pieces move as in chess (no capturing).<br>2. If 3 of your pieces target the same empty square, it highlights <strong>light yellow</strong>.<br>3. <strong>Double-click</strong> this square to place a pawn.<br>4. Pawns cannot move once placed.<br>The game ends when all 8 pawns are placed, or no moves are possible.'
+    }
+};
+
+
+        let toastTimeout = null;
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg;
+            toast.classList.add("show");
+            if(toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toast.classList.remove("show"), 3000);
+        }
+
+        function initGame() {
+            board = Array(8).fill(null).map(() => Array(8).fill(null));
+            board[7] = ['wR','wN','wB',null,null,'wB','wN','wR'];
+            board[0] = ['bR','bN','bB',null,null,'bB','bN','bR'];
+            
+            turn = whiteStartsNext ? 'w' : 'b';
+            whiteStartsNext = !whiteStartsNext;
+            pawns = { 'w': 8, 'b': 8 };
+            gameOver = false;
+            selectedSquare = null;
+            movesHistory = [];
+            
+            document.getElementById('log-content').innerHTML = '';
+            document.getElementById('btn-diff').style.display = vsAI ? 'flex' : 'none';
+            document.getElementById('btn-diff').innerText = '🧠 ' + aiDepth;
+            
+            timeLeft = { 'w': timeLimit, 'b': timeLimit };
+            stopTimer();
+            if (timeLimit > 0) startTimer();
+
+            updateUI();
+            checkPawnHints();
+            drawBoard();
+
+            if (vsAI && turn === 'b') setTimeout(playAI, 500);
+        }
+
+        function getAttackedSquares(simBoard, color) {
+            let attackCounts = Array(8).fill(null).map(() => Array(8).fill(0));
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = simBoard[r][c];
+                    if (piece && piece.startsWith(color) && !piece.endsWith('P')) {
+                        let pType = piece[1];
+                        let dirs = DIRS[pType];
+                        for (let d of dirs) {
+                            let nr = r + d[0], nc = c + d[1];
+                            while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                                if (simBoard[nr][nc] === null) attackCounts[nr][nc]++;
+                                if (simBoard[nr][nc] !== null) break;
+                                if (pType === 'N') break;
+                                nr += d[0]; nc += d[1];
+                            }
+                        }
+                    }
+                }
+            }
+            return attackCounts;
+        }
+
+        function checkPawnHints() {
+            pawnHints = [];
+            if (pawns[turn] <= 0) return;
+            let attacks = getAttackedSquares(board, turn);
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (board[r][c] === null && attacks[r][c] >= 3) pawnHints.push({r, c});
+                }
+            }
+        }
+
+        function generateValidMoves(r, c) {
+            let moves = [];
+            const piece = board[r][c];
+            if (!piece || !piece.startsWith(turn) || piece.endsWith('P')) return moves;
+            let pType = piece[1];
+            let dirs = DIRS[pType];
+            for (let d of dirs) {
+                let nr = r + d[0], nc = c + d[1];
+                while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                    if (board[nr][nc] === null) moves.push({r: nr, c: nc});
+                    else break;
+                    if (pType === 'N') break;
+                    nr += d[0]; nc += d[1];
+                }
+            }
+            return moves;
+        }
+
+        function handleSquareInteraction(r, c) {
+            if (gameOver || (vsAI && turn === 'b')) return;
+
+            const now = Date.now();
+            const isDoubleTap = (now - lastClickTime < 350 && lastClickSquare === `${r}-${c}`);
+            lastClickTime = now;
+            lastClickSquare = `${r}-${c}`;
+
+            if (isDoubleTap && pawnHints.some(h => h.r === r && h.c === c)) {
+                placePawn(r, c);
+                return;
+            }
+
+            const piece = board[r][c];
+            if (selectedSquare && validMoves.some(m => m.r === r && m.c === c)) {
+                movePiece(selectedSquare.r, selectedSquare.c, r, c);
+                return;
+            }
+
+            if (piece && piece.startsWith(turn) && !piece.endsWith('P')) {
+                if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+                    selectedSquare = null; validMoves = [];
+                } else {
+                    selectedSquare = {r, c}; validMoves = generateValidMoves(r, c);
+                }
+            } else {
+                selectedSquare = null; validMoves = [];
+            }
+            drawBoard();
+        }
+
+        function movePiece(fromR, fromC, toR, toC) {
+            const p = board[fromR][fromC];
+            logAction(p, posToAlgebraic(toR, toC), false);
+            board[toR][toC] = p; board[fromR][fromC] = null;
+            finalizeTurn();
+        }
+
+        function placePawn(r, c) {
+    const p = turn + 'P';
+
+    board[r][c] = p;
+    pawns[turn]--;
+
+    logAction(p, posToAlgebraic(r, c), true);
+
+    if (pawns[turn] === 0) {
+        updateUI();
+        drawBoard();
+        endGame(turn);
+        return;
+    }
+
+    finalizeTurn();
+}
+
+        function finalizeTurn() {
+            validateBoardState();
+            selectedSquare = null; validMoves = [];
+            turn = turn === 'w' ? 'b' : 'w';
+            boardHistory.push(
+    getBoardHash(board)
+);
+            checkPawnHints();
+            updateUI(); drawBoard();
+            
+            let hasMoves = pawnHints.length > 0;
+            if (!hasMoves) {
+                for (let r=0; r<8; r++) {
+                    for (let c=0; c<8; c++) {
+                        if (board[r][c] && board[r][c].startsWith(turn) && !board[r][c].endsWith('P')) {
+                            if (generateValidMoves(r,c).length > 0) hasMoves = true;
+                        }
+                    }
+                }
+            }
+
+            if (!hasMoves) { endGame(turn === 'w' ? 'b' : 'w'); return; }
+            if (vsAI && turn === 'b') {
+    requestAnimationFrame(() => {
+        setTimeout(playAI, 60);
+    });
+}
+        }
+
+
+        const CENTER_BONUS = [
+    [0,0,1,1,1,1,0,0],
+    [0,1,2,2,2,2,1,0],
+    [1,2,3,3,3,3,2,1],
+    [1,2,3,4,4,3,2,1],
+    [1,2,3,4,4,3,2,1],
+    [1,2,3,3,3,3,2,1],
+    [0,1,2,2,2,2,1,0],
+    [0,0,1,1,1,1,0,0]
+];
+
+        function generateSimMoves(simBoard, r, c) {
+
+    let moves = [];
+
+    const piece = simBoard[r][c];
+
+    if (!piece || piece.endsWith('P')) {
+        return moves;
+    }
+
+    let pType = piece[1];
+
+    let dirs = DIRS[pType];
+
+    for (let d of dirs) {
+
+        let nr = r + d[0];
+        let nc = c + d[1];
+
+        while (
+            nr >= 0 &&
+            nr < 8 &&
+            nc >= 0 &&
+            nc < 8
+        ) {
+
+            if (simBoard[nr][nc] === null) {
+                moves.push({ r: nr, c: nc });
+            } else {
+                break;
+            }
+
+            if (pType === 'N') break;
+
+            nr += d[0];
+            nc += d[1];
+        }
+    }
+
+    return moves;
+}
+
+
+        function countMobility(simBoard, color) {
+
+    let mobility = 0;
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+
+            const piece = simBoard[r][c];
+
+            if (
+                piece &&
+                piece.startsWith(color) &&
+                !piece.endsWith('P')
+            ) {
+                mobility += generateSimMoves(
+                    simBoard,
+                    r,
+                    c
+                ).length;
+            }
+        }
+    }
+
+    return mobility;
+}
+
+
+        function evaluateBoard(simBoard, pawnsW, pawnsB) {
+            let score = (8 - pawnsB) * 100 - (8 - pawnsW) * 100;
+            let attacksB = getAttackedSquares(simBoard, 'b');
+            let attacksW = getAttackedSquares(simBoard, 'w');
+            let hintsB = 0, hintsW = 0;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                const piece = simBoard[r][c];
+
+if (piece && !piece.endsWith('P')) {
+
+    if (piece.startsWith('b')) {
+        score += CENTER_BONUS[r][c];
+    } else {
+        score -= CENTER_BONUS[r][c];
+    }
+}
+                    if (simBoard[r][c] === null) {
+                        if (attacksB[r][c] >= 3) hintsB++;
+                        if (attacksW[r][c] >= 3) hintsW++
+                    }
+                }
+            }
+            score += (hintsB * 10) - (hintsW * 10);
+              if (pawnsB <= 2) score += 120;
+              if (pawnsW <= 2) score -= 120;
+              const mobilityB = countMobility(simBoard, 'b');
+
+const mobilityW = countMobility(simBoard, 'w');
+
+score += mobilityB * 3;
+score -= mobilityW * 3;
+const currentHash =
+    getBoardHash(simBoard);
+
+let repetitions = 0;
+
+for (let h of boardHistory) {
+
+    if (h === currentHash) {
+        repetitions++;
+    }
+}
+
+score -= repetitions * 15;
+            return score;
+        }
+
+        function getAllPossibleMoves(simBoard, color, pawnsLeft) {
+            let moves = [];
+            let attacks = getAttackedSquares(simBoard, color);
+            if (pawnsLeft > 0) {
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        if (simBoard[r][c] === null && attacks[r][c] >= 3) moves.push({ type: 'pawn', r: r, c: c });
+                    }
+                }
+            }
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = simBoard[r][c];
+                    if (piece && piece.startsWith(color) && !piece.endsWith('P')) {
+                        let pType = piece[1];
+                        let dirs = DIRS[pType];
+                        for (let d of dirs) {
+                            let nr = r + d[0], nc = c + d[1];
+                            while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                                if (simBoard[nr][nc] === null) moves.push({ type: 'piece', fr: r, fc: c, tr: nr, tc: nc });
+                                else break;
+                                if (pType === 'N') break;
+                                nr += d[0]; nc += d[1];
+                            }
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function applySimMove(simBoard, move, color) {
+            let newBoard = simBoard.map(row => [...row]);
+            if (move.type === 'pawn') { newBoard[move.r][move.c] = color + 'P'; } 
+            else { newBoard[move.tr][move.tc] = newBoard[move.fr][move.fc]; newBoard[move.fr][move.fc] = null; }
+            return newBoard;
+        }
+
+        function minimax(simBoard, depth, alpha, beta, isMax, pawnsW, pawnsB) {
+            if (depth <= 0 || pawnsW === 0 || pawnsB === 0) return evaluateBoard(simBoard, pawnsW, pawnsB);
+            
+            let color = isMax ? 'b' : 'w';
+            let pawnsLeft = isMax ? pawnsB : pawnsW;
+            let moves = getAllPossibleMoves(simBoard, color, pawnsLeft);
+            
+            if (moves.length === 0) return isMax ? -99999 : 99999;
+            
+            if (isMax) {
+                let maxEval = -Infinity;
+                for (let move of moves) {
+                    let nextBoard = applySimMove(simBoard, move, 'b');
+                    let pb = move.type === 'pawn' ? pawnsB - 1 : pawnsB;
+                    let ev = minimax(nextBoard, depth - 1, alpha, beta, false, pawnsW, pb);
+                    maxEval = Math.max(maxEval, ev);
+                    alpha = Math.max(alpha, ev);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let move of moves) {
+                    let nextBoard = applySimMove(simBoard, move, 'w');
+                    let pw = move.type === 'pawn' ? pawnsW - 1 : pawnsW;
+                    let ev = minimax(nextBoard, depth - 1, alpha, beta, true, pw, pawnsB);
+                    minEval = Math.min(minEval, ev);
+                    beta = Math.min(beta, ev);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        function playAI() {
+            if (gameOver) return;
+
+            let bestScore = -Infinity;
+            let bestMove = null;
+            let alpha = -Infinity;
+            let beta = Infinity;
+            
+            let moves = getAllPossibleMoves(board, 'b', pawns['b']);
+            moves.sort((a, b) => {
+    if (a.type === 'pawn' && b.type !== 'pawn') return -1;
+    if (a.type !== 'pawn' && b.type === 'pawn') return 1;
+    return 0;
+});
+
+            let currentDepth = aiDepth - 1; 
+            if(currentDepth < 0) currentDepth = 0;
+
+            for (let move of moves) {
+                let nextBoard = applySimMove(board, move, 'b');
+                let pb = move.type === 'pawn' ? pawns['b'] - 1 : pawns['b'];
+                let score = minimax(nextBoard, currentDepth, alpha, beta, false, pawns['w'], pb);
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+                alpha = Math.max(alpha, score);
+            }
+
+            if (bestMove) {
+                if (bestMove.type === 'pawn') placePawn(bestMove.r, bestMove.c);
+                else movePiece(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc);
+            }
+        }
+
+        function drawBoard() {
+            const b = document.getElementById('board');
+            b.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    let sq = document.createElement('div');
+                    sq.className = `square ${(r+c)%2 === 0 ? 'light' : 'dark'}`;
+                    const piece = board[r][c];
+                    if (piece) {
+
+    sq.innerHTML = `
+        <svg class="piece-svg" viewBox="0 0 45 45">
+            <use href="#${piece}"></use>
+        </svg>
+    `;
+}
+                    if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) sq.classList.add('selected');
+                    if (validMoves.some(m => m.r === r && m.c === c)) sq.classList.add('move-hint');
+                    if (pawnHints.some(h => h.r === r && h.c === c)) sq.classList.add('pawn-hint');
+                    
+                    sq.onclick = (e) => { e.preventDefault(); handleSquareInteraction(r, c); };
+                    b.appendChild(sq);
+                }
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('pawns-w').innerText = `♟ ${pawns['w']}`;
+            document.getElementById('pawns-b').innerText = `♟ ${pawns['b']}`;
+            document.getElementById('info-w').classList.toggle('active-turn', turn === 'w');
+            document.getElementById('info-b').classList.toggle('active-turn', turn === 'b');
+            formatTime('w'); formatTime('b');
+        }
+
+        function posToAlgebraic(r, c) { return 'abcdefgh'[c] + (8 - r); }
+
+
+        const PIECE_ICONS = {
+
+            wR: '♜',
+            wN: '♞',
+            wB: '♝',
+            wP: '♟',
+
+            bR: '♜',
+            bN: '♞',
+            bB: '♝',
+            bP: '♟'
+        };
+        function logAction(pieceCode, targetSq, isPawnPlacement) {
+            let icon = PIECE_ICONS[pieceCode];
+            let moveStr = icon + targetSq + (isPawnPlacement ? '+' : '');
+            
+            if (pieceCode.startsWith('w')) movesHistory.push({ w: moveStr, b: '' });
+            else {
+                if (movesHistory.length === 0) movesHistory.push({ w: '...', b: moveStr });
+                else movesHistory[movesHistory.length - 1].b = moveStr;
+            }
+            renderLog();
+        }
+
+        function renderLog() {
+    let reversed = [...movesHistory].reverse();
+
+    let html = reversed.map((m, idx) => {
+        let realIndex = movesHistory.length - idx;
+
+        let num = realIndex.toString().padStart(2, '0') + '.';
+
+        return `<div class="log-row">
+                    <span class="log-num">${num}</span>
+                    <span class="log-w">${m.w}</span>
+                    <span class="log-b">${m.b}</span>
+                </div>`;
+    }).join('');
+
+    const lc = document.getElementById('log-content');
+    lc.innerHTML = html;
+
+    lc.scrollTop = 0;
+}
+
+        function resetGame() { initGame(); }
+        
+        function toggleMode() {
+            vsAI = !vsAI;
+            document.getElementById('btn-mode').innerText = vsAI ? i18n[lang].modeAI : i18n[lang].modePvP;
+            document.getElementById('btn-diff').style.display = vsAI ? 'flex' : 'none';
+            resetGame();
+        }
+
+        function toggleDifficulty() {
+            aiDepth = aiDepth >= 4 ? 1 : aiDepth + 1;
+            document.getElementById('btn-diff').innerText = '🧠 ' + aiDepth;
+        }
+
+        function setTime(sec) { timeLimit = parseInt(sec); resetGame(); }
+
+        function toggleLang() {
+            lang = lang === 'cs' ? 'en' : 'cs';
+            const t = i18n[lang];
+            document.getElementById('btn-lang').innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+            document.getElementById('lbl-log').innerText = t.log;
+            document.getElementById('lbl-help-title').innerText = t.helpTitle;
+            document.getElementById('lbl-help-text').innerHTML = t.helpText; // Nový řádek pro text nápovědy
+            document.getElementById('btn-mode').innerText = vsAI ? t.modeAI : t.modePvP;
+        }
+
+        function showHelp() { document.getElementById('help-modal').style.display = 'flex'; }
+
+        function copyLog() {
+            let lines = movesHistory.map((m, idx) => {
+                let num = (idx + 1).toString().padStart(2, '0');
+                let wMove = m.w.padEnd(6, ' ');
+                let bMove = m.b || '';
+                return `${num}. ${wMove} ${bMove}`;
+            });
+            navigator.clipboard.writeText(lines.join('\n'));
+            showToast(i18n[lang].copied);
+        }
+
+        function saveGame() {
+            const state = { board, turn, pawns, movesHistory, vsAI, timeLimit, timeLeft, aiDepth };
+            localStorage.setItem('folkySave', JSON.stringify(state));
+            localStorage.setItem('soundEnabled', soundEnabled);
+            showToast(i18n[lang].saved);
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('folkySave');
+            if (saved) {
+                const state = JSON.parse(saved);
+                board = state.board; turn = state.turn; pawns = state.pawns;
+                movesHistory = state.movesHistory || []; vsAI = state.vsAI; 
+                timeLimit = state.timeLimit; timeLeft = state.timeLeft;
+                aiDepth = state.aiDepth || 2;
+                
+                document.getElementById('btn-mode').innerText = vsAI ? i18n[lang].modeAI : i18n[lang].modePvP;
+                document.getElementById('btn-diff').style.display = vsAI ? 'flex' : 'none';
+                document.getElementById('btn-diff').innerText = '🧠 ' + aiDepth;
+                document.getElementById('time-select').value = timeLimit;
+                
+                selectedSquare = null; validMoves = [];
+                renderLog(); checkPawnHints(); updateUI(); drawBoard();
+                
+                stopTimer(); if (timeLimit > 0) startTimer();
+                showToast(i18n[lang].loaded);
+            } else {
+                showToast(i18n[lang].noSave);
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (gameOver) return;
+                timeLeft[turn]--;
+                formatTime(turn);
+                if (timeLeft[turn] <= 0) endGame(turn === 'w' ? 'b' : 'w', true);
+            }, 1000);
+        }
+
+        function stopTimer() { if (timerInterval) clearInterval(timerInterval); }
+
+        function formatTime(color) {
+            const el = document.getElementById(`time-${color}`);
+            if (timeLimit === 0) { el.innerText = '--:--'; return; }
+            let s = Math.max(0, timeLeft[color]);
+            let m = Math.floor(s / 60);
+            let sec = s % 60;
+            el.innerText = `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function endGame(winnerColor, timeout = false) {
+            gameOver = true; stopTimer();
+            const t = i18n[lang];
+            let reason = timeout ? ` - ${t.timeout}` : '';
+            showToast((winnerColor === 'w' ? t.winW : t.winB) + reason);
+        }
+        
+        function validateBoardState() {
+
+    let whitePawns = 0;
+    let blackPawns = 0;
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+
+            if (board[r][c] === 'wP') whitePawns++;
+            if (board[r][c] === 'bP') blackPawns++;
+        }
+    }
+
+    if (whitePawns !== 8 - pawns.w) {
+        console.error('WHITE PAWN COUNT ERROR');
+    }
+
+    if (blackPawns !== 8 - pawns.b) {
+        console.error('BLACK PAWN COUNT ERROR');
+    }
+}
+function getBoardHash(simBoard) {
+
+    return JSON.stringify(simBoard);
+}
+        initGame();
+    </script>
+</body>
+</html>
