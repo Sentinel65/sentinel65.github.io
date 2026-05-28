@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Baju</title>
+    <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --text-color: #333;
+            --board-bg: #e6e6e6;
+            --white-bridge: #ffffff;
+            --black-bridge: #2b2b2b;
+            --red-bridge: #d62828;
+            --highlight: rgba(255, 215, 0, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background-color: #2b2b2b;
+            color: #fff;
+            padding: 10px 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            font-weight: bold;
+            font-size: 1rem;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #menu {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .turn-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            opacity: 0.3;
+            border: 2px solid transparent;
+            margin: 0 5px;
+        }
+
+        .turn-indicator.black { background: radial-gradient(circle at 30% 30%, #555, #111); }
+        .turn-indicator.red { background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); }
+        .turn-indicator.active { opacity: 1; border-color: #fff; box-shadow: 0 0 10px 2px var(--highlight); }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+            outline: none;
+        }
+
+        .icon-btn:hover { transform: scale(1.1); }
+        .icon-btn:active { transform: scale(0.95); }
+
+        #game-area {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #board-column, #log-column {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #board-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: var(--board-bg);
+            border: 4px solid #444;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            touch-action: manipulation;
+        }
+
+        #bridges {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        .bridge { stroke-width: 8; stroke-linecap: round; }
+        .bridge.white { stroke: var(--white-bridge); }
+        .bridge.black { stroke: var(--black-bridge); }
+        .bridge.red { stroke: var(--red-bridge); }
+
+        #nodes {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+        }
+
+        .node {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .node::after {
+            content: '';
+            width: 65%;
+            height: 65%;
+            background: rgba(0,0,0,0.06);
+            border-radius: 50%;
+            position: absolute;
+            z-index: 1;
+        }
+
+        .valid-move::before {
+            content: '';
+            position: absolute;
+            width: 65%;
+            height: 65%;
+            background-color: var(--highlight);
+            border-radius: 50%;
+            z-index: 2;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.85); opacity: 0.6; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .button-piece {
+            width: 65%;
+            height: 65%;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            z-index: 3;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .button-piece.black { background: radial-gradient(circle at 30% 30%, #555, #111); }
+        .button-piece.red { background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); }
+        
+        .button-piece.selected {
+            transform: scale(1.15);
+            box-shadow: 0 0 15px 5px var(--highlight);
+            z-index: 4;
+        }
+
+        .button-piece.highlight-gold {
+            transform: scale(1);
+            box-shadow: 0 0 15px 5px var(--highlight);
+            z-index: 4;
+        }
+        .button-piece.highlight-black { box-shadow: 0 0 15px 5px rgba(136, 136, 136, 0.9); }
+        .button-piece.highlight-red { box-shadow: 0 0 15px 5px rgba(255, 77, 77, 0.9); }
+
+        #supplies {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .supply-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .supply-row .button-piece {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        #log-section {
+            width: 100%;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 180px;
+        }
+
+        #log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e0e0e0;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        #btn-copy-log {
+            background: none; border: none; cursor: pointer; font-size: 1.2rem; outline: none;
+        }
+        #btn-copy-log:hover { transform: scale(1.1); }
+
+        #log-entries {
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 1rem;
+            color: #444; 
+            line-height: 1.6;
+            font-family: 'Courier New', Courier, monospace;
+            flex-grow: 1;
+        }
+
+        #modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .hidden { display: none !important; }
+
+        #modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 90%;
+            width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            text-align: center;
+        }
+
+        #modal-content h2 { margin-bottom: 15px; line-height: 1.2; }
+        #modal-content p { margin-bottom: 4px; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap; text-align: left; }
+        
+        .close-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.2s;
+        }
+        .close-icon:hover { color: #000; }
+        
+        .help-board-wrap {
+            margin: 2px 0 4px 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+
+        .help-board-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 92px;
+            gap: 0;
+        }
+
+        .help-board {
+            width: 92px;
+            height: 92px;
+            background: #e6e6e6;
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            padding: 3px;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .help-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .help-piece {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            color: white;
+            font-size: 0.52rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.35),
+                inset 0 -1px 2px rgba(0,0,0,0.25);
+        }
+
+        .help-piece.red {
+            background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000);
+        }
+
+        .help-piece.black {
+            background: radial-gradient(circle at 30% 30%, #555, #111);
+        }
+
+        .help-caption {
+            text-align: center;
+            font-size: 0.62rem;
+            font-weight: bold;
+            color: #444;
+            margin-top: 1px;
+            line-height: 0.95;
+        }
+
+        @media (min-width: 850px) {
+            #game-area {
+                max-width: 900px;
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+            }
+            #board-column { width: 500px; flex-shrink: 0; }
+            #log-column { width: 350px; flex-shrink: 0; }
+            #log-section { height: 100%; min-height: 520px; }
+            #supplies { margin-top: 20px; }
+        }
+        
+        @media (max-width: 400px) {
+            .supply-row .button-piece { width: 34px; height: 34px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <header>
+        <div id="menu">
+            <div id="turn-indicator-black" class="turn-indicator black"></div>
+            <button id="btn-save" class="icon-btn" title="Uložit / Save">💾</button>
+            <button id="btn-load" class="icon-btn" title="Načíst / Load">📂</button>
+            <button id="btn-undo" class="icon-btn" title="Krok zpět / Undo">↩️</button>
+            <button id="btn-reset" class="icon-btn" title="Nová hra / Reset">🔄</button>
+            <button id="btn-mode" class="icon-btn" title="Režim / Mode">👥</button>
+            <button id="btn-lang" class="icon-btn" title="Jazyk / Language">🇬🇧</button>
+            <button id="btn-help" class="icon-btn" title="Nápověda / Help">💡</button>
+            <div id="turn-indicator-red" class="turn-indicator red"></div>
+        </div>
+    </header>
+
+    <main id="game-area">
+        <div id="board-column">
+            <div id="board-container">
+                <svg id="bridges"></svg>
+                <div id="nodes"></div>
+            </div>
+            <div id="supplies">
+                <div class="supply-row" id="supply-black"></div>
+                <div class="supply-row" id="supply-red"></div>
+            </div>
+        </div>
+        <div id="log-column">
+            <div id="log-section">
+                <div id="log-header">
+                    <span id="log-title">Záznam hry</span>
+                    <button id="btn-copy-log" title="Kopírovat log / Copy Log">📋</button>
+                </div>
+                <div id="log-entries"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-overlay" class="hidden">
+        <div id="modal-content">
+            <button class="close-icon" id="btn-close-icon">&times;</button>
+            <h2 id="help-title"></h2>
+            <p id="help-text"></p>
+        </div>
+    </div>
+
+    <script>
+        const dictionaries = {
+            cz: {
+                black: "Černá",
+                red: "Červená",
+                win: " vyhrává!",
+                draw: "Remíza!",
+                noSave: "Žádná uložená hra nenalezena pro tento režim.",
+                saveOk: "Hra uložena.",
+                loadOk: "Hra načtena.",
+                copyOk: "Log byl zkopírován.",
+                logTitle: "Záznam hry",
+                helpTextDuel: `CÍL:\nStaňte se jediným hráčem, který má řadu čtyř svých knoflíků. Řada může být buď v řádku, nebo ve sloupci. Diagonální řady čtyř se nepočítají.<div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+</div>
+<div class="help-caption">
+Vítězný řádek
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+</div>
+<div class="help-caption">
+Vítězný sloupec
+</div>
+</div>
+</div>JAK HRÁT:\nVy a váš soupeř se střídáte a provádíte akce. Začít může kterýkoliv z vás. (Pozn.: V této hře je nutné nejprve rozmístit všechny knoflíky ze zásobníků na desku, než začne fáze přesunů.)\nVe svém tahu musíte provést jednu ze dvou následujících akcí:\n• Umístěte knoflík ze své zásoby na prázdné místo. Toto místo musí sousedit s jedním z knoflíků soupeře (ve stejném řádku nebo sloupci). Pokud však ještě nebyly umístěny žádné knoflíky, můžete využít libovolné místo.\n• Přesuňte jeden ze svých knoflíků na desce na jiné místo. Pokud je toto místo již obsazeno jiným knoflíkem (jakékoli barvy), odstraňte jej a umístěte na místo, které jste právě uvolnili. Tím si tyto dva knoflíky vymění místa.\n\nOMEZENÍ POHYBU:\nKnoflík musíte posouvat přes mosty o počet polí, který ukazuje – ani více, ani méně. Ignorujte ostatní knoflíky v cestě, na pohyb nemají vliv. Posunujte knoflík vždy po jednom poli, abyste se ujistili, že je tah platný.\nZákaz vstupu: Knoflík smí přecházet pouze přes bílé mosty a mosty ve své barvě – nikoli přes mosty barvy opačné.\nŽádný návrat: Během jednoho tahu nesmí knoflík přejít přes stejný most více než jednou.\nŽádné opakování: Nesmíte provést tah, při kterém si dva knoflíky vymění místa, pokud ty samé dva knoflíky vyměnil soupeř v předchozím tahu.\n\nKONEC HRY:\nVy a váš soupeř se střídáte, dokud nezůstane pouze jeden hráč, který má řadu čtyř ve své barvě. Tento hráč okamžitě vyhrává. Pokud mají řadu čtyř oba hráči, hra pokračuje dál.`,
+                helpTextSolo: `CÍL:\nVyberte si jeden z následujících dvou cílů:\n1. Vytvořte dva páry shodných řad.\nPřeskládejte knoflíky tak, abyste vytvořili dvě černé a dvě červené řady po čtyřech. Každá řada se musí shodovat s řadou v opačné barvě použitím stejných hodnot ve stejném pořadí ze stejné perspektivy.\n2. Vytvořte dva páry shodných řad ve správném sledu.\nTento cíl je stejný jako ten předchozí, s tím rozdílem, že každá řada musí zároveň tvořit postupku. (Řada je v postupce, pokud je hodnota každého knoflíku o jedna vyšší nebo o jedna nižší než hodnota následujícího knoflíku.)<div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+</div>
+<div class="help-caption">
+Vítězný řádek
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+</div>
+<div class="help-caption">
+Vítězný sloupec
+</div>
+</div>
+</div><div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+</div>
+<div class="help-caption">
+Vítězný řádek
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+</div>
+<div class="help-caption">
+Vítězný sloupec
+</div>
+</div>
+</div>JAK HRÁT:\nPřesuňte libovolný knoflík (kterékoliv barvy) na desce na jiné místo. Odstraňte knoflík, který na daném místě již leží, a umístěte ho na uvolněné políčko. Tím si knoflíky vymění místa.\nPokračujte v tom, dokud nedosáhnete svého cíle.\n\nOMEZENÍ POHYBU:\nKnoflík musíte po mostech posouvat přesně o tolik polí, kolik ukazuje – ani více, ani méně. Posunujte ho pole po poli, ať se ujistíte, že je tah platný.\nZákaz vstupu: Knoflík smí překročit pouze bílé mosty a mosty ve své barvě – nikoli mosty opačné barvy.\nŽádný návrat: Knoflík nesmí v průběhu jednoho tahu přejít stejný most vícekrát.\n(Pravidlo „žádné opakování“ se zde neuplatňuje, protože nemáte soupeře. Svůj poslední tah můžete kdykoliv vzít zpět.)`,
+                soloWin: "Rébus vyřešen! Gratulujeme!"
+            },
+            en: {
+                black: "Black",
+                red: "Red",
+                win: " wins!",
+                draw: "Draw!",
+                noSave: "No saved game found for this mode.",
+                saveOk: "Game saved.",
+                loadOk: "Game loaded.",
+                copyOk: "Log copied to clipboard.",
+                logTitle: "Game Log",
+                helpTextDuel: `GOAL:\nBecome the only player to have a line of four of your buttons. A line can be either a row or a column. Diagonal lines of four do not count.<div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+</div>
+<div class="help-caption">
+winning line
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+<div class="help-cell"></div>
+</div>
+<div class="help-caption">
+winning column
+</div>
+</div>
+</div>HOW TO PLAY:\nYou and your opponent take turns to perform an action. Either of you may take the first turn. (Note: Game enforces placing all pieces from supply to the board first, then moving).\nOn your turn, you must complete one of the following two actions.\n• Place a button from your supply on an empty space. That space must be next to one of your opponent’s buttons (on the same row or column). However, if no buttons have been placed yet, you may use any space.\n• Move one of your buttons on the board to another space. If that space is already occupied by another button (of either colour), remove it and place it on the space you vacated, so the two buttons swap places.\n\nMOVEMENT RESTRICTIONS:\nYou must move a button along the bridges by the number of spaces it indicates—no more, no less. Ignore any other buttons in its path, as they have no effect on its movement. Move your button one space at a time to help ensure that your move is legal.\nNo trespassing: A button can only cross the white bridges and the bridges in its own colour—not the bridges in the opposite colour.\nNo backtracking: A button cannot cross the same bridge more than once during a single move.\nNo reversals: You cannot make a move in which two buttons swap places if the same two swapped places on your opponent’s last turn.\n\nEND OF GAME:\nYou and your opponent continue to take turns until only one player has a line of four in their colour. That player instantly wins the game. However, if both players have a line of four, the game continues.`,
+                helpTextSolo: `
+GOAL:\nChoose one of the following two goals:\n1. Create two pairs of matching lines.\nRearrange the buttons to form two black lines of four and two red lines of four. Each line must match a line in the opposite colour, using the same values in the same order from the same perspective.\n2. Create two pairs of matching lines in sequence.\nThis is the same as the previous goal, except that each line must also be in sequence. (A line is in sequence if each button in that line is one higher or one lower in value than the next button in that line.)<div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+</div>
+<div class="help-caption">
+winning line
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+</div>
+<div class="help-caption">
+winning column
+</div>
+</div>
+</div><div class="help-board-wrap">
+<div>
+<div class="help-board">
+
+<div class="help-cell"><div class="help-piece red">1</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece black">4</div></div>
+
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+</div>
+<div class="help-caption">
+winning line
+</div>
+</div>
+<div>
+<div class="help-board">
+<div class="help-cell"><div class="help-piece black">1</div></div>
+<div class="help-cell"><div class="help-piece red">5</div></div>
+<div class="help-cell"><div class="help-piece black">5</div></div>
+<div class="help-cell"><div class="help-piece red">1</div></div>
+
+<div class="help-cell"><div class="help-piece black">2</div></div>
+<div class="help-cell"><div class="help-piece red">6</div></div>
+<div class="help-cell"><div class="help-piece black">6</div></div>
+<div class="help-cell"><div class="help-piece red">2</div></div>
+
+<div class="help-cell"><div class="help-piece black">3</div></div>
+<div class="help-cell"><div class="help-piece red">7</div></div>
+<div class="help-cell"><div class="help-piece black">7</div></div>
+<div class="help-cell"><div class="help-piece red">3</div></div>
+
+<div class="help-cell"><div class="help-piece black">4</div></div>
+<div class="help-cell"><div class="help-piece red">8</div></div>
+<div class="help-cell"><div class="help-piece black">8</div></div>
+<div class="help-cell"><div class="help-piece red">4</div></div>
+</div>
+<div class="help-caption">
+winning column
+</div>
+</div>
+</div>HOW TO PLAY:\nMove any button (of either colour) on the board to another space. Remove the button already occupying that space and place it on the space you vacated, so the two buttons swap places.\nContinue doing this until you have achieved your goal.\n\nMOVEMENT RESTRICTIONS:\nYou must move a button along the bridges by the number of spaces it indicates—no more, no less. Move your button one space at a time to help ensure that your move is legal.\nNo trespassing: A button can only cross the white bridges and the bridges in its own colour—not the bridges in the opposite colour.\nNo backtracking: A button cannot cross the same bridge more than once during a single move.\n(The “no reversals” rule does not apply, since you have no opponent. You can always reverse or “undo” your last move.)`,
+                soloWin: "Puzzle Solved! Congratulations!"
+            }
+        };
+
+        const edgeDefs = [
+            [0, 1, 'white'], [1, 2, 'black'], [2, 3, 'white'],
+            [4, 5, 'black'], [5, 6, 'red'], [6, 7, 'black'],
+            [8, 9, 'black'], [9, 10, 'red'], [10, 11, 'black'],
+            [12, 13, 'white'], [13, 14, 'black'], [14, 15, 'white'],
+            [0, 4, 'white'], [4, 8, 'red'], [8, 12, 'white'],
+            [1, 5, 'red'], [5, 9, 'black'], [9, 13, 'red'],
+            [2, 6, 'red'], [6, 10, 'black'], [10, 14, 'red'],
+            [3, 7, 'white'], [7, 11, 'red'], [11, 15, 'white']
+        ];
+
+        let state = {
+            mode: 'pvp',
+            lang: 'cz',
+            board: Array(16).fill(null),
+            supply: { black: [1,2,3,4,5,6,7,8], red: [1,2,3,4,5,6,7,8] },
+            currentPlayer: 'black',
+            selected: null,
+            lastSwap: null,
+            lastAction: null,
+            gameOver: false,
+            logs: [],
+            winningIndices: []
+        };
+
+        let stateHistory = [];
+        let nextStarter = 'black'; 
+
+        const ui = {
+            btnSave: document.getElementById('btn-save'),
+            btnLoad: document.getElementById('btn-load'),
+            btnReset: document.getElementById('btn-reset'),
+            btnUndo: document.getElementById('btn-undo'),
+            btnMode: document.getElementById('btn-mode'),
+            btnLang: document.getElementById('btn-lang'),
+            btnHelp: document.getElementById('btn-help'),
+            btnCloseIcon: document.getElementById('btn-close-icon'),
+            btnCopyLog: document.getElementById('btn-copy-log'),
+            modalOverlay: document.getElementById('modal-overlay'),
+            bridgesSvg: document.getElementById('bridges'),
+            nodesDiv: document.getElementById('nodes'),
+            helpTitle: document.getElementById('help-title'),
+            helpText: document.getElementById('help-text'),
+            supplyB: document.getElementById('supply-black'),
+            supplyR: document.getElementById('supply-red'),
+            turnBlack: document.getElementById('turn-indicator-black'),
+            turnRed: document.getElementById('turn-indicator-red'),
+            logEntries: document.getElementById('log-entries'),
+            logTitle: document.getElementById('log-title')
+        };
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            container.appendChild(toast);
+            
+            void toast.offsetWidth; 
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function getCoord(idx) {
+            const rows = ['a', 'b', 'c', 'd'];
+            return rows[Math.floor(idx / 4)] + (idx % 4);
+        }
+
+        function init() {
+            if (localStorage.getItem('soundEnabled') === null) {
+                localStorage.setItem('soundEnabled', 'false');
+            }
+            drawBridges();
+            createNodes();
+            setupEventListeners();
+            nextStarter = 'black';
+            state.mode = 'pvai';
+            ui.btnMode.innerText = '💻';
+            resetGame();
+        }
+
+        function drawBridges() {
+            ui.bridgesSvg.innerHTML = '';
+            edgeDefs.forEach(edge => {
+                const [n1, n2, color] = edge;
+                const col1 = n1 % 4, row1 = Math.floor(n1 / 4);
+                const col2 = n2 % 4, row2 = Math.floor(n2 / 4);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', `${12.5 + col1 * 25}%`);
+                line.setAttribute('y1', `${12.5 + row1 * 25}%`);
+                line.setAttribute('x2', `${12.5 + col2 * 25}%`);
+                line.setAttribute('y2', `${12.5 + row2 * 25}%`);
+                line.setAttribute('class', `bridge ${color}`);
+                ui.bridgesSvg.appendChild(line);
+            });
+        }
+
+        function createNodes() {
+            ui.nodesDiv.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                node.dataset.index = i;
+                node.addEventListener('click', () => handleNodeClick(i));
+                ui.nodesDiv.appendChild(node);
+            }
+        }
+
+        function resetGame() {
+            stateHistory = [];
+            state.gameOver = false;
+            state.lastSwap = null;
+            state.lastAction = null;
+            state.selected = null;
+            state.logs = [];
+            state.winningIndices = [];
+            
+            if (state.mode === 'solo') {
+                state.currentPlayer = 'none';
+                state.supply = { black: [], red: [] };
+                
+                let allPieces = [];
+                for(let i=1; i<=8; i++) {
+                    allPieces.push({color: 'black', value: i});
+                    allPieces.push({color: 'red', value: i});
+                }
+                
+                // Fisher-Yates shuffle pro perfektní náhodnost (simulace tažení z pytlíku)
+                for (let i = allPieces.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allPieces[i], allPieces[j]] = [allPieces[j], allPieces[i]];
+                }
+                
+                state.board = allPieces;
+                document.getElementById('supplies').style.display = 'none';
+            } else {
+                state.currentPlayer = nextStarter;
+                nextStarter = nextStarter === 'black' ? 'red' : 'black'; 
+                
+                state.board = Array(16).fill(null);
+                state.supply = { black: [1,2,3,4,5,6,7,8], red: [1,2,3,4,5,6,7,8] };
+                document.getElementById('supplies').style.display = 'flex';
+                
+                if (state.mode === 'pvai' && state.currentPlayer === 'black') {
+                    setTimeout(playAI, 500);
+                }
+            }
+            render();
+            checkWin(); 
+        }
+
+        function handleNodeClick(idx) {
+            if (state.gameOver) return;
+            if (state.mode === 'pvai' && state.currentPlayer === 'black') return; 
+
+            const targetPiece = state.board[idx];
+            const isPlacementPhase = state.supply.black.length > 0 || state.supply.red.length > 0;
+            const validMoves = getValidTargets();
+
+            if (validMoves.includes(idx)) {
+                executeMove(idx);
+                return;
+            }
+
+            if (state.selected && state.selected.source === 'board' && state.selected.index === idx) {
+                state.selected = null;
+                render();
+                return;
+            }
+
+            if (targetPiece && (targetPiece.color === state.currentPlayer || state.mode === 'solo')) {
+                if (isPlacementPhase && state.mode !== 'solo') {
+                    state.selected = null;
+                    render();
+                    return; 
+                }
+
+                state.selected = { source: 'board', index: idx, color: targetPiece.color, value: targetPiece.value };
+                render();
+            } else {
+                state.selected = null;
+                render();
+            }
+        }
+
+        function handleSupplyClick(color, value) {
+            if (state.gameOver || state.mode === 'solo') return;
+            if (state.mode === 'pvai' && state.currentPlayer === 'black') return;
+            if (color !== state.currentPlayer) return;
+
+            if (state.selected && state.selected.source === 'supply' && state.selected.color === color && state.selected.value === value) {
+                state.selected = null;
+                render();
+                return;
+            }
+
+            state.selected = { source: 'supply', value: value, color: color };
+            render();
+        }
+
+        function executeMove(targetIdx) {
+            stateHistory.push(JSON.stringify(state));
+
+            const moveNum = String(state.logs.length + 1).padStart(2, '0');
+            const circle = state.selected.color === 'black' ? '⚫' : '🔴';
+            const val = state.selected.value;
+            const tCoord = getCoord(targetIdx);
+            
+            let moveLog = "";
+            
+            state.lastAction = {
+                target: targetIdx,
+                src: state.selected.source === 'board' ? state.selected.index : null
+            };
+
+            if (state.selected.source === 'supply') {
+                moveLog = `${moveNum}. ${circle} ${val}: ${tCoord}`;
+                state.board[targetIdx] = { color: state.selected.color, value: state.selected.value };
+                state.supply[state.selected.color] = state.supply[state.selected.color].filter(v => v !== state.selected.value);
+                state.lastSwap = null;
+            } else {
+                const sCoord = getCoord(state.selected.index);
+                const srcIdx = state.selected.index;
+                const movingPiece = state.board[srcIdx];
+                const targetPiece = state.board[targetIdx];
+
+                if (targetPiece) {
+                    moveLog = `${moveNum}. ${circle} ${val}: ${sCoord} ➡️ ${tCoord} (🔄 ${targetPiece.value})`;
+                } else {
+                    moveLog = `${moveNum}. ${circle} ${val}: ${sCoord} ➡️ ${tCoord}`;
+                }
+
+                state.board[targetIdx] = movingPiece;
+                state.board[srcIdx] = targetPiece;
+
+                if (targetPiece && state.mode !== 'solo') {
+                    state.lastSwap = { a: srcIdx, b: targetIdx };
+                } else {
+                    state.lastSwap = null;
+                }
+            }
+
+            state.logs.unshift(moveLog); 
+            state.selected = null;
+            
+            if (checkWin()) return;
+
+            if (state.mode !== 'solo') {
+                state.currentPlayer = state.currentPlayer === 'black' ? 'red' : 'black';
+                render();
+                if (state.mode === 'pvai' && state.currentPlayer === 'black') {
+                    setTimeout(playAI, 100);
+                }
+            } else {
+                render();
+            }
+        }
+
+        function undoMove() {
+            if (stateHistory.length === 0) return;
+            
+            let prevState = JSON.parse(stateHistory.pop());
+            
+            if (prevState.mode === 'pvai' && prevState.currentPlayer === 'black') {
+                if (stateHistory.length > 0) {
+                     prevState = JSON.parse(stateHistory.pop());
+                } else {
+                     state = prevState;
+                     render();
+                     setTimeout(playAI, 100);
+                     return;
+                }
+            }
+            
+            state = prevState;
+            render();
+        }
+
+        function getValidTargetsPure(boardState, supplyState, lastSwap, selected, mode) {
+            if (selected.source === 'supply') {
+                const emptySpots = boardState.map((v, i) => v === null ? i : -1).filter(i => i !== -1);
+                const opponentColor = selected.color === 'black' ? 'red' : 'black';
+                const hasOpponent = boardState.some(p => p && p.color === opponentColor);
+                
+                if (!hasOpponent) return emptySpots;
+
+                return emptySpots.filter(idx => {
+                    const row = Math.floor(idx / 4);
+                    const col = idx % 4;
+                    const neighbors = [];
+                    if (row > 0) neighbors.push(idx - 4);
+                    if (row < 3) neighbors.push(idx + 4);
+                    if (col > 0) neighbors.push(idx - 1);
+                    if (col < 3) neighbors.push(idx + 1);
+
+                    return neighbors.some(n => boardState[n] && boardState[n].color === opponentColor);
+                });
+            }
+
+            if (selected.source === 'board') {
+                const startIdx = selected.index;
+                const N = selected.value;
+                const color = selected.color;
+                const validEnds = new Set();
+
+                function dfs(currentIdx, stepsLeft, visitedEdges) {
+                    if (stepsLeft === 0) {
+                        if (mode !== 'solo' && lastSwap) {
+                            const isReversal = (lastSwap.a === currentIdx && lastSwap.b === startIdx) ||
+                                               (lastSwap.a === startIdx && lastSwap.b === currentIdx);
+                            if (!isReversal) validEnds.add(currentIdx);
+                        } else {
+                            validEnds.add(currentIdx);
+                        }
+                        return;
+                    }
+
+                    const row = Math.floor(currentIdx / 4);
+                    const col = currentIdx % 4;
+                    const neighbors = [];
+                    if (row > 0) neighbors.push(currentIdx - 4);
+                    if (row < 3) neighbors.push(currentIdx + 4);
+                    if (col > 0) neighbors.push(currentIdx - 1);
+                    if (col < 3) neighbors.push(currentIdx + 1);
+
+                    for (let n of neighbors) {
+                        const min = Math.min(currentIdx, n);
+                        const max = Math.max(currentIdx, n);
+                        const edgeDef = edgeDefs.find(e => e[0] === min && e[1] === max);
+                        if (!edgeDef) continue;
+
+                        const edgeId = `${min}-${max}`;
+                        if (visitedEdges.has(edgeId)) continue; 
+
+                        const bridgeColor = edgeDef[2];
+                        if (color === 'black' && bridgeColor === 'red') continue;
+                        if (color === 'red' && bridgeColor === 'black') continue;
+
+                        const newVisited = new Set(visitedEdges);
+                        newVisited.add(edgeId);
+                        dfs(n, stepsLeft - 1, newVisited);
+                    }
+                }
+
+                dfs(startIdx, N, new Set());
+                validEnds.delete(startIdx); 
+                return Array.from(validEnds);
+            }
+            return [];
+        }
+
+        function getValidTargets() {
+            if (!state.selected) return [];
+            return getValidTargetsPure(state.board, state.supply, state.lastSwap, state.selected, state.mode);
+        }
+
+        function checkWin() {
+            state.winningIndices = [];
+            state.winningPairs = null;
+            
+            if (state.mode === 'solo') {
+                let lines = [];
+                for (let r = 0; r < 4; r++) {
+                    const idxs = [r*4, r*4+1, r*4+2, r*4+3];
+                    const rowPieces = idxs.map(i => state.board[i]);
+                    if (rowPieces.every(p => p !== null && p.color === rowPieces[0].color)) {
+                        lines.push({ color: rowPieces[0].color, vals: rowPieces.map(p => p.value).join(','), indices: idxs });
+                    }
+                }
+                for (let c = 0; c < 4; c++) {
+                    const idxs = [c, c+4, c+8, c+12];
+                    const colPieces = idxs.map(i => state.board[i]);
+                    if (colPieces.every(p => p !== null && p.color === colPieces[0].color)) {
+                        lines.push({ color: colPieces[0].color, vals: colPieces.map(p => p.value).join(','), indices: idxs });
+                    }
+                }
+
+                const blackLines = lines.filter(l => l.color === 'black');
+                const redLines = lines.filter(l => l.color === 'red');
+
+                if (blackLines.length >= 2 && redLines.length >= 2) {
+                    let b0 = blackLines[0], b1 = blackLines[1];
+                    let r0 = redLines[0], r1 = redLines[1];
+
+                    const isMatch = (l1, l2) => {
+                        return l1.vals === l2.vals || l1.vals === l2.vals.split(',').reverse().join(',');
+                    };
+
+                    if ((isMatch(b0, r0) && isMatch(b1, r1)) || (isMatch(b0, r1) && isMatch(b1, r0))) {
+                        state.winningIndices = [...b0.indices, ...b1.indices, ...r0.indices, ...r1.indices];
+                        state.gameOver = true;
+                        render();
+                        setTimeout(() => showToast(dictionaries[state.lang].soloWin), 100);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            let blackWins = false;
+            let redWins = false;
+            let bIndices = [];
+            let rIndices = [];
+
+            for (let i = 0; i < 4; i++) {
+                if (state.board[i*4] && state.board[i*4].color === state.board[i*4+1]?.color && 
+                    state.board[i*4].color === state.board[i*4+2]?.color && 
+                    state.board[i*4].color === state.board[i*4+3]?.color) {
+                    if (state.board[i*4].color === 'black') { blackWins = true; bIndices.push(i*4, i*4+1, i*4+2, i*4+3); }
+                    if (state.board[i*4].color === 'red') { redWins = true; rIndices.push(i*4, i*4+1, i*4+2, i*4+3); }
+                }
+                if (state.board[i] && state.board[i].color === state.board[i+4]?.color && 
+                    state.board[i].color === state.board[i+8]?.color && 
+                    state.board[i].color === state.board[i+12]?.color) {
+                    if (state.board[i].color === 'black') { blackWins = true; bIndices.push(i, i+4, i+8, i+12); }
+                    if (state.board[i].color === 'red') { redWins = true; rIndices.push(i, i+4, i+8, i+12); }
+                }
+            }
+
+            if (blackWins && !redWins) { state.winningIndices = bIndices; endGame('black'); return true; }
+            if (redWins && !blackWins) { state.winningIndices = rIndices; endGame('red'); return true; }
+
+            return false;
+        }
+
+        function endGame(winnerColor) {
+            state.gameOver = true;
+            render();
+            const wName = dictionaries[state.lang][winnerColor];
+            setTimeout(() => showToast(wName + dictionaries[state.lang].win), 100);
+        }
+
+        function getAllPossibleActions(simState, color) {
+            const actions = [];
+            const isPlacementPhase = simState.supply.black.length > 0 || simState.supply.red.length > 0;
+
+            if (isPlacementPhase) {
+                if (simState.supply[color].length > 0) {
+                    const uniqueSupply = [...new Set(simState.supply[color])];
+                    uniqueSupply.forEach(val => {
+                        const selected = { source: 'supply', value: val, color: color };
+                        const targets = getValidTargetsPure(simState.board, simState.supply, simState.lastSwap, selected, 'pvai');
+                        targets.forEach(t => actions.push({ type: 'place', val: val, target: t, src: null, color: color }));
+                    });
+                }
+            } else {
+                simState.board.forEach((piece, idx) => {
+                    if (piece && piece.color === color) {
+                        const selected = { source: 'board', index: idx, value: piece.value, color: color };
+                        const targets = getValidTargetsPure(simState.board, simState.supply, simState.lastSwap, selected, 'pvai');
+                        targets.forEach(t => actions.push({ type: 'move', val: piece.value, target: t, src: idx, color: color }));
+                    }
+                });
+            }
+            return actions;
+        }
+
+        function applyAction(simState, action) {
+            const newState = {
+                board: simState.board.map(p => p ? {...p} : null),
+                supply: { black: [...simState.supply.black], red: [...simState.supply.red] },
+                lastSwap: null
+            };
+            const color = action.color;
+
+            if (action.type === 'place') {
+                newState.board[action.target] = { color: color, value: action.val };
+                const idx = newState.supply[color].indexOf(action.val);
+                if(idx > -1) newState.supply[color].splice(idx, 1);
+            } else {
+                const srcIdx = action.src;
+                const targetIdx = action.target;
+                const movingPiece = newState.board[srcIdx];
+                const targetPiece = newState.board[targetIdx];
+
+                newState.board[targetIdx] = movingPiece;
+                newState.board[srcIdx] = targetPiece;
+
+                if (targetPiece) {
+                    newState.lastSwap = { a: srcIdx, b: targetIdx };
+                }
+            }
+            return newState;
+        }
+
+        function checkSimWin(board) {
+            let blackWins = false; let redWins = false;
+            for (let i = 0; i < 4; i++) {
+                if (board[i*4] && board[i*4].color === board[i*4+1]?.color && board[i*4].color === board[i*4+2]?.color && board[i*4].color === board[i*4+3]?.color) {
+                    if (board[i*4].color === 'black') blackWins = true; if (board[i*4].color === 'red') redWins = true;
+                }
+                if (board[i] && board[i].color === board[i+4]?.color && board[i].color === board[i+8]?.color && board[i].color === board[i+12]?.color) {
+                    if (board[i].color === 'black') blackWins = true; if (board[i].color === 'red') redWins = true;
+                }
+            }
+            if (blackWins && !redWins) return 'black';
+            if (redWins && !blackWins) return 'red';
+            return null;
+        }
+
+        function evaluateSim(simState) {
+            let score = 0;
+            for (let i = 0; i < 4; i++) {
+                let bRow = 0, rRow = 0, bCol = 0, rCol = 0;
+                for(let j=0; j<4; j++) {
+                    let pr = simState.board[i*4+j];
+                    if (pr) { if (pr.color==='black') bRow++; else rRow++; }
+
+                    let pc = simState.board[j*4+i];
+                    if (pc) { if (pc.color==='black') bCol++; else rCol++; }
+                }
+                if (bRow > 0 && rRow === 0) score += Math.pow(10, bRow);
+                if (rRow > 0 && bRow === 0) score -= Math.pow(10, rRow);
+                if (bCol > 0 && rCol === 0) score += Math.pow(10, bCol);
+                if (rCol > 0 && bCol === 0) score -= Math.pow(10, rCol);
+                if (bRow === 3 && rRow === 0) score += 500;
+                if (rRow === 3 && bRow === 0) score -= 500;
+                if (bCol === 3 && rCol === 0) score += 500;
+                if (rCol === 3 && bCol === 0) score -= 500;
+            }
+            
+            const centerIndices = [5, 6, 9, 10];
+            for (let idx of centerIndices) {
+                if (simState.board[idx] && simState.board[idx].color === 'black') score += 5;
+                if (simState.board[idx] && simState.board[idx].color === 'red') score -= 5;
+            }
+            const blackMoves =
+                getAllPossibleActions(simState, 'black').length;
+
+            const redMoves =
+                getAllPossibleActions(simState, 'red').length;
+
+            score += blackMoves * 2;
+            score -= redMoves * 2;
+            return score;
+        }
+
+        function minimax(simState, depth, alpha, beta, isMaximizing) {
+            const winner = checkSimWin(simState.board);
+            if (winner === 'black') return 10000 + depth;
+            if (winner === 'red') return -10000 - depth;
+            if (depth === 0) return evaluateSim(simState);
+
+            const color = isMaximizing ? 'black' : 'red';
+            const actions = getAllPossibleActions(simState, color);
+
+            if (actions.length === 0) return evaluateSim(simState);
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let action of actions) {
+                    let ev = minimax(applyAction(simState, action), depth - 1, alpha, beta, false);
+                    maxEval = Math.max(maxEval, ev);
+                    alpha = Math.max(alpha, ev);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let action of actions) {
+                    let ev = minimax(applyAction(simState, action), depth - 1, alpha, beta, true);
+                    minEval = Math.min(minEval, ev);
+                    beta = Math.min(beta, ev);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        function playAI() {
+            if (state.gameOver) return;
+
+            const aiColor = 'black'; 
+            const simState = { board: state.board, supply: state.supply, lastSwap: state.lastSwap };
+            const validActions = getAllPossibleActions(simState, aiColor);
+
+            if (validActions.length === 0) {
+                state.currentPlayer = 'red';
+                state.selected = null;
+                render();
+                return;
+            }
+
+            let bestScore = -Infinity;
+            let bestActions = [];
+
+            for (let action of validActions) {
+                const nextState = applyAction(simState, action);
+                const score = minimax(nextState, 3, -Infinity, Infinity, false); 
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestActions = [action];
+                } else if (score === bestScore) {
+                    bestActions.push(action);
+                }
+            }
+
+            const chosenAction = bestActions[Math.floor(Math.random() * bestActions.length)];
+            
+            if (chosenAction.type === 'place') {
+                state.selected = { source: 'supply', value: chosenAction.val, color: aiColor };
+            } else {
+                state.selected = { source: 'board', index: chosenAction.src, value: state.board[chosenAction.src].value, color: aiColor };
+            }
+            
+            executeMove(chosenAction.target);
+        }
+
+        function render() {
+            const dict = dictionaries[state.lang];
+            ui.logTitle.innerText = dict.logTitle;
+            
+            if (state.mode === 'solo' || state.gameOver) {
+                ui.turnBlack.classList.remove('active');
+                ui.turnRed.classList.remove('active');
+            } else {
+                if (state.currentPlayer === 'black') {
+                    ui.turnBlack.classList.add('active');
+                    ui.turnRed.classList.remove('active');
+                } else {
+                    ui.turnRed.classList.add('active');
+                    ui.turnBlack.classList.remove('active');
+                }
+            }
+
+            const validTargets = getValidTargets();
+            Array.from(ui.nodesDiv.children).forEach((node, i) => {
+                node.innerHTML = '';
+                node.className = 'node';
+                
+                if (validTargets.includes(i)) node.classList.add('valid-move');
+
+                const piece = state.board[i];
+                let extraClass = '';
+                
+                if (piece) {
+                    if (state.selected?.source === 'board' && state.selected.index === i) {
+                        extraClass = 'selected';
+                    } else if (state.winningIndices && state.winningIndices.includes(i)) {
+                        if (state.mode === 'solo') {
+                            extraClass = piece.color === 'black' ? 'highlight-black' : 'highlight-red';
+                        } else {
+                            extraClass = 'highlight-gold';
+                        }
+                    } else if (
+    !state.selected &&
+    state.lastAction &&
+    (i === state.lastAction.target || i === state.lastAction.src)
+) {
+                        extraClass = piece.color === 'black' ? 'highlight-black' : 'highlight-red';
+                    }
+
+                    const btn = document.createElement('div');
+                    btn.className = `button-piece ${piece.color} ${extraClass}`;
+                    btn.innerText = piece.value;
+                    node.appendChild(btn);
+                }
+            });
+
+            ui.supplyB.innerHTML = '';
+            state.supply.black.forEach(val => {
+                const btn = document.createElement('div');
+                btn.className = 'button-piece black';
+                btn.innerText = val;
+                if (state.selected?.source === 'supply' && state.selected.color === 'black' && state.selected.value === val) {
+                    btn.classList.add('selected');
+                }
+                btn.onclick = () => handleSupplyClick('black', val);
+                ui.supplyB.appendChild(btn);
+            });
+
+            ui.supplyR.innerHTML = '';
+            state.supply.red.forEach(val => {
+                const btn = document.createElement('div');
+                btn.className = 'button-piece red';
+                btn.innerText = val;
+                if (state.selected?.source === 'supply' && state.selected.color === 'red' && state.selected.value === val) {
+                    btn.classList.add('selected');
+                }
+                btn.onclick = () => handleSupplyClick('red', val);
+                ui.supplyR.appendChild(btn);
+            });
+
+            if (state.mode === 'pvai') {
+                ui.supplyB.style.display = 'none';
+            } else {
+                ui.supplyB.style.display = 'flex';
+            }
+
+            ui.logEntries.innerHTML = state.logs.join('<br>');
+        }
+
+        function setupEventListeners() {
+            ui.btnMode.addEventListener('click', () => {
+                if (state.mode === 'pvp') { state.mode = 'pvai'; ui.btnMode.innerText = '💻'; }
+                else if (state.mode === 'pvai') { state.mode = 'solo'; ui.btnMode.innerText = '👤'; }
+                else { state.mode = 'pvp'; ui.btnMode.innerText = '👥'; }
+                resetGame();
+            });
+
+            ui.btnLang.addEventListener('click', () => {
+                if (state.lang === 'cz') {
+                    state.lang = 'en';
+                    ui.btnLang.innerText = '🇨🇿'; 
+                } else {
+                    state.lang = 'cz';
+                    ui.btnLang.innerText = '🇬🇧';
+                }
+                updateHelpTexts();
+                render();
+            });
+
+            ui.btnReset.addEventListener('click', resetGame);
+            
+            ui.btnUndo.addEventListener('click', undoMove);
+
+            ui.btnSave.addEventListener('click', () => {
+                const saveKey = state.mode === 'solo' ? 'bajuSave_solo' : 'bajuSave_duel';
+                localStorage.setItem(saveKey, JSON.stringify({ state, stateHistory, nextStarter }));
+                showToast(dictionaries[state.lang].saveOk);
+            });
+
+            ui.btnLoad.addEventListener('click', () => {
+                const saveKey = state.mode === 'solo' ? 'bajuSave_solo' : 'bajuSave_duel';
+                const saved = localStorage.getItem(saveKey);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = parsed.state || parsed; 
+                    stateHistory = parsed.stateHistory || [];
+                    if(parsed.nextStarter) nextStarter = parsed.nextStarter;
+                    
+                    if (state.mode === 'pvp') ui.btnMode.innerText = '👥';
+                    if (state.mode === 'pvai') ui.btnMode.innerText = '💻';
+                    if (state.mode === 'solo') ui.btnMode.innerText = '👤';
+                    
+                    if (state.lang === 'cz') ui.btnLang.innerText = '🇬🇧';
+                    else ui.btnLang.innerText = '🇨🇿';
+
+                    document.getElementById('supplies').style.display = state.mode === 'solo' ? 'none' : 'flex';
+                    
+                    updateHelpTexts();
+                    render();
+                    showToast(dictionaries[state.lang].loadOk);
+                } else {
+                    showToast(dictionaries[state.lang].noSave);
+                }
+            });
+
+            ui.btnCopyLog.addEventListener('click', () => {
+                const rawLog = state.logs.join('\n').replace(/<br>/g, '\n');
+                navigator.clipboard.writeText(rawLog).then(() => {
+                    showToast(dictionaries[state.lang].copyOk);
+                });
+            });
+
+            ui.btnHelp.addEventListener('click', () => {
+                updateHelpTexts();
+                ui.modalOverlay.classList.remove('hidden');
+            });
+
+            ui.btnCloseIcon.addEventListener('click', () => {
+                ui.modalOverlay.classList.add('hidden');
+            });
+
+            ui.modalOverlay.addEventListener('click', (e) => {
+                if (e.target === ui.modalOverlay) {
+                    ui.modalOverlay.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateHelpTexts() {
+            const dict = dictionaries[state.lang];
+            const isSolo = state.mode === 'solo';
+            
+            const modeText = isSolo ? (state.lang === 'cz' ? 'Pravidla SÓLO' : 'SOLO Rules') : (state.lang === 'cz' ? 'Pravidla DUEL' : 'DUEL Rules');
+            const gameTitle = state.lang === 'cz' ? 'Hra Baju' : 'Game Baju';
+            
+            ui.helpTitle.innerHTML = `<strong>${gameTitle}</strong> <span style="font-size: 0.65em; color: red; font-style: italic; font-weight: bold;">by Adam Obren</span><br><span style="font-size: 0.8em; font-weight: normal; color: #555;">${modeText}</span>`;
+            ui.helpText.innerHTML = isSolo ? dict.helpTextSolo : dict.helpTextDuel;
+        }
+
+        init();
+    </script>
+</body>
+</html>

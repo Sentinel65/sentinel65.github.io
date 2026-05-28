@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tessella</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333333;
+            --board-bg: #cfd8dc;
+            --primary-color: #007bff;
+            --octagon-color: #e0e0e0;
+            --square-color: #fff9c4;
+            --piece-p1: #ffffff;
+            --piece-p2: #333333;
+            --highlight: rgba(0, 255, 0, 0.4);
+            --panel-bg: #ffffff;
+            --panel-border: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 8px;
+        }
+
+        /* Top Section (Menu + Počítadla) - Grid pro mobil */
+        #top-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas: 
+                "tool tool"
+                "p1 p2";
+            gap: 8px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 8px;
+        }
+
+        /* Toolbar */
+        #toolbar {
+            grid-area: tool;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 2px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            background: var(--panel-bg);
+            padding: 4px 4px;
+            border-radius: 8px;
+        }    
+        #toolbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            outline: none;
+            font-size: 1.2rem;
+            min-width: 34px;
+            height: 34px;
+        }
+
+        .icon-btn:hover { background: #f0f0f0; }
+
+        /* Status & Score */
+        #p1-status { grid-area: p1; justify-self: start; }
+        #p2-status { grid-area: p2; justify-self: end; }
+
+        .player-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+            font-weight: bold;
+            opacity: 0.4;
+            background: transparent;
+        }
+
+        .player-status.active {
+            opacity: 1;
+            background: #e3f2fd;
+            box-shadow: 0 2px 12px rgba(0, 123, 255, 0.25);
+        }
+
+        /* Rozvržení obrazovky */
+        #main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            gap: 10px;
+        }
+
+        /* Game Board */
+        #game-container {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--board-bg);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border: 1px solid var(--panel-border);
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+        }
+
+        .node {
+            stroke: #999;
+            stroke-width: 1.5;
+            cursor: pointer;
+            transition: fill 0.2s, opacity 0.2s;
+            outline: none;
+        }
+        
+        .node.octagon { fill: var(--octagon-color); }
+        .node.square { fill: var(--square-color); }
+        .node:hover { opacity: 0.7; }
+
+        .board-outline {
+            stroke: #000;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            pointer-events: none;
+        }
+
+        .piece {
+            stroke: #000;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .piece.p1 { fill: var(--piece-p1); }
+        .piece.p2 { fill: var(--piece-p2); }
+        
+        /* Zelená záře pro vybraný vlastní kámen */
+        .selected-piece {
+            stroke: #90ee90 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 6px #90ee90);
+        }
+
+        /* Červená záře pro zaměřený soupeřův kámen (Capture) */
+        .capture-target-piece {
+            stroke: #ff4d4d !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 6px #ff4d4d);
+        }
+        
+        .highlight { fill: var(--highlight) !important; }
+
+        /* Log Section */
+        #log-section {
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--panel-border);
+        }
+
+        #log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        /* Písmo logu není tučné */
+        #label-log {
+            font-weight: normal;
+            font-size: 1.1rem;
+        }
+
+        #btn-copy {
+            background: transparent;
+            color: var(--text-color);
+            border: none;
+            outline: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: opacity 0.2s;
+        }
+        
+        #btn-copy:hover { opacity: 0.6; }
+
+        #log-content {
+            height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 1rem;
+            color: #444;
+            padding-top: 5px;
+        }
+        
+        .log-entry { margin-bottom: 4px; border-bottom: 1px dashed #f0f0f0; padding-bottom: 2px; }
+
+        /* PC (Desktop) Layout */
+        @media (min-width: 800px) {
+            body { padding: 20px; }
+            #top-section {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                max-width: 850px;
+                margin-bottom: 20px;
+            }
+            #toolbar {
+                flex: 1;
+                justify-content: center;
+                margin: 0 20px;
+                gap: 15px;
+            }
+            .icon-btn {
+                font-size: 1.5rem;
+                min-width: 42px;
+                height: 42px;
+            }
+            #p1-status, #p2-status { margin: 0; }
+            
+            #main-content {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+                max-width: 850px;
+            }
+            #game-container {
+                max-width: 450px;
+                flex: 1;
+            }
+            #log-section {
+                width: 320px;
+                height: 450px;
+                margin-top: 0;
+            }
+            #log-content {
+                height: 395px;
+            }
+        }
+
+        /* Toasts & Modal */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-left: 4px solid var(--primary-color);
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: toastIn 0.3s forwards;
+            text-align: center;
+        }
+
+        @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(-20px); } }
+
+        #help-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: var(--panel-bg);
+            color: var(--text-color);
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #888;
+        }
+        .close-modal:hover { color: #333; }
+    </style>
+</head>
+<body>
+
+    <div id="top-section">
+        <div id="p1-status" class="player-status active">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#000" stroke-width="2"/>
+            </svg>
+            <span id="score-p1">0</span>
+        </div>
+        
+        <div id="toolbar">
+            <button class="icon-btn" id="btn-save" title="Save Game">💾</button>
+            <button class="icon-btn" id="btn-load" title="Load Game">📂</button>
+            <button class="icon-btn" id="btn-new" title="New Game">🔄</button>
+            <button class="icon-btn" id="btn-undo" title="Undo Move">↩️</button>
+            <button class="icon-btn" id="btn-ai-level" title="AI Difficulty">🧠</button>
+            <button class="icon-btn" id="btn-mode" title="Toggle AI / PvP">🖥️</button>
+            <button class="icon-btn" id="btn-layout" title="Board Layout">🔳</button>
+            <button class="icon-btn" id="btn-help" title="Help">💡</button>
+            <button class="icon-btn" id="btn-lang" title="Toggle Language">🇬🇧</button>
+        </div>
+
+        <div id="p2-status" class="player-status">
+            <span id="score-p2">0</span>
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#333333" stroke="#000" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div id="game-container">
+            <svg id="board" viewBox="-32 -32 274 274" xmlns="http://www.w3.org/2000/svg">
+                <g id="grid"></g>
+                <g id="board-borders"></g>
+                <g id="pieces"></g>
+            </svg>
+        </div>
+
+        <div id="log-section">
+            <div id="log-header">
+                <span id="label-log">Log hry:</span>
+                <button id="btn-copy" title="Kopírovat">📋</button>
+            </div>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="help-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="btn-close-help">&times;</span>
+            <div id="help-content"></div>
+        </div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('soundEnabled')) {
+            localStorage.setItem('soundEnabled', 'false');
+        }
+
+        /* --- PŘEKLADY --- */
+        const dict = {
+            'cs': {
+                'log': 'Log hry:',
+                'copied': 'Záznam zkopírován!',
+                'new_game': 'Nová hra zahájena',
+                'saved': 'Hra uložena',
+                'loaded': 'Hra načtena',
+                'no_save': 'Žádná uložená hra',
+                'undo': 'Tah vrácen',
+                'mode_pvp': 'Režim: 👤⚔️👤',
+                'mode_ai': 'Režim: 👤⚔️🖥️',
+                'layout_classic': 'Klasická deska',
+                'layout_alternate': 'Alternativní deska',
+                'ai_easy': 'AI lehká',
+                'ai_medium': 'AI střední',
+                'ai_hard': 'AI těžká',                                               
+                'win_p1': 'Bílý vítězí!',
+                'win_p2': 'Černý vítězí!',
+                'game_over': 'Konec hry',
+                'help_html': `
+                    <h2><b>Hra Tessella</b></h2>
+                    <div style="color: red; font-size: 0.85em; font-style: italic; font-weight: bold; margin-bottom: 15px;">by Michael Lefkowitz</div>
+                    <p>Jednoduchá, ale návyková abstraktní strategická hra pro 2 hráče.</p>
+                    <p>Hra je snadnější na naučení než dáma, má strategickou hloubku podobnou hře „Šachy“ nebo „Go“. Používá zcela nové rozložení desky a mechaniku vyhazování soupeřových figurek.</p>
+                    <p>Každý hráč začíná se 7 figurkami (alternativně lze figurky poskládat na přeskáčku) :</p>
+                    <br>
+                    <p><b>Cíl hry</b><br>Hru vyhrává hráč, který jako první vyhodí 4 soupeřovy figurky.</p>
+                    <br>
+                    <p><b>Tah</b><br>Provede se buď pohyb figurkou nebo vyhození soupeřovy figurky.</p>
+                    <br>
+                    <p><b>Pohyb figurky</b><br>Figurky se mohou přesunout na libovolné sousední prázdné pole, které má společnou stranu (hranu) jako aktuální pole.<br>
+                    Figurku nelze přesunout ze čtverce na čtverec nebo z osmiúhelníku na protilehlý osmiúhelník přes čtverec, protože se nejedná o sousední pole (nedotýkají se, nemají společnou hranu).</p>
+                    <br>
+                    <p><b>Vyhození soupeřovy figurky</b><br>Chcete-li vyhodit soupeřovu figurku, figurka se pohybuje po přímce od jiné figurky stejné barvy, která se nazývá PODPORA. Poté obsadí pole soupeřovy figurky, která je odstraněna ze hry. O figurce se říká, že je AKTIVNÍ, pokud je v pozici, kdy může zajmout soupeřovu figurku, a dvojice aktivních / podporujících figurek je ČÁRA.</p>
+                    <p>Figurka se může vyhazovat z obou typu polí (osmiúhelník, čtverec) ve všech osmi možných směrech, pokud má podporu (ČÁRU).</p>
+                    <br>
+                    <p><b>Strategické tipy</b><br>
+                    - Na začátku hry vytvořte linie zaměřené na soupeřovy figurky na druhé straně hrací desky.<br>
+                    - Mějte co nejvíce aktivních figur.<br>
+                    - Soustřeďte své figurky: těsné formace vytvářejí více linií a kontrolují větší plochu.<br>
+                    - Když jsou tři figurky seřazeny, jsou dva konce bráněny (můžete je znovu získat, pokud jsou chyceny), ale střed je zranitelný.<br>
+                    - Při výměně se vyhněte přesunu ze silné pozice (centrální nebo velmi aktivní) do slabé pozice. Dobrá výměna rozptýlí soupeřovy figurky.</p>
+                `
+            },
+            'en': {
+                'log': 'Game Log:',
+                'copied': 'Log copied!',
+                'new_game': 'New game started',
+                'saved': 'Game saved',
+                'loaded': 'Game loaded',
+                'no_save': 'No saved game',
+                'undo': 'Move undone',
+                'mode_pvp': 'Mode: 👤⚔️👤',
+                'mode_ai': 'Mode: 👤⚔️🖥️',
+                'layout_classic': 'Classic Layout',
+                'layout_alternate': 'Alternating Layout',
+                'ai_easy': 'AI Easy',
+                'ai_medium': 'AI Medium',
+                'ai_hard': 'AI Hard',
+                'win_p1': 'White Wins!',
+                'win_p2': 'Black Wins!',
+                'game_over': 'Game Over',
+                'help_html': `
+                    <h2><b>Tessella Game</b></h2>
+                    <div style="color: red; font-size: 0.85em; font-style: italic; font-weight: bold; margin-bottom: 15px;">by Michael Lefkowitz</div>
+                    <p>A simple, yet addictive abstract strategy game for 2 players.</p>
+                    <p>The game is easier to learn than Checkers, with strategic depth similar to Chess or Go. It features a completely new board layout and capturing mechanics.</p>
+                    <p>Each player starts with 7 pieces (alternatively, they can be staggered):</p>
+                    <br>
+                    <p><b>Win Condition</b><br>The first player to capture 4 of the opponent's pieces wins the game.</p>
+                    <br>
+                    <p><b>Turn</b><br>On your turn, either move a piece or capture an opponent's piece.</p>
+                    <br>
+                    <p><b>Moving a Piece</b><br>Pieces can move to any empty adjacent space sharing an edge with the current space.<br>
+                    A piece cannot move from a square to a square, or from an octagon to the opposite octagon across a square, because they are not adjacent (they do not touch and share no edge).</p>
+                    <br>
+                    <p><b>Capturing an Opponent's Piece</b><br>To capture, a piece moves in a straight line away from another piece of the same color, called the BACKUP. It then occupies the opponent's space, removing their piece from the game. A piece is ACTIVE if it is positioned to capture, and the pair of active/backup pieces forms a LINE.</p>
+                    <p>A piece can capture from both types of spaces (octagon, square) in all eight possible directions, as long as it has backup (a LINE).</p>
+                    <br>
+                    <p><b>Strategy Tips</b><br>
+                    - Early in the game, create lines targeting opponent's pieces across the board.<br>
+                    - Maintain as many active pieces as possible.<br>
+                    - Consolidate your pieces: tight formations create more lines and control more space.<br>
+                    - When three pieces are lined up, the two ends are defended (can be recaptured), but the middle is vulnerable.<br>
+                    - When trading, avoid moving from a strong (central or active) position to a weak one. A good trade scatters your opponent's pieces.</p>
+                `
+            }
+        };
+
+        /* --- HERNÍ STAV --- */
+        let lang = 'cs';
+        let vsAI = true;
+        let currentPlayer = 1; 
+        let startingPlayer = 1; 
+        let pieces = []; 
+        let score = { p1: 0, p2: 0 };
+        let selectedNode = null;
+        let validMoves = [];
+        let validCaptures = [];
+        let moveHistory = [];
+        let logEntries = [];
+        let isGameOver = false;
+        let boardLayout = 'classic'; // classic | alternate
+        let aiLevel = 2; // 1 easy, 2 medium, 3 hard
+
+        const octagonsSet = new Set(["0,0","0,2","0,4","0,6","0,8", "2,0","2,2","2,4","2,6","2,8", "4,0","4,2","4,4","4,6","4,8", "6,0","6,2","6,4","6,6","6,8", "8,0","8,2","8,4","8,6","8,8"]);
+        const squaresSet = new Set(["1,1","1,3","1,5","1,7", "3,1","3,3","3,5","3,7", "5,1","5,3","5,5","5,7", "7,1","7,3","7,5","7,7"]);
+
+        const S = 22;
+        const W = S + S * Math.SQRT2; 
+        const GRID_UNIT = W / 2;
+
+        let nodes = new Map();
+
+        function createBoard() {
+            nodes.clear();
+            octagonsSet.forEach(id => {
+                let [gx, gy] = id.split(',').map(Number);
+                nodes.set(id, { id, x: gx, y: gy, type: 'octagon', cx: gx * GRID_UNIT, cy: gy * GRID_UNIT });
+            });
+            squaresSet.forEach(id => {
+                let [gx, gy] = id.split(',').map(Number);
+                nodes.set(id, { id, x: gx, y: gy, type: 'square', cx: gx * GRID_UNIT, cy: gy * GRID_UNIT });
+            });
+        }
+
+        function drawBoard() {
+            const grid = document.getElementById('grid');
+            const borders = document.getElementById('board-borders');
+            grid.innerHTML = '';
+            borders.innerHTML = '';
+            
+            let edges = {};
+            
+            function addEdge(x1, y1, x2, y2) {
+                let px1 = parseFloat(x1.toFixed(1)), py1 = parseFloat(y1.toFixed(1));
+                let px2 = parseFloat(x2.toFixed(1)), py2 = parseFloat(y2.toFixed(1));
+                if (px1 > px2 || (px1 === px2 && py1 > py2)) {
+                    [px1, px2] = [px2, px1];
+                    [py1, py2] = [py2, py1];
+                }
+                let key = `${px1},${py1},${px2},${py2}`;
+                edges[key] = (edges[key] || 0) + 1;
+            }
+
+            nodes.forEach(n => {
+                let pts = [];
+                let cx = n.cx, cy = n.cy;
+                
+                if (n.type === 'octagon') {
+                    pts = [
+                        [cx - S/2, cy - W/2], [cx + S/2, cy - W/2],
+                        [cx + W/2, cy - S/2], [cx + W/2, cy + S/2],
+                        [cx + S/2, cy + W/2], [cx - S/2, cy + W/2],
+                        [cx - W/2, cy + S/2], [cx - W/2, cy - S/2]
+                    ];
+                } else {
+                    let hD = S * Math.SQRT1_2;
+                    pts = [
+                        [cx, cy - hD], [cx + hD, cy],
+                        [cx, cy + hD], [cx - hD, cy]
+                    ];
+                }
+
+                for(let i=0; i<pts.length; i++) {
+                    let p1 = pts[i];
+                    let p2 = pts[(i+1)%pts.length];
+                    addEdge(p1[0], p1[1], p2[0], p2[1]);
+                }
+
+                let poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                poly.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+                poly.setAttribute('class', `node ${n.type}`);
+                poly.setAttribute('data-id', n.id);
+                poly.onclick = () => handleNodeClick(n.id);
+                grid.appendChild(poly);
+            });
+
+            for (let key in edges) {
+                if (edges[key] === 1) { 
+                    let [x1, y1, x2, y2] = key.split(',');
+                    let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+                    line.setAttribute('class', 'board-outline');
+                    borders.appendChild(line);
+                }
+            }
+        }
+
+        function initPieces() {
+        pieces = [];
+
+        if (boardLayout === 'classic') {
+
+            let p2Start = [
+                "0,0", "2,0", "4,0", "6,0",
+                "0,2", "0,4", "0,6"
+            ];
+
+            p2Start.forEach((id, i) =>
+                pieces.push({
+                    id: `p2_${i}`,
+                    player: 2,
+                    pos: id
+                })
+            );
+
+            let p1Start = [
+                "8,8", "6,8", "4,8", "2,8",
+                "8,6", "8,4", "8,2"
+            ];
+
+            p1Start.forEach((id, i) =>
+                pieces.push({
+                    id: `p1_${i}`,
+                    player: 1,
+                    pos: id
+                })
+            );
+
+        } else {
+
+            // ALTERNATIVNÍ ŠACHOVNICOVÉ L ROZESTAVĚNÍ
+
+            const mixedStart = [
+            { pos: "0,0", player: 1 },
+            { pos: "2,0", player: 2 },
+            { pos: "4,0", player: 1 },
+            { pos: "6,0", player: 2 },
+
+            { pos: "0,2", player: 2 },
+            { pos: "8,2", player: 1 },
+
+            { pos: "0,4", player: 1 },
+            { pos: "8,4", player: 2 },
+
+            { pos: "0,6", player: 2 },
+            { pos: "8,6", player: 1 },
+
+            { pos: "2,8", player: 1 },
+            { pos: "4,8", player: 2 },
+            { pos: "6,8", player: 1 },
+            { pos: "8,8", player: 2 }
+        ];
+
+        let p1Index = 0;
+        let p2Index = 0;
+
+        mixedStart.forEach(item => {
+
+            if (item.player === 1) {
+
+                pieces.push({
+                    id: `p1_${p1Index++}`,
+                    player: 1,
+                    pos: item.pos
+                });
+
+            } else {
+
+                pieces.push({
+                    id: `p2_${p2Index++}`,
+                    player: 2,
+                    pos: item.pos
+                });
+            }
+        });
+    }
+}
+        function drawPieces() {
+            const group = document.getElementById('pieces');
+            group.innerHTML = '';
+            
+            pieces.forEach(p => {
+                let n = nodes.get(p.pos);
+                let circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', n.cx);
+                circle.setAttribute('cy', n.cy);
+                circle.setAttribute('r', 15.6);
+                circle.setAttribute('class', `piece p${p.player}`);
+                circle.setAttribute('data-id', p.id);
+                group.appendChild(circle);
+            });
+        }
+
+        function getPieceAt(id) {
+            return pieces.find(p => p.pos === id);
+        }
+
+        /* --- LOGIKA TAHŮ (S OPRAVOU POHYBU / VYHAZOVÁNÍ) --- */
+        function getOptionsForPiece(piecesArr, nodeId, player) {
+            let validMoves = [];
+            let validCaptures = [];
+            let node = nodes.get(nodeId);
+            if (!node) return { validMoves, validCaptures };
+
+            // Všech 8 směrů pro střelbu a hledání
+            const allDirs = [
+                {dx: 2, dy: 0}, {dx: -2, dy: 0}, {dx: 0, dy: 2}, {dx: 0, dy: -2},
+                {dx: 1, dy: 1}, {dx: -1, dy: -1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}
+            ];
+
+            // 1. Pohyb - jen na sousední (sdílející hranu)
+            allDirs.forEach(d => {
+                let nid = `${node.x + d.dx},${node.y + d.dy}`;
+                if (nodes.has(nid) && !piecesArr.find(p => p.pos === nid)) {
+                    let neighbor = nodes.get(nid);
+                    // Ošetření: zamezení přesunu čtverec -> čtverec (nemají společnou hranu)
+                    if (!(node.type === 'square' && neighbor.type === 'square')) {
+                        validMoves.push(nid);
+                    }
+                }
+            });
+
+            // 2. Vyhazování (Shooting) ve všech 8 směrech
+            allDirs.forEach(d => {
+                let hasAssist = false;
+                let ax = node.x - d.dx, ay = node.y - d.dy;
+                
+                while (nodes.has(`${ax},${ay}`)) {
+                    let p = piecesArr.find(p => p.pos === `${ax},${ay}`);
+                    if (p) {
+                        if (p.player === player) hasAssist = true;
+                        break;
+                    }
+                    ax -= d.dx; ay -= d.dy;
+                }
+
+                if (hasAssist) {
+                    let tx = node.x + d.dx, ty = node.y + d.dy;
+                    while (nodes.has(`${tx},${ty}`)) {
+                        let p = piecesArr.find(p => p.pos === `${tx},${ty}`);
+                        if (p) {
+                            if (p.player !== player) validCaptures.push({ target: `${tx},${ty}` });
+                            break;
+                        }
+                        tx += d.dx; ty += d.dy;
+                    }
+                }
+            });
+
+            return { validMoves, validCaptures };
+        }
+
+        function getAllMoves(statePieces, player) {
+            let moves = [];
+            let myPieces = statePieces.filter(p => p.player === player);
+            myPieces.forEach(p => {
+                let opts = getOptionsForPiece(statePieces, p.pos, player);
+                opts.validMoves.forEach(m => moves.push({ type: 'move', from: p.pos, to: m }));
+                opts.validCaptures.forEach(c => moves.push({ type: 'capture', from: p.pos, to: c.target }));
+            });
+            return moves;
+        }
+
+        /* --- UI LOGIKA --- */
+        function calculateValidOptions(nodeId) {
+            let opts = getOptionsForPiece(pieces, nodeId, currentPlayer);
+            validMoves = opts.validMoves;
+            validCaptures = opts.validCaptures;
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.node').forEach(el => el.classList.remove('highlight'));
+            document.querySelectorAll('.piece').forEach(el => el.classList.remove('selected-piece', 'capture-target-piece'));
+        }
+
+        function handleNodeClick(nodeId) {
+            if (isGameOver) return;
+            if (vsAI && currentPlayer === 2) return;
+
+            let clickedPiece = getPieceAt(nodeId);
+
+            if (clickedPiece && clickedPiece.player === currentPlayer) {
+                selectedNode = nodeId;
+                calculateValidOptions(nodeId);
+                renderHighlights();
+                return;
+            }
+
+            if (selectedNode) {
+                if (validMoves.includes(nodeId)) { executeMove(selectedNode, nodeId); return; }
+                let cap = validCaptures.find(c => c.target === nodeId);
+                if (cap) { executeCapture(selectedNode, nodeId); return; }
+            }
+
+            selectedNode = null;
+            clearHighlights();
+        }
+
+        function renderHighlights() {
+            clearHighlights();
+            if (!selectedNode) return;
+            
+            let p = getPieceAt(selectedNode);
+            if(p) {
+                let pieceEl = document.querySelector(`.piece[data-id="${p.id}"]`);
+                if(pieceEl) pieceEl.classList.add('selected-piece');
+            }
+
+            // Označí pouze volná pole pro prostý pohyb
+            validMoves.forEach(id => document.querySelector(`.node[data-id="${id}"]`).classList.add('highlight'));
+            
+            // Pro vyhození označí červeně terč - soupeřův kámen, nikoliv pole
+            validCaptures.forEach(cap => {
+                let targetPiece = getPieceAt(cap.target);
+                if (targetPiece) {
+                    let targetEl = document.querySelector(`.piece[data-id="${targetPiece.id}"]`);
+                    if (targetEl) targetEl.classList.add('capture-target-piece');
+                }
+            });
+        }
+
+        function executeMove(from, to) {
+            saveState();
+            getPieceAt(from).pos = to;
+            
+            let moveNum = moveHistory.length.toString().padStart(2, '0');
+            let pIcon = currentPlayer === 1 ? '⚪' : '⚫';
+            finishTurn(`${moveNum}. ${pIcon} (${from}) : (${to})`);
+        }
+
+        function executeCapture(from, toTarget) {
+            saveState();
+            let shooter = getPieceAt(from);
+            pieces = pieces.filter(p => p.pos !== toTarget);
+            shooter.pos = toTarget;
+            
+            if (currentPlayer === 1) score.p1++; else score.p2++;
+            
+            let moveNum = moveHistory.length.toString().padStart(2, '0');
+            let pIcon = currentPlayer === 1 ? '⚪' : '⚫';
+            let tIcon = currentPlayer === 1 ? '⚫' : '⚪';
+            finishTurn(`${moveNum}. ${pIcon} (${from}) : (${toTarget}) * ${tIcon}`);
+        }
+
+        function finishTurn(logMsg) {
+            selectedNode = null;
+            clearHighlights();
+            
+            logEntries.unshift(logMsg);
+            
+            if (score.p1 >= 4 || score.p2 >= 4) {
+                // Přidání hlášky o konci hry
+                logEntries.unshift(dict[lang]['game_over']);
+                updateLogView();
+                drawPieces();
+                document.getElementById('score-p1').innerText = score.p1;
+                document.getElementById('score-p2').innerText = score.p2;
+                endGame(score.p1 >= 4 ? 1 : 2); 
+                return; 
+            }
+
+            updateLogView();
+            drawPieces();
+            
+            document.getElementById('score-p1').innerText = score.p1;
+            document.getElementById('score-p2').innerText = score.p2;
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateStatus();
+
+            if (vsAI && currentPlayer === 2 && !isGameOver) {
+                setTimeout(playAI, 100); 
+            }
+        }
+
+        function endGame(winner) {
+            isGameOver = true;
+            document.getElementById('p1-status').classList.remove('active');
+            document.getElementById('p2-status').classList.remove('active');
+            showToast(dict[lang][winner === 1 ? 'win_p1' : 'win_p2']);
+        }
+
+        /* --- AI (MINIMAX + ALPHA-BETA) --- */
+        function applyMoveForAI(statePieces, move) {
+            let newPieces = statePieces.map(p => ({...p}));
+            let shooter = newPieces.find(p => p.pos === move.from);
+            
+            if (move.type === 'capture') {
+                newPieces = newPieces.filter(p => p.pos !== move.to);
+                shooter.pos = move.to;
+            } else {
+                shooter.pos = move.to;
+            }
+            return newPieces;
+        }
+
+        function minimax(statePieces, depth, alpha, beta, isMaximizing) {
+            let p1Count = 0, p2Count = 0;
+            for (let i = 0; i < statePieces.length; i++) {
+                if (statePieces[i].player === 1) p1Count++;
+                else p2Count++;
+            }
+            
+            if (p1Count <= 3) return { score: 1000 + depth };
+            if (p2Count <= 3) return { score: -1000 - depth };
+            
+            if (depth === 0) {
+
+            let scoreEval = 0;
+
+            // počet kamenů
+            scoreEval += (p2Count - p1Count) * 120;
+
+            // aktivní tahy
+            let aiMoves = getAllMoves(statePieces, 2);
+            let humanMoves = getAllMoves(statePieces, 1);
+
+            scoreEval += (aiMoves.length - humanMoves.length) * 8;
+
+            // bonus za capture možnosti
+            let aiCaptures =
+                aiMoves.filter(m => m.type === 'capture').length;
+
+            let humanCaptures =
+                humanMoves.filter(m => m.type === 'capture').length;
+
+            scoreEval += (aiCaptures - humanCaptures) * 25;
+
+            // centralizace
+            statePieces.forEach(p => {
+
+                let n = nodes.get(p.pos);
+
+                let centerDist =
+                    Math.abs(n.x - 4) +
+                    Math.abs(n.y - 4);
+
+                let bonus = 10 - centerDist;
+
+                if (p.player === 2)
+                    scoreEval += bonus;
+                else
+                    scoreEval -= bonus;
+            });
+
+            return {
+                score: scoreEval + Math.random()
+            };
+        }
+
+            let currPlayer = isMaximizing ? 2 : 1;
+            let moves = getAllMoves(statePieces, currPlayer);
+            
+            if (moves.length === 0) {
+                return { score: isMaximizing ? -1000 : 1000 };
+            }
+
+            moves.sort((a, b) => (b.type === 'capture' ? 1 : 0) - (a.type === 'capture' ? 1 : 0));
+
+            let bestMove = moves[0];
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let move of moves) {
+                    let nextState = applyMoveForAI(statePieces, move);
+                    let evalResult = minimax(nextState, depth - 1, alpha, beta, false);
+                    if (evalResult.score > maxEval) {
+                        maxEval = evalResult.score;
+                        bestMove = move;
+                    }
+                    alpha = Math.max(alpha, evalResult.score);
+                    if (beta <= alpha) break;
+                }
+                return { score: maxEval, move: bestMove };
+            } else {
+                let minEval = Infinity;
+                for (let move of moves) {
+                    let nextState = applyMoveForAI(statePieces, move);
+                    let evalResult = minimax(nextState, depth - 1, alpha, beta, true);
+                    if (evalResult.score < minEval) {
+                        minEval = evalResult.score;
+                        bestMove = move;
+                    }
+                    beta = Math.min(beta, evalResult.score);
+                    if (beta <= alpha) break;
+                }
+                return { score: minEval, move: bestMove };
+            }
+        }
+
+        function playAI() {
+            if (isGameOver) return;
+            
+            let depth = 2;
+
+            if (aiLevel === 2)
+                depth = 3;
+
+            if (aiLevel === 3)
+                depth = 4;
+
+            let result =
+                minimax(
+                    pieces,
+                    depth,
+                    -Infinity,
+                    Infinity,
+                    true
+                );
+
+            let move = result.move;
+            
+            if (!move) {
+                currentPlayer = 1;
+                updateStatus();
+                return;
+            }
+            
+            if (move.type === 'move') executeMove(move.from, move.to);
+            else executeCapture(move.from, move.to);
+        }
+
+        /* --- HISTORIE & ULOŽENÍ --- */
+        function saveState() {
+            moveHistory.push(JSON.stringify({ pieces, score, currentPlayer }));
+        }
+
+        function undo() {
+            if (moveHistory.length === 0) return;
+            let steps = vsAI ? 2 : 1;
+            if (moveHistory.length < steps) steps = moveHistory.length;
+            
+            let stateStr;
+            for(let i=0; i<steps; i++) stateStr = moveHistory.pop();
+            
+            let state = JSON.parse(stateStr);
+            pieces = state.pieces;
+            score = state.score;
+            currentPlayer = state.currentPlayer;
+            isGameOver = false;
+            
+            logEntries = logEntries.slice(steps);
+            updateLogView();
+            selectedNode = null;
+            clearHighlights();
+            drawPieces();
+            updateStatus();
+            showToast(dict[lang]['undo']);
+        }
+
+        function saveGameLocal() {
+            let soundStatus = localStorage.getItem('soundEnabled') || 'false';
+            let data = { pieces, score, currentPlayer, vsAI, startingPlayer, isGameOver, logEntries, moveHistory };
+            localStorage.setItem('tessellaSave', JSON.stringify(data));
+            localStorage.setItem('soundEnabled', soundStatus); 
+            showToast(dict[lang]['saved']);
+        }
+
+        function loadGameLocal() {
+            let data = localStorage.getItem('tessellaSave');
+            if (data) {
+                data = JSON.parse(data);
+                pieces = data.pieces; score = data.score; currentPlayer = data.currentPlayer;
+                vsAI = data.vsAI; startingPlayer = data.startingPlayer || 1; isGameOver = data.isGameOver;
+                logEntries = data.logEntries || []; moveHistory = data.moveHistory || [];
+                
+                updateUIIcons(); drawPieces(); updateStatus(); updateLogView();
+                showToast(dict[lang]['loaded']);
+            } else {
+                showToast(dict[lang]['no_save']);
+            }
+        }
+
+        function resetGame(isFirstLoad = false) {
+            initPieces();
+            score = { p1: 0, p2: 0 };
+            
+            if (!isFirstLoad) {
+                startingPlayer = startingPlayer === 1 ? 2 : 1;
+            }
+            currentPlayer = startingPlayer; 
+            
+            isGameOver = false; moveHistory = []; logEntries = [];
+            selectedNode = null; clearHighlights();
+            drawPieces(); updateStatus(); updateLogView();
+            
+            if (!isFirstLoad) showToast(dict[lang]['new_game']);
+
+            if (vsAI && currentPlayer === 2 && !isGameOver) {
+                setTimeout(playAI, 100);
+            }
+        }
+
+        /* --- UI UTILITY --- */
+        function updateStatus() {
+            document.getElementById('score-p1').innerText = score.p1;
+            document.getElementById('score-p2').innerText = score.p2;
+
+            if(isGameOver) return;
+            
+            document.getElementById('p1-status').classList.toggle('active', currentPlayer === 1);
+            document.getElementById('p2-status').classList.toggle('active', currentPlayer === 2);
+        }
+
+        function updateLogView() {
+            document.getElementById('log-content').innerHTML = logEntries.map(e => `<div class="log-entry">${e}</div>`).join('');
+        }
+
+        function updateUIIcons() {
+            document.getElementById('btn-mode').innerText = vsAI ? '🖥️' : '👤';
+            document.getElementById('btn-lang').innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+        }
+
+        function showToast(msg) {
+            let container = document.getElementById('toast-container');
+            let t = document.createElement('div');
+            t.className = 'toast';
+            t.innerText = msg;
+            container.appendChild(t);
+            setTimeout(() => {
+                t.style.animation = 'toastOut 0.3s forwards';
+                setTimeout(() => t.remove(), 300);
+            }, 2500);
+        }
+
+        function switchLang() {
+            lang = lang === 'cs' ? 'en' : 'cs';
+            updateUIIcons();
+            document.getElementById('label-log').innerText = dict[lang]['log'];
+            document.getElementById('help-content').innerHTML = dict[lang]['help_html'];
+        }
+
+        /* --- LISTENERS --- */
+        document.getElementById('btn-new').onclick = () => resetGame(false);
+        document.getElementById('btn-save').onclick = saveGameLocal;
+        document.getElementById('btn-load').onclick = loadGameLocal;
+        document.getElementById('btn-undo').onclick = undo;
+        document.getElementById('btn-ai-level').onclick = () => {
+
+    aiLevel++;
+
+    if (aiLevel > 3) {
+        aiLevel = 1;
+    }
+
+
+    //výběr obtížnosti 
+    const labels = {
+    1: dict[lang]['ai_easy'],
+    2: dict[lang]['ai_medium'],
+    3: dict[lang]['ai_hard']
+};
+
+    showToast(labels[aiLevel]);
+};
+
+        document.getElementById('btn-mode').onclick = () => { vsAI = !vsAI; updateUIIcons(); showToast(dict[lang][vsAI ? 'mode_ai' : 'mode_pvp']); };
+        document.getElementById('btn-layout').onclick = () => {
+
+    boardLayout =
+        boardLayout === 'classic'
+            ? 'alternate'
+            : 'classic';
+
+    showToast(
+        dict[lang][
+            boardLayout === 'classic'
+                ? 'layout_classic'
+                : 'layout_alternate'
+        ]
+    );
+
+    resetGame(false);
+};
+        document.getElementById('btn-lang').onclick = switchLang;
+        document.getElementById('btn-help').onclick = () => document.getElementById('help-modal').style.display = 'flex';
+        document.getElementById('btn-close-help').onclick = () => document.getElementById('help-modal').style.display = 'none';
+        document.getElementById('help-modal').onclick = (e) => {
+
+    if (e.target.id === 'help-modal') {
+        document.getElementById('help-modal').style.display = 'none';
+    }
+};
+        document.getElementById('btn-copy').onclick = () => { navigator.clipboard.writeText(logEntries.slice().reverse().join('\n')).then(() => showToast(dict[lang]['copied'])); };
+
+        /* --- START --- */
+        createBoard();
+        drawBoard();
+        switchLang(); 
+        switchLang(); 
+        resetGame(true);
+
+    </script>
+</body>
+</html>
