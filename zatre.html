@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZATRE</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --board-bg: #e0e0e0;
+            --cell-size: 40px; 
+            --tile-bg: #fff;
+            --tile-color: #000;
+            --ui-bg: #2c3e50;
+            --ui-text: #ecf0f1;
+            --p1-color: #3498db;
+            --p2-color: #e74c3c;
+        }
+
+        @media (max-width: 768px) { :root { --cell-size: 35px; } } 
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
+        }
+
+        header {
+            background-color: var(--ui-bg);
+            color: var(--ui-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+            overflow-x: auto;
+        }
+
+        .menu-group { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; justify-content: center; }
+        .icon-btn {
+            background: none; border: none; color: var(--ui-text);
+            font-size: 22px; cursor: pointer; transition: transform 0.2s;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+
+        main {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 8px;
+            background-color: var(--board-bg);
+            touch-action: pan-x pan-y pinch-zoom; 
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, var(--cell-size));
+            grid-template-rows: repeat(15, var(--cell-size));
+            gap: 2px; width: max-content; margin: 0 auto;
+        }
+
+        .cell {
+            width: var(--cell-size); height: var(--cell-size);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 18px; font-weight: bold; border-radius: 4px;
+            cursor: pointer; box-shadow: inset 0 0 2px rgba(0,0,0,0.3);
+            transition: background-color 0.2s;
+        }
+
+        .type-dot { visibility: hidden; }
+        .type-o { background-color: #2c3e50; }
+        .type-w { background-color: #95a5a6; } 
+        .type-r { background-color: #e74c3c; }
+
+        .cell.recent-cell-p1 { background-color: var(--p1-color) !important; }
+        .cell.recent-cell-p2 { background-color: var(--p2-color) !important; }
+
+        .tile {
+            width: 90%; height: 90%; background-color: var(--tile-bg); color: var(--tile-color);
+            border-radius: 5px; display: flex; justify-content: center; align-items: center;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none;
+            border: none; 
+        }
+
+        .cell.recent-cell-p1 .tile { background-color: #d6eaf8 !important; }
+        .cell.recent-cell-p2 .tile { background-color: #fadbd8 !important; }
+
+        .tile.highlight { background-color: #fffacd !important; box-shadow: 0 0 8px rgba(0,0,0,0.4); }
+
+        footer {
+            background-color: var(--ui-bg);
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center; 
+            gap: 25px;
+            z-index: 10;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            footer {
+                justify-content: space-between;
+                gap: 4px;
+                padding: 6px;
+            }
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 16px;
+            padding: 4px 6px;
+            border: 2px solid transparent; border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .player-info.active { opacity: 1; border: 2px solid #f1c40f; background-color: rgba(255,255,255,0.15); }
+        .score-num { color: white; }
+
+        .hand {
+            display: flex;
+            gap: 4px;
+            min-height: var(--cell-size);
+        }
+        
+        .hand-tile {
+            width: var(--cell-size); height: var(--cell-size); background-color: var(--tile-bg);
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 5px; cursor: pointer; box-shadow: 1px 1px 4px rgba(0,0,0,0.5); transition: transform 0.1s;
+            border: none; 
+        }
+        
+        .hand-tile.selected { transform: translateY(-5px); border: 3px solid #e74c3c; }
+
+        .action-btn {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        
+        .domino-tile {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            padding: 12%;
+            box-sizing: border-box;
+            gap: calc(var(--cell-size) * 0.04);
+        }
+        .pip {
+            width: calc(var(--cell-size) * 0.14);
+            height: calc(var(--cell-size) * 0.14);
+            background-color: #111;
+            border-radius: 50%;
+            align-self: center;
+            justify-self: center;
+        }
+
+        #toast-container { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; display: flex; flex-direction: column; gap: 10px; align-items: center; width: 90%; max-width: 400px; }
+        .toast { background: rgba(0,0,0,0.85); color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: fadein 0.3s, fadeout 0.5s 2.5s forwards; }
+        @keyframes fadein { from {opacity:0; transform: translateY(-10px);} to {opacity:1; transform: translateY(0);} }
+        @keyframes fadeout { to {opacity:0; visibility:hidden;} }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; padding: 10px; }
+        
+        .modal-content { 
+            background: white; 
+            border-radius: 10px; 
+            width: 95%; 
+            max-width: 450px; 
+            max-height: 85vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            margin: auto;
+        }
+
+        .modal-header { background: var(--ui-bg); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .table-container { flex: 1; overflow-y: auto; padding: 10px; }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { border: 1px solid #ccc; padding: 8px 4px; font-size: 15px; height: 40px; }
+        th { background: #f4f4f9; font-weight: bold; }
+        .col-sum { font-weight: bold; color: #27ae60; }
+        .col-dt { color: #e74c3c; font-weight: bold; }
+        .close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        
+        .tab-buttons { display: flex; background: #eee; }
+        .tab-btn { flex: 1; padding: 10px; font-weight: bold; border: none; background: none; border-bottom: 3px solid transparent; cursor: pointer; }
+
+        .proposed-cell { background-color: #2ecc71 !important; color: white; font-weight: bold; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); animation: pulse-bg 1.5s infinite; }
+        .available-cell { cursor: pointer; background-color: #fcfcfc; }
+        .available-cell:hover { background-color: #e0f7fa; }
+        @keyframes pulse-bg { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
+
+        #log-textarea { width: 100%; height: 300px; resize: none; font-family: monospace; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+
+        .legal-move { outline: 3px solid #2ecc71; outline-offset: -3px; animation: legalPulse 1.2s infinite; }
+        @keyframes legalPulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+
+        .board-wrapper { display: flex; align-items: center; justify-content: center; gap: 14px; width: max-content; margin: 0 auto; }
+        .side-label { writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; user-select: none; }
+        .left-label { color: #e74c3c; font-size: 28px; letter-spacing: 2px; }
+        .right-label { color: #555; font-size: 14px; font-weight: normal; }
+
+        @media (max-width: 768px) {
+            .board-wrapper { gap: 6px; }
+            .left-label { font-size: 18px; }
+            .right-label { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="menu-group">
+            <button class="icon-btn" id="btn-save" onclick="saveGame()" title="Uložit">💾</button>
+            <button class="icon-btn" id="btn-load" onclick="loadGame()" title="Načíst">📂</button>
+            <button class="icon-btn" id="mode-btn" onclick="toggleMode()" title="Režim hry">💻</button>
+            <button class="icon-btn" id="lang-btn" onclick="toggleLanguage()" title="Language">🇬🇧</button>
+            <button class="icon-btn" id="btn-new" onclick="restartGame()" title="Nová hra">🔄</button>
+            <button class="icon-btn" id="btn-help" onclick="openHelpModal()" title="Help">💡</button>
+            <button class="icon-btn" id="btn-log" onclick="openLogModal()" title="Log hry">📜</button>
+            <button class="icon-btn" id="btn-score" onclick="openScoreModalView()" title="Tabulka">📊</button>
+            <span id="tiles-left" style="font-size:15px; color:white; font-weight:bold; white-space:nowrap; min-width:42px; text-align:right;">🎒121</span>
+        </div>
+    </header>
+
+    <div id="toast-container"></div>
+
+    <main id="main-content">
+        <div class="board-wrapper">
+            <div class="side-label left-label">ZATRE®</div>
+            <div class="board" id="board"></div>
+            <div class="side-label right-label">©️ Manfred Schüling</div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="player-info active" id="p1-info">
+            <span style="color: var(--p1-color);">🔵</span><span class="score-num" id="p1-score">0</span>
+        </div>
+        
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div class="hand" id="player-hand"></div>
+            <button class="action-btn" id="btn-confirm-turn" onclick="endTurnBtnClick()" title="Potvrdit tah">✅</button>
+            <span id="game-over-text" style="display:none; color:#f1c40f; font-weight:bold; font-size:17px; white-space:nowrap; text-transform: uppercase;"></span>
+        </div>
+
+        <div class="player-info" id="p2-info">
+            <span id="p2-icon" style="color: var(--p2-color);">🔴</span><span class="score-num" id="p2-score">0</span>
+        </div>
+    </footer>
+
+    <div id="log-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="log-title">📜 Log hry</h2>
+                <div>
+                    <button class="icon-btn" id="btn-copy" onclick="copyLog()" title="Kopírovat">📋</button>
+                    <button class="close-btn" onclick="document.getElementById('log-modal').style.display='none'">✖</button>
+                </div>
+            </div>
+            <div style="padding: 15px;">
+                <textarea id="log-textarea" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="score-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="score-title">📊 Bodovací tabulka</h2>
+                <button class="close-btn" id="modal-close-btn" onclick="closeModal()">✖</button>
+            </div>
+            
+            <div class="tab-buttons" id="modal-tabs">
+                <button class="tab-btn" id="tab-btn-0" onclick="renderModalTable(0)">🔵 Modrý</button>
+                <button class="tab-btn" id="tab-btn-1" onclick="renderModalTable(1)">🔴 Červený</button>
+            </div>
+
+            <div id="confirm-instructions" style="display:none; background:#fffacd; padding:10px; text-align:center; font-weight:bold; border-bottom: 2px solid #ccc;">
+                Zeleně = nové body.<br>Kliknutím je můžete přesunout.
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>10</th><th>11</th><th>12</th><th>DT</th><th id="th-bonus">Bonus</th><th id="th-total">Celkem</th></tr></thead>
+                    <tbody id="modal-tbody"></tbody>
+                    <tfoot><tr><td colspan="5" id="td-total-label" style="text-align:right; font-weight:bold;">Celkem:</td><td id="modal-total" style="font-weight:bold; color:#27ae60;">0</td></tr></tfoot>
+                </table>
+            </div>
+
+            <div id="confirm-footer" style="display:none; padding:15px; text-align:center; background:#f4f4f9; border-top: 2px solid #ccc;">
+                <button class="action-btn" id="btn-confirm-score" style="width: 100%; border-radius: 8px;" onclick="confirmProposedPoints()">Potvrdit zápis ✅</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="help-title">❓ Nápověda</h2>
+                <button class="close-btn" onclick="closeHelpModal()">✖</button>
+            </div>
+            <div style="padding:15px; overflow:auto;">
+                <div id="help-cs">
+                    <h3>Cíl hry</h3>
+                    <p>Vytvářejte řady nebo sloupce se součty 10, 11 nebo 12.</p>
+                    <br>
+                    <h3>Základní pravidla</h3>
+                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
+                        <li>První tah hry musí směřovat na středové červené pole.</li>
+                        <li>Každý další kámen musí vlastní hranou sousedit s hranou již položeného kamene.</li>
+                        <li>Součet souvislé řady nebo sloupce kamenů na desce nesmí překročit hodnotu 12.</li>
+                        <li>Bílá a červená pole na desce fungují jako Double – zdvojnásobují získané body z vytvořené řady nebo sloupce, pokud na nich docílíte platného součtu.</li>
+                    </ul>
+                    <h3>Speciální situace (Nemožný tah)</h3>
+                    <ul style="padding-left:20px; line-height:1.6;">
+                        <li><strong>Máte na ruce 2 kameny:</strong> Pokud hodnoty obou kamenů neumožňují zahrát ani jeden platný tah, dojde k jejich výměně. Do příštího kola si berete 2 nové kameny ze sáčku. Výměnou končí váš tah.</li>
+                        <li><strong>Máte na ruce 1 kámen:</strong> Pokud hodnota zbylého kamene na ruce neumožnuje zahrát platný tah, kámen si ponecháte na ruce, zbytek kola vynecháváte (Pass) a na konci si doberete 2 nové kameny. V dalším kole tedy hrajete se 3 kameny.</li>
+                        <li><strong>Prázdný sáček:</strong> Pokud nelze provést žádný platný tah a v sáčku už nic není, tah se čistě přeskočí (Pass) bez jakékoli výměny. Pokud hra skončí a kameny vám zůstanou na ruce, součet hodnoty těchto kamenů se odečítá od celkového skóre.</li>
+                    </ul>
+                </div>
+                <div id="help-en" style="display:none;">
+                    <h3>Goal</h3>
+                    <p>Create rows or columns with sums of 10, 11, or 12.</p>
+                    <br>
+                    <h3>Basic Rules</h3>
+                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
+                        <li>The first tile must be placed on the center red square.</li>
+                        <li>Each subsequent tile must share an edge with an already placed tile.</li>
+                        <li>The sum of a continuous row or column of tiles must never exceed 12.</li>
+                        <li>White and red squares act as Doubles – they double the points gained from the created row or column, if a valid sum is achieved on them.</li>
+                    </ul>
+                    <h3>Special Situations (Impossible Move)</h3>
+                    <ul style="padding-left:20px; line-height:1.6;">
+                        <li><strong>2 tiles in hand:</strong> If the values of both tiles do not allow a valid move, they are exchanged. You draw 2 new tiles for the next round. The exchange ends your turn.</li>
+                        <li><strong>1 tile in hand:</strong> If the remaining tile does not allow a valid move, you keep it, skip the rest of the round (Pass), and draw 2 new tiles at the end. In the next round, you play with 3 tiles.</li>
+                        <li><strong>Empty bag:</strong> If no valid move is possible and the bag is empty, the turn is skipped (Pass) without any exchange. If the game ends and you have tiles left in hand, their total value is deducted from your final score.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const i18n = {
+            cs: {
+                newGame: "Nová hra",
+                gameMode: "Režim hry",
+                save: "Uložit",
+                load: "Načíst",
+                log: "Log hry",
+                scoreboard: "Tabulka",
+                confirmTurn: "Potvrdit tah",
+                exchangeTilesBtn: "Vyměnit kameny a přeskočit tah",
+                passTurn: "Přeskočit tah",
+                tilesExchangedToast: "vyměnil kameny",
+                passTurnToast: "vynechal tah",
+                gameOverToast: "Konec hry!",
+                logTitle: "📜 Log hry",
+                copy: "Kopírovat",
+                scoreTitle: "📊 Bodovací tabulka",
+                tileKeptToast: "kámen převeden do dalšího tahu",
+                tileKeptLog: "Kámen převeden do dalšího tahu",
+                blue: "🔵 Modrý",
+                red: "🔴 Červený",
+                computer: "💻 Počítač",
+                instructions: "Zeleně = nové body.<br>Kliknutím je můžete přesunout.",
+                totalLabel: "Celkem:",
+                confirmScore: "Potvrdit zápis ✅",
+                tileReturned: "Kostka vrácena ↩",
+                firstTileCenter: "První kámen patří na středové červené pole!",
+                tileAdjacent: "Kámen musí sousedit hrana na hranu!",
+                sumExceed: "Součet nesmí být přes 12!",
+                nothingToUndo: "Není co vrátit",
+                gameSaved: "Hra uložena 💾",
+                gameLoaded: "Hra načtena 📂",
+                noSaveFound: "Žádná uložená hra nebyla nalezena.",
+                logCopied: "Log byl zkopírován 📋",
+                newGameStartedToast: "🔄 Nová hra spuštěna",
+                newGameLog: "--- NOVÁ HRA ---",
+                turn: "Tah",
+                placedTile: "Položeno:",
+                coords: "Ř:",
+                col: "S:",
+                turnEndedNoPoints: "Ukončen bez zisku bodů.",
+                pointsSavedTo: "Zapsáno do tabulky ->",
+                toRow: "do řádku",
+                gameOver: "KONEC HRY",
+                reasonDeadlock: "🛑 Hra ukončena (prázdný sáček, 🔵 i {p2Icon} nemají platný tah).",
+                reasonEmptyHand: "🛑 Hra ukončena (prázdný sáček, {stuckIcon} nemá platný tah, {emptyIcon} bez kamenů).",
+                won: "vyhrál",
+                draw: "Remíza",
+                bonus: "Bonus",
+                score: "Celkem",
+                helpTitle: "❓ Nápověda",
+                logSaved: "Hra uložena.",
+                logLoaded: "Hra načtena ze zálohy.",
+                noTilesPlaced: "Žádné (Pass)",
+                gains: "Zisk",
+                mustPlay: "Máte platný tah, musíte hrát!",
+                penaltyInfo: "Odečet bodů:"
+            },
+            en: {
+                newGame: "New Game",
+                gameMode: "Game Mode",
+                save: "Save",
+                load: "Load",
+                log: "Game Log",
+                scoreboard: "Scoreboard",
+                confirmTurn: "Confirm Turn",
+                exchangeTilesBtn: "Exchange tiles and skip turn",
+                passTurn: "Skip turn",
+                tilesExchangedToast: "exchanged tiles",
+                passTurnToast: "skipped turn",
+                gameOverToast: "Game Over!",
+                logTitle: "📜 Game Log",
+                copy: "Copy",
+                scoreTitle: "📊 Scoreboard",
+                tileKeptToast: "stone moved to the next turn",
+                tileKeptLog: "Stone moved to the next turn",
+                blue: "🔵 Blue",
+                red: "🔴 Red",
+                computer: "💻 Computer",
+                instructions: "Green = new points.<br>Click to move them.",
+                totalLabel: "Total:",
+                confirmScore: "Confirm Score ✅",
+                tileReturned: "Tile returned ↩",
+                firstTileCenter: "First tile must be placed on the center red square!",
+                tileAdjacent: "Tile must share an edge with another!",
+                sumExceed: "Sum cannot exceed 12!",
+                nothingToUndo: "Nothing to undo",
+                gameSaved: "Game saved 💾",
+                gameLoaded: "Game loaded 📂",
+                noSaveFound: "No saved game found.",
+                logCopied: "Log copied 📋",
+                newGameStartedToast: "🔄 New game started",
+                newGameLog: "--- NEW GAME ---",
+                turn: "Turn",
+                placedTile: "Placed:",
+                coords: "R:",
+                col: "C:",
+                turnEndedNoPoints: "Ended without scoring.",
+                pointsSavedTo: "Saved to scoreboard ->",
+                toRow: "to row",
+                gameOver: "GAME OVER",
+                reasonDeadlock: "🛑 Game ended (empty bag, both 🔵 and {p2Icon} have no valid moves).",
+                reasonEmptyHand: "🛑 Game ended (empty bag, {stuckIcon} has no valid moves, {emptyIcon} has no tiles).",
+                won: "won",
+                draw: "Draw",
+                bonus: "Bonus",
+                score: "Total",
+                helpTitle: "❓ Help",
+                logSaved: "Game saved.",
+                logLoaded: "Game loaded from backup.",
+                noTilesPlaced: "None (Pass)",
+                gains: "Gained",
+                mustPlay: "You have a valid move, you must play!",
+                penaltyInfo: "Penalty deducted:"
+            }
+        };
+
+        const boardTemplate = [
+            ". . . . o o w . w o o . . . .",
+            ". w o o o o o o o o o o o w .",
+            ". o w o o o o o o o o o w o .",
+            ". o o w o o o o o o o w o o .",
+            "o o o o w o o o o o w o o o o",
+            "o o o o o w o o o w o o o o o",
+            "w o o o o o w o w o o o o o w",
+            ". o o o o o o r o o o o o o .",
+            "w o o o o o w o w o o o o o w",
+            "o o o o o w o o o w o o o o o",
+            "o o o o w o o o o o w o o o o",
+            ". o o w o o o o o o o w o o .",
+            ". o w o o o o o o o o o w o .",
+            ". w o o o o o o o o o o o w .",
+            ". . . . o o w . w o o . . . ."
+        ].map(row => row.split(' '));
+
+        const COLS = 15, ROWS = 15;
+
+        let state = {
+            board: Array(ROWS).fill(null).map(() => Array(COLS).fill(null)),
+            bag: [],
+            players: [
+                { hand: [], table: Array(25).fill().map(()=>({s10:null, s11:null, s12:null, dt:null})), score: 0 },
+                { hand: [], table: Array(25).fill().map(()=>({s10:null, s11:null, s12:null, dt:null})), score: 0 }
+            ],
+            turn: 0,
+            turnCounter: 1,
+            isAiMode: false,
+            selectedIdx: -1,
+            isFirstMove: true,
+            turnPendingPoints: { s10: 0, s11: 0, s12: 0, dt: 0, c10: 0, c11: 0, c12: 0 },
+            isConfirming: false,
+            proposedPlacements: [],
+            gameLog: [],
+            lastPlacedTiles: [],
+            recentTiles: [],
+            recentOwner: -1,
+            lang: 'cs',
+            isGameOver: false
+        };
+
+        function t(key) { return i18n[state.lang][key]; }
+
+        function updateLanguage() {
+            document.getElementById('lang-btn').innerText = state.lang === 'cs' ? '🇬🇧' : '🇨🇿';
+            
+            document.getElementById('help-title').innerText = t('helpTitle');
+            document.getElementById('help-cs').style.display = state.lang === 'cs' ? 'block' : 'none';
+            document.getElementById('help-en').style.display = state.lang === 'en' ? 'block' : 'none';
+
+            document.getElementById('btn-new').title = t('newGame');
+            document.getElementById('mode-btn').title = t('gameMode');
+            document.getElementById('btn-save').title = t('save');
+            document.getElementById('btn-load').title = t('load');
+            document.getElementById('btn-log').title = t('log');
+            document.getElementById('btn-score').title = t('scoreboard');
+            document.getElementById('btn-copy').title = t('copy');
+
+            document.getElementById('log-title').innerText = t('logTitle');
+            document.getElementById('score-title').innerText = t('scoreTitle');
+            document.getElementById('confirm-instructions').innerHTML = t('instructions');
+            document.getElementById('btn-confirm-score').innerText = t('confirmScore');
+
+            document.getElementById('th-bonus').innerText = t('bonus');
+            document.getElementById('th-total').innerText = t('score');
+            document.getElementById('td-total-label').innerText = t('totalLabel');
+
+            document.getElementById('tab-btn-0').innerText = t('blue');
+            document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
+
+            updateUI(); 
+        }
+
+        function toggleLanguage() {
+            state.lang = state.lang === 'cs' ? 'en' : 'cs';
+            updateLanguage();
+        }
+
+        function addLogObj(obj) {
+            state.gameLog.push(obj);
+        }
+
+        function getPlayerName(idx) {
+            if (idx === 0) return t('blue');
+            return state.isAiMode ? t('computer') : t('red');
+        }
+
+        function renderLogText() {
+            return state.gameLog.map(entry => {
+                if (typeof entry === 'string') return entry; 
+                
+                switch(entry.type) {
+                    case "NEW_GAME": return t('newGameLog');
+                    case "SAVE": return t('logSaved');
+                    case "LOAD": return t('logLoaded');
+                    case "EXCHANGE":
+                        let pNameEx = getPlayerName(entry.player);
+                        return `${t('turn')} ${entry.turn} (${pNameEx}): Výměna kamenů [${entry.tiles.join(', ')}]`;
+                    case "PASS":
+                        let pNamePass = getPlayerName(entry.player);
+                        return `${t('turn')} ${entry.turn} (${pNamePass}): ${t('passTurn')}`;
+                    case "KEEP_TILE":
+                        let pNameKeep = getPlayerName(entry.player);
+                        return `${t('turn')} ${entry.turn} (${pNameKeep}): ${t('tileKeptLog')}`;
+                    
+                    case "SYSTEM_TEXT":
+                        return entry.text;
+                    case "PENALTY":
+                        let pNamePen = getPlayerName(entry.player);
+                        return `🚨 ${t('penaltyInfo')} ${pNamePen} -${entry.penalty} (zbylé kameny: [${entry.tiles.join(', ')}])`;
+
+                    case "END_TURN":
+                        let pName = getPlayerName(entry.player);
+                        let tilesStr = entry.tiles.map(tile => `[${tile.value}] ${t('coords')}${tile.r+1} ${t('col')}${tile.c+1}`).join(', ');
+                        if (entry.tiles.length === 0) tilesStr = t('noTilesPlaced');
+                        
+                        let base = `${t('turn')} ${entry.turn} (${pName}): ${t('placedTile')} ${tilesStr}`;
+                        let gains = [];
+                        
+                        let count10 = entry.pts.c10 !== undefined ? entry.pts.c10 : (entry.pts.s10 >= 1 ? entry.pts.s10 : 0);
+                        let count11 = entry.pts.c11 !== undefined ? entry.pts.c11 : (entry.pts.s11 >= 1 ? entry.pts.s11 : 0);
+                        let count12 = entry.pts.c12 !== undefined ? entry.pts.c12 : (entry.pts.s12 >= 1 ? entry.pts.s12 : 0);
+
+                        if (count10) gains.push(`${count10}x 10`);
+                        if (count11) gains.push(`${count11}x 11`);
+                        if (count12) gains.push(`${count12}x 12`);
+                        if (entry.pts.dt) gains.push(`${entry.pts.dt}x Double(X)`);
+                        
+                        let endText = "";
+                        if (gains.length > 0) {
+                            endText = base + ` -> ${t('gains')}: ` + gains.join(', ');
+                        } else {
+                            endText = base + ` -> ${t('turnEndedNoPoints')}`;
+                        }
+
+                        if (entry.keptTiles && entry.keptTiles.length > 0) {
+                            let keptStr = t('tileKeptLog');
+                            endText += `\n   ↳ ℹ️ ${keptStr}: [${entry.keptTiles.join(', ')}]`;
+                        }
+
+                        return endText;
+
+                    case "SCORE_SAVED":
+                        let pNameSc = getPlayerName(entry.player);
+                        let places = entry.placements.map(p => `${p.col} (${p.val}) ${t('toRow')} ${p.row+1}`).join(', ');
+                        return `${t('turn')} ${entry.turn} (${pNameSc}): ${t('pointsSavedTo')} ${places}`;
+                    
+                    case "GAME_OVER":
+                        let winnerText = entry.msgKey === 'blueWon' ? `🏆 ${t('blue')} ${t('won')}` :
+                                         entry.msgKey === 'redWon' ? `🏆 ${t('red')} ${t('won')}` :
+                                         entry.msgKey === 'computerWon' ? `🏆 ${t('computer')} ${t('won')}` :
+                                         `🤝 ${t('draw')}`;
+                        return `${t('gameOver')}: ${winnerText} ${entry.p1}:${entry.p2}`;
+                }
+                return "";
+            }).reverse().join('\n\n');
+        }
+
+        function openLogModal() {
+            document.getElementById('log-textarea').value = renderLogText();
+            document.getElementById('log-modal').style.display = 'flex';
+        }
+
+        function copyLog() {
+            const text = document.getElementById('log-textarea').value;
+            navigator.clipboard.writeText(text).then(() => showToast(t('logCopied')));
+        }
+
+        function showToast(msg) {
+            const c = document.getElementById('toast-container');
+            const tNode = document.createElement('div');
+            tNode.className = 'toast'; 
+            tNode.innerHTML = msg; 
+            c.appendChild(tNode);
+            setTimeout(() => tNode.remove(), 3000);
+        }
+
+        function saveGame() {
+            localStorage.setItem('zatre_save', JSON.stringify(state));
+            showToast(t('gameSaved'));
+            addLogObj({ type: "SAVE" });
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('zatre_save');
+            if(saved) {
+                state = JSON.parse(saved);
+                if (!state.recentTiles) state.recentTiles = [];
+                if (state.recentOwner === undefined) state.recentOwner = -1;
+                if (state.isGameOver === undefined) state.isGameOver = false;
+                
+                document.getElementById('mode-btn').innerText = state.isAiMode ? '💻' : '👤';
+                buildBoardDOM(); 
+                updateLanguage();
+                updateUI();
+                showToast(t('gameLoaded'));
+                addLogObj({ type: "LOAD" });
+            } else {
+                showToast(t('noSaveFound'));
+            }
+        }
+
+        function initGame() {
+            state.bag = [];
+            for(let i=1; i<=6; i++) for(let j=0; j<20; j++) state.bag.push(i);
+            state.bag.push(3); shuffle(state.bag);
+
+            state.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+            state.players = [
+                { hand: [], table: Array(25).fill().map(()=>({s10:null, s11:null, s12:null, dt:null})), score: 0 },
+                { hand: [], table: Array(25).fill().map(()=>({s10:null, s11:null, s12:null, dt:null})), score: 0 }
+            ];
+            state.turn = 0; state.turnCounter = 1; state.isFirstMove = true; state.selectedIdx = -1;
+            state.turnPendingPoints = { s10: 0, s11: 0, s12: 0, dt: 0, c10: 0, c11: 0, c12: 0 };
+            state.isConfirming = false; state.proposedPlacements = [];
+            state.gameLog = [];
+            state.lastPlacedTiles = [];
+            state.recentTiles = [];
+            state.recentOwner = -1;
+            state.isGameOver = false;
+            
+            addLogObj({ type: "NEW_GAME" });
+
+            drawTiles(0, 3); drawTiles(1, 2);
+            buildBoardDOM(); 
+            updateLanguage();
+            updateUI();
+        }
+
+        function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+        function drawTiles(pIdx, count) { for(let i=0; i<count; i++) if(state.bag.length > 0) state.players[pIdx].hand.push(state.bag.pop()); }
+
+        function buildBoardDOM() {
+            const b = document.getElementById('board'); b.innerHTML = '';
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const type = boardTemplate[r][c];
+                    const cell = document.createElement('div');
+                    cell.className = `cell type-${type === '.' ? 'dot' : type}`;
+                    cell.dataset.r = r; cell.dataset.c = c;
+                    if (type !== '.') cell.addEventListener('click', () => handleCellClick(r, c));
+                    b.appendChild(cell);
+                }
+            }
+        }
+
+        function undoLastPlacement() {
+            if (state.lastPlacedTiles.length === 0) {
+                showToast(t('nothingToUndo'));
+                return;
+            }
+
+            let lp = state.lastPlacedTiles.pop();
+            state.board[lp.r][lp.c] = null;
+            state.players[state.turn].hand.push(lp.value);
+
+            let hasAny = false;
+            for (let rr = 0; rr < ROWS; rr++) {
+                for (let cc = 0; cc < COLS; cc++) {
+                    if (state.board[rr][cc] !== null) { hasAny = true; break; }
+                }
+                if (hasAny) break;
+            }
+
+            if (!hasAny) state.isFirstMove = true;
+            
+            calculateCurrentTurnPoints();
+            updateUI();
+            showToast(t('tileReturned'));
+        }
+
+        function calculateCurrentTurnPoints() {
+            let pts10 = 0, pts11 = 0, pts12 = 0, dtCount = 0;
+            let c10 = 0, c11 = 0, c12 = 0;
+            let processedLines = new Set();
+
+            state.lastPlacedTiles.forEach(p => {
+                let tileScored = false;
+
+                let left = p.c, right = p.c;
+                while (left > 0 && state.board[p.r][left - 1] !== null) left--;
+                while (right < COLS - 1 && state.board[p.r][right + 1] !== null) right++;
+                if (left !== right) {
+                    let hId = `H-${p.r}-${left}-${right}`;
+                    let sum = 0;
+                    for (let c = left; c <= right; c++) sum += state.board[p.r][c];
+
+                    if (!processedLines.has(hId)) {
+                        processedLines.add(hId);
+                        if (sum === 10) { pts10 += 1; c10++; tileScored = true; }
+                        if (sum === 11) { pts11 += 2; c11++; tileScored = true; }
+                        if (sum === 12) { pts12 += 4; c12++; tileScored = true; }
+                    } else {
+                        if (sum === 10 || sum === 11 || sum === 12) tileScored = true;
+                    }
+                }
+
+                let top = p.r, bottom = p.r;
+                while (top > 0 && state.board[top - 1][p.c] !== null) top--;
+                while (bottom < ROWS - 1 && state.board[bottom + 1][p.c] !== null) bottom++;
+                if (top !== bottom) {
+                    let vId = `V-${p.c}-${top}-${bottom}`;
+                    let sum = 0;
+                    for (let r = top; r <= bottom; r++) sum += state.board[r][p.c];
+                    
+                    if (!processedLines.has(vId)) {
+                        processedLines.add(vId);
+                        if (sum === 10) { pts10 += 1; c10++; tileScored = true; }
+                        if (sum === 11) { pts11 += 2; c11++; tileScored = true; }
+                        if (sum === 12) { pts12 += 4; c12++; tileScored = true; }
+                    } else {
+                        if (sum === 10 || sum === 11 || sum === 12) tileScored = true;
+                    }
+                }
+
+                let type = boardTemplate[p.r][p.c];
+                if (type === 'w' || type === 'r') {
+                    if (tileScored) {
+                        dtCount++;
+                    }
+                }
+            });
+
+            state.turnPendingPoints = { s10: pts10, s11: pts11, s12: pts12, dt: dtCount, c10: c10, c11: c11, c12: c12 };
+        }
+
+        function handleCellClick(r, c) {
+            if (state.isGameOver) return;
+
+            let last = state.lastPlacedTiles[state.lastPlacedTiles.length - 1];
+
+            if (last && last.r === r && last.c === c) {
+                undoLastPlacement();
+                return;
+            }    
+                
+            if (state.selectedIdx === -1 || state.board[r][c] !== null || boardTemplate[r][c] === '.') return;
+            const val = state.players[state.turn].hand[state.selectedIdx];
+
+            if (state.isFirstMove) {
+                if (boardTemplate[r][c] !== 'r') { showToast(t('firstTileCenter')); return; }
+            } else {
+                if (!hasAdjacentTile(r, c)) { showToast(t('tileAdjacent')); return; }
+            }
+
+            state.board[r][c] = val;
+            let hSum = getLineSum(r, c, 0, 1), vSum = getLineSum(r, c, 1, 0);
+
+            if (hSum > 12 || vSum > 12) {
+                state.board[r][c] = null; showToast(t('sumExceed')); return;
+            }
+
+            state.lastPlacedTiles.push({ r, c, value: val });
+            state.players[state.turn].hand.splice(state.selectedIdx, 1);
+            state.selectedIdx = -1;
+            state.isFirstMove = false;
+            
+            calculateCurrentTurnPoints();
+            updateUI();
+        }
+
+        function hasAdjacentTile(r, c) {
+            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+            for(let [dr, dc] of dirs) {
+                let nr = r+dr, nc = c+dc;
+                if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && state.board[nr][nc] !== null) return true;
+            }
+            return false;
+        }
+
+        function getLineSum(r, c, dx, dy) {
+            let sum = state.board[r][c]; let count = 1;
+            let nr = r + dx, nc = c + dy;
+            while(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && state.board[nr][nc] !== null) { sum += state.board[nr][nc]; count++; nr += dx; nc += dy; }
+            nr = r - dx; nc = c - dy;
+            while(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && state.board[nr][nc] !== null) { sum += state.board[nr][nc]; count++; nr -= dx; nc -= dy; }
+            return count > 1 ? sum : 0;
+        }
+
+        function hasAnyValidMove(pIdx) {
+            if (state.isFirstMove) return true;
+            const hand = state.players[pIdx].hand;
+            if (hand.length === 0) return false;
+            
+            for(let i=0; i<hand.length; i++) {
+                let val = hand[i];
+                for (let r=0; r<ROWS; r++) {
+                    for (let c=0; c<COLS; c++) {
+                        if (state.board[r][c] === null && boardTemplate[r][c] !== '.') {
+                            if (hasAdjacentTile(r, c)) {
+                                state.board[r][c] = val;
+                                let hSum = getLineSum(r, c, 0, 1);
+                                let vSum = getLineSum(r, c, 1, 0);
+                                state.board[r][c] = null;
+                                if (hSum <= 12 && vSum <= 12) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function endTurnBtnClick() {
+            let currentHand = [...state.players[state.turn].hand];
+            let pIconToast = state.turn === 0 ? '<span style="color:var(--p1-color)">👤</span>' : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
+
+            // Detekce okamžitého konce hry k zablokování zbytečných hlášek
+            let bagEmpty = state.bag.length === 0;
+            let opponent = state.turn === 0 ? 1 : 0;
+            let pTurnEmpty = currentHand.length === 0; 
+            let pOppEmpty = state.players[opponent].hand.length === 0;
+            let pTurnNoMoves = !hasAnyValidMove(state.turn);
+            let pOppNoMoves = !hasAnyValidMove(opponent);
+
+            let willBeGameOver = false;
+            if (bagEmpty) {
+                if (pTurnEmpty || pOppEmpty) willBeGameOver = true;
+                else if (pTurnNoMoves && pOppNoMoves) willBeGameOver = true;
+            }
+
+            if (state.lastPlacedTiles.length === 0) {
+                if (pTurnNoMoves) {
+                    if (!willBeGameOver) {
+                        if (currentHand.length === 2 && state.bag.length > 0) {
+                            state.bag.push(...currentHand);
+                            shuffle(state.bag);
+                            state.players[state.turn].hand = [];
+                            addLogObj({ type: "EXCHANGE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+                            showToast(`${pIconToast} ${t('tilesExchangedToast')}`); 
+                        } 
+                        else if (currentHand.length === 1) {
+                            addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+                            showToast(`${pIconToast} ${t('tileKeptToast')}`);
+                        } 
+                        else {
+                            addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+                            showToast(`${pIconToast} ${t('passTurnToast')}`);
+                        }
+                    }
+                    finalizeTurn();
+                } else {
+                    showToast(t('mustPlay'));
+                }
+                return;
+            }
+
+            if (currentHand.length > 0) {
+                if (hasAnyValidMove(state.turn)) {
+                    showToast(t('mustPlay'));
+                    return;
+                }
+                // Hráč umístil kámen, ale druhý mu zbyl
+                if (!willBeGameOver) {
+                    showToast(`${pIconToast} ${t('tileKeptToast')}`);
+                }
+            }
+
+            let tp = state.turnPendingPoints;
+            let keptTiles = (currentHand.length > 0 && !willBeGameOver) ? currentHand : null;
+            
+            addLogObj({ 
+                type: "END_TURN", 
+                player: state.turn, 
+                turn: state.turnCounter, 
+                tiles: [...state.lastPlacedTiles], 
+                pts: { ...tp },
+                keptTiles: keptTiles 
+            });
+            
+            if (tp.s10 === 0 && tp.s11 === 0 && tp.s12 === 0 && tp.dt === 0) {
+                finalizeTurn();
+                return;
+            }
+
+            state.proposedPlacements = [];
+            let pTable = state.players[state.turn].table;
+
+            ['s10', 's11', 's12'].forEach(col => {
+                if (tp[col] > 0) {
+                    let rowIdx = findFirstEmptyRow(pTable, col);
+                    state.proposedPlacements.push({ col: col, row: rowIdx, val: tp[col] });
+                }
+            });
+
+            for (let i = 0; i < tp.dt; i++) {
+                let rowIdx = findFirstEmptyRow(pTable, 'dt');
+                state.proposedPlacements.push({ col: 'dt', row: rowIdx, val: 'X' });
+            }
+
+            if (state.isAiMode && state.turn === 1) {
+                confirmProposedPoints();
+            } else {
+                state.isConfirming = true;
+                openScoreModalView();
+            }
+        }
+
+        function findFirstEmptyRow(pTable, col) {
+            for(let i=0; i<25; i++) {
+                if (pTable[i][col] === null && !state.proposedPlacements.some(p => p.col === col && p.row === i)) return i;
+            }
+            return 24; 
+        }
+
+        function openScoreModalView(forceTabIdx = null) {
+            document.getElementById('score-modal').style.display = 'flex';
+            
+            if (state.isConfirming) {
+                document.getElementById('modal-tabs').style.display = 'none';
+                document.getElementById('confirm-instructions').style.display = 'block';
+                document.getElementById('confirm-footer').style.display = 'block';
+                document.getElementById('modal-close-btn').style.display = 'none';
+                renderModalTable(state.turn);
+            } else {
+                document.getElementById('modal-tabs').style.display = 'flex';
+                document.getElementById('confirm-instructions').style.display = 'none';
+                document.getElementById('confirm-footer').style.display = 'none';
+                document.getElementById('modal-close-btn').style.display = 'block';
+                let initialTab = forceTabIdx !== null ? forceTabIdx : state.turn;
+                document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
+                renderModalTable(initialTab);
+            }
+        }
+
+        function closeModal() { document.getElementById('score-modal').style.display = 'none'; }
+
+        function getBonus(rIdx) { return rIdx === 0 ? 3 : (rIdx === 1 ? 4 : (rIdx === 2 ? 5 : 6)); }
+
+        function renderModalTable(pIdx) {
+            if (!state.isConfirming) {
+                document.getElementById('tab-btn-0').style.borderBottomColor = pIdx===0 ? '#3498db' : 'transparent';
+                document.getElementById('tab-btn-1').style.borderBottomColor = pIdx===1 ? (state.isAiMode?'#7f8c8d':'#e74c3c') : 'transparent';
+            }
+
+            let tbody = document.getElementById('modal-tbody'); tbody.innerHTML = '';
+            let pTable = state.players[pIdx].table;
+
+            let maxRowToRender = 4;
+            pTable.forEach((r, i) => { if(r.s10||r.s11||r.s12||r.dt) maxRowToRender = Math.max(maxRowToRender, i); });
+            if (state.isConfirming) state.proposedPlacements.forEach(p => maxRowToRender = Math.max(maxRowToRender, p.row + 2));
+
+            for(let i=0; i <= maxRowToRender; i++) {
+                let tr = document.createElement('tr');
+                
+                ['s10', 's11', 's12', 'dt'].forEach(col => {
+                    let td = document.createElement('td');
+                    let existingVal = pTable[i][col];
+                    let proposed = (state.isConfirming && pIdx === state.turn) ? state.proposedPlacements.find(p => p.row === i && p.col === col) : null;
+
+                    if (existingVal !== null) {
+                        td.innerText = existingVal;
+                    } else if (proposed) {
+                        td.innerText = proposed.val;
+                        td.className = 'proposed-cell';
+                    }
+
+                    if (state.isConfirming && pIdx === state.turn && existingVal === null) {
+                        if (!proposed) td.className = 'available-cell';
+                        td.onclick = () => moveProposedPlacement(i, col);
+                    }
+                    tr.appendChild(td);
+                });
+
+                let sum = (pTable[i].s10||0) + (pTable[i].s11||0) + (pTable[i].s12||0);
+                let hasS10 = pTable[i].s10 !== null, hasS11 = pTable[i].s11 !== null, hasS12 = pTable[i].s12 !== null;
+                let isDt = pTable[i].dt === 'X';
+
+                if (state.isConfirming && pIdx === state.turn) {
+                    let p10 = state.proposedPlacements.find(p=>p.row===i && p.col==='s10'); if(p10){ sum+=p10.val; hasS10=true;}
+                    let p11 = state.proposedPlacements.find(p=>p.row===i && p.col==='s11'); if(p11){ sum+=p11.val; hasS11=true;}
+                    let p12 = state.proposedPlacements.find(p=>p.row===i && p.col==='s12'); if(p12){ sum+=p12.val; hasS12=true;}
+                    if(state.proposedPlacements.find(p=>p.row===i && p.col==='dt')) isDt = true;
+                }
+
+                let bonus = (hasS10 && hasS11 && hasS12) ? getBonus(i) : '';
+                let fScore = sum > 0 ? (sum + (bonus||0)) * (isDt ? 2 : 1) : '';
+
+                let tdBonus = document.createElement('td'); tdBonus.innerText = bonus;
+                let tdScore = document.createElement('td'); tdScore.innerText = fScore; tdScore.className = 'col-sum';
+                tr.appendChild(tdBonus); tr.appendChild(tdScore);
+                tbody.appendChild(tr);
+            }
+            document.getElementById('modal-total').innerText = state.players[pIdx].score;
+        }
+
+        function moveProposedPlacement(targetRow, col) {
+            let props = state.proposedPlacements.filter(p => p.col === col);
+            if (props.length === 0) return;
+            if (props.some(p => p.row === targetRow)) return;
+            props[0].row = targetRow;
+            renderModalTable(state.turn);
+        }
+
+        function confirmProposedPoints() {
+            let pTable = state.players[state.turn].table;
+            
+            addLogObj({
+                type: "SCORE_SAVED",
+                player: state.turn,
+                turn: state.turnCounter,
+                placements: state.proposedPlacements.map(p => ({...p}))
+            });
+
+            state.proposedPlacements.forEach(p => pTable[p.row][p.col] = p.val);
+            state.proposedPlacements = [];
+            state.isConfirming = false;
+            closeModal();
+            finalizeTurn();
+        }
+
+        function finalizeTurn() {
+            state.recentTiles = [...state.lastPlacedTiles];
+            state.recentOwner = state.turn;
+
+            state.lastPlacedTiles = [];
+            state.turnPendingPoints = { s10: 0, s11: 0, s12: 0, dt: 0, c10: 0, c11: 0, c12: 0 };
+            state.selectedIdx = -1;
+            
+            recalcScores();
+
+            let p = state.players[state.turn];
+
+            for (let i = 0; i < 2; i++) {
+                if (state.bag.length > 0) {
+                    p.hand.push(state.bag.pop());
+                }
+            }
+
+            state.turnCounter++;
+            state.turn = state.turn === 0 ? 1 : 0;
+
+            let bagEmpty = state.bag.length === 0;
+            let p1Empty = state.players[0].hand.length === 0;
+            let p2Empty = state.players[1].hand.length === 0;
+            let p1NoMoves = !hasAnyValidMove(0);
+            let p2NoMoves = !hasAnyValidMove(1);
+
+            let isGameOver = false;
+            let reasonLog = "";
+
+            if (bagEmpty) {
+                if (p1Empty || p2Empty) {
+                    isGameOver = true;
+                    let emptyIcon = p1Empty ? '🔵' : (state.isAiMode ? '💻' : '🔴');
+                    let stuckIcon = p1Empty ? (state.isAiMode ? '💻' : '🔴') : '🔵';
+                    reasonLog = t('reasonEmptyHand').replace('{stuckIcon}', stuckIcon).replace('{emptyIcon}', emptyIcon);
+                } 
+                else if (p1NoMoves && p2NoMoves) {
+                    isGameOver = true;
+                    reasonLog = t('reasonDeadlock').replace('{p2Icon}', state.isAiMode ? '💻' : '🔴');
+                }
+            }
+
+            if (isGameOver) {
+                state.isGameOver = true;
+                
+                addLogObj({ type: "SYSTEM_TEXT", text: reasonLog });
+
+                state.players.forEach((player, idx) => {
+                    if (player.hand.length > 0) {
+                        let penalty = player.hand.reduce((a, b) => a + b, 0);
+                        addLogObj({ type: "PENALTY", player: idx, penalty: penalty, tiles: [...player.hand] });
+                        player.hand = []; 
+                    }
+                });
+
+                recalcScores(); 
+                updateUI();
+
+                let p1 = state.players[0].score;
+                let p2 = state.players[1].score;
+                let msgKey = '';
+
+                if (p1 > p2) msgKey = 'blueWon';
+                else if (p2 > p1) msgKey = state.isAiMode ? 'computerWon' : 'redWon';
+                else msgKey = 'draw';
+
+                showToast(t('gameOverToast')); 
+                addLogObj({ type: "GAME_OVER", msgKey: msgKey, p1: p1, p2: p2 });
+                openLogModal();
+                return;
+            }
+
+            updateUI();
+            
+            // Automatické vynechání tahu (pokud protihráč stále hraje, ale vy už ne)
+            if (bagEmpty && !hasAnyValidMove(state.turn)) {
+                setTimeout(() => {
+                    if (state.isGameOver) return; 
+                    
+                    let currentHand = [...state.players[state.turn].hand];
+                    let pIconToast = state.turn === 0 ? '<span style="color:var(--p1-color)">👤</span>' : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
+                    
+                    if (currentHand.length === 1) {
+                        addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+                        showToast(`${pIconToast} ${t('tileKeptToast')}`);
+                    } else {
+                        addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+                        showToast(`${pIconToast} ${t('passTurnToast')}`);
+                    }
+                    
+                    // Rekurzivně zavolá finalizaci dalšího kola pro předání tahu dál
+                    finalizeTurn();
+                }, 800);
+                return;
+            }
+
+            if (state.isAiMode && state.turn === 1) setTimeout(aiTurn, 800);
+        }
+
+        function recalcScores() {
+            state.players.forEach((p) => {
+                let total = 0;
+                p.table.forEach((row, i) => {
+                    let sum = (row.s10||0) + (row.s11||0) + (row.s12||0);
+                    let bonus = (row.s10 && row.s11 && row.s12) ? getBonus(i) : 0;
+                    if(sum > 0) total += (sum + bonus) * (row.dt === 'X' ? 2 : 1);
+                });
+                
+                if (state.isGameOver) {
+                    let penalty = p.hand.reduce((a, b) => a + b, 0);
+                    total -= penalty;
+                }
+                
+                p.score = total;
+            });
+        }
+
+        function aiTurn() {
+            if (state.isGameOver) return; 
+            
+            let moves = []; const hand = state.players[1].hand;
+            for(let i=0; i<hand.length; i++) {
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        let type = boardTemplate[r][c];
+                        if(state.board[r][c] === null && type !== '.' && hasAdjacentTile(r,c)) {
+                            state.board[r][c] = hand[i];
+                            let sH = getLineSum(r,c,0,1), sV = getLineSum(r,c,1,0);
+                            
+                            if(sH <= 12 && sV <= 12) {
+                                let makesSc = [10,11,12].includes(sH) || [10,11,12].includes(sV);
+                                let sc = 0;
+                                [sH, sV].forEach(s => { if(s===12) sc+=4; else if(s===11) sc+=2; else if(s===10) sc+=1; });
+                                if((type==='w'||type==='r') && makesSc) sc += 5; 
+                                moves.push({i, r, c, score: sc});
+                            }
+                            state.board[r][c] = null;
+                        }
+                    }
+                }
+            }
+
+            if(moves.length > 0) {
+                moves.sort((a,b) => b.score - a.score);
+                let m = moves[0]; state.selectedIdx = m.i; handleCellClick(m.r, m.c);
+                setTimeout(() => { if(state.players[1].hand.length > 0) aiTurn(); else endTurnBtnClick(); }, 800);
+            } else { endTurnBtnClick(); }
+        }
+
+        function showLegalMoves() {
+            document.querySelectorAll('.cell').forEach(cell => { cell.classList.remove('legal-move'); });
+            if (state.selectedIdx === -1) return;
+
+            let val = state.players[state.turn].hand[state.selectedIdx];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (state.board[r][c] !== null) continue;
+                    if (boardTemplate[r][c] === '.') continue;
+
+                    if (state.isFirstMove) {
+                        if (boardTemplate[r][c] === 'r') {
+                            document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
+                        }
+                        continue;
+                    }
+
+                    if (!hasAdjacentTile(r, c)) continue;
+
+                    state.board[r][c] = val;
+                    let hSum = getLineSum(r, c, 0, 1);
+                    let vSum = getLineSum(r, c, 1, 0);
+                    state.board[r][c] = null;
+
+                    if (hSum > 12 || vSum > 12) continue;
+                    document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
+                }
+            }
+        }
+
+        function getDominoHtml(value) {
+            const patterns = {
+                1: [4],
+                2: [0, 8],
+                3: [0, 4, 8],
+                4: [0, 2, 6, 8],
+                5: [0, 2, 4, 6, 8],
+                6: [0, 2, 3, 5, 6, 8]
+            };
+            const activePips = patterns[value] || [];
+            let html = '<div class="domino-tile">';
+            for (let i = 0; i < 9; i++) {
+                if (activePips.includes(i)) {
+                    html += '<div class="pip"></div>';
+                } else {
+                    html += '<div></div>';
+                }
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function updateUI() {
+            document.getElementById('p1-score').innerText = state.players[0].score;
+            document.getElementById('p2-score').innerText = state.players[1].score;
+            document.getElementById('tiles-left').innerText = `🎒 ${state.bag.length}`;
+
+            document.getElementById('p1-info').classList.toggle('active', !state.isGameOver && state.turn === 0);
+            document.getElementById('p2-info').classList.toggle('active', !state.isGameOver && state.turn === 1);
+            
+            document.getElementById('p2-icon').innerText = state.isAiMode ? '💻' : '🔴';
+            document.getElementById('p2-icon').style.color = state.isAiMode ? '#ecf0f1' : 'var(--p2-color)';
+
+            const hDiv = document.getElementById('player-hand'); hDiv.innerHTML = '';
+            state.players[state.turn].hand.forEach((v, idx) => {
+                const tNode = document.createElement('div'); tNode.className = 'hand-tile';
+                if (state.selectedIdx === idx) tNode.classList.add('selected');
+                tNode.innerHTML = getDominoHtml(v); 
+                tNode.onclick = () => { 
+                    if (state.isGameOver) return; 
+                    if(state.isAiMode && state.turn===1) return; 
+                    state.selectedIdx = state.selectedIdx===idx ? -1 : idx; 
+                    updateUI(); 
+                };
+                hDiv.appendChild(tNode);
+            });
+
+            document.querySelectorAll('.cell').forEach(c => {
+                c.innerHTML = '';
+                c.classList.remove('recent-cell-p1', 'recent-cell-p2');
+            });
+            
+            for (let r=0; r<ROWS; r++) {
+                for (let c=0; c<COLS; c++) {
+                    if (state.board[r][c] !== null) {
+                        const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                        
+                        if (state.recentTiles && state.recentTiles.some(pt => pt.r === r && pt.c === c)) {
+                            cell.classList.add(state.recentOwner === 0 ? 'recent-cell-p1' : 'recent-cell-p2');
+                        }
+                        
+                        const tNode = document.createElement('div'); 
+                        tNode.className = 'tile'; 
+                        tNode.innerHTML = getDominoHtml(state.board[r][c]); 
+
+                        if (state.lastPlacedTiles && state.lastPlacedTiles.some(pt => pt.r === r && pt.c === c)) {
+                            tNode.classList.add('highlight');
+                        }
+
+                        cell.appendChild(tNode);
+                        if(!state.isGameOver) showLegalMoves();
+                    }
+                }
+            }
+
+            let confirmBtn = document.getElementById('btn-confirm-turn');
+            let goText = document.getElementById('game-over-text');
+            
+            if (state.isGameOver) {
+                confirmBtn.style.display = 'none';
+                goText.style.display = 'inline';
+                
+                let p1 = state.players[0].score;
+                let p2 = state.players[1].score;
+                if (p1 > p2) goText.innerHTML = `🏆 🔵 ${t('won')}`;
+                else if (p2 > p1) goText.innerHTML = `🏆 ${state.isAiMode ? '💻' : '🔴'} ${t('won')}`;
+                else goText.innerHTML = `🤝 ${t('draw')}`;
+            } else {
+                confirmBtn.style.display = 'block';
+                goText.style.display = 'none';
+                
+                let validMovePossible = hasAnyValidMove(state.turn);
+                if (state.lastPlacedTiles.length === 0 && !validMovePossible) {
+                    if (state.bag.length > 0) {
+                        confirmBtn.innerText = '🔄';
+                        confirmBtn.title = t('exchangeTilesBtn');
+                        confirmBtn.style.backgroundColor = '#f39c12';
+                    } else {
+                        confirmBtn.innerText = '⏭';
+                        confirmBtn.title = t('passTurn');
+                        confirmBtn.style.backgroundColor = '#95a5a6';
+                    }
+                } else {
+                    confirmBtn.innerText = '✅';
+                    confirmBtn.title = t('confirmTurn');
+                    confirmBtn.style.backgroundColor = '#27ae60';
+                }
+            }
+            
+            document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
+        }
+
+        function openHelpModal() { document.getElementById('help-modal').style.display = 'flex'; }
+        function closeHelpModal() { document.getElementById('help-modal').style.display = 'none'; }
+        
+        function toggleMode() {
+            state.isAiMode = !state.isAiMode;
+            document.getElementById('mode-btn').innerText = state.isAiMode ? '💻' : '👤';
+            initGame();
+        }
+
+        function restartGame() {
+            showToast(t('newGameStartedToast'));
+            initGame();
+        }
+
+        window.addEventListener('click', (e) => {
+            let helpModal = document.getElementById('help-modal');
+            let logModal = document.getElementById('log-modal');
+            let scoreModal = document.getElementById('score-modal');
+
+            if (e.target === helpModal) closeHelpModal();
+            if (e.target === logModal) logModal.style.display = 'none';
+            if (e.target === scoreModal && !state.isConfirming) closeModal();
+        });
+        state.isAiMode = true;
+        initGame();
+    </script>
+</body>
+</html>
