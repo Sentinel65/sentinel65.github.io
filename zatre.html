@@ -1230,11 +1230,123 @@ score them points. The player with the highest score at the end of the game wins
                             let sH = getLineSum(r,c,0,1), sV = getLineSum(r,c,1,0);
                             
                             if(sH <= 12 && sV <= 12) {
-                                let makesSc = [10,11,12].includes(sH) || [10,11,12].includes(sV);
-                                let sc = 0;
-                                [sH, sV].forEach(s => { if(s===12) sc+=4; else if(s===11) sc+=2; else if(s===10) sc+=1; });
-                                if((type==='w'||type==='r') && makesSc) sc += 5; 
-                                moves.push({i, r, c, score: sc});
+                                let makesSc =
+    [10,11,12].includes(sH) ||
+    [10,11,12].includes(sV);
+
+let immediateScore = 0;
+
+// okamžité body
+[sH, sV].forEach(s => {
+
+    if (s === 12) immediateScore += 4;
+    else if (s === 11) immediateScore += 2;
+    else if (s === 10) immediateScore += 1;
+
+    // setupy
+    else if (s === 9) immediateScore += 1.5;
+    else if (s === 8) immediateScore += 0.5;
+});
+
+// double bonus
+let doubleBonus = 0;
+
+if ((type === 'w' || type === 'r') && makesSc) {
+    doubleBonus += 5;
+}
+
+// bonus za centrum
+let dist =
+    Math.abs(r - 7) +
+    Math.abs(c - 7);
+
+let centerBonus =
+    (14 - dist) * 0.15;
+
+// =====================
+// simulace odpovědi soupeře
+// =====================
+
+let opponentBestResponse = 0;
+
+// simulovaný tah AI už leží
+state.board[r][c] = hand[i];
+
+let opponentHand = state.players[0].hand;
+
+for (let oi = 0; oi < opponentHand.length; oi++) {
+
+    for (let rr = 0; rr < ROWS; rr++) {
+
+        for (let cc = 0; cc < COLS; cc++) {
+
+            if (
+                state.board[rr][cc] !== null ||
+                boardTemplate[rr][cc] === '.'
+            ) continue;
+
+            if (!hasAdjacentTile(rr, cc)) continue;
+
+            state.board[rr][cc] = opponentHand[oi];
+
+            let oh =
+                getLineSum(rr, cc, 0, 1);
+
+            let ov =
+                getLineSum(rr, cc, 1, 0);
+
+            if (oh <= 12 && ov <= 12) {
+
+                let replyScore = 0;
+
+                [oh, ov].forEach(s => {
+                    if (s === 12) replyScore += 4;
+                    else if (s === 11) replyScore += 2;
+                    else if (s === 10) replyScore += 1;
+                });
+
+                // double reply
+                let oType =
+                    boardTemplate[rr][cc];
+
+                if (
+                    (oType === 'w' || oType === 'r') &&
+                    (
+                        [10,11,12].includes(oh) ||
+                        [10,11,12].includes(ov)
+                    )
+                ) {
+                    replyScore += 5;
+                }
+
+                opponentBestResponse =
+                    Math.max(
+                        opponentBestResponse,
+                        replyScore
+                    );
+            }
+
+            state.board[rr][cc] = null;
+        }
+    }
+}
+
+// vrátit simulovaný tah AI
+state.board[r][c] = null;
+
+// finální skóre
+let finalScore =
+    immediateScore
+    + doubleBonus
+    + centerBonus
+    - opponentBestResponse * 0.9;
+
+moves.push({
+    i,
+    r,
+    c,
+    score: finalScore
+});
                             }
                             state.board[r][c] = null;
                         }
