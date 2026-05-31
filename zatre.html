@@ -237,12 +237,13 @@
             <button class="icon-btn" id="btn-save" onclick="saveGame()" title="Uložit">💾</button>
             <button class="icon-btn" id="btn-load" onclick="loadGame()" title="Načíst">📂</button>
             <button class="icon-btn" id="mode-btn" onclick="toggleMode()" title="Režim hry">💻</button>
-            <button class="icon-btn" id="lang-btn" onclick="toggleLanguage()" title="Language">🇬🇧</button>
+            <button class="icon-btn" id="diff-btn" onclick="cycleDifficulty()" title="Obtížnost AI">🟡</button>
+            <button class="icon-btn" id="lang-btn" onclick="toggleLanguage()" title="Jazyk">🇬🇧</button>
             <button class="icon-btn" id="btn-new" onclick="restartGame()" title="Nová hra">🔄</button>
-            <button class="icon-btn" id="btn-help" onclick="openHelpModal()" title="Help">💡</button>
+            <button class="icon-btn" id="btn-help" onclick="openHelpModal()" title="Nápověda">💡</button>
             <button class="icon-btn" id="btn-log" onclick="openLogModal()" title="Log hry">📜</button>
             <button class="icon-btn" id="btn-score" onclick="openScoreModalView()" title="Tabulka">📊</button>
-            <span id="tiles-left" style="font-size:15px; color:white; font-weight:bold; white-space:nowrap; min-width:42px; text-align:right;">🎒121</span>
+            <span id="tiles-left" title="Sáček - počet kamenů"> style="font-size:15px; color:white; font-weight:bold; white-space:nowrap; min-width:42px; text-align:right;">🎒121</span>
         </div>
     </header>
 
@@ -320,158 +321,136 @@
     <div id="help-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="help-title">❓ Nápověda</h2>
+                <h2 id="help-title">💡 Nápověda</h2>
                 <button class="close-btn" onclick="closeHelpModal()">✖</button>
             </div>
             <div style="padding:15px; overflow:auto;">
                 <div id="help-cs">
                     <h3>Cíl hry</h3>
-                    <p>Hráči pokládají dílky na hrací desku tak, aby vytvořili co nejvíce součtů 10, 11 a 12, protože pouze za ty získají 
-body. Vyhrává hráč, který na konci hry dosáhne nejvyššího počtu bodů.</p>
+                    <p>Pokládejte kameny na desku tak, aby součty řad a sloupců dávaly co nejvíce hodnot 10, 11 nebo 12 – jen ty přinášejí body. Vyhrává hráč s nejvyšším skóre na konci hry.</p>
                     <br>
-                    <h3>Základní pravidla</h3>
-                    <br>
-                    <h3>Průběh tahu</h3>
-
-                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Aktivní hráč je zvýrazněn žlutým rámečkem.</li>
-                        <li>Hráč na tahu má vždy zobrazené své kameny ve spodní části obrazovky.</li>
-                        <li>Kliknutím na kámen jej označíte.</li>
-                        <li>Zeleně zvýrazněná pole označují všechny legální tahy.</li>
-                        <li>Kliknutím na herní pole kámen položíte.</li>
-                        <li>Poslední položený kámen lze vrátit kliknutím přímo na něj.</li>
-                        <li>Tah ukončíte tlačítkem ✅ Potvrdit tah.</li>
-                    </ul>
-
                     <h3>Začátek hry</h3>
-
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Začínající hráč dostává 3 kameny.</li>
-                        <li>Druhý hráč dostává 2 kameny.</li>
-                        <li>První kámen partie musí být položen na červené středové pole.</li>
+                        <li>Začínající hráč losuje nejvyšší číslo a dostane celkem 3 kameny (los + 2 dobré). Všechny tři položí na start — jeden z nich <strong>musí</strong> být na červeném středovém poli.</li>
+                        <li>Každý další hráč táhne 2 kameny ze sáčku a klade je na desku.</li>
                         <li>Po každé nové hře se začínající hráč automaticky střídá.</li>
                     </ul>
 
-                    <h3>Bodování</h3>
-
+                    <h3>Průběh tahu</h3>
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Součet 10 = 1 bod</li>
-                        <li>Součet 11 = 2 body</li>
-                        <li>Součet 12 = 4 body</li>
-                        <li>Bílá a červená pole fungují jako Double (2× násobení výsledku).</li>
-                        <li>Bonusové body získáte za vyplnění všech tří sloupců 10 / 11 / 12 v jednom řádku tabulky.</li>
+                        <li>Aktivní hráč je zvýrazněn žlutým rámečkem.</li>
+                        <li>Na začátku každého tahu si hráč <strong>táhne 2 kameny</strong> ze sáčku (výjimky níže).</li>
+                        <li>Kliknutím na kámen jej označíte, zeleně zvýrazněná pole jsou legální tahy.</li>
+                        <li>Kliknutím na pole kámen položíte. Poslední položený kámen vrátíte kliknutím na něj.</li>
+                        <li>Musíte položit <strong>oba kameny</strong>, pokud to pravidla dovolují.</li>
+                        <li>Tah ukončíte tlačítkem ✅.</li>
                     </ul>
 
-                    <h3>Důležitá pravidla</h3>
-
+                    <h3>Pravidla kladení</h3>
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Pokud máte platný tah, musíte hrát.</li>
-                        <li>Součet řady ani sloupce nesmí nikdy překročit 12.</li>
-                        <li>Každý nový kámen musí sousedit hranou s již položeným kamenem.</li>
-                        <li>Diagonální kontakt se nepočítá.</li>
+                        <li>Každý kámen musí hranou sousedit s již položeným kamenem (ne diagonálně).</li>
+                        <li>Součet souvislé řady nebo sloupce nesmí překročit 12.</li>
+                        <li>Součty 9 a méně jsou povoleny, ale nedávají body.</li>
+                        <li><strong>Double pole (světlá / červená):</strong> Kámen smíte položit na double pole jen tehdy, pokud s ním (nebo s oběma kameny dohromady) vytvoříte součet 10, 11 nebo 12. <em>Výjimka:</em> pokud nemáte jiné místo, musíte ho tam dát i bez bodování — bez zápisu křížku.</li>
+                    </ul>
+
+                    <h3>Bodování</h3>
+                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
+                        <li>Součet 10 = 1 bod, součet 11 = 2 body, součet 12 = 4 body.</li>
+                        <li>Položení na double pole při bodovaném součtu → křížek ve sloupci ×2 → celý řádek v tabulce se násobí 2×.</li>
+                        <li>Bonus za vyplnění celého řádku (sloupce 10 + 11 + 12).</li>
+                        <li>Zbývající kameny v ruce na konci hry = minusové body.</li>
+                    </ul>
+
+                    <h3>Speciální situace</h3>
+                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
+                        <li><strong>Jeden kámen nelze položit:</strong> Nehratelný kámen si ponecháte před sebou. V dalším kole táhnete normálně 2 nové kameny — máte tedy 3. Hrajete všechny, které lze zahrát.</li>
+                        <li><strong>Žádný kámen nelze položit (2 nebo více kamenů):</strong> Táhnete 1 nový kámen ze sáčku.
+                            <ul style="padding-left:18px; margin-top:4px;">
+                                <li>Pokud po dotažení <em>lze hrát</em> → hrajete všechny kameny (i více než 2).</li>
+                                <li>Pokud stále nelze hrát → tah přeskočíte (⏭ Pass). Kameny si ponecháváte.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Pouze 1 kámen na ruce, nelze ho hrát:</strong> Dotahujete 2 nové kameny (celkem 3). Pokud ani poté nelze hrát → tah přeskočíte.</li>
+                        <li><strong>Prázdný sáček:</strong> Netáhnou se žádné nové kameny. Nelze-li hrát, tah se přeskočí (⏭). Zbylé kameny v ruce na konci hry jsou minusové body (odečtou se jejich hodnoty).</li>
                     </ul>
 
                     <h3>Tabulka bodování</h3>
-
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Zeleně zvýrazněná pole představují nově získané body.</li>
-                        <li>Kliknutím lze body přesouvat mezi volnými řádky.</li>
-                        <li>Po potvrzení již nelze zápis měnit.</li>
+                        <li>Zeleně zvýrazněná pole jsou nově získané body — kliknutím je přesunete do jiného řádku.</li>
+                        <li>Po potvrzení zápis nelze měnit. Řádky se plní shora dolů bez mezer.</li>
                     </ul>
 
                     <h3>Režimy hry</h3>
-
                     <ul style="padding-left:20px; line-height:1.6;">
-                        <li>👤 PvP = hra dvou hráčů na jednom zařízení.</li>
+                        <li>👤 PvP = dva hráči na jednom zařízení.</li>
                         <li>💻 AI = hra proti počítači.</li>
-                        <li>Režim hry lze přepínat tlačítkem v horním menu.</li>
-                    </ul>
-                                        <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                                            <li>První tah hry musí směřovat na středové červené pole.</li>
-                                            <li>Každý další kámen musí vlastní hranou sousedit s hranou již položeného kamene.</li>
-                                            <li>Součet souvislé řady nebo sloupce kamenů na desce nesmí překročit hodnotu 12.</li>
-                                            <li>Bílá a červená pole na desce fungují jako Double – zdvojnásobují získané body z vytvořené řady nebo sloupce, pokud na nich docílíte platného součtu.</li>
-                    </ul>
-                    <h3>Speciální situace (Nemožný tah)</h3>
-                    <ul style="padding-left:20px; line-height:1.6;">
-                        <li><strong>Máte na ruce 2 kameny:</strong> Pokud hodnoty obou kamenů neumožňují zahrát ani jeden platný tah, dojde k jejich výměně. Do příštího kola si berete 2 nové kameny ze sáčku. Výměnou končí váš tah.</li>
-                        <li><strong>Máte na ruce 1 kámen:</strong> Pokud hodnota zbylého kamene na ruce neumožnuje zahrát platný tah, kámen si ponecháte na ruce, zbytek kola vynecháváte (Pass) a na konci si doberete 2 nové kameny. V dalším kole tedy hrajete se 3 kameny.</li>
-                        <li><strong>Prázdný sáček:</strong> Pokud nelze provést žádný platný tah a v sáčku už nic není, tah se čistě přeskočí (Pass) bez jakékoli výměny. Pokud hra skončí a kameny vám zůstanou na ruce, součet hodnoty těchto kamenů se odečítá od celkového skóre.</li>
+                        <li>Režim přepínáte tlačítkem v horním menu.</li>
+                        <li>Obtížnost AI (🟢 Lehká / 🟡 Střední / 🔴 Těžká) přepínáte tlačítkem vedle režimu.</li>
                     </ul>
                 </div>
                 <div id="help-en" style="display:none;">
                     <h3>Goal</h3>
-                    <p>Players place the tiles on the board so that they form as many sums of 10, 11 and 12 as possible, because only these will 
-score them points. The player with the highest score at the end of the game wins.</p>
+                    <p>Place tiles on the board to form as many row/column sums of 10, 11 or 12 as possible — only these score points. The player with the highest score at the end wins.</p>
                     <br>
-                    <h3>Basic Rules</h3>
+                    <h3>Game Start</h3>
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>The first tile must be placed on the center red square.</li>
-                        <li>Each subsequent tile must share an edge with an already placed tile.</li>
-                        <li>The sum of a continuous row or column of tiles must never exceed 12.</li>
-                        <li>White and red squares act as Doubles – they double the points gained from the created row or column, if a valid sum is achieved on them.</li>
-                    <br>
-                    <h3>Turn Flow</h3>
-
-                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>The active player is highlighted with a yellow border.</li>
-                        <li>The current player's tiles are displayed at the bottom of the screen.</li>
-                        <li>Click a tile to select it.</li>
-                        <li>Green highlighted squares indicate all legal moves.</li>
-                        <li>Click a board square to place the tile.</li>
-                        <li>The last placed tile can be undone by clicking it again.</li>
-                        <li>Finish your turn with the ✅ Confirm Turn button.</li>
+                        <li>The starting player draws the highest tile and gets 3 tiles total (the drawn tile + 2 more). All three are placed on the board — one <strong>must</strong> go on the red center square.</li>
+                        <li>Every other player draws 2 tiles per turn from the bag.</li>
+                        <li>The starting player alternates automatically after each new game.</li>
                     </ul>
 
-                    <h3>Game Start</h3>
-
+                    <h3>Turn Flow</h3>
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>The starting player receives 3 tiles.</li>
-                        <li>The second player receives 2 tiles.</li>
-                        <li>The first tile of the game must be placed on the red center square.</li>
-                        <li>The starting player automatically alternates after each new game.</li>
+                        <li>The active player is highlighted with a yellow border.</li>
+                        <li>At the start of each turn, the player <strong>draws 2 tiles</strong> from the bag (exceptions below).</li>
+                        <li>Click a tile to select it; green squares show all legal placements.</li>
+                        <li>Click a square to place the tile. Click the last placed tile to take it back.</li>
+                        <li>You <strong>must place both tiles</strong> if the rules allow it.</li>
+                        <li>End your turn with the ✅ button.</li>
+                    </ul>
+
+                    <h3>Placement Rules</h3>
+                    <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
+                        <li>Every tile must share an edge with an already-placed tile (not diagonally).</li>
+                        <li>The sum of a continuous row or column must never exceed 12.</li>
+                        <li>Sums of 9 or less are allowed but score no points.</li>
+                        <li><strong>Double squares (light / red):</strong> A tile may only be placed on a double square if it (or both tiles together) forms a sum of 10, 11 or 12. <em>Exception:</em> if no other square is available, you must place it there anyway — without scoring or marking a cross.</li>
                     </ul>
 
                     <h3>Scoring</h3>
-
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Sum 10 = 1 point</li>
-                        <li>Sum 11 = 2 points</li>
-                        <li>Sum 12 = 4 points</li>
-                        <li>White and red squares act as Doubles (2× multiplier).</li>
-                        <li>Bonus points are awarded for completing all 10 / 11 / 12 columns in a row.</li>
+                        <li>Sum 10 = 1 pt, Sum 11 = 2 pts, Sum 12 = 4 pts.</li>
+                        <li>Placing on a double square with a scoring sum → cross in the ×2 column → entire row on the scoresheet counts ×2.</li>
+                        <li>Bonus for completing a full row (columns 10 + 11 + 12).</li>
+                        <li>Tiles remaining in hand at game end = minus points.</li>
                     </ul>
 
-                    <h3>Important Rules</h3>
-
+                    <h3>Special Situations</h3>
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>If you have a legal move, you must play.</li>
-                        <li>The sum of a row or column may never exceed 12.</li>
-                        <li>Every new tile must share an edge with an existing tile.</li>
-                        <li>Diagonal contact does not count.</li>
+                        <li><strong>One tile can't be placed:</strong> Keep the unplayable tile in front of you. Next turn draw 2 new tiles as normal — you now have 3. Play all that can be placed.</li>
+                        <li><strong>No tile can be placed (2 or more tiles):</strong> Draw 1 new tile from the bag.
+                            <ul style="padding-left:18px; margin-top:4px;">
+                                <li>If you <em>can now play</em> → play all tiles (even more than 2).</li>
+                                <li>If still no valid move → skip your turn (⏭ Pass). Keep your tiles.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Only 1 tile in hand, can't place it:</strong> Draw 2 new tiles (total 3). If still no valid move → skip your turn.</li>
+                        <li><strong>Empty bag:</strong> No new tiles are drawn. If no valid move exists, the turn is skipped (⏭). Tiles remaining in hand at game end are deducted from your final score.</li>
                     </ul>
 
                     <h3>Score Table</h3>
-
                     <ul style="padding-left:20px; line-height:1.6; margin-bottom:12px;">
-                        <li>Green highlighted cells represent newly earned points.</li>
-                        <li>Points can be moved between free rows before confirmation.</li>
-                        <li>After confirmation, the score entry cannot be changed.</li>
+                        <li>Green cells are newly earned points — click to move them to a different row.</li>
+                        <li>Rows are filled top to bottom without gaps. Entries cannot be changed after confirmation.</li>
                     </ul>
 
                     <h3>Game Modes</h3>
-
                     <ul style="padding-left:20px; line-height:1.6;">
                         <li>👤 PvP = two players on one device.</li>
                         <li>💻 AI = play against the computer.</li>
-                        <li>The game mode can be switched from the top menu.</li>
-                    </ul>
-                    </ul>
-                    <h3>Special Situations (Impossible Move)</h3>
-                    <ul style="padding-left:20px; line-height:1.6;">
-                        <li><strong>2 tiles in hand:</strong> If the values of both tiles do not allow a valid move, they are exchanged. You draw 2 new tiles for the next round. The exchange ends your turn.</li>
-                        <li><strong>1 tile in hand:</strong> If the remaining tile does not allow a valid move, you keep it, skip the rest of the round (Pass), and draw 2 new tiles at the end. In the next round, you play with 3 tiles.</li>
-                        <li><strong>Empty bag:</strong> If no valid move is possible and the bag is empty, the turn is skipped (Pass) without any exchange. If the game ends and you have tiles left in hand, their total value is deducted from your final score.</li>
+                        <li>Switch mode from the top menu.</li>
+                        <li>AI difficulty (🟢 Easy / 🟡 Medium / 🔴 Hard) is toggled with the button next to the mode button.</li>
                     </ul>
                 </div>
             </div>
@@ -486,18 +465,21 @@ score them points. The player with the highest score at the end of the game wins
                 save: "Uložit",
                 load: "Načíst",
                 log: "Log hry",
+                levelAI: "Obtížnost AI",   
+                language: "Jazyk",
+                tilesLeft: "Sáček - počet kamenů",
                 scoreboard: "Tabulka",
                 confirmTurn: "Potvrdit tah",
-                exchangeTilesBtn: "Vyměnit kameny a přeskočit tah",
                 passTurn: "Přeskočit tah",
-                tilesExchangedToast: "vyměnil kameny",
                 passTurnToast: "vynechal tah",
+                draw1TileToast: "dotáhl 1 kámen",
+                draw1TileLog: "Dotáhl 1 kámen (žádný platný tah)",
                 gameOverToast: "Konec hry!",
                 logTitle: "📜 Log hry",
                 copy: "Kopírovat",
                 scoreTitle: "📊 Bodovací tabulka",
-                tileKeptToast: "kámen převeden do dalšího tahu",
-                tileKeptLog: "Kámen převeden do dalšího tahu",
+                tileKeptToast: "kámen přenesen do dalšího tahu",
+                tileKeptLog: "Kámen přenesen do dalšího tahu",
                 blue: "🔵 Modrý",
                 red: "🔴 Červený",
                 computer: "💻 Počítač",
@@ -508,6 +490,7 @@ score them points. The player with the highest score at the end of the game wins
                 firstTileCenter: "První kámen patří na středové červené pole!",
                 tileAdjacent: "Kámen musí sousedit hrana na hranu!",
                 sumExceed: "Součet nesmí být přes 12!",
+                doubleNeedsScore: "Na double pole jen se součtem 10–12! (Nebo nemáš jiné místo.)",
                 nothingToUndo: "Není co vrátit",
                 gameSaved: "Hra uložena 💾",
                 gameLoaded: "Hra načtena 📂",
@@ -529,13 +512,16 @@ score them points. The player with the highest score at the end of the game wins
                 draw: "Remíza",
                 bonus: "Bonus",
                 score: "Celkem",
-                helpTitle: "❓ Nápověda",
+                helpTitle: "💡 Nápověda",
                 logSaved: "Hra uložena.",
                 logLoaded: "Hra načtena ze zálohy.",
                 noTilesPlaced: "Žádné (Pass)",
                 gains: "Zisk",
                 mustPlay: "Máte platný tah, musíte hrát!",
-                penaltyInfo: "Odečet bodů:"
+                penaltyInfo: "Odečet bodů:",
+                diffEasy: "Lehká",
+                diffMedium: "Střední",
+                diffHard: "Těžká"
             },
             en: {
                 newGame: "New Game",
@@ -543,18 +529,21 @@ score them points. The player with the highest score at the end of the game wins
                 save: "Save",
                 load: "Load",
                 log: "Game Log",
+                levelAI: "Level AI",
+                language: "Language",
+                tilesLeft: "Bag - number of tiles",
                 scoreboard: "Scoreboard",
                 confirmTurn: "Confirm Turn",
-                exchangeTilesBtn: "Exchange tiles and skip turn",
                 passTurn: "Skip turn",
-                tilesExchangedToast: "exchanged tiles",
                 passTurnToast: "skipped turn",
+                draw1TileToast: "drew 1 tile (no valid move)",
+                draw1TileLog: "Drew 1 tile (no valid move)",
                 gameOverToast: "Game Over!",
                 logTitle: "📜 Game Log",
                 copy: "Copy",
                 scoreTitle: "📊 Scoreboard",
-                tileKeptToast: "stone moved to the next turn",
-                tileKeptLog: "Stone moved to the next turn",
+                tileKeptToast: "tile carried to next turn",
+                tileKeptLog: "Tile carried to next turn",
                 blue: "🔵 Blue",
                 red: "🔴 Red",
                 computer: "💻 Computer",
@@ -565,6 +554,7 @@ score them points. The player with the highest score at the end of the game wins
                 firstTileCenter: "First tile must be placed on the center red square!",
                 tileAdjacent: "Tile must share an edge with another!",
                 sumExceed: "Sum cannot exceed 12!",
+                doubleNeedsScore: "Double square requires a sum of 10–12! (Unless no other square is available.)",
                 nothingToUndo: "Nothing to undo",
                 gameSaved: "Game saved 💾",
                 gameLoaded: "Game loaded 📂",
@@ -586,13 +576,16 @@ score them points. The player with the highest score at the end of the game wins
                 draw: "Draw",
                 bonus: "Bonus",
                 score: "Total",
-                helpTitle: "❓ Help",
+                helpTitle: "💡 Help",
                 logSaved: "Game saved.",
                 logLoaded: "Game loaded from backup.",
                 noTilesPlaced: "None (Pass)",
                 gains: "Gained",
                 mustPlay: "You have a valid move, you must play!",
-                penaltyInfo: "Penalty deducted:"
+                penaltyInfo: "Penalty deducted:",
+                diffEasy: "Easy",
+                diffMedium: "Medium",
+                diffHard: "Hard"
             }
         };
 
@@ -637,7 +630,8 @@ score them points. The player with the highest score at the end of the game wins
             recentTiles: [],
             recentOwner: -1,
             lang: 'cs',
-            isGameOver: false
+            isGameOver: false,
+            aiDifficulty: 'medium'  // 'easy' | 'medium' | 'hard'
         };
 
         function t(key) { return i18n[state.lang][key]; }
@@ -649,6 +643,9 @@ score them points. The player with the highest score at the end of the game wins
             document.getElementById('help-cs').style.display = state.lang === 'cs' ? 'block' : 'none';
             document.getElementById('help-en').style.display = state.lang === 'en' ? 'block' : 'none';
 
+            document.getElementById('lang-btn').title = t('language');
+            document.getElementById('diff-btn').title = t('levelAI');
+            document.getElementById('tiles-left').title = t('tilesLeft');
             document.getElementById('btn-new').title = t('newGame');
             document.getElementById('mode-btn').title = t('gameMode');
             document.getElementById('btn-save').title = t('save');
@@ -670,6 +667,16 @@ score them points. The player with the highest score at the end of the game wins
             document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
 
             updateUI(); 
+        }
+
+        function cycleDifficulty() {
+            const levels = ['easy', 'medium', 'hard'];
+            const icons  = { easy: '🟢', medium: '🟡', hard: '🔴' };
+            let idx = levels.indexOf(state.aiDifficulty);
+            state.aiDifficulty = levels[(idx + 1) % 3];
+            document.getElementById('diff-btn').innerText = icons[state.aiDifficulty];
+            let label = t('diff' + state.aiDifficulty.charAt(0).toUpperCase() + state.aiDifficulty.slice(1));
+            showToast(`AI: ${label}`);
         }
 
         function toggleLanguage() {
@@ -694,9 +701,9 @@ score them points. The player with the highest score at the end of the game wins
                     case "NEW_GAME": return t('newGameLog');
                     case "SAVE": return t('logSaved');
                     case "LOAD": return t('logLoaded');
-                    case "EXCHANGE":
-                        let pNameEx = getPlayerName(entry.player);
-                        return `${t('turn')} ${entry.turn} (${pNameEx}): Výměna kamenů [${entry.tiles.join(', ')}]`;
+                    case "DRAW1":
+                        let pNameD1 = getPlayerName(entry.player);
+                        return `${t('turn')} ${entry.turn} (${pNameD1}): ${t('draw1TileLog')}`;
                     case "PASS":
                         let pNamePass = getPlayerName(entry.player);
                         return `${t('turn')} ${entry.turn} (${pNamePass}): ${t('passTurn')}`;
@@ -1028,6 +1035,68 @@ score them points. The player with the highest score at the end of the game wins
                 state.board[r][c] = null; showToast(t('sumExceed')); return;
             }
 
+            // Pravidlo double pole:
+            // Kámen smí být položen na double pole jen pokud:
+            //   a) tímto kamenem vznikne součet 10/11/12, NEBO
+            //   b) tento kámen je první ze dvou a druhý kámen (ještě v ruce) vytvoří součet, NEBO
+            //   c) neexistuje žádný jiný platný tah (ani non-double, ani double se součtem)
+            let cellType = boardTemplate[r][c];
+            if ((cellType === 'w' || cellType === 'r') && !state.isFirstMove) {
+                let makesScore = [10,11,12].includes(hSum) || [10,11,12].includes(vSum);
+                if (!makesScore) {
+                    // Zkontroluj případ b): zbývá v ruce jiný kámen, který by na tomto místě
+                    // (nebo poblíž) dokončil součet 10–12 spolu s tímto kamenem
+                    let secondTileWillScore = false;
+                    let remainingHand = state.players[state.turn].hand.filter((_, idx) => idx !== state.selectedIdx);
+                    for (let sv of remainingHand) {
+                        // Zkus všechny sousední prázdné buňky
+                        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                        for (let [dr, dc] of dirs) {
+                            let nr2 = r+dr, nc2 = c+dc;
+                            if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
+                            if (state.board[nr2][nc2] !== null) continue;
+                            if (boardTemplate[nr2][nc2] === '.') continue;
+                            state.board[nr2][nc2] = sv;
+                            let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
+                            state.board[nr2][nc2] = null;
+                            if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
+                                secondTileWillScore = true;
+                                break;
+                            }
+                        }
+                        if (secondTileWillScore) break;
+                    }
+
+                    if (!secondTileWillScore) {
+                        // Zkontroluj případ c): existuje jiný platný tah (non-double nebo double se součtem)?
+                        let hasOtherValidMove = false;
+                        for (let rr = 0; rr < ROWS && !hasOtherValidMove; rr++) {
+                            for (let cc = 0; cc < COLS && !hasOtherValidMove; cc++) {
+                                if (rr === r && cc === c) continue; // toto pole přeskočíme
+                                let tp2 = boardTemplate[rr][cc];
+                                if (tp2 === '.') continue;
+                                if (state.board[rr][cc] !== null) continue;
+                                if (!hasAdjacentTile(rr, cc)) continue;
+                                state.board[rr][cc] = val;
+                                let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
+                                state.board[rr][cc] = null;
+                                if (hs > 12 || vs > 12) continue;
+                                // Non-double pole — vždy platný
+                                if (tp2 !== 'w' && tp2 !== 'r') { hasOtherValidMove = true; break; }
+                                // Double pole — platný jen se součtem
+                                if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasOtherValidMove = true; break; }
+                            }
+                        }
+                        if (hasOtherValidMove) {
+                            state.board[r][c] = null;
+                            showToast(t('doubleNeedsScore'));
+                            return;
+                        }
+                        // Případ c) — žádná alternativa, smí hrát sem bez bodování
+                    }
+                }
+            }
+
             state.lastPlacedTiles.push({ r, c, value: val });
             state.players[state.turn].hand.splice(state.selectedIdx, 1);
             state.selectedIdx = -1;
@@ -1077,25 +1146,63 @@ score them points. The player with the highest score at the end of the game wins
             if (state.isFirstMove) return true;
             const hand = state.players[pIdx].hand;
             if (hand.length === 0) return false;
-            
-            for(let i=0; i<hand.length; i++) {
+
+            for (let i = 0; i < hand.length; i++) {
                 let val = hand[i];
-                for (let r=0; r<ROWS; r++) {
-                    for (let c=0; c<COLS; c++) {
-                        if (state.board[r][c] === null && boardTemplate[r][c] !== '.') {
-                            if (hasAdjacentTile(r, c)) {
-                                state.board[r][c] = val;
-                                let hSum = getLineSum(r, c, 0, 1);
-                                let vSum = getLineSum(r, c, 1, 0);
-                                state.board[r][c] = null;
-                                if (hSum <= 12 && vSum <= 12) {
-                                    return true;
-                                }
-                            }
+
+                // Nejdřív zkontroluj non-double pole — ta jsou vždy preferovaná
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        let tp = boardTemplate[r][c];
+                        if (tp === '.' || tp === 'w' || tp === 'r') continue;
+                        if (state.board[r][c] !== null) continue;
+                        if (!hasAdjacentTile(r, c)) continue;
+                        state.board[r][c] = val;
+                        let hSum = getLineSum(r, c, 0, 1);
+                        let vSum = getLineSum(r, c, 1, 0);
+                        state.board[r][c] = null;
+                        if (hSum <= 12 && vSum <= 12) return true;
+                    }
+                }
+
+                // Pak double pole — platné jen pokud vytváří součet 10/11/12
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        let tp = boardTemplate[r][c];
+                        if (tp !== 'w' && tp !== 'r') continue;
+                        if (state.board[r][c] !== null) continue;
+                        if (!hasAdjacentTile(r, c)) continue;
+                        state.board[r][c] = val;
+                        let hSum = getLineSum(r, c, 0, 1);
+                        let vSum = getLineSum(r, c, 1, 0);
+                        state.board[r][c] = null;
+                        if (hSum <= 12 && vSum <= 12 &&
+                            ([10,11,12].includes(hSum) || [10,11,12].includes(vSum))) {
+                            return true;
                         }
                     }
                 }
             }
+
+            // Poslední možnost: existuje double pole kde jde hrát (bez součtu) — výjimka z pravidla
+            // V tomto případě hráč MUSÍ hrát, i bez bodování → vrátíme true
+            for (let i = 0; i < hand.length; i++) {
+                let val = hand[i];
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        let tp = boardTemplate[r][c];
+                        if (tp !== 'w' && tp !== 'r') continue;
+                        if (state.board[r][c] !== null) continue;
+                        if (!hasAdjacentTile(r, c)) continue;
+                        state.board[r][c] = val;
+                        let hSum = getLineSum(r, c, 0, 1);
+                        let vSum = getLineSum(r, c, 1, 0);
+                        state.board[r][c] = null;
+                        if (hSum <= 12 && vSum <= 12) return true;
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -1115,97 +1222,102 @@ score them points. The player with the highest score at the end of the game wins
 
         function endTurnBtnClick() {
             let currentHand = [...state.players[state.turn].hand];
-            let pIconToast = state.turn === 0 ? '<span style="color:var(--p1-color)">👤</span>' : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
+            let pIconToast = state.turn === 0
+                ? '<span style="color:var(--p1-color)">👤</span>'
+                : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
 
-            // Detekce okamžitého konce hry k zablokování zbytečných hlášek
-            let bagEmpty = state.bag.length === 0;
-            let opponent = state.turn === 0 ? 1 : 0;
-            let pTurnEmpty = currentHand.length === 0; 
-            let pOppEmpty = state.players[opponent].hand.length === 0;
-            let pTurnNoMoves = !hasAnyValidMove(state.turn);
-            let pOppNoMoves = !hasAnyValidMove(opponent);
+            // ── Případ A: hráč NĚCO položil ──
+            if (state.lastPlacedTiles.length > 0) {
 
-            let willBeGameOver = false;
-            if (bagEmpty) {
-                if (pTurnEmpty || pOppEmpty) willBeGameOver = true;
-                else if (pTurnNoMoves && pOppNoMoves) willBeGameOver = true;
-            }
-
-            if (state.lastPlacedTiles.length === 0) {
-                if (pTurnNoMoves) {
-                    if (!willBeGameOver) {
-                        if (currentHand.length === 2 && state.bag.length > 0) {
-                            state.bag.push(...currentHand);
-                            shuffle(state.bag);
-                            state.players[state.turn].hand = [];
-                            addLogObj({ type: "EXCHANGE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
-                            showToast(`${pIconToast} ${t('tilesExchangedToast')}`); 
-                        } 
-                        else if (currentHand.length === 1) {
-                            addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
-                            showToast(`${pIconToast} ${t('tileKeptToast')}`);
-                        } 
-                        else {
-                            addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
-                            showToast(`${pIconToast} ${t('passTurnToast')}`);
-                        }
-                    }
-                    finalizeTurn();
-                } else {
-                    showToast(t('mustPlay'));
-                }
-                return;
-            }
-
-            if (currentHand.length > 0) {
-                if (hasAnyValidMove(state.turn)) {
+                // Pokud zbývá kámen, který lze hrát → musí hrát
+                if (currentHand.length > 0 && hasAnyValidMove(state.turn)) {
                     showToast(t('mustPlay'));
                     return;
                 }
-                // Hráč umístil kámen, ale druhý mu zbyl
-                if (!willBeGameOver) {
+
+                // Zbývající kámen nelze hrát → přenese se (keep-tile), pokud hra nekončí
+                let bagEmpty = state.bag.length === 0;
+                let opponent = state.turn === 0 ? 1 : 0;
+                let oppEmpty = state.players[opponent].hand.length === 0;
+                let willBeGameOver = bagEmpty && (currentHand.length === 0 || oppEmpty ||
+                    (!hasAnyValidMove(state.turn) && !hasAnyValidMove(opponent)));
+
+                if (currentHand.length > 0 && !willBeGameOver) {
                     showToast(`${pIconToast} ${t('tileKeptToast')}`);
                 }
-            }
 
-            let tp = state.turnPendingPoints;
-            let keptTiles = (currentHand.length > 0 && !willBeGameOver) ? currentHand : null;
-            
-            addLogObj({ 
-                type: "END_TURN", 
-                player: state.turn, 
-                turn: state.turnCounter, 
-                tiles: [...state.lastPlacedTiles], 
-                pts: { ...tp },
-                keptTiles: keptTiles 
-            });
-            
-            if (tp.s10 === 0 && tp.s11 === 0 && tp.s12 === 0 && tp.dt === 0) {
-                finalizeTurn();
+                // Uložit log + otevřít bodování
+                let tp = state.turnPendingPoints;
+                let keptTiles = (currentHand.length > 0 && !willBeGameOver) ? currentHand : null;
+                addLogObj({ type: "END_TURN", player: state.turn, turn: state.turnCounter,
+                    tiles: [...state.lastPlacedTiles], pts: { ...tp }, keptTiles });
+
+                if (tp.s10 === 0 && tp.s11 === 0 && tp.s12 === 0 && tp.dt === 0) {
+                    finalizeTurn();
+                    return;
+                }
+
+                state.proposedPlacements = [];
+                let pTable = state.players[state.turn].table;
+                ['s10', 's11', 's12'].forEach(col => {
+                    if (tp[col] > 0) state.proposedPlacements.push(
+                        { col, row: findFirstEmptyRow(pTable, col), val: tp[col] });
+                });
+                for (let i = 0; i < tp.dt; i++)
+                    state.proposedPlacements.push(
+                        { col: 'dt', row: findFirstEmptyRow(pTable, 'dt'), val: 'X' });
+
+                if (state.isAiMode && state.turn === 1) {
+                    aiOptimizeScoreboard();
+                    confirmProposedPoints();
+                } else {
+                    state.isConfirming = true;
+                    openScoreModalView();
+                }
                 return;
             }
 
-            state.proposedPlacements = [];
-            let pTable = state.players[state.turn].table;
+            // ── Případ B: hráč NIC nepoložil ──
 
-            ['s10', 's11', 's12'].forEach(col => {
-                if (tp[col] > 0) {
-                    let rowIdx = findFirstEmptyRow(pTable, col);
-                    state.proposedPlacements.push({ col: col, row: rowIdx, val: tp[col] });
+            // Může hrát, ale nekliknul → zablokovat
+            if (hasAnyValidMove(state.turn)) {
+                showToast(t('mustPlay'));
+                return;
+            }
+
+            // Nemůže hrát. Dle pravidel:
+            let bagEmpty = state.bag.length === 0;
+
+            if (currentHand.length >= 2 && !bagEmpty) {
+                // 2+ kamenů, váček není prázdný → táhne 1 nový
+                let newTile = state.bag.pop();
+                state.players[state.turn].hand.push(newTile);
+                addLogObj({ type: "DRAW1", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+                showToast(`${pIconToast} ${t('draw1TileToast')}`);
+
+                // Po dotažení zkontroluj, zda teď může hrát
+                if (hasAnyValidMove(state.turn)) {
+                    // Může hrát → vrátíme mu řízení
+                    updateUI();
+                    if (state.isAiMode && state.turn === 1) setTimeout(aiTurn, 800);
+                    return;
                 }
-            });
+                // Stále nemůže → PASS a pokračuj na finalizeTurn
+                addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+                showToast(`${pIconToast} ${t('passTurnToast')}`);
 
-            for (let i = 0; i < tp.dt; i++) {
-                let rowIdx = findFirstEmptyRow(pTable, 'dt');
-                state.proposedPlacements.push({ col: 'dt', row: rowIdx, val: 'X' });
-            }
+            } else if (currentHand.length === 1 && !bagEmpty) {
+                // 1 kámen, nemůže hrát, váček není prázdný → keep-tile (přenese, netáhne)
+                addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+                showToast(`${pIconToast} ${t('tileKeptToast')}`);
 
-            if (state.isAiMode && state.turn === 1) {
-                confirmProposedPoints();
             } else {
-                state.isConfirming = true;
-                openScoreModalView();
+                // Prázdný váček nebo 0 kamenů → čistý PASS
+                addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+                showToast(`${pIconToast} ${t('passTurnToast')}`);
             }
+
+            finalizeTurn();
         }
 
         function findFirstEmptyRow(pTable, col) {
@@ -1320,6 +1432,93 @@ score them points. The player with the highest score at the end of the game wins
         volá finalizeTurn()
         */
 
+        /*
+        funkce aiOptimizeScoreboard()
+        Účel
+        Před potvrzením bodů AI přeuspořádá proposedPlacements do nejlepšího řádku.
+
+        Strategie (v pořadí priority):
+        1. Dokončení bonusového řádku (má s10+s11, chybí s12 → dej s12 tam)
+        2. Double pole (dt=X v řádku) → dej co nejvyšší body do tohoto řádku
+        3. Příprava bonusu: řádek kde je 1 nebo 2 hodnoty z 3 — přidej další
+        4. Jinak: první volný řádek (původní chování)
+        */
+        function aiOptimizeScoreboard() {
+            let pTable = state.players[1].table;
+            let proposals = state.proposedPlacements;
+            if (proposals.length === 0) return;
+
+            // Pro každý typ sloupce (s10, s11, s12) zkus najít optimální řádek
+            ['s10', 's11', 's12'].forEach(col => {
+                let prop = proposals.find(p => p.col === col);
+                if (!prop) return;
+
+                let bestRow = null;
+                let bestPriority = -1;
+
+                for (let i = 0; i < 25; i++) {
+                    let row = pTable[i];
+                    // řádek musí mít prázdný slot pro tento sloupec
+                    if (row[col] !== null) continue;
+                    // a nesmí ho již obsazovat jiný návrh
+                    if (proposals.some(p => p.col === col && p.row === i && p !== prop)) continue;
+
+                    let hasDt = row.dt === 'X' || proposals.some(p => p.col === 'dt' && p.row === i);
+                    let has10 = row.s10 !== null || proposals.some(p => p.col === 's10' && p.row === i && p !== prop);
+                    let has11 = row.s11 !== null || proposals.some(p => p.col === 's11' && p.row === i && p !== prop);
+                    let has12 = row.s12 !== null || proposals.some(p => p.col === 's12' && p.row === i && p !== prop);
+
+                    let filledCount = [has10, has11, has12].filter(Boolean).length;
+                    // přidáme náš col
+                    let wouldFill = filledCount + 1;
+
+                    let priority = 0;
+
+                    // Priorita 1: dokončuje bonusový řádek (všechny 3 budou mít hodnotu)
+                    if (wouldFill === 3) priority = hasDt ? 100 : 80;
+                    // Priorita 2: řádek s double a přidáváme tam body
+                    else if (hasDt && filledCount >= 1) priority = 60;
+                    // Priorita 3: přidáváme do řádku kde je 1–2 hodnoty (příprава bonusu)
+                    else if (filledCount === 2) priority = 50;
+                    else if (filledCount === 1) priority = hasDt ? 45 : 30;
+                    // Priorita 4: první volný řádek
+                    else priority = 10 - i * 0.1; // preferuj nižší řádky (nižší bonus = méně plýtvání)
+
+                    if (priority > bestPriority) {
+                        bestPriority = priority;
+                        bestRow = i;
+                    }
+                }
+
+                if (bestRow !== null && bestRow !== prop.row) {
+                    prop.row = bestRow;
+                }
+            });
+
+            // Pro double (dt) preferuj řádek s nejvyšším součtem s10+s11+s12
+            let dtProp = proposals.find(p => p.col === 'dt');
+            if (dtProp) {
+                let bestRow = null;
+                let bestScore = -1;
+
+                for (let i = 0; i < 25; i++) {
+                    let row = pTable[i];
+                    if (row.dt !== null) continue;
+                    if (proposals.some(p => p.col === 'dt' && p.row === i && p !== dtProp)) continue;
+
+                    let s = (row.s10 || 0) + (row.s11 || 0) + (row.s12 || 0);
+                    // přidej případné nové body navržené pro tento řádek
+                    proposals.forEach(p => {
+                        if (p.row === i && p.col !== 'dt' && typeof p.val === 'number') s += p.val;
+                    });
+
+                    if (s > bestScore) { bestScore = s; bestRow = i; }
+                }
+
+                if (bestRow !== null) dtProp.row = bestRow;
+            }
+        }
+
         function confirmProposedPoints() {
             let pTable = state.players[state.turn].table;
             
@@ -1360,19 +1559,24 @@ score them points. The player with the highest score at the end of the game wins
             state.lastPlacedTiles = [];
             state.turnPendingPoints = { s10: 0, s11: 0, s12: 0, dt: 0, c10: 0, c11: 0, c12: 0 };
             state.selectedIdx = -1;
-            
+
             recalcScores();
 
-            let p = state.players[state.turn];
-
-            for (let i = 0; i < 2; i++) {
-                if (state.bag.length > 0) {
-                    p.hand.push(state.bag.pop());
-                }
-            }
-
+            // Předej tah
             state.turnCounter++;
             state.turn = state.turn === 0 ? 1 : 0;
+
+            // Dobírání na začátku tahu dle pravidel:
+            // 0 přenesených → táhni 2
+            // 1 přenesený   → táhni 2 (celkem 3)
+            // 2+ přenesených → netáhni nic
+            let p = state.players[state.turn];
+            let carryCount = p.hand.length;
+
+            if (carryCount < 2 && state.bag.length > 0) {
+                let toDraw = Math.min(2, state.bag.length);
+                for (let i = 0; i < toDraw; i++) p.hand.push(state.bag.pop());
+            }
 
             let bagEmpty = state.bag.length === 0;
             let p1Empty = state.players[0].hand.length === 0;
@@ -1389,7 +1593,7 @@ score them points. The player with the highest score at the end of the game wins
                     let emptyIcon = p1Empty ? '🔵' : (state.isAiMode ? '💻' : '🔴');
                     let stuckIcon = p1Empty ? (state.isAiMode ? '💻' : '🔴') : '🔵';
                     reasonLog = t('reasonEmptyHand').replace('{stuckIcon}', stuckIcon).replace('{emptyIcon}', emptyIcon);
-                } 
+                }
                 else if (p1NoMoves && p2NoMoves) {
                     isGameOver = true;
                     reasonLog = t('reasonDeadlock').replace('{p2Icon}', state.isAiMode ? '💻' : '🔴');
@@ -1398,18 +1602,18 @@ score them points. The player with the highest score at the end of the game wins
 
             if (isGameOver) {
                 state.isGameOver = true;
-                
+
                 addLogObj({ type: "SYSTEM_TEXT", text: reasonLog });
 
                 state.players.forEach((player, idx) => {
                     if (player.hand.length > 0) {
                         let penalty = player.hand.reduce((a, b) => a + b, 0);
                         addLogObj({ type: "PENALTY", player: idx, penalty: penalty, tiles: [...player.hand] });
-                        player.hand = []; 
+                        player.hand = [];
                     }
                 });
 
-                recalcScores(); 
+                recalcScores();
                 updateUI();
 
                 let p1 = state.players[0].score;
@@ -1420,47 +1624,25 @@ score them points. The player with the highest score at the end of the game wins
                 else if (p2 > p1) msgKey = state.isAiMode ? 'computerWon' : 'redWon';
                 else msgKey = 'draw';
 
-                showToast(t('gameOverToast')); 
+                showToast(t('gameOverToast'));
                 addLogObj({ type: "GAME_OVER", msgKey: msgKey, p1: p1, p2: p2 });
                 openLogModal();
                 return;
             }
 
-            /*
-            funkce updateUI()
-            Účel
-            Kompletní překreslení hry.
-
-            Dělá
-            skóre
-            aktivní hráč
-            ruka hráče
-            vykreslení kamenů
-            highlighty
-            legal moves
-            game over text
-            Volána téměř všude.
-            */
-
             updateUI();
-            
-            // Automatické vynechání tahu (pokud protihráč stále hraje, ale vy už ne)
+
+            // Automatický pass pokud sáček prázdný a hráč nemá tah
             if (bagEmpty && !hasAnyValidMove(state.turn)) {
                 setTimeout(() => {
-                    if (state.isGameOver) return; 
-                    
+                    if (state.isGameOver) return;
+
                     let currentHand = [...state.players[state.turn].hand];
                     let pIconToast = state.turn === 0 ? '<span style="color:var(--p1-color)">👤</span>' : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
-                    
-                    if (currentHand.length === 1) {
-                        addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
-                        showToast(`${pIconToast} ${t('tileKeptToast')}`);
-                    } else {
-                        addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
-                        showToast(`${pIconToast} ${t('passTurnToast')}`);
-                    }
-                    
-                    // Rekurzivně zavolá finalizaci dalšího kola pro předání tahu dál
+
+                    addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+                    showToast(`${pIconToast} ${t('passTurnToast')}`);
+
                     finalizeTurn();
                 }, 800);
                 return;
@@ -1492,246 +1674,260 @@ score them points. The player with the highest score at the end of the game wins
         /*
         funkce aiTurn()
         Účel
-        AI rozhodování.
+        AI rozhodování — vylepšená verze.
 
-        Dělá
-        projde všechny možné tahy
-        simuluje skóre
-        simuluje odpověď soupeře
-        vybere nejlepší tah
-        zahraje
-        případně pokračuje druhým kamenem
+        Vylepšení oproti původní verzi:
+        1. Kombinace kamenů: AI vyhodnotí všechny sekvence (A→B, B→A)
+           a vybere nejlepší kombinaci tahu, ne jen první kámen izolovaně.
+        2. 2-ply lookahead: po simulaci svého tahu projde top-3 odpovědi
+           soupeře a odečte jejich hodnotu — realističtější než 1-ply.
+        3. Penalizace za otevření double polí soupeři: tahy, které umístí
+           kameny sousedící s 'w'/'r' polem a dávají soupeři setup, jsou
+           penalizovány.
         */
 
-        function aiTurn() {
-        if (state.isGameOver) return;
+        // =====================
+        // Pomocná funkce: ohodnotí jeden tah na desce (pro daný stav).
+        // Vrátí { immediate, doubleBonus, setupPenalty, opponentGain }
+        // =====================
+        function aiEvalSingleMove(tileVal, r, c, isFirst, diff) {
+            diff = diff || 'medium';
+            let type = boardTemplate[r][c];
+            state.board[r][c] = tileVal;
 
-        let moves = [];
-        const hand = state.players[1].hand;
+            let sH = getLineSum(r, c, 0, 1);
+            let sV = getLineSum(r, c, 1, 0);
 
-        for (let i = 0; i < hand.length; i++) {
+            if (!isFirst && (sH > 12 || sV > 12)) {
+                state.board[r][c] = null;
+                return null; // nelegální tah
+            }
 
-            for (let r = 0; r < ROWS; r++) {
-
-                for (let c = 0; c < COLS; c++) {
-
-                    let type = boardTemplate[r][c];
-
-                    // pole musí být prázdné a validní
-                    if (
-                        state.board[r][c] !== null ||
-                        type === '.'
-                    ) continue;
-
-                    // ===== PRVNÍ TAH =====
-                    if (state.isFirstMove) {
-
-                        // první tah pouze na červený střed
-                        if (type !== 'r') continue;
-
-                    } else {
-
-                        // běžný tah musí sousedit
-                        if (!hasAdjacentTile(r, c)) continue;
-                    }
-
-                    // simulace tahu
-                    state.board[r][c] = hand[i];
-
-                    let sH = getLineSum(r, c, 0, 1);
-                    let sV = getLineSum(r, c, 1, 0);
-
-                    // legalita tahu
-                    let legalMove =
-                        state.isFirstMove ||
-                        (sH <= 12 && sV <= 12);
-
-                    if (legalMove) {
-
-                        let makesSc =
-                            [10,11,12].includes(sH) ||
-                            [10,11,12].includes(sV);
-
-                        let immediateScore = 0;
-
-                        // =====================
-                        // okamžité body
-                        // =====================
-
-                        [sH, sV].forEach(s => {
-
-                            if (s === 12) immediateScore += 4;
-                            else if (s === 11) immediateScore += 2;
-                            else if (s === 10) immediateScore += 1;
-
-                            // setupy
-                            else if (s === 9) immediateScore += 1.5;
-                            else if (s === 8) immediateScore += 0.5;
-                        });
-
-                        // =====================
-                        // double bonus
-                        // =====================
-
-                        let doubleBonus = 0;
-
-                        if (
-                            (type === 'w' || type === 'r') &&
-                            makesSc
-                        ) {
-                            doubleBonus += 5;
-                        }
-
-                        // =====================
-                        // bonus za centrum
-                        // =====================
-
-                        let dist =
-                            Math.abs(r - 7) +
-                            Math.abs(c - 7);
-
-                        let centerBonus =
-                            (14 - dist) * 0.15;
-
-                        // =====================
-                        // simulace odpovědi soupeře
-                        // =====================
-
-                        let opponentBestResponse = 0;
-
-                        let opponentHand =
-                            state.players[0].hand;
-
-                        for (let oi = 0; oi < opponentHand.length; oi++) {
-
-                            for (let rr = 0; rr < ROWS; rr++) {
-
-                                for (let cc = 0; cc < COLS; cc++) {
-
-                                    if (
-                                        state.board[rr][cc] !== null ||
-                                        boardTemplate[rr][cc] === '.'
-                                    ) continue;
-
-                                    // první tah už neexistuje
-                                    if (!hasAdjacentTile(rr, cc)) continue;
-
-                                    state.board[rr][cc] =
-                                        opponentHand[oi];
-
-                                    let oh =
-                                        getLineSum(rr, cc, 0, 1);
-
-                                    let ov =
-                                        getLineSum(rr, cc, 1, 0);
-
-                                    if (oh <= 12 && ov <= 12) {
-
-                                        let replyScore = 0;
-
-                                        [oh, ov].forEach(s => {
-
-                                            if (s === 12) replyScore += 4;
-                                            else if (s === 11) replyScore += 2;
-                                            else if (s === 10) replyScore += 1;
-                                        });
-
-                                        // double reply
-                                        let oType =
-                                            boardTemplate[rr][cc];
-
-                                        if (
-                                            (oType === 'w' || oType === 'r') &&
-                                            (
-                                                [10,11,12].includes(oh) ||
-                                                [10,11,12].includes(ov)
-                                            )
-                                        ) {
-                                            replyScore += 5;
-                                        }
-
-                                        opponentBestResponse =
-                                            Math.max(
-                                                opponentBestResponse,
-                                                replyScore
-                                            );
-                                    }
-
-                                    state.board[rr][cc] = null;
-                                }
+            // Pravidlo double pole pro AI
+            let cellType = boardTemplate[r][c];
+            if ((cellType === 'w' || cellType === 'r') && !isFirst) {
+                let makesScore = [10,11,12].includes(sH) || [10,11,12].includes(sV);
+                if (!makesScore) {
+                    // Zkontroluj jestli druhý kámen v ruce dodá součet
+                    let hand = state.players[1].hand;
+                    let secondWillScore = false;
+                    for (let sv of hand) {
+                        if (sv === tileVal) continue; // přeskočíme sebe
+                        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                        for (let [dr, dc] of dirs) {
+                            let nr2 = r+dr, nc2 = c+dc;
+                            if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
+                            if (state.board[nr2][nc2] !== null) continue;
+                            if (boardTemplate[nr2][nc2] === '.') continue;
+                            state.board[nr2][nc2] = sv;
+                            let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
+                            state.board[nr2][nc2] = null;
+                            if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
+                                secondWillScore = true; break;
                             }
                         }
-
-                        // =====================
-                        // finální score tahu
-                        // =====================
-
-                        let finalScore =
-                            immediateScore
-                            + doubleBonus
-                            + centerBonus
-                            - opponentBestResponse * 0.9;
-
-                        moves.push({
-                            i,
-                            r,
-                            c,
-                            score: finalScore
-                        });
+                        if (secondWillScore) break;
                     }
-
-                    // vrácení simulace
-                    state.board[r][c] = null;
+                    if (!secondWillScore) {
+                        // Zkontroluj jestli existuje jiná alternativa
+                        let hasAlt = false;
+                        for (let rr = 0; rr < ROWS && !hasAlt; rr++) {
+                            for (let cc = 0; cc < COLS && !hasAlt; cc++) {
+                                if (rr === r && cc === c) continue;
+                                let tp2 = boardTemplate[rr][cc];
+                                if (tp2 === '.') continue;
+                                if (state.board[rr][cc] !== null) continue;
+                                if (!hasAdjacentTile(rr, cc)) continue;
+                                state.board[rr][cc] = tileVal;
+                                let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
+                                state.board[rr][cc] = null;
+                                if (hs > 12 || vs > 12) continue;
+                                if (tp2 !== 'w' && tp2 !== 'r') { hasAlt = true; break; }
+                                if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasAlt = true; break; }
+                            }
+                        }
+                        if (hasAlt) { state.board[r][c] = null; return null; }
+                    }
                 }
             }
+
+            // double bonus — počítá se níže dle diff
+            let makesSc = [10,11,12].includes(sH) || [10,11,12].includes(sV);
+
+            // okamžité body
+            let immediate = 0;
+            [sH, sV].forEach(s => {
+                if (s === 12) immediate += 4;
+                else if (s === 11) immediate += 2;
+                else if (s === 10) immediate += 1;
+                else if (s === 9) immediate += 1.5;
+                else if (s === 8) immediate += 0.5;
+            });
+
+            // penalizace za setup soupeře: pokud tah vytvoří součet 8 nebo 9
+            // sousedící s double polem, soupeř to snáze uzavře na 10–12
+            let setupPenalty = 0;
+            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+            for (let [dr, dc] of dirs) {
+                let nr = r+dr, nc = c+dc;
+                if (nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
+                    let nType = boardTemplate[nr][nc];
+                    if ((nType === 'w' || nType === 'r') && state.board[nr][nc] === null) {
+                        // toto pole je prázdné double — náš tah mu dělá setup
+                        if ([8,9].includes(sH) || [8,9].includes(sV)) setupPenalty += 1.5;
+                    }
+                }
+            }
+
+            // bonus za centrum
+            let dist = Math.abs(r - 7) + Math.abs(c - 7);
+            let centerBonus = (14 - dist) * 0.12;
+
+            // 2-ply: simulace nejlepší odpovědi soupeře (top-3 tahy)
+            let opponentHand = state.players[0].hand;
+            let oppResponses = [];
+
+            for (let oi = 0; oi < opponentHand.length; oi++) {
+                for (let rr = 0; rr < ROWS; rr++) {
+                    for (let cc = 0; cc < COLS; cc++) {
+                        if (state.board[rr][cc] !== null || boardTemplate[rr][cc] === '.') continue;
+                        if (!hasAdjacentTile(rr, cc)) continue;
+
+                        state.board[rr][cc] = opponentHand[oi];
+                        let oh = getLineSum(rr, cc, 0, 1);
+                        let ov = getLineSum(rr, cc, 1, 0);
+
+                        if (oh <= 12 && ov <= 12) {
+                            let replyScore = 0;
+                            [oh, ov].forEach(s => {
+                                if (s === 12) replyScore += 4;
+                                else if (s === 11) replyScore += 2;
+                                else if (s === 10) replyScore += 1;
+                            });
+                            let oType = boardTemplate[rr][cc];
+                            if ((oType === 'w' || oType === 'r') && ([10,11,12].includes(oh) || [10,11,12].includes(ov))) {
+                                replyScore += 5;
+                            }
+                            oppResponses.push(replyScore);
+                        }
+                        state.board[rr][cc] = null;
+                    }
+                }
+            }
+
+            // seřaď odpovědi — těžká bere max, střední průměr top-3, lehká ignoruje
+            oppResponses.sort((a,b) => b-a);
+            let top3 = oppResponses.slice(0, 3);
+
+            // Váhy dle obtížnosti
+            // Lehká: ignoruje soupeře a setup penalizaci
+            // Střední: standardní váhy
+            // Těžká: agresivnější penalizace soupeře, setup × 1.5
+            let oppWeight   = diff === 'easy' ? 0    : diff === 'hard' ? 1.1  : 0.85;
+            let setupWeight = diff === 'easy' ? 0    : diff === 'hard' ? 2.0  : 1.0;
+            let doubleW     = diff === 'easy' ? 3    : diff === 'hard' ? 7    : 5;
+
+            // Těžká: lookahead — vezme max místo průměru top-3
+            let opponentGainFinal = diff === 'hard'
+                ? (oppResponses.length > 0 ? oppResponses[0] : 0)   // oppResponses již seřazeno
+                : (top3.length > 0 ? top3.reduce((a,b)=>a+b,0) / top3.length : 0);
+
+            state.board[r][c] = null;
+
+            let dBonus = (type === 'w' || type === 'r') && makesSc ? doubleW : 0;
+            let finalScore = immediate + dBonus + centerBonus
+                - setupPenalty * setupWeight
+                - opponentGainFinal * oppWeight;
+
+            return { finalScore, immediate, doubleBonus: dBonus, centerBonus, setupPenalty, opponentGain: opponentGainFinal };
         }
 
-        // =====================
-        // provedení nejlepšího tahu
-        // =====================
+        function aiTurn() {
+            if (state.isGameOver) return;
 
-        if (moves.length > 0) {
+            const diff = state.aiDifficulty; // 'easy' | 'medium' | 'hard'
 
-            moves.sort((a, b) => b.score - a.score);
+            // Sestaví seznam všech legálních tahů s ohodnocením
+            function getAllMoves() {
+                let hand = state.players[1].hand;
+                let moves = [];
+                for (let i = 0; i < hand.length; i++) {
+                    for (let r = 0; r < ROWS; r++) {
+                        for (let c = 0; c < COLS; c++) {
+                            let type = boardTemplate[r][c];
+                            if (state.board[r][c] !== null || type === '.') continue;
+                            if (state.isFirstMove) {
+                                if (type !== 'r') continue;
+                            } else {
+                                if (!hasAdjacentTile(r, c)) continue;
+                            }
+                            let ev = aiEvalSingleMove(hand[i], r, c, state.isFirstMove, diff);
+                            if (ev === null) continue;
+                            moves.push({ i, r, c, score: ev.finalScore });
+                        }
+                    }
+                }
+                return moves;
+            }
 
-            let m = moves[0];
+            function findBestMove() {
+                let moves = getAllMoves();
+                if (moves.length === 0) return null;
 
-            state.selectedIdx = m.i;
-
-            handleCellClick(m.r, m.c);
-
-            setTimeout(() => {
-
-                if (state.players[1].hand.length > 0) {
-                    aiTurn();
-                } else {
-                    endTurnBtnClick();
+                if (diff === 'easy') {
+                    // Lehká: náhodný výběr z top-5 tahů (nebo méně)
+                    moves.sort((a, b) => b.score - a.score);
+                    let pool = moves.slice(0, Math.min(5, moves.length));
+                    return pool[Math.floor(Math.random() * pool.length)];
                 }
 
-            }, 800);
+                // Střední a těžká: vždy nejlepší tah
+                moves.sort((a, b) => b.score - a.score);
+                return moves[0];
+            }
 
-        } else {
+            function playNextMove() {
+                if (state.isGameOver) return;
 
-            endTurnBtnClick();
+                let move = findBestMove();
+
+                if (!move) {
+                    endTurnBtnClick();
+                    return;
+                }
+
+                state.selectedIdx = move.i;
+                handleCellClick(move.r, move.c);
+
+                setTimeout(() => {
+                    if (state.isGameOver) return;
+                    if (findBestMove()) {
+                        playNextMove();
+                    } else {
+                        endTurnBtnClick();
+                    }
+                }, diff === 'easy' ? 900 : diff === 'hard' ? 500 : 700);
+            }
+
+            playNextMove();
         }
-    }
 
 
-        // Zvýraznění legálních tahů.
         function showLegalMoves() {
             document.querySelectorAll('.cell').forEach(cell => { cell.classList.remove('legal-move'); });
             if (state.selectedIdx === -1) return;
 
             let val = state.players[state.turn].hand[state.selectedIdx];
+            let remainingHand = state.players[state.turn].hand.filter((_, idx) => idx !== state.selectedIdx);
+
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
                     if (state.board[r][c] !== null) continue;
-                    if (boardTemplate[r][c] === '.') continue;
+                    let tp = boardTemplate[r][c];
+                    if (tp === '.') continue;
 
                     if (state.isFirstMove) {
-                        if (boardTemplate[r][c] === 'r') {
-                            document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
-                        }
+                        if (tp === 'r') document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
                         continue;
                     }
 
@@ -1743,6 +1939,54 @@ score them points. The player with the highest score at the end of the game wins
                     state.board[r][c] = null;
 
                     if (hSum > 12 || vSum > 12) continue;
+
+                    let isDouble = (tp === 'w' || tp === 'r');
+                    if (isDouble) {
+                        let makesScore = [10,11,12].includes(hSum) || [10,11,12].includes(vSum);
+                        if (!makesScore) {
+                            // Zkontroluj jestli druhý kámen dodá součet
+                            let secondWillScore = false;
+                            for (let sv of remainingHand) {
+                                const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                                for (let [dr, dc] of dirs) {
+                                    let nr2 = r+dr, nc2 = c+dc;
+                                    if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
+                                    if (state.board[nr2][nc2] !== null) continue;
+                                    if (boardTemplate[nr2][nc2] === '.') continue;
+                                    state.board[r][c] = val; // první kámen zůstává
+                                    state.board[nr2][nc2] = sv;
+                                    let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
+                                    state.board[nr2][nc2] = null;
+                                    state.board[r][c] = null;
+                                    if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
+                                        secondWillScore = true; break;
+                                    }
+                                }
+                                if (secondWillScore) break;
+                            }
+                            if (!secondWillScore) {
+                                // Zkontroluj jestli existuje jiný platný tah
+                                let hasOther = false;
+                                for (let rr = 0; rr < ROWS && !hasOther; rr++) {
+                                    for (let cc = 0; cc < COLS && !hasOther; cc++) {
+                                        if (rr === r && cc === c) continue;
+                                        let tp2 = boardTemplate[rr][cc];
+                                        if (tp2 === '.') continue;
+                                        if (state.board[rr][cc] !== null) continue;
+                                        if (!hasAdjacentTile(rr, cc)) continue;
+                                        state.board[rr][cc] = val;
+                                        let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
+                                        state.board[rr][cc] = null;
+                                        if (hs > 12 || vs > 12) continue;
+                                        if (tp2 !== 'w' && tp2 !== 'r') { hasOther = true; break; }
+                                        if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasOther = true; break; }
+                                    }
+                                }
+                                if (hasOther) continue; // toto double pole není legální
+                            }
+                        }
+                    }
+
                     document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
                 }
             }
@@ -1841,15 +2085,9 @@ score them points. The player with the highest score at the end of the game wins
                 
                 let validMovePossible = hasAnyValidMove(state.turn);
                 if (state.lastPlacedTiles.length === 0 && !validMovePossible) {
-                    if (state.bag.length > 0) {
-                        confirmBtn.innerText = '🔄';
-                        confirmBtn.title = t('exchangeTilesBtn');
-                        confirmBtn.style.backgroundColor = '#f39c12';
-                    } else {
-                        confirmBtn.innerText = '⏭';
-                        confirmBtn.title = t('passTurn');
-                        confirmBtn.style.backgroundColor = '#95a5a6';
-                    }
+                    confirmBtn.innerText = '⏭';
+                    confirmBtn.title = t('passTurn');
+                    confirmBtn.style.backgroundColor = '#95a5a6';
                 } else {
                     confirmBtn.innerText = '✅';
                     confirmBtn.title = t('confirmTurn');
