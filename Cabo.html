@@ -20,7 +20,6 @@
 
         /* Herní plocha */
         #game-area {
-        /*    flex: 1;   */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -28,20 +27,20 @@
             position: relative;
             overflow-y: auto;
             min-height: 0;
+            flex: 1;
             gap: 10px;
         }
         
         /* Oponenti a rozvržení */
         #opponents-area { display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; margin-bottom: 10px;}
-        #player0-area { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 10px; margin-top: 10;
-    padding-bottom: env(safe-area-inset-bottom);}
+        #player0-area { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 10px; padding-bottom: env(safe-area-inset-bottom);}
         
         .player-row { display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; padding: 0 15px; overflow-x: auto; }
-        .player-badge { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; border-radius: 50%; color: white; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); flex-shrink: 0; }
+        .player-badge { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; border-radius: 50%; color: white; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); flex-shrink: 0; transition: all 0.3s ease; }
 
         /* Karty - ZVĚTŠENÁ VELIKOST */
         .cards { display: flex; gap: 6px; justify-content: flex-start; }
-       .card { width: clamp(45px, 13vw, 90px); height: clamp(65px, 18vw, 130px); border-radius: 6px; background: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; user-select: none; }
+        .card { width: clamp(45px, 13vw, 90px); height: clamp(65px, 18vw, 130px); border-radius: 6px; background: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; user-select: none; }
         .card:active { transform: translateY(2px); }
         
         /* Rub karty */
@@ -75,117 +74,86 @@
         button.action-btn:hover { background: #00a8ff; }
         button.action-btn:active { transform: translateY(2px); }
 
+        /* Log v modal okně */
+        #game-log { background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 6px; height: 50vh; overflow-y: auto; text-align: left; font-family: monospace; font-size: 13px; border: 2px solid #34495e; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 3px; }
+        .log-entry:last-child { border-bottom: none; }
+
         /* Toast Notifikace místo Alertů */
         #toast { visibility: hidden; min-width: 250px; background-color: #f39c12; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 20px; transform: translateX(-50%); font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
         #toast.show { visibility: visible; opacity: 1; bottom: 40px; }
+
+		/* KABO Efekt */
+		.cabo-caller{
+			border:3px solid gold !important;
+			box-shadow:0 0 15px gold;
+			animation:caboPulse 1.2s infinite;
+		}
+
+		@keyframes caboPulse{
+			0%{box-shadow:0 0 5px gold;}
+			50%{box-shadow:0 0 25px gold;}
+			100%{box-shadow:0 0 5px gold;}
+		}
+
+        /* Varování balíčku (Docházejí karty) */
+        .deck-warning {
+            border: 3px solid #e84118 !important;
+            box-shadow: 0 0 15px #e84118;
+            animation: deckPulse 1.2s infinite;
+        }
+        
+        @keyframes deckPulse {
+            0% { box-shadow: 0 0 5px #e84118; }
+            50% { box-shadow: 0 0 25px #e84118; }
+            100% { box-shadow: 0 0 5px #e84118; }
+        }
 
 /* =========================
    MOBILE
 ========================= */
 
 @media (max-width: 768px) {
-
-    .player-row {
-        padding: 0 4px;
-        gap: 4px;
-    }
-
-    .cards {
-        gap: 3px;
-    }
-
-    .card {
-        width: clamp(42px, 11vw, 70px);
-        height: clamp(60px, 16vw, 100px);
-    }
-
-    #center-area {
-        min-height: 180px;
-        gap: 8px;
-    }
-
-    .pile {
-        min-width: 82px;
-        font-size: 11px;
-    }
-
-    .btn-group {
-        min-height: 42px;
-    }
+    .player-row { padding: 0 4px; gap: 4px; }
+    .cards { gap: 3px; }
+    .card { width: clamp(42px, 11vw, 70px); height: clamp(60px, 16vw, 100px); }
+    #center-area { min-height: 180px; gap: 8px; }
+    .pile { min-width: 82px; font-size: 11px; }
+    .btn-group { min-height: 42px; }
 }
 
-
 /* =========================
-   DESKTOP / BRAVE / WIDE
+   DESKTOP / WIDE
 ========================= */
 
 @media (min-width: 1100px) {
-
     #game-area {
-
         display: grid;
-
-        grid-template-columns:
-            1fr
-            260px;
-
-        grid-template-rows:
-            auto
-            auto;
-
+        grid-template-columns: 1fr 260px;
+        grid-template-rows: auto auto;
         align-items: start;
-
         gap: 12px;
     }
-
-    #opponents-area {
-        grid-column: 1;
-        grid-row: 1;
-
-        margin-bottom: 0;
-    }
-
+    #opponents-area { grid-column: 1; grid-row: 1; margin-bottom: 0; }
     #center-area {
-
-        grid-column: 2;
-        grid-row: 1;
-
-        align-self: center;
-
-        position: sticky;
-        top: 10px;
-
-        min-height: 260px;
+        grid-column: 2; grid-row: 1; align-self: center;
+        position: sticky; top: 10px; min-height: 260px;
     }
-
-    #player0-area {
-
-        grid-column: 1 / span 2;
-        grid-row: 2;
-
-        margin-top: 0;
-    }
+    #player0-area { grid-column: 1 / span 2; grid-row: 2; margin-top: 0; }
 }
     </style>
 </head>
 <body>
     <div id="menu">
-    <button class="icon-btn" id="btn-game" onclick="showSetup()" title="Nová hra">🆕</button>
-    <button class="icon-btn" id="btn-save" onclick="saveGame()" title="Uložit">💾</button>
-    <button class="icon-btn" id="btn-load" onclick="loadGame()" title="Načíst">📂</button>
-    <button class="icon-btn" id="btn-help" onclick="document.getElementById('help-modal').style.display='flex'" title="Pravidla">💡</button>
-    <button class="icon-btn" id="btn-lang" onclick="toggleLang()" title="Změnit jazyk">🇬🇧</button>
-
-    <span id="ai-indicator"
-          style="
-            display:none;
-            font-size:20px;
-            margin-left:5px;
-          ">
-    </span>
-</div>
+        <button class="icon-btn" id="btn-game" onclick="showSetup()" title="Nová hra">🆕</button>
+        <button class="icon-btn" id="btn-save" onclick="saveGame()" title="Uložit">💾</button>
+        <button class="icon-btn" id="btn-load" onclick="loadGame()" title="Načíst">📂</button>
+        <button class="icon-btn" id="btn-log" onclick="document.getElementById('log-modal').style.display='flex'" title="Log hry">📜</button>
+        <button class="icon-btn" id="btn-help" onclick="document.getElementById('help-modal').style.display='flex'" title="Pravidla">💡</button>
+        <button class="icon-btn" id="btn-lang" onclick="toggleLang()" title="Změnit jazyk">🇬🇧</button>
+        <span id="ai-indicator" style="display:none; font-size:20px; margin-left:5px;"></span>
+    </div>
 	
-
     <div id="score-bar"></div>
     <div id="message-board">Načítám hru...</div>
     
@@ -233,7 +201,7 @@
             <ul style="padding-left: 20px; margin-top: 5px;">
                 <li id="help-basic-1">Každý hráč začíná se 4 kartami lícem dolů a nejprve se podívá na 2 z nich.</li>
                 <li id="help-basic-2">V tahu si doberte kartu z balíčku nebo odhozu a případně ji vyměňte za svou.</li>
-                <li id="help-basic-3"><b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre.</li>
+                <li id="help-basic-3"><b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre. Kolo také končí, pokud se dobere celý balíček.</li>
                 <li id="help-basic-4">Hráč, který dosáhne přesně 100 bodů, je odměněn snížením skóre na 50!</li>
             </ul>
 
@@ -262,154 +230,108 @@
     </div>
 </div>
 
-
-
-    
     <div id="setup-modal" class="modal">
     <div class="modal-content">
-
         <h2 id="setup-title">Zvolte herní režim</h2>
-
         <div style="display:flex; flex-direction:column; gap:10px;">
-
-            <button class="action-btn" id="btn-pvp" onclick="initGame('pvp')">
-                H1 vs H2 (na 1 zařízení)
-            </button>
-
-            <button class="action-btn" id="btn-pve" onclick="initGame('pve')">
-                H1 vs AI
-            </button>
-
-            <button class="action-btn" id="btn-pv3e" onclick="initGame('pv3e')">
-                H1 vs AI1, AI2, AI3
-            </button>
-
-            <!-- AI obtížnost -->
-            <select id="ai-level"
-                style="
-                    padding:10px;
-                    border-radius:8px;
-                    font-size:16px;
-                    text-align:center;
-                    background:#2c3e50;
-                    color:white;
-                    border:none;
-                ">
-
+            <button class="action-btn" id="btn-pvp" onclick="initGame('pvp')">H1 vs H2 (na 1 zařízení)</button>
+            <button class="action-btn" id="btn-pve" onclick="initGame('pve')">H1 vs AI</button>
+            <button class="action-btn" id="btn-pv3e" onclick="initGame('pv3e')">H1 vs A1, A2, A3</button>
+            <select id="ai-level" style="padding:10px; border-radius:8px; font-size:16px; text-align:center; background:#2c3e50; color:white; border:none;">
                 <option value="easy" id="ai-easy-option">AI Lehká</option>
 				<option value="medium" id="ai-medium-option">AI Střední</option>
 				<option value="hard" id="ai-hard-option">AI Těžká</option>
-
             </select>
-
         </div>
-
     </div>
 </div>
+
+    <div id="log-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="document.getElementById('log-modal').style.display='none'">&times;</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 id="log-title" style="margin: 0; color: #2c3e50;">Log hry</h2>
+                <button class="action-btn" id="btn-copy-log" onclick="copyLog()" style="padding: 5px 10px; background: #e67e22;">📋 Kopírovat</button>
+            </div>
+            <div id="game-log"></div>
+        </div>
+    </div>
 
     <div id="toast"></div>
 
     <script>
         const langDict = {
             cz: { 
-				newGame: "Nová hra",
-				saveGame: "Uložit hru",
-				loadGame: "Načíst hru",
-				buttonHelp: "Pravidla",
+				newGame: "Nová hra", saveGame: "Uložit hru", loadGame: "Načíst hru", buttonHelp: "Pravidla",
                 deck: "Balíček", discard: "Odhoz", active: "Vytažená", btnDiscard: "Zahodit", btnEffect: "Efekt", btnNext: "Další kolo",
-                msgLook: "Podívej se na 2 své karty.", 
-                msgTurn: "Jsi na tahu. Lízni kartu nebo volej KABO!", 
-                msgTurnAI: "Zpracovávám tah AI...",
-                msgDrawn: "Lízl jsi. Vyměň kartu se svou, nebo ji zahoď.", 
-                msgPeek: "KUK: Klikni na 1 svou kartu.", 
-                msgSpy: "ŠPION: Klikni na 1 soupeřovu kartu.", 
-                msgSwap1: "KŠEFT: Vyber svou kartu k výměně.", 
-                msgSwap2: "KŠEFT: Vyber soupeřovu kartu k výměně.", 
-                msgCabo: "Zvolal KABO! Poslední kolo pro ostatní.", 
-                msgRoundOver: "Konec kola!",
+                msgLook: "Podívej se na 2 své karty.", msgTurn: "Jsi na tahu. Ber kartu | volej KABO!", 
+                msgTurnAI: "Zpracovávám tah AI...", msgDrawn: "Lízl jsi. Vyměň kartu za svou, nebo ji zahoď.", 
+                msgPeek: "KUK: Klikni na 1 svou kartu.", msgSpy: "ŠPION: Klikni na 1 soupeřovu kartu.", 
+                msgSwap1: "KŠEFT: Vyber svou kartu k výměně.", msgSwap2: "KŠEFT: Vyber soupeřovu kartu k výměně.", 
+                msgCabo: "Zvolal KABO! Poslední kolo pro ostatní.", msgRoundOver: "Konec kola!",
                 saved: "Hra uložena.", loaded: "Hra načtena.", noSave: "Nenalezena žádná uložená hra.",
-				setupTitle: "Zvolte herní režim",
-				modePvp: "H1 vs H2 (na 1 zařízení)",
-				modePve: "H1 vs A1",
-				modePv3e: "H1 vs A1, A2, A3",
-				modeAiEasy: "AI Lehká",
-				modeAiMedium: "AI Střední",
-				modeAiHard: " AI Těžká",
-				rulesTitle: "Pravidla CABO a AI",
-                helpBasicTitle: "Základní pravidla",
-                helpBasicGoal: "Cíl: Mít na konci kola co <b>nejnižší součet</b> karet.",
+				setupTitle: "Zvolte herní režim", modePvp: "H1 vs H2 (na 1 zařízení)", modePve: "H1 vs A1", modePv3e: "H1 vs A1, A2, A3",
+				modeAiEasy: "AI Lehká", modeAiMedium: "AI Střední", modeAiHard: " AI Těžká", rulesTitle: "Pravidla CABO a AI",
+                helpBasicTitle: "Základní pravidla", helpBasicGoal: "Cíl: Mít na konci kola co <b>nejnižší součet</b> karet.",
                 helpBasic1: "Každý hráč začíná se 4 kartami lícem dolů a nejprve se podívá na 2 z nich.",
                 helpBasic2: "V tahu si doberte kartu z balíčku nebo odhozu a případně ji vyměňte za svou.",
-                helpBasic3: "<b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre.",
+                helpBasic3: "<b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre. Kolo také končí, pokud se dobere celý balíček.",
                 helpBasic4: "Hráč, který dosáhne přesně 100 bodů, je odměněn snížením skóre na 50!",
-                helpEffectTitle: "Efekty (při zahození tažené karty)",
-                helpEffect1: "<b>7-8 (KUK):</b> Podíváte se na 1 svou kartu.",
-                helpEffect2: "<b>9-10 (ŠPION):</b> Podíváte se na 1 soupeřovu kartu.",
-                helpEffect3: "<b>11-12 (KŠEFT):</b> Vyměníte svou kartu za cizí (naslepo).",
-                helpAiTitle: "Umělá inteligence (AI)",
-                helpAiDesc: "Zvolenou obtížnost ukazuje barevný indikátor v horním menu:",
+                helpEffectTitle: "Efekty (při zahození tažené karty)", helpEffect1: "<b>7-8 (KUK):</b> Podíváte se na 1 svou kartu.",
+                helpEffect2: "<b>9-10 (ŠPION):</b> Podíváte se na 1 soupeřovu kartu.", helpEffect3: "<b>11-12 (KŠEFT):</b> Vyměníte svou kartu za cizí (naslepo).",
+                helpAiTitle: "Umělá inteligence (AI)", helpAiDesc: "Zvolenou obtížnost ukazuje barevný indikátor v horním menu:",
                 helpAi1: "🟢 <b>Lehká:</b> Hraje spíše náhodně a KABO volá při odhadovaném součtu 6 a méně, pouze single swap",
                 helpAi2: "🟡 <b>Střední:</b> Částečně si pamatuje odkryté karty a KABO volá při součtu 5 a méně, stále jen single swap ",
                 helpAi3: "🔴 <b>Těžká:</b> Má dokonalou paměť na viděné karty, efektivně používá schopnosti, hraje agresivně a KABO volá až při součtu 4 a méně, používá multiswap, snižuje karty na ruce",
-                msgWinner: "VYHRÁL",
-                btnConfirm: "Potvrdit",
-                msgMultiSuccess: "Výměna byla úspěšná!",
-                msgMultiFail: "Chyba! Karty se neshodují. Zůstávají odkryté.",
-                msgPenalty: "Trest! Doberáš skrytou kartu navíc.",
-                helpMultiTitle: "Výměna více karet",
+				msgTurnAfterKabo: "Ohlášeno KABO. Odehraj svůj poslední tah.", msgWinner: "VYHRÁL",
+                btnConfirm: "Potvrdit", msgMultiSuccess: "Výměna byla úspěšná!", msgMultiFail: "Chyba! Karty se neshodují. Zůstávají odkryté.",
+                msgPenalty: "Trest! Doberáš skrytou kartu navíc.", helpMultiTitle: "Výměna více karet",
                 helpMulti1: "Pokud máte více karet stejné hodnoty, můžete je zahodit všechny najednou a vyměnit za jednu taženou. Označte je a klikněte na Potvrdit.",
                 helpMulti2: "<b>Úspěch:</b> Všechny se zahodí, nová karta jde na místo jedné z nich.",
-                helpMulti3: "<b>Neúspěch:</b> Pokud se karty neshodují, zůstanou ležet lícem nahoru. Tažená karta se přidá na konec řady. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!"
+                helpMulti3: "<b>Neúspěch:</b> Pokud se karty neshodují, zůstanou ležet lícem nahoru. Tažená karta se přidá na konec řady. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!",
+                // Log Dict CZ
+                logRound: "--- Nové kolo ---", logDrawDeck: "lízl z balíčku.", logDrawDiscard: "vzal z odhozu",
+                logDiscard: "zahodil taženou kartu.", logKabo: "ZVOLAL KABO!", logSwapDraw: "vyměnil kartu za taženou.",
+                logPeek: "použil KUK.", logSpy: "použil ŠPIONA na hráče", logSwap: "KŠEFT s hráčem",
+                logMultiOk: "úspěšně vyměnil více karet.", logMultiFail: "selhal při výměně více karet.", logPenalty: "dostal trestnou kartu!",
+                logCopied: "Log zkopírován.", logTitle: "Log hry",
+                logDeckEmpty: "Balíček došel! Konec kola.", logRoundEndKabo: "Kolo končí (voláno KABO).", btnCopyLog: "📋 Kopírovat"
     },
             en: { 
-				newGame: "New Game",
-				saveGame: "Save Game",
-				loadGame: "Load Game",
-				buttonHelp: "Help",			
+				newGame: "New Game", saveGame: "Save Game", loadGame: "Load Game", buttonHelp: "Help",			
                 deck: "Deck", discard: "Discard", active: "Drawn", btnDiscard: "Discard", btnEffect: "Effect", btnNext: "Next Round",
-                msgLook: "Start: Peek at 2 of your cards.", 
-                msgTurn: "Your turn. Draw or call CABO!", 
-                msgTurnAI: "AI is playing...",
-                msgDrawn: "Swap or discard.", 
-                msgPeek: "PEEK: Click your card.", 
-                msgSpy: "SPY: Click opponent's card.", 
-                msgSwap1: "SWAP: Select your card.", 
-                msgSwap2: "SWAP: Select opponent's card.", 
-                msgCabo: "called CABO! Final turn.", 
-                msgRoundOver: "Round Over!",
+                msgLook: "Start: Peek at 2 of your cards.", msgTurn: "Your turn. Draw or call CABO!", 
+                msgTurnAI: "AI is playing...", msgDrawn: "Swap or discard.", 
+                msgPeek: "PEEK: Click your card.", msgSpy: "SPY: Click opponent's card.", 
+                msgSwap1: "SWAP: Select your card.", msgSwap2: "SWAP: Select opponent's card.", 
+                msgCabo: "called CABO! Final turn.", msgRoundOver: "Round Over!",
                 saved: "Game saved.", loaded: "Game loaded.", noSave: "No saved game found.",
-				setupTitle: "Choose Game Mode",
-				modePvp: "P1 vs P2 (1 device)",
-				modePve: "P1 vs AI",
-				modePv3e: "P1 vs AI1, AI2, AI3",
-				modeAiEasy: "AI Easy",
-				modeAiMedium: "AI Medium",
-				modeAiHard: " AI Hard",				
-				rulesTitle: "CABO Rules & AI",
-                helpBasicTitle: "Basic Rules",
-                helpBasicGoal: "Goal: Have the <b>lowest sum</b> of cards at the end of the round.",
+				setupTitle: "Choose Game Mode", modePvp: "P1 vs P2 (1 device)", modePve: "P1 vs AI", modePv3e: "P1 vs AI1, AI2, AI3",
+				modeAiEasy: "AI Easy", modeAiMedium: "AI Medium", modeAiHard: " AI Hard",				
+				rulesTitle: "CABO Rules & AI", helpBasicTitle: "Basic Rules", helpBasicGoal: "Goal: Have the <b>lowest sum</b> of cards at the end of the round.",
                 helpBasic1: "Players start with 4 face-down cards and peek at 2 of them first.",
                 helpBasic2: "On your turn, draw from the deck or discard pile, and optionally swap it with yours.",
-                helpBasic3: "<b>CABO!:</b> Calls the end of the round. Others play 1 final turn, then score is calculated.",
+                helpBasic3: "<b>CABO!:</b> Calls the end of the round. Others play 1 final turn, then score is calculated. Round also ends if deck is empty.",
                 helpBasic4: "Exactly 100 points drops your score down to 50!",
-                helpEffectTitle: "Effects (when discarding a drawn card)",
-                helpEffect1: "<b>7-8 (PEEK):</b> Look at 1 of your cards.",
-                helpEffect2: "<b>9-10 (SPY):</b> Look at 1 of an opponent's cards.",
-                helpEffect3: "<b>11-12 (SWAP):</b> Swap your card with an opponent's blind.",
-                helpAiTitle: "Artificial Intelligence (AI)",
-                helpAiDesc: "The chosen difficulty is indicated by a colored smiley in the top menu:",
+                helpEffectTitle: "Effects (when discarding a drawn card)", helpEffect1: "<b>7-8 (PEEK):</b> Look at 1 of your cards.",
+                helpEffect2: "<b>9-10 (SPY):</b> Look at 1 of an opponent's cards.", helpEffect3: "<b>11-12 (SWAP):</b> Swap your card with an opponent's blind.",
+                helpAiTitle: "Artificial Intelligence (AI)", helpAiDesc: "The chosen difficulty is indicated by a colored smiley in the top menu:",
                 helpAi1: "🟢 <b>Easy:</b> Plays mostly randomly, calls CABO at estimated sum 6 or less, only single swap",
                 helpAi2: "🟡 <b>Medium:</b> Partially remembers revealed cards, calls CABO at sum 5 or less, still single swap",
                 helpAi3: "🔴 <b>Hard:</b> Perfect memory of seen cards, uses abilities effectively, calls CABO at sum 4 or less, multiswap",
-                msgWinner: "WINNER",
-                btnConfirm: "Confirm",
-                msgMultiSuccess: "Swap successful!",
-                msgMultiFail: "Fail! Cards don't match. Kept face up.",
-                msgPenalty: "Penalty! Extra face-down card added.",
-                helpMultiTitle: "Multiple Card Swap",
+				msgTurnAfterKabo: "KABO has been called. Play your final turn.", msgWinner: "WINNER",
+                btnConfirm: "Confirm", msgMultiSuccess: "Swap successful!", msgMultiFail: "Fail! Cards don't match. Kept face up.",
+                msgPenalty: "Penalty! Extra face-down card added.", helpMultiTitle: "Multiple Card Swap",
                 helpMulti1: "If you have multiple cards of the same value, you can swap them all for one drawn card. Select them and click Confirm.",
                 helpMulti2: "<b>Success:</b> All selected cards are discarded, the new card replaces one of them.",
-                helpMulti3: "<b>Failure:</b> If the cards don't match, they stay face up. The drawn card is added to the end of your row. Attempting with 3 or more cards gives you an extra penalty card face down!"
+                helpMulti3: "<b>Failure:</b> If the cards don't match, they stay face up. The drawn card is added to the end of your row. Attempting with 3 or more cards gives you an extra penalty card face down!",
+                // Log Dict EN
+                logRound: "--- New Round ---", logDrawDeck: "drew from deck.", logDrawDiscard: "took from discard",
+                logDiscard: "discarded drawn card.", logKabo: "CALLED CABO!", logSwapDraw: "swapped card with drawn.",
+                logPeek: "used PEEK.", logSpy: "used SPY on player", logSwap: "used SWAP with player",
+                logMultiOk: "successfully swapped multiple cards.", logMultiFail: "failed multi-swap.", logPenalty: "received a penalty card!",
+                logCopied: "Log copied.", logTitle: "Game Log",
+                logDeckEmpty: "Deck empty! Round over.", logRoundEndKabo: "Round ends (KABO called).", btnCopyLog: "📋 Copy"
     }
 };
 
@@ -434,6 +356,7 @@
         }
 
         function createCardSVG(val, lang="cz") {
+			if (val === undefined || val === null) return ''; 
             const type = getCardType(val);
             const color = getCardColor(type);
             const label = type === 'number' ? val : CARD_LANG[lang][type];
@@ -449,8 +372,7 @@
             </svg>`;
         }
 
-        let S = { deck: [], discard: [], players: [], currentPlayer: 0, caboCaller: null, phase: 'INIT', drawnCard: null, mode: 'pve', lang: 'cz', aiLevel: 'easy', lookCount: 0, swapTemp: null, multiSwapSelected: [] };
-
+        let S = { deck: [], discard: [], players: [], currentPlayer: 0, caboCaller: null, phase: 'INIT', drawnCard: null, mode: 'pve', lang: 'cz', aiLevel: 'easy', lookCount: 0, swapTemp: null, multiSwapSelected: [], log: [] };
 
         function t(key) { return langDict[S.lang][key] || key; }
         function msg(text) { document.getElementById('message-board').innerText = text; }
@@ -462,110 +384,110 @@
             toast.className = "show";
             setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
         }
+
+        // === HERNÍ LOG FUNKCE ===
+        function addLog(msgText) {
+            S.log.push(msgText);
+            renderLog();
+        }
+
+        function renderLog() {
+            let logDiv = document.getElementById('game-log');
+            if(!logDiv) return;
+            logDiv.innerHTML = [...S.log].reverse().map(m => `<div class="log-entry">${m}</div>`).join('');
+            logDiv.scrollTop = 0; 
+        }
+
+        function copyLog() {
+            navigator.clipboard.writeText(S.log.join('\n')).then(() => {
+                showToast(t('logCopied'));
+            });
+        }
+        // =======================
 		
 		function updateAIIndicator() {
-
 				let ai = document.getElementById('ai-indicator');
-
 				if(S.mode === 'pvp') {
 					ai.style.display = 'none';
 					return;
 				}
-
 				ai.style.display = 'inline-block';
-
 				switch(S.aiLevel) {
-
-					case 'easy':
-						ai.innerText = '🟢';
-						ai.title = t('modeAiEasy');
-						break;
-
-					case 'medium':
-						ai.innerText = '🟡';
-						ai.title = t('modeAiMedium');
-						break;
-
-					case 'hard':
-						ai.innerText = '🔴';
-						ai.title = t('modeAiHard');
-						break;
+					case 'easy': ai.innerText = '🟢'; ai.title = t('modeAiEasy'); break;
+					case 'medium': ai.innerText = '🟡'; ai.title = t('modeAiMedium'); break;
+					case 'hard': ai.innerText = '🔴'; ai.title = t('modeAiHard'); break;
 				}
-			}
+		}
 
         function toggleLang() { 
-    S.lang = S.lang === 'cz' ? 'en' : 'cz'; 
-    document.getElementById('btn-lang').innerText = S.lang === 'cz' ? '🇬🇧' : '🇨🇿';
+            S.lang = S.lang === 'cz' ? 'en' : 'cz'; 
+            document.getElementById('btn-lang').innerText = S.lang === 'cz' ? '🇬🇧' : '🇨🇿';
 
-    // UI Menu a Setup
-    document.getElementById('setup-title').innerText = t('setupTitle');
-    document.getElementById('btn-game').title = t('newGame');
-    document.getElementById('btn-save').title = t('saveGame');
-    document.getElementById('btn-load').title = t('loadGame');
-    document.getElementById('btn-help').title = t('buttonHelp');
-    document.getElementById('btn-pvp').innerText = t('modePvp');
-    document.getElementById('btn-pve').innerText = t('modePve');
-    document.getElementById('btn-pv3e').innerText = t('modePv3e');
-    document.getElementById('ai-easy-option').innerText = t('modeAiEasy');
-    document.getElementById('ai-medium-option').innerText = t('modeAiMedium');
-    document.getElementById('ai-hard-option').innerText = t('modeAiHard');
-    
-    // Nápověda (kontrola existence id pro případ chybějící HTML struktury)
-    if (document.getElementById('help-basic-title')) {
-        document.getElementById('rules-title').innerHTML = t('rulesTitle');
-        document.getElementById('help-basic-title').innerHTML = t('helpBasicTitle');
-        document.getElementById('help-basic-goal').innerHTML = t('helpBasicGoal');
-        document.getElementById('help-basic-1').innerHTML = t('helpBasic1');
-        document.getElementById('help-basic-2').innerHTML = t('helpBasic2');
-        document.getElementById('help-basic-3').innerHTML = t('helpBasic3');
-        document.getElementById('help-basic-4').innerHTML = t('helpBasic4');
-        document.getElementById('help-multi-title').innerHTML = t('helpMultiTitle');
-document.getElementById('help-multi-1').innerHTML = t('helpMulti1');
-document.getElementById('help-multi-2').innerHTML = t('helpMulti2');
-document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
-        document.getElementById('help-effect-title').innerHTML = t('helpEffectTitle');
-        document.getElementById('help-effect-1').innerHTML = t('helpEffect1');
-        document.getElementById('help-effect-2').innerHTML = t('helpEffect2');
-        document.getElementById('help-effect-3').innerHTML = t('helpEffect3');
-        document.getElementById('help-ai-title').innerHTML = t('helpAiTitle');
-        document.getElementById('help-ai-desc').innerHTML = t('helpAiDesc');
-        document.getElementById('help-ai-1').innerHTML = t('helpAi1');
-        document.getElementById('help-ai-2').innerHTML = t('helpAi2');
-        document.getElementById('help-ai-3').innerHTML = t('helpAi3');
-    }
+            document.getElementById('setup-title').innerText = t('setupTitle');
+            document.getElementById('btn-game').title = t('newGame');
+            document.getElementById('btn-save').title = t('saveGame');
+            document.getElementById('btn-load').title = t('loadGame');
+            document.getElementById('btn-help').title = t('buttonHelp');
+            document.getElementById('btn-log').title = t('logTitle');
+            document.getElementById('btn-pvp').innerText = t('modePvp');
+            document.getElementById('btn-pve').innerText = t('modePve');
+            document.getElementById('btn-pv3e').innerText = t('modePv3e');
+            document.getElementById('ai-easy-option').innerText = t('modeAiEasy');
+            document.getElementById('ai-medium-option').innerText = t('modeAiMedium');
+            document.getElementById('ai-hard-option').innerText = t('modeAiHard');
+            document.getElementById('log-title').innerText = t('logTitle');
+            document.getElementById('btn-copy-log').innerText = t('btnCopyLog');
+            
+            if (document.getElementById('help-basic-title')) {
+                document.getElementById('rules-title').innerHTML = t('rulesTitle');
+                document.getElementById('help-basic-title').innerHTML = t('helpBasicTitle');
+                document.getElementById('help-basic-goal').innerHTML = t('helpBasicGoal');
+                document.getElementById('help-basic-1').innerHTML = t('helpBasic1');
+                document.getElementById('help-basic-2').innerHTML = t('helpBasic2');
+                document.getElementById('help-basic-3').innerHTML = t('helpBasic3');
+                document.getElementById('help-basic-4').innerHTML = t('helpBasic4');
+                document.getElementById('help-multi-title').innerHTML = t('helpMultiTitle');
+                document.getElementById('help-multi-1').innerHTML = t('helpMulti1');
+                document.getElementById('help-multi-2').innerHTML = t('helpMulti2');
+                document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
+                document.getElementById('help-effect-title').innerHTML = t('helpEffectTitle');
+                document.getElementById('help-effect-1').innerHTML = t('helpEffect1');
+                document.getElementById('help-effect-2').innerHTML = t('helpEffect2');
+                document.getElementById('help-effect-3').innerHTML = t('helpEffect3');
+                document.getElementById('help-ai-title').innerHTML = t('helpAiTitle');
+                document.getElementById('help-ai-desc').innerHTML = t('helpAiDesc');
+                document.getElementById('help-ai-1').innerHTML = t('helpAi1');
+                document.getElementById('help-ai-2').innerHTML = t('helpAi2');
+                document.getElementById('help-ai-3').innerHTML = t('helpAi3');
+            }
 
-    updateAIIndicator();
-    render(); 
+            updateAIIndicator();
+            render(); 
 
-    // === DYNAMICKÝ PŘEKLAD HERNÍCH ZPRÁV V PANELU ===
-    if (S.phase === 'LOOK') {
-        msg(t('msgLook'));
-    } else if (S.phase === 'TURN_START') {
-        msg(S.players[S.currentPlayer].isAI ? t('msgTurnAI') : t('msgTurn'));
-    } else if (S.phase === 'DRAWN_DECK') {
-        msg(t('msgDrawn'));
-    } else if (S.phase === 'ACTION_PEEK') {
-        msg(t('msgPeek'));
-    } else if (S.phase === 'ACTION_SPY') {
-        msg(t('msgSpy'));
-    } else if (S.phase === 'ACTION_SWAP') {
-        // Podle toho, zda už máme vybranou první kartu k výměně
-        msg(S.swapTemp ? t('msgSwap2') : t('msgSwap1')); 
-    } else if (S.phase === 'GAME_OVER') {
-        // Zpráva konce kola obsahuje i dynamická data (body nebo jméno), musíme nahradit jen staré slovo za nové
-        let currentMsg = document.getElementById('message-board').innerText;
-        let oldRoundOver = S.lang === 'cz' ? langDict['en'].msgRoundOver : langDict['cz'].msgRoundOver;
-        let oldWinner = S.lang === 'cz' ? langDict['en'].msgWinner : langDict['cz'].msgWinner;
-        
-        if (currentMsg.includes(oldRoundOver)) {
-            msg(currentMsg.replace(oldRoundOver, t('msgRoundOver')));
-        } else if (currentMsg.includes(oldWinner)) {
-            msg(currentMsg.replace(oldWinner, t('msgWinner')));
+            if (S.phase === 'LOOK') {
+                msg(t('msgLook'));
+            } else if (S.phase === 'TURN_START') {
+                msg(S.players[S.currentPlayer].isAI ? t('msgTurnAI') : t('msgTurn'));
+            } else if (S.phase === 'DRAWN_DECK') {
+                msg(t('msgDrawn'));
+            } else if (S.phase === 'ACTION_PEEK') {
+                msg(t('msgPeek'));
+            } else if (S.phase === 'ACTION_SPY') {
+                msg(t('msgSpy'));
+            } else if (S.phase === 'ACTION_SWAP') {
+                msg(S.swapTemp ? t('msgSwap2') : t('msgSwap1')); 
+            } else if (S.phase === 'GAME_OVER') {
+                let currentMsg = document.getElementById('message-board').innerText;
+                let oldRoundOver = S.lang === 'cz' ? langDict['en'].msgRoundOver : langDict['cz'].msgRoundOver;
+                let oldWinner = S.lang === 'cz' ? langDict['en'].msgWinner : langDict['cz'].msgWinner;
+                
+                if (currentMsg.includes(oldRoundOver)) {
+                    msg(currentMsg.replace(oldRoundOver, t('msgRoundOver')));
+                } else if (currentMsg.includes(oldWinner)) {
+                    msg(currentMsg.replace(oldWinner, t('msgWinner')));
+                }
+            }
         }
-    }
-}
-
-
 
         function createDeck() {
             let deck = [];
@@ -588,10 +510,13 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
             }
 
             S.players = pConfigs.map(cfg => ({ key: cfg.key, isAI: cfg.ai, color: cfg.c, score: 0, cards: [], known: [], aiMemory: [false,false,false,false] }));
+            S.log = []; 
+            renderLog();
             startRound();
         }
 
         function startRound() {
+            addLog(`\n${t('logRound')}`);
             S.deck = createDeck();
             S.discard = [S.deck.pop()];
             S.players.forEach(p => { 
@@ -647,7 +572,7 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
 
                 let rowHtml = `
                     <div class="player-row">
-                        <div class="player-badge" style="background:${p.color};">${p.key}</div>
+                        <div class="player-badge" id="badge-p${idx}" style="background:${p.color};">${p.key}</div>
                         <div class="cards" id="p${idx}-cards"></div>
                     </div>
                 `;
@@ -660,101 +585,116 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
                     document.getElementById('player0-area').innerHTML = rowHtml;
                 }
             });
+            
             render();
         }
 
         function render() {
-    document.getElementById('deck-label').innerText = t('deck');
-    document.getElementById('discard-label').innerText = t('discard');
-    document.getElementById('active-label').innerText = t('active');
-    document.getElementById('btn-discard-active').innerText = t('btnDiscard');
-    document.getElementById('btn-use-effect').innerText = t('btnEffect');
-    document.getElementById('btn-next-round').innerText = t('btnNext');
+            document.getElementById('deck-label').innerText = t('deck');
+            document.getElementById('discard-label').innerText = t('discard');
+            document.getElementById('active-label').innerText = t('active');
+            document.getElementById('btn-discard-active').innerText = t('btnDiscard');
+            document.getElementById('btn-use-effect').innerText = t('btnEffect');
+            document.getElementById('btn-next-round').innerText = t('btnNext');
 
-    S.players.forEach((p, idx) => {
-        let sItem = document.getElementById(`score-p${idx}`);
-        if(sItem) {
-            sItem.classList.toggle('active', S.currentPlayer === idx);
-            document.getElementById(`val-p${idx}`).innerText = p.score;
-        }
+            // --- VAROVÁNÍ: Balíček pulsuje červeně, pokud zbývá 5 a méně karet ---
+            let deckCard = document.getElementById('deck');
+            if (S.deck && S.deck.length <= 5 && S.deck.length > 0) {
+                deckCard.classList.add('deck-warning');
+            } else {
+                deckCard.classList.remove('deck-warning');
+            }
 
-        let container = document.getElementById(`p${idx}-cards`);
-        if(container) {
-            container.innerHTML = '';
-            p.cards.forEach((val, cIdx) => {
-                let card = document.createElement('div');
-                card.className = 'card';
-                let isVis = S.phase === 'GAME_OVER' || p.known[cIdx];
-                
-                if (isVis) { 
-                    card.innerHTML = createCardSVG(val, S.lang); 
-                    card.classList.remove('hidden'); 
-                } else {
-                    card.classList.add('hidden');
+            S.players.forEach((p, idx) => {
+                let sItem = document.getElementById(`score-p${idx}`);
+
+                if(sItem) {
+                    sItem.classList.toggle('active', S.currentPlayer === idx);
+                    document.getElementById(`val-p${idx}`).innerText = p.score;
                 }
                 
-                // Označení karty pro efekt KŠEFT (výměna naslepo)
-                if (S.swapTemp && S.swapTemp.p === idx && S.swapTemp.idx === cIdx) {
-                    card.classList.add('selected');
-                }
-                
-                // Označení karet pro vícenásobnou výměnu z líznuté karty
-                if (S.phase === 'DRAWN_DECK' && idx === S.currentPlayer && S.multiSwapSelected && S.multiSwapSelected.includes(cIdx)) {
-                    card.classList.add('selected');
+                let badge = document.getElementById(`badge-p${idx}`);
+                if(badge) {
+                    if (idx === S.caboCaller) {
+                        badge.classList.add('cabo-caller');
+                    } else {
+                        badge.classList.remove('cabo-caller');
+                    }
                 }
 
-                card.onclick = () => handlePlayerCardClick(idx, cIdx);
-                container.appendChild(card);
+                let container = document.getElementById(`p${idx}-cards`);
+                if(container) {
+                    container.innerHTML = '';
+                    p.cards.forEach((val, cIdx) => {
+                        let card = document.createElement('div');
+                        card.className = 'card';
+                        let isVis = S.phase === 'GAME_OVER' || p.known[cIdx];
+                        
+                        if (isVis) { 
+                            card.innerHTML = createCardSVG(val, S.lang); 
+                            card.classList.remove('hidden'); 
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                        
+                        if (S.swapTemp && S.swapTemp.p === idx && S.swapTemp.idx === cIdx) {
+                            card.classList.add('selected');
+                        }
+                        
+                        if (S.phase === 'DRAWN_DECK' && idx === S.currentPlayer && S.multiSwapSelected && S.multiSwapSelected.includes(cIdx)) {
+                            card.classList.add('selected');
+                        }
+
+                        card.onclick = () => handlePlayerCardClick(idx, cIdx);
+                        container.appendChild(card);
+                    });
+                }
             });
+
+            let discardCard = document.getElementById('discard');
+            if (S.discard.length > 0) {
+                discardCard.innerHTML = createCardSVG(S.discard[S.discard.length - 1], S.lang);
+                discardCard.classList.remove('hidden');
+            } else {
+                discardCard.innerHTML = ''; 
+                discardCard.classList.add('hidden');
+            }
+            
+            let activePile = document.getElementById('active-card-pile');
+            let deckPile = document.getElementById('deck-pile');
+            
+            let btnConfirm = document.getElementById('btn-confirm-swap');
+            let btnDiscardActive = document.getElementById('btn-discard-active');
+            let btnUseEffect = document.getElementById('btn-use-effect');
+
+            if (btnConfirm) btnConfirm.innerText = t('btnConfirm');
+
+            if (S.drawnCard !== null) {
+                activePile.style.display = 'flex'; 
+                deckPile.style.display = 'none';
+                document.getElementById('active-card').innerHTML = createCardSVG(S.drawnCard, S.lang);
+                document.getElementById('active-card').classList.remove('hidden');
+                
+                if (S.phase === 'DRAWN_DECK' && S.multiSwapSelected && S.multiSwapSelected.length > 0) {
+                    btnDiscardActive.style.display = 'none';
+                    btnUseEffect.style.display = 'none';
+                    if(btnConfirm) btnConfirm.style.display = 'inline-block';
+                } else {
+                    if(btnConfirm) btnConfirm.style.display = 'none';
+                    btnDiscardActive.style.display = 'inline-block';
+                    btnUseEffect.style.display = (S.drawnCard >= 7 && S.drawnCard <= 12) ? 'inline-block' : 'none';
+                }
+
+            } else {
+                activePile.style.display = 'none'; 
+                deckPile.style.display = 'flex';
+            }
+
+            const showKabo = S.phase === 'TURN_START' && S.caboCaller === null && !S.players[S.currentPlayer].isAI;
+            document.getElementById('btn-kabo').style.display = showKabo ? 'inline-block' : 'none';
         }
-    });
-
-    let discardCard = document.getElementById('discard');
-    if (S.discard.length > 0) {
-        discardCard.innerHTML = createCardSVG(S.discard[S.discard.length - 1], S.lang);
-        discardCard.classList.remove('hidden');
-    } else {
-        discardCard.innerHTML = ''; 
-        discardCard.classList.add('hidden');
-    }
-    
-    let activePile = document.getElementById('active-card-pile');
-    let deckPile = document.getElementById('deck-pile');
-    
-    // Načtení tlačítek (pokud by některé v HTML chybělo, kód nespadne)
-    let btnConfirm = document.getElementById('btn-confirm-swap');
-    let btnDiscardActive = document.getElementById('btn-discard-active');
-    let btnUseEffect = document.getElementById('btn-use-effect');
-
-    if (btnConfirm) btnConfirm.innerText = t('btnConfirm');
-
-    if (S.drawnCard !== null) {
-        activePile.style.display = 'flex'; 
-        deckPile.style.display = 'none';
-        document.getElementById('active-card').innerHTML = createCardSVG(S.drawnCard, S.lang);
-        document.getElementById('active-card').classList.remove('hidden');
-        
-        // Logika tlačítek pro vícenásobnou výměnu vs. běžné zahození
-        if (S.phase === 'DRAWN_DECK' && S.multiSwapSelected && S.multiSwapSelected.length > 0) {
-            btnDiscardActive.style.display = 'none';
-            btnUseEffect.style.display = 'none';
-            if(btnConfirm) btnConfirm.style.display = 'inline-block';
-        } else {
-            if(btnConfirm) btnConfirm.style.display = 'none';
-            btnDiscardActive.style.display = 'inline-block';
-            btnUseEffect.style.display = (S.drawnCard >= 7 && S.drawnCard <= 12) ? 'inline-block' : 'none';
-        }
-
-    } else {
-        activePile.style.display = 'none'; 
-        deckPile.style.display = 'flex';
-    }
-
-    document.getElementById('btn-kabo').style.display = (S.phase === 'TURN_START' && S.caboCaller === null && !S.players[S.currentPlayer].isAI) ? 'inline-block' : 'none';
-}
 
 
-        // fromAI flag zabraňuje vizuálnímu otočení karet pokud to hraje AI
         function handlePlayerCardClick(p, idx, fromAI = false) {
             if (S.players[S.currentPlayer].isAI && !fromAI) return; 
 
@@ -765,22 +705,21 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
                 }
             } 
             else if (S.phase === 'DRAWN_DECK' && p === S.currentPlayer) {
-    if(fromAI) { 
-        S.multiSwapSelected = [idx]; // AI zatím umí jen single výměnu
-        confirmSwap(true); 
-    } else { 
-        // Přidání nebo odebrání karty z výběru
-        let selIdx = S.multiSwapSelected.indexOf(idx);
-        if (selIdx > -1) {
-            S.multiSwapSelected.splice(selIdx, 1);
-        } else {
-            S.multiSwapSelected.push(idx);
-        }
-        render();
-    }
-}
- 
+                if(fromAI) { 
+                    S.multiSwapSelected = [idx]; 
+                    confirmSwap(true); 
+                } else { 
+                    let selIdx = S.multiSwapSelected.indexOf(idx);
+                    if (selIdx > -1) {
+                        S.multiSwapSelected.splice(selIdx, 1);
+                    } else {
+                        S.multiSwapSelected.push(idx);
+                    }
+                    render();
+                }
+            } 
             else if (S.phase === 'ACTION_PEEK' && p === S.currentPlayer) {
+                addLog(`${S.players[p].key} ${t('logPeek')}`);
                 if(fromAI) {
                     S.players[p].aiMemory[idx] = true; endTurnLogic();
                 } else {
@@ -788,6 +727,7 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
                 }
             } 
             else if (S.phase === 'ACTION_SPY' && p !== S.currentPlayer) {
+                addLog(`${S.players[S.currentPlayer].key} ${t('logSpy')} ${S.players[p].key}.`);
                 if(fromAI) {
                     S.players[S.currentPlayer].aiMemory[idx] = true; endTurnLogic();
                 } else {
@@ -799,6 +739,7 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
                     if (p === S.currentPlayer) { S.swapTemp = { p, idx }; if(!fromAI){msg(t('msgSwap2')); render();} }
                 } else {
                     if (p !== S.currentPlayer) {
+                        addLog(`${S.players[S.currentPlayer].key} ${t('logSwap')} ${S.players[p].key}.`);
                         let my = S.players[S.currentPlayer], tar = S.players[p];
                         let tCard = my.cards[S.swapTemp.idx]; my.cards[S.swapTemp.idx] = tar.cards[idx]; tar.cards[idx] = tCard;
                         
@@ -811,9 +752,26 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
             }
         }
 
-        function handleDeckClick() { if (S.phase !== 'TURN_START' || S.players[S.currentPlayer].isAI) return; S.drawnCard = S.deck.pop(); S.phase = 'DRAWN_DECK'; msg(t('msgDrawn')); render(); }
-        function handleDiscardClick() { if (S.phase !== 'TURN_START' || S.discard.length === 0 || S.players[S.currentPlayer].isAI) return; S.drawnCard = S.discard.pop(); S.phase = 'DRAWN_DECK'; msg(t('msgDrawn')); render(); }
-        function discardActiveCard(fromAI = false) { if (S.phase !== 'DRAWN_DECK' || (S.players[S.currentPlayer].isAI && !fromAI)) return; S.discard.push(S.drawnCard); S.drawnCard = null; endTurnLogic(); }
+        function handleDeckClick() { 
+            if (S.phase !== 'TURN_START' || S.players[S.currentPlayer].isAI) return; 
+            S.drawnCard = S.deck.pop(); S.phase = 'DRAWN_DECK'; 
+            addLog(`${S.players[S.currentPlayer].key} ${t('logDrawDeck')}`);
+            msg(t('msgDrawn')); render(); 
+        }
+
+        function handleDiscardClick() { 
+            if (S.phase !== 'TURN_START' || S.discard.length === 0 || S.players[S.currentPlayer].isAI) return; 
+            S.drawnCard = S.discard.pop(); S.phase = 'DRAWN_DECK'; 
+            addLog(`${S.players[S.currentPlayer].key} ${t('logDrawDiscard')} (${S.drawnCard}).`);
+            msg(t('msgDrawn')); render(); 
+        }
+
+        function discardActiveCard(fromAI = false) { 
+            if (S.phase !== 'DRAWN_DECK' || (S.players[S.currentPlayer].isAI && !fromAI)) return; 
+            S.discard.push(S.drawnCard); 
+            addLog(`${S.players[S.currentPlayer].key} ${t('logDiscard')}`);
+            S.drawnCard = null; endTurnLogic(); 
+        }
         
         function useEffect(fromAI = false) {
             if (S.phase !== 'DRAWN_DECK' || (S.players[S.currentPlayer].isAI && !fromAI)) return;
@@ -825,132 +783,130 @@ document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
         }
         
         function confirmSwap(fromAI = false) {
-    let p = S.currentPlayer;
-    let pData = S.players[p];
-    
-    // Seřadíme indexy sestupně, abychom mohli bezpečně odstraňovat
-    let selected = [...S.multiSwapSelected].sort((a, b) => b - a); 
-
-    if (selected.length === 1) {
-        // Standardní výměna jedné karty (nemůže selhat)
-        let idx = selected[0];
-        S.discard.push(pData.cards[idx]);
-        pData.cards[idx] = S.drawnCard;
-        if(fromAI) { pData.aiMemory[idx] = true; } else { pData.known[idx] = true; }
-        
-    } else {
-        // Výměna více karet
-        let firstVal = pData.cards[selected[0]];
-        let isMatch = selected.every(idx => pData.cards[idx] === firstVal);
-
-        if (isMatch) {
-            // ÚSPĚCH: Odhodit všechny, novou dát na místo jedné z nich
-            selected.forEach(idx => S.discard.push(pData.cards[idx]));
+            let p = S.currentPlayer;
+            let pData = S.players[p];
             
-            let newCards = [];
-            let newKnown = [];
-            let newAiMemory = [];
-            
-            // Rekonstrukce pole karet (nahradí nejnižší index vybraných, ostatní přeskočí)
-            let lowestIdx = selected[selected.length - 1]; 
-            for (let i = 0; i < pData.cards.length; i++) {
-                if (i === lowestIdx) { 
-                    newCards.push(S.drawnCard);
-                    newKnown.push(true);
-                    newAiMemory.push(true);
-                } else if (!selected.includes(i)) {
-                    newCards.push(pData.cards[i]);
-                    newKnown.push(pData.known[i]);
-                    newAiMemory.push(pData.aiMemory[i]);
+            let selected = [...S.multiSwapSelected].sort((a, b) => b - a); 
+
+            if (selected.length === 1) {
+                let idx = selected[0];
+                S.discard.push(pData.cards[idx]);
+                pData.cards[idx] = S.drawnCard;
+                if(fromAI) { pData.aiMemory[idx] = true; } else { pData.known[idx] = true; }
+                addLog(`${pData.key} ${t('logSwapDraw')}`);
+            } else {
+                let firstVal = pData.cards[selected[0]];
+                let isMatch = selected.every(idx => pData.cards[idx] === firstVal);
+
+                if (isMatch) {
+                    selected.forEach(idx => S.discard.push(pData.cards[idx]));
+                    let newCards = []; let newKnown = []; let newAiMemory = [];
+                    
+                    let lowestIdx = selected[selected.length - 1]; 
+                    for (let i = 0; i < pData.cards.length; i++) {
+                        if (i === lowestIdx) { 
+                            newCards.push(S.drawnCard); newKnown.push(true); newAiMemory.push(true);
+                        } else if (!selected.includes(i)) {
+                            newCards.push(pData.cards[i]); newKnown.push(pData.known[i]); newAiMemory.push(pData.aiMemory[i]);
+                        }
+                    }
+                    pData.cards = newCards; pData.known = newKnown; pData.aiMemory = newAiMemory;
+                    addLog(`${pData.key} ${t('logMultiOk')} (${selected.length})`);
+                    if(!fromAI) showToast(t('msgMultiSuccess'));
+
+                } else {
+                    selected.forEach(idx => { pData.known[idx] = true; pData.aiMemory[idx] = true; });
+                    pData.cards.push(S.drawnCard); pData.known.push(true); pData.aiMemory.push(true);
+                    
+                    addLog(`${pData.key} ${t('logMultiFail')}`);
+                    if(!fromAI) showToast(t('msgMultiFail'));
+
+                    if (selected.length >= 3 && S.deck.length > 0) {
+                        let penalty = S.deck.pop();
+                        if (penalty !== undefined) {
+                            pData.cards.push(penalty); pData.known.push(false); pData.aiMemory.push(false);
+                            addLog(`${pData.key} ${t('logPenalty')}`);
+                            if(!fromAI) setTimeout(() => showToast(t('msgPenalty')), 2500);
+                        }
+                    }
                 }
             }
-            pData.cards = newCards; pData.known = newKnown; pData.aiMemory = newAiMemory;
-            if(!fromAI) showToast(t('msgMultiSuccess'));
 
-        } else {
-            // NEÚSPĚCH: Karty zůstávají v řadě lícem nahoru
-            selected.forEach(idx => {
-                pData.known[idx] = true;
-                pData.aiMemory[idx] = true;
-            });
-            
-            // Nová karta se přidá nakonec řady (zprava) lícem nahoru
-            pData.cards.push(S.drawnCard);
-            pData.known.push(true); 
-            pData.aiMemory.push(true);
-            
-            if(!fromAI) showToast(t('msgMultiFail'));
-
-            // Trest: Pokud se pokusili vyměnit 3 a více karet, dostanou trestnou lícem dolů
-            if (selected.length >= 3 && S.deck.length > 0) {
-                let penalty = S.deck.pop();
-                pData.cards.push(penalty);
-                pData.known.push(false);
-                pData.aiMemory.push(false);
-                if(!fromAI) setTimeout(() => showToast(t('msgPenalty')), 2500);
-            }
+            S.drawnCard = null;
+            S.multiSwapSelected = [];
+            endTurnLogic();
         }
-    }
 
-    S.drawnCard = null;
-    S.multiSwapSelected = [];
-    endTurnLogic();
-}
-
-
-        function callKabo(fromAI = false) { if (S.phase !== 'TURN_START' || (S.players[S.currentPlayer].isAI && !fromAI)) return; S.caboCaller = S.currentPlayer; msg(S.players[S.currentPlayer].key + " " + t('msgCabo')); endTurnLogic(); }
+        function callKabo(fromAI = false) { 
+            if (S.phase !== 'TURN_START' || (S.players[S.currentPlayer].isAI && !fromAI)) return; 
+            S.caboCaller = S.currentPlayer; 
+            addLog(`!!! ${S.players[S.currentPlayer].key} ${t('logKabo')} !!!`);
+            msg(S.players[S.currentPlayer].key + " " + t('msgCabo')); 
+            endTurnLogic(); 
+        }
 
         function endTurnLogic() {
-            if (S.deck.length === 0) { gameOver(); return; }
-            S.currentPlayer = (S.currentPlayer + 1) % S.players.length;
-            if (S.currentPlayer === S.caboCaller) { gameOver(); } 
-            else {
-                S.phase = 'TURN_START'; msg(S.players[S.currentPlayer].isAI ? t('msgTurnAI') : t('msgTurn')); render();
-                if (S.players[S.currentPlayer].isAI) setTimeout(doAITurn, 1000);
+			if (S.deck.length === 0) { 
+                addLog(`❗️ ${t('logDeckEmpty')}`);
+                gameOver(); 
+                return; 
             }
-        }
+			
+            S.currentPlayer = (S.currentPlayer + 1) % S.players.length;
+
+			if (S.currentPlayer === S.caboCaller) { 
+                addLog(`🛑 ${t('logRoundEndKabo')}`);
+                gameOver(); 
+                return; 
+            }
+			
+            S.phase = 'TURN_START';
+
+			if (S.players[S.currentPlayer].isAI) {
+				msg(t('msgTurnAI'));
+			} else {
+				if (S.caboCaller === null) { msg(t('msgTurn')); } 
+                else { msg(t('msgTurnAfterKabo')); }
+			}
+
+			render();
+			if (S.players[S.currentPlayer].isAI) { setTimeout(doAITurn, 1000); }
+		}
 
         function gameOver() {
-    S.phase = 'GAME_OVER';
-    let sums = S.players.map(p => p.cards.reduce((a,b) => a+b, 0));
-    
-    // Kamikaze
-    function isK(c) { let c12=0, c13=0; c.forEach(x=>{if(x===12)c12++; if(x===13)c13++;}); return c12===2&&c13===2; }
-    let kIndex = S.players.findIndex(p => isK(p.cards));
-    if(kIndex !== -1) sums = sums.map((s, i) => i === kIndex ? 0 : 50);
+            S.phase = 'GAME_OVER';
+            let sums = S.players.map(p => p.cards.reduce((a,b) => a+b, 0));
+            
+            function isK(c) { let c12=0, c13=0; c.forEach(x=>{if(x===12)c12++; if(x===13)c13++;}); return c12===2&&c13===2; }
+            let kIndex = S.players.findIndex(p => isK(p.cards));
+            if(kIndex !== -1) sums = sums.map((s, i) => i === kIndex ? 0 : 50);
 
-    // Kabo postih
-    if (S.caboCaller !== null) {
-        let min = Math.min(...sums);
-        if (sums[S.caboCaller] > min) sums[S.caboCaller] += 10;
-    }
+            if (S.caboCaller !== null) {
+                let min = Math.min(...sums);
+                if (sums[S.caboCaller] > min) sums[S.caboCaller] += 10;
+            }
 
-    S.players.forEach((p, i) => { 
-        p.score += sums[i]; 
-        // Pravidlo pro snizeni na 50 pri dosazeni rovnych 100
-        if(p.score === 100) p.score = 50; 
-    });
-    
-    document.getElementById('btn-next-round').style.display = 'inline-block';
-    let over100 = S.players.some(p => p.score > 100);
-    
-    if(over100) {
-        let winner = S.players.reduce((prev, curr) => prev.score < curr.score ? prev : curr);
-        // Uložení a výpis hlášky o vítězství celé hry
-        S.lastRoundMsg = `🏆 ${t('msgWinner') || 'VYHRÁL'}: ${winner.key}`;
-        msg(S.lastRoundMsg);
-        document.getElementById('btn-next-round').style.display = 'none';
-    } else {
-        // TADY upraveno: odstraněn text konce kola, zůstává jen čistý výčet
-        let txt = S.players.map((p,i) => `${p.key}: +${sums[i]}`).join(" | ");
-        S.lastRoundMsg = txt; // Vložíme si bodový výpis do paměti hry!
-        msg(txt);
-    }
-    render();
-}
+            S.players.forEach((p, i) => { 
+                p.score += sums[i]; 
+                if(p.score === 100) p.score = 50; 
+            });
+            
+            document.getElementById('btn-next-round').style.display = 'inline-block';
+            let over100 = S.players.some(p => p.score > 100);
+            
+            if(over100) {
+                let winner = S.players.reduce((prev, curr) => prev.score < curr.score ? prev : curr);
+                S.lastRoundMsg = `🏆 ${t('msgWinner') || 'VYHRÁL'}: ${winner.key}`;
+                msg(S.lastRoundMsg);
+                document.getElementById('btn-next-round').style.display = 'none';
+            } else {
+                let txt = S.players.map((p,i) => `${p.key}: +${sums[i]}`).join(" | ");
+                S.lastRoundMsg = txt; 
+                msg(txt);
+            }
+            render();
+        }
 
-
-        
 // ======================
 // AI HELPERS
 // ======================
@@ -961,450 +917,244 @@ function estimateCardValue(player, idx) {
 }
 
 function findWorstCard(player) {
-
     let worstVal = -1;
     let worstIdx = 0;
-
     for(let i=0; i<player.cards.length; i++) {
-
         let val = estimateCardValue(player, i);
-
         if(val > worstVal) {
             worstVal = val;
             worstIdx = i;
         }
     }
-
-    return {
-        idx: worstIdx,
-        value: worstVal
-    };
+    return { idx: worstIdx, value: worstVal };
 }
 
 function shouldCallCabo(player, level='easy') {
-
     let total = 0;
-
     for(let i=0; i<player.cards.length; i++) {
         total += estimateCardValue(player, i);
     }
-
     if(level === 'easy') return total <= 6;
     if(level === 'medium') return total <= 5;
     if(level === 'hard') return total <= 4;
-    if(player.cards.length <= 2 && total <= 8)
-
+    if(player.cards.length <= 2 && total <= 8) return false;
     return false;
 }
-
 
 // ======================
 // EASY AI
 // ======================
-
 function doEasyAI() {
-
     let me = S.currentPlayer;
     let player = S.players[me];
-
-    if(shouldCallCabo(player, 'easy')) {
-        callKabo(true);
-        return;
-    }
+    if(shouldCallCabo(player, 'easy')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
-
     let takeDiscard = topDiscard < 5 && topDiscard < worst.value;
 
     if(takeDiscard) {
-
-        S.drawnCard = S.discard.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.discard.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDiscard')} (${S.drawnCard}).`);
         render();
-
-        setTimeout(() => {
-            handlePlayerCardClick(me, worst.idx, true);
-        }, 700);
-
+        setTimeout(() => { handlePlayerCardClick(me, worst.idx, true); }, 700);
     } else {
-
-        S.drawnCard = S.deck.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.deck.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDeck')}`);
         render();
 
         setTimeout(() => {
-
             let val = S.drawnCard;
-
             if(val <= 4) {
-
                 handlePlayerCardClick(me, worst.idx, true);
-
             } else if(val >= 7 && val <= 12) {
-
                 useEffect(true);
-
                 if(val <= 8) {
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(me, Math.floor(Math.random()*S.players[opp].cards.length), true);
-                    }, 700);
-
+                    setTimeout(() => { handlePlayerCardClick(me, Math.floor(Math.random()*player.cards.length), true); }, 700);
                 } else if(val <= 10) {
-
                     let opp = (me + 1) % S.players.length;
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true);
-                    }, 700);
-
+                    setTimeout(() => { handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true); }, 700);
                 } else {
-
-                    let opp = 0;
-                    if(opp === me) opp = 1;
-
+                    let opp = 0; if(opp === me) opp = 1;
                     setTimeout(() => {
-
                         handlePlayerCardClick(me, worst.idx, true);
-
-                        setTimeout(() => {
-                            handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true);
-                        }, 700);
-
+                        setTimeout(() => { handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true); }, 700);
                     }, 700);
                 }
-
             } else {
-
                 discardActiveCard(true);
             }
-
         }, 700);
     }
 }
-
 
 // ======================
 // MEDIUM AI
 // ======================
-
 function doMediumAI() {
-
     let me = S.currentPlayer;
     let player = S.players[me];
-
-    if(shouldCallCabo(player, 'medium')) {
-        callKabo(true);
-        return;
-    }
+    if(shouldCallCabo(player, 'medium')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
-
     let takeDiscard = topDiscard < worst.value;
 
     if(takeDiscard) {
-
-        S.drawnCard = S.discard.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.discard.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDiscard')} (${S.drawnCard}).`);
         render();
-
-        setTimeout(() => {
-            handlePlayerCardClick(me, worst.idx, true);
-        }, 600);
-
+        setTimeout(() => { handlePlayerCardClick(me, worst.idx, true); }, 600);
     } else {
-
-        S.drawnCard = S.deck.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.deck.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDeck')}`);
         render();
 
         setTimeout(() => {
-
             let val = S.drawnCard;
-
             if(val < worst.value) {
-
                 handlePlayerCardClick(me, worst.idx, true);
-
             } else if(val >= 7 && val <= 12) {
-
                 useEffect(true);
-
                 if(val <= 8) {
-
                     let unknown = [];
-
-                    for(let i=0;i<player.cards.length;i++) {
-                        if(!player.aiMemory[i]) unknown.push(i);
-                    }
-
-                    let target = unknown.length
-                        ? unknown[Math.floor(Math.random()*unknown.length)]
-                        : worst.idx;
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(me, target, true);
-                    }, 600);
-
+                    for(let i=0;i<player.cards.length;i++) { if(!player.aiMemory[i]) unknown.push(i); }
+                    let target = unknown.length ? unknown[Math.floor(Math.random()*unknown.length)] : worst.idx;
+                    setTimeout(() => { handlePlayerCardClick(me, target, true); }, 600);
                 } else if(val <= 10) {
-
-                    let opp = 0;
-                    if(opp === me) opp = 1;
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(opp, Math.floor(Math.random()*4), true);
-                    }, 600);
-
+                    let opp = 0; if(opp === me) opp = 1;
+                    setTimeout(() => { handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true); }, 600);
                 } else {
-
-                    let opp = 0;
-                    if(opp === me) opp = 1;
-
+                    let opp = 0; if(opp === me) opp = 1;
                     setTimeout(() => {
-
                         handlePlayerCardClick(me, worst.idx, true);
-
-                        setTimeout(() => {
-                            handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true);
-                        }, 600);
-
+                        setTimeout(() => { handlePlayerCardClick(opp, Math.floor(Math.random()*S.players[opp].cards.length), true); }, 600);
                     }, 600);
                 }
-
             } else {
-
                 discardActiveCard(true);
             }
-
         }, 600);
     }
 }
-
 
 // ======================
 // HARD AI
 // ======================
-
 function doHardAI() {
-
     let me = S.currentPlayer;
     let player = S.players[me];
-
-    if(shouldCallCabo(player, 'hard')) {
-        callKabo(true);
-        return;
-    }
+    if(shouldCallCabo(player, 'hard')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
-
     let takeDiscard = topDiscard < worst.value;
 
     if(takeDiscard) {
-
-        S.drawnCard = S.discard.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.discard.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDiscard')} (${S.drawnCard}).`);
         render();
-
-        setTimeout(() => {
-            handlePlayerCardClick(me, worst.idx, true);
-        }, 400);
-
+        setTimeout(() => { handlePlayerCardClick(me, worst.idx, true); }, 400);
     } else {
-
-        S.drawnCard = S.deck.pop();
-        S.phase = 'DRAWN_DECK';
+        S.drawnCard = S.deck.pop(); S.phase = 'DRAWN_DECK';
+        addLog(`${player.key} ${t('logDrawDeck')}`);
         render();
 
         setTimeout(() => {
-
             let val = S.drawnCard;
-
             if(val < worst.value) {
-
-    // =====================================
-    // HARD AI MULTI SWAP
-    // =====================================
-
-    let sameCards = [];
-
-    for(let i = 0; i < player.cards.length; i++) {
-
-        // jen známé karty
-        if(player.aiMemory[i]) {
-
-            if(player.cards[i] === val) {
-                sameCards.push(i);
-            }
-        }
-    }
-
-    // -------------------------------------
-    // 2+ stejných karet => multi swap
-    // -------------------------------------
-
-    if(sameCards.length >= 2) {
-
-        S.multiSwapSelected = [...sameCards];
-
-        render();
-
-        setTimeout(() => {
-            confirmSwap(true);
-        }, 700);
-
-    } else {
-
-        // klasická výměna
-        handlePlayerCardClick(me, worst.idx, true);
-    }
-
-} else if(val >= 7 && val <= 12) {
-
-                useEffect(true);
-
-                if(val <= 8) {
-
-                    let target = worst.idx;
-
-                    for(let i=0;i<player.cards.length;i++) {
-                        if(!player.aiMemory[i]) {
-                            target = i;
-                            break;
-                        }
-                    }
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(me, target, true);
-                    }, 400);
-
-                } else if(val <= 10) {
-
-                    let targetPlayer = 0;
-
-                    if(targetPlayer === me) {
-                        targetPlayer = 1;
-                    }
-
-                    setTimeout(() => {
-                        handlePlayerCardClick(targetPlayer, Math.floor(Math.random()*4), true);
-                    }, 400);
-
+                let sameCards = [];
+                for(let i = 0; i < player.cards.length; i++) {
+                    if(player.aiMemory[i] && player.cards[i] === val) { sameCards.push(i); }
+                }
+                if(sameCards.length >= 2) {
+                    S.multiSwapSelected = [...sameCards];
+                    render();
+                    setTimeout(() => { confirmSwap(true); }, 700);
                 } else {
-
-                    let targetPlayer = 0;
-
-                    if(targetPlayer === me) {
-                        targetPlayer = 1;
+                    handlePlayerCardClick(me, worst.idx, true);
+                }
+            } else if(val >= 7 && val <= 12) {
+                useEffect(true);
+                if(val <= 8) {
+                    let target = worst.idx;
+                    for(let i=0;i<player.cards.length;i++) {
+                        if(!player.aiMemory[i]) { target = i; break; }
                     }
-
+                    setTimeout(() => { handlePlayerCardClick(me, target, true); }, 400);
+                } else if(val <= 10) {
+                    let targetPlayer = 0; if(targetPlayer === me) targetPlayer = 1;
+                    setTimeout(() => { handlePlayerCardClick(targetPlayer, Math.floor(Math.random()*S.players[targetPlayer].cards.length), true); }, 400);
+                } else {
+                    let targetPlayer = 0; if(targetPlayer === me) targetPlayer = 1;
                     setTimeout(() => {
-
                         handlePlayerCardClick(me, worst.idx, true);
-
-                        setTimeout(() => {
-                            handlePlayerCardClick(targetPlayer, Math.floor(Math.random()*player.cards.length), true);
-                        }, 400);
-
+                        setTimeout(() => { handlePlayerCardClick(targetPlayer, Math.floor(Math.random()*S.players[targetPlayer].cards.length), true); }, 400);
                     }, 400);
                 }
-
             } else {
-
                 discardActiveCard(true);
             }
-
         }, 400);
     }
 }
-
 
 // ======================
 // MAIN AI
 // ======================
-
 function doAITurn() {
-
     if (S.phase !== 'TURN_START') return;
-
     switch(S.aiLevel) {
-
-        case 'easy':
-            doEasyAI();
-            break;
-
-        case 'medium':
-            doMediumAI();
-            break;
-
-        case 'hard':
-            doHardAI();
-            break;
-
-        default:
-            doEasyAI();
+        case 'easy': doEasyAI(); break;
+        case 'medium': doMediumAI(); break;
+        case 'hard': doHardAI(); break;
+        default: doEasyAI();
     }
 }
-
-
 
         function saveGame() { 
-    // Uložení hlavního stavu hry
-    localStorage.setItem('caboSave', JSON.stringify(S)); 
-    
-    // Uložení stavu zapnutých/vypnutých zvuků
-    if (typeof soundEnabled !== 'undefined') {
-        localStorage.setItem('soundEnabled', soundEnabled);
-    }
-    
-    showToast(t('saved')); 
-}
-
-function loadGame() { 
-    let saved = localStorage.getItem('caboSave'); 
-    
-    // Obnovení stavu zvuků (pokud je používáte)
-    let savedSound = localStorage.getItem('soundEnabled');
-    if (savedSound !== null) {
-        window.soundEnabled = (savedSound === 'true');
-    }
-
-    if(saved) { 
-        S = JSON.parse(saved); 
-        buildUI(); 
-        updateAIIndicator(); 
-
-        if (S.phase === 'GAME_OVER') {
-            let over100 = S.players.some(p => p.score > 100);
-            document.getElementById('btn-next-round').style.display = over100 ? 'none' : 'inline-block';
-            
-            // TADY upraveno: místo prostého "Konec kola!" vypíšeme z paměti body z daného kola
-            msg(S.lastRoundMsg ? S.lastRoundMsg : t('msgRoundOver')); 
-            
-        } else {
-            document.getElementById('btn-next-round').style.display = 'none';
-            
-            if (S.phase === 'LOOK') {
-                msg(t('msgLook'));
-            } else if (S.phase === 'TURN_START') {
-                msg(S.players[S.currentPlayer].isAI ? t('msgTurnAI') : t('msgTurn'));
-            } else {
-                msg(t('loaded')); 
-            }
+            localStorage.setItem('caboSave', JSON.stringify(S));     
+            showToast(t('saved')); 
         }
 
-        showToast(t('loaded')); 
-    } else { 
-        showToast(t('noSave')); 
-    } 
-}
+        function loadGame() { 
+            let saved = localStorage.getItem('caboSave'); 
+            if(saved) { 
+                S = JSON.parse(saved); 
 
+                if (!S.log) S.log = []; 
+                if (!S.multiSwapSelected) S.multiSwapSelected = []; 
+                if (S.players) {
+                    S.players.forEach(p => {
+                        if (!p.aiMemory) p.aiMemory = [false, false, false, false];
+                    });
+                }
 
+                buildUI(); 
+                updateAIIndicator(); 
+                renderLog();
+
+                if (S.phase === 'GAME_OVER') {
+                    let over100 = S.players.some(p => p.score > 100);
+                    document.getElementById('btn-next-round').style.display = over100 ? 'none' : 'inline-block';
+                    msg(S.lastRoundMsg ? S.lastRoundMsg : t('msgRoundOver')); 
+                } else {
+                    document.getElementById('btn-next-round').style.display = 'none';
+                    if (S.phase === 'LOOK') {
+                        msg(t('msgLook'));
+                    } else if (S.phase === 'TURN_START') {
+                        msg(S.players[S.currentPlayer].isAI ? t('msgTurnAI') : t('msgTurn'));
+                    } else {
+                        msg(t('loaded')); 
+                    }
+                }
+                showToast(t('loaded')); 
+            } else { 
+                showToast(t('noSave')); 
+            } 
+        }
 
         window.onload = () => {
-            // Inicializace spravne vlajky podle zakladniho jazyka (cz)
             document.getElementById('btn-lang').innerText = '🇬🇧';
             showSetup();
         }
