@@ -65,7 +65,7 @@
         /* Zprávy a Modaly */
         #message-board { text-align: center; font-size: 1rem; min-height: 1.6em; font-weight: bold; color: #fbc531; padding: 6px; background: rgba(0,0,0,0.4); text-shadow: 1px 1px 2px #000; z-index: 5; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: #ecf0f1; color: #2c3e50; padding: 20px; border-radius: 10px; max-width: 500px; width: 92%; max-height: 85vh; overflow-y: auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal-content { background: #ecf0f1; color: #2c3e50; padding: 20px; border-radius: 10px; max-width: 550px; width: 92%; max-height: 85vh; overflow-y: auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .close-btn { float: right; font-size: 24px; cursor: pointer; border: none; background: none; color: #c0392b; font-weight: bold; margin-top: -10px; }
         
         /* Tlačítka akcí */
@@ -108,6 +108,11 @@
             50% { box-shadow: 0 0 25px #e84118; }
             100% { box-shadow: 0 0 5px #e84118; }
         }
+
+        /* Tabulka nápovědy */
+        .help-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; text-align: left; }
+        .help-table th, .help-table td { border-bottom: 1px solid #bdc3c7; padding: 6px; }
+        .help-table th { color: #2c3e50; font-weight: bold; }
 
 /* =========================
    MOBILE
@@ -190,6 +195,7 @@
         <div id="player0-area"></div>
     </div>
 
+  <!-- Nápověda Modal -->
   <div id="help-modal" class="modal">
     <div class="modal-content" style="text-align: left;">
         <button class="close-btn" onclick="document.getElementById('help-modal').style.display='none'">&times;</button>
@@ -201,23 +207,38 @@
             <ul style="padding-left: 20px; margin-top: 5px;">
                 <li id="help-basic-1">Každý hráč začíná se 4 kartami lícem dolů a nejprve se podívá na 2 z nich.</li>
                 <li id="help-basic-2">V tahu si doberte kartu z balíčku nebo odhozu a případně ji vyměňte za svou.</li>
-                <li id="help-basic-3"><b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre. Kolo také končí, pokud se dobere celý balíček.</li>
-                <li id="help-basic-4">Hráč, který dosáhne přesně 100 bodů, je odměněn snížením skóre na 50!</li>
+                <li id="help-basic-3"><b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre.</li>
+                <li id="help-basic-4"><b>100 bodů:</b> Hráč, který dosáhne přesně 100 bodů, je 1x za hru odměněn snížením skóre na 50, pokud v daném kole někdo nepřesáhl hranici 100 bodů.</li>
+                <li id="help-basic-5"><b>Kdo volal KABO:</b> Indikuje to žlutá záře kolem jeho kolečka se jménem (hráč).</li>
+                <li id="help-basic-6"><b>Balíček:</b> Pokud v něm zbývá 5 a méně karet, začne červeně blikat a oznamovat, že balíček bude brzo prázdný. Jakmile dojde, kolo okamžitě končí.</li>
+                <li id="help-basic-7"><b>Log hry:</b> Tlačítko logu v menu (ikona 📜) otevírá podrobnou historii odehraných tahů.</li>
             </ul>
 
             <h3 id="help-multi-title" style="margin-bottom: 5px; color: #2c3e50;">Výměna více karet</h3>
             <ul style="padding-left: 20px; margin-top: 5px;">
                 <li id="help-multi-1">Pokud máte více karet stejné hodnoty, můžete je zahodit všechny najednou a vyměnit za jednu taženou. Označte je a klikněte na Potvrdit.</li>
                 <li id="help-multi-2"><b>Úspěch:</b> Všechny se zahodí, nová karta jde na místo jedné z nich.</li>
-                <li id="help-multi-3" style="color: #c0392b;"><b>Neúspěch:</b> Pokud se karty neshodují, zůstanou ležet lícem nahoru. Tažená karta se přidá na konec řady. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!</li>
+                <li id="help-multi-3" style="color: #c0392b;"><b>Neúspěch:</b> Pokud se neshodují, zůstanou lícem nahoru. Tažená se přidá k nim. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!</li>
             </ul>
 
-            <h3 id="help-effect-title" style="margin-bottom: 5px; color: #2c3e50;">Efekty (při zahození tažené karty)</h3>
-            <ul style="padding-left: 20px; margin-top: 5px;">
-                <li id="help-effect-1"><b>7-8 (KUK):</b> Podíváte se na 1 svou kartu.</li>
-                <li id="help-effect-2"><b>9-10 (ŠPION):</b> Podíváte se na 1 soupeřovu kartu.</li>
-                <li id="help-effect-3"><b>11-12 (KŠEFT):</b> Vyměníte svou kartu za cizí (naslepo).</li>
-            </ul>
+            <h3 id="help-cards-title" style="margin-bottom: 5px; color: #2c3e50;">Přehled karet (celkem 52)</h3>
+            <table class="help-table">
+                <thead>
+                    <tr>
+                        <th id="help-cards-th1">Karty</th>
+                        <th id="help-cards-th2">Počet</th>
+                        <th id="help-cards-th3">Efekt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><b>0</b></td><td id="help-cards-c1">2 kusy</td><td id="help-cards-num0">Číslo</td></tr>
+                    <tr><td><b>1 – 6</b></td><td id="help-cards-c2">4 od každé</td><td id="help-cards-num1">Číslo</td></tr>
+                    <tr><td><b>7 – 8</b></td><td id="help-cards-c3">4 od každé</td><td><b id="help-cards-peek">KUK</b> <span id="help-cards-peek-desc">(Podívej se na 1 svou kartu)</span></td></tr>
+                    <tr><td><b>9 – 10</b></td><td id="help-cards-c4">4 od každé</td><td><b id="help-cards-spy">ŠPION</b> <span id="help-cards-spy-desc">(Podívej se na 1 cizí kartu)</span></td></tr>
+                    <tr><td><b>11 – 12</b></td><td id="help-cards-c5">4 od každé</td><td><b id="help-cards-swap">KŠEFT</b> <span id="help-cards-swap-desc">(Vyměň naslepo kartu s cizí)</span></td></tr>
+                    <tr><td><b>13</b></td><td id="help-cards-c6">2 kusy</td><td id="help-cards-num13">Číslo</td></tr>
+                </tbody>
+            </table>
 
             <h3 id="help-ai-title" style="margin-bottom: 5px; color: #2c3e50;">Umělá inteligence (AI)</h3>
             <p id="help-ai-desc" style="margin-top: 0;">Zvolenou obtížnost ukazuje barevný indikátor v horním menu:</p>
@@ -230,6 +251,7 @@
     </div>
 </div>
 
+    <!-- Nastavení Modal -->
     <div id="setup-modal" class="modal">
     <div class="modal-content">
         <h2 id="setup-title">Zvolte herní režim</h2>
@@ -246,6 +268,7 @@
     </div>
 </div>
 
+    <!-- Log Modal -->
     <div id="log-modal" class="modal">
         <div class="modal-content">
             <button class="close-btn" onclick="document.getElementById('log-modal').style.display='none'">&times;</button>
@@ -265,7 +288,7 @@
 				newGame: "Nová hra", saveGame: "Uložit hru", loadGame: "Načíst hru", buttonHelp: "Pravidla",
                 deck: "Balíček", discard: "Odhoz", active: "Vytažená", btnDiscard: "Zahodit", btnEffect: "Efekt", btnNext: "Další kolo",
                 msgLook: "Podívej se na 2 své karty.", msgTurn: "Jsi na tahu. Ber kartu | volej KABO!", 
-                msgTurnAI: "Zpracovávám tah AI...", msgDrawn: "Lízl jsi. Vyměň kartu za svou, nebo ji zahoď.", 
+                msgTurnAI: "Zpracovávám tah AI...", msgDrawn: "Lízl jsi. Vyměň kartu se svou, nebo ji zahoď.", 
                 msgPeek: "KUK: Klikni na 1 svou kartu.", msgSpy: "ŠPION: Klikni na 1 soupeřovu kartu.", 
                 msgSwap1: "KŠEFT: Vyber svou kartu k výměně.", msgSwap2: "KŠEFT: Vyber soupeřovu kartu k výměně.", 
                 msgCabo: "Zvolal KABO! Poslední kolo pro ostatní.", msgRoundOver: "Konec kola!",
@@ -275,20 +298,26 @@
                 helpBasicTitle: "Základní pravidla", helpBasicGoal: "Cíl: Mít na konci kola co <b>nejnižší součet</b> karet.",
                 helpBasic1: "Každý hráč začíná se 4 kartami lícem dolů a nejprve se podívá na 2 z nich.",
                 helpBasic2: "V tahu si doberte kartu z balíčku nebo odhozu a případně ji vyměňte za svou.",
-                helpBasic3: "<b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre. Kolo také končí, pokud se dobere celý balíček.",
-                helpBasic4: "Hráč, který dosáhne přesně 100 bodů, je odměněn snížením skóre na 50!",
-                helpEffectTitle: "Efekty (při zahození tažené karty)", helpEffect1: "<b>7-8 (KUK):</b> Podíváte se na 1 svou kartu.",
-                helpEffect2: "<b>9-10 (ŠPION):</b> Podíváte se na 1 soupeřovu kartu.", helpEffect3: "<b>11-12 (KŠEFT):</b> Vyměníte svou kartu za cizí (naslepo).",
+                helpBasic3: "<b>KABO!:</b> Ohlašuje konec kola. Ostatní hráči odehrají 1 tah a následně se počítá skóre.",
+                helpBasic4: "<b>100 bodů:</b> Hráč, který dosáhne přesně 100 bodů, je 1x za hru odměněn snížením skóre na 50, pokud v daném kole někdo nepřesáhl hranici 100 bodů.",
+                helpBasic5: "<b>Kdo volal KABO:</b> Indikuje to žlutá záře kolem jeho kolečka se jménem (hráč).",
+                helpBasic6: "<b>Balíček:</b> Pokud v něm zbývá 5 a méně karet, začne červeně blikat a oznamovat, že balíček bude brzo prázdný. Jakmile dojde, kolo okamžitě končí.",
+                helpBasic7: "<b>Log hry:</b> Tlačítko logu v menu (ikona 📜) otevírá podrobnou historii odehraných tahů.",
+                helpCardsTitle: "Přehled karet (celkem 52)", helpCardsTh1: "Karty", helpCardsTh2: "Počet", helpCardsTh3: "Efekt",
+                helpCardsC1: "2 kusy", helpCardsC2: "4 od každé",
+                helpCardsNum: "Číslo", helpCardsPeek: "KUK", helpCardsPeekDesc: "(Podívej se na 1 svou kartu)",
+                helpCardsSpy: "ŠPION", helpCardsSpyDesc: "(Podívej se na 1 cizí kartu)",
+                helpCardsSwap: "KŠEFT", helpCardsSwapDesc: "(Vyměň naslepo kartu s cizí)",
                 helpAiTitle: "Umělá inteligence (AI)", helpAiDesc: "Zvolenou obtížnost ukazuje barevný indikátor v horním menu:",
                 helpAi1: "🟢 <b>Lehká:</b> Hraje spíše náhodně a KABO volá při odhadovaném součtu 6 a méně, pouze single swap",
                 helpAi2: "🟡 <b>Střední:</b> Částečně si pamatuje odkryté karty a KABO volá při součtu 5 a méně, stále jen single swap ",
                 helpAi3: "🔴 <b>Těžká:</b> Má dokonalou paměť na viděné karty, efektivně používá schopnosti, hraje agresivně a KABO volá až při součtu 4 a méně, používá multiswap, snižuje karty na ruce",
 				msgTurnAfterKabo: "Ohlášeno KABO. Odehraj svůj poslední tah.", msgWinner: "VYHRÁL",
                 btnConfirm: "Potvrdit", msgMultiSuccess: "Výměna byla úspěšná!", msgMultiFail: "Chyba! Karty se neshodují. Zůstávají odkryté.",
-                msgPenalty: "Trest! Doberáš skrytou kartu navíc.", helpMultiTitle: "Výměna více karet",
+                msgPenalty: "Trest! Dobíráš skrytou kartu navíc.", helpMultiTitle: "Výměna více karet",
                 helpMulti1: "Pokud máte více karet stejné hodnoty, můžete je zahodit všechny najednou a vyměnit za jednu taženou. Označte je a klikněte na Potvrdit.",
                 helpMulti2: "<b>Úspěch:</b> Všechny se zahodí, nová karta jde na místo jedné z nich.",
-                helpMulti3: "<b>Neúspěch:</b> Pokud se karty neshodují, zůstanou ležet lícem nahoru. Tažená karta se přidá na konec řady. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!",
+                helpMulti3: "<b>Neúspěch:</b> Pokud se neshodují, zůstanou lícem nahoru. Tažená se přidá k nim. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!",
                 // Log Dict CZ
                 logRound: "--- Nové kolo ---", logDrawDeck: "lízl z balíčku.", logDrawDiscard: "vzal z odhozu",
                 logDiscard: "zahodil taženou kartu.", logKabo: "ZVOLAL KABO!", logSwapDraw: "vyměnil kartu za taženou.",
@@ -311,10 +340,16 @@
 				rulesTitle: "CABO Rules & AI", helpBasicTitle: "Basic Rules", helpBasicGoal: "Goal: Have the <b>lowest sum</b> of cards at the end of the round.",
                 helpBasic1: "Players start with 4 face-down cards and peek at 2 of them first.",
                 helpBasic2: "On your turn, draw from the deck or discard pile, and optionally swap it with yours.",
-                helpBasic3: "<b>CABO!:</b> Calls the end of the round. Others play 1 final turn, then score is calculated. Round also ends if deck is empty.",
-                helpBasic4: "Exactly 100 points drops your score down to 50!",
-                helpEffectTitle: "Effects (when discarding a drawn card)", helpEffect1: "<b>7-8 (PEEK):</b> Look at 1 of your cards.",
-                helpEffect2: "<b>9-10 (SPY):</b> Look at 1 of an opponent's cards.", helpEffect3: "<b>11-12 (SWAP):</b> Swap your card with an opponent's blind.",
+                helpBasic3: "<b>CABO!:</b> Calls the end of the round. Others play 1 final turn, then score is calculated.",
+                helpBasic4: "<b>100 points:</b> A player reaching exactly 100 points is rewarded once per game by having their score reduced to 50, provided no one exceeded 100 points in that round.",
+                helpBasic5: "<b>KABO caller:</b> The player who called KABO is indicated by a yellow glow around their name badge.",
+                helpBasic6: "<b>Deck:</b> If 5 or fewer cards remain, it starts blinking red to warn it will soon be empty. If it empties, the round ends immediately.",
+                helpBasic7: "<b>Game Log:</b> The log button in the top menu (📜 icon) opens the detailed move history.",
+                helpCardsTitle: "Card Overview (52 total)", helpCardsTh1: "Cards", helpCardsTh2: "Count", helpCardsTh3: "Effect",
+                helpCardsC1: "2 pieces", helpCardsC2: "4 of each",
+                helpCardsNum: "Number", helpCardsPeek: "PEEK", helpCardsPeekDesc: "(Look at 1 of your cards)",
+                helpCardsSpy: "SPY", helpCardsSpyDesc: "(Look at 1 of opponent's cards)",
+                helpCardsSwap: "SWAP", helpCardsSwapDesc: "(Swap a card blindly with opponent)",
                 helpAiTitle: "Artificial Intelligence (AI)", helpAiDesc: "The chosen difficulty is indicated by a colored smiley in the top menu:",
                 helpAi1: "🟢 <b>Easy:</b> Plays mostly randomly, calls CABO at estimated sum 6 or less, only single swap",
                 helpAi2: "🟡 <b>Medium:</b> Partially remembers revealed cards, calls CABO at sum 5 or less, still single swap",
@@ -346,12 +381,22 @@
 
         function getCardColor(type) { return { number: "#5bc0ff", peek_self: "#ffd166", peek_opp: "#06d6a0", swap: "#ff6b6b", cabo: "#c77dff" }[type]; }
 
-        function getIcon(type) {
+        function getIcon(type, val) {
             switch(type) {
                 case "peek_self": return `<path d="M 15 50 Q 50 20 85 50 Q 50 80 15 50 Z" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="currentColor"/>`;
                 case "peek_opp": return `<path d="M 15 50 Q 50 20 85 50 Q 50 80 15 50 Z" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="6,6"/><circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" stroke-width="6"/>`;
-                case "swap": return `<path d="M 20 40 L 70 40 M 55 25 L 70 40 L 55 55" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M 80 60 L 30 60 M 45 45 L 30 60 L 45 75" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>`;
-                default: return `<polygon points="50,25 75,65 25,65" fill="none" stroke="currentColor" stroke-width="6"/>`;
+                case "swap": return `<path d="M 25 38 L 75 38 M 60 26 L 75 38 L 60 50" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M 75 52 L 25 52 M 40 40 L 25 52 L 40 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`;
+                default: 
+                    const r = 24;
+                    const c = 2 * Math.PI * r;
+                    const ratio = val / 13;
+                    const offset = c * (1 - ratio);
+                    
+                    const bgCircle = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="currentColor" stroke-width="6" opacity="0.2"/>`;
+                    const fgCircle = val > 0 ? `<circle cx="50" cy="50" r="${r}" fill="none" stroke="currentColor" stroke-width="6" stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 50 50)"/>` : '';
+                    const centerText = `<text x="50" y="58" text-anchor="middle" font-size="24" font-weight="bold" font-family="sans-serif" fill="currentColor">${val}</text>`;
+                    
+                    return bgCircle + fgCircle + centerText;
             }
         }
 
@@ -364,7 +409,7 @@
             <svg width="100%" height="100%" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
                 <rect x="2" y="2" width="96" height="136" rx="8" fill="#2c3e50" stroke="${color}" stroke-width="4"/>
                 <text x="14" y="28" fill="${color}" font-size="24" font-weight="bold" font-family="sans-serif">${val}</text>
-                <g transform="translate(0, 15)" color="${color}">${getIcon(type)}</g>
+                <g transform="translate(0, 15)" color="${color}">${getIcon(type, val)}</g>
                 ${type !== 'number' ? `<text x="50" y="105" text-anchor="middle" fill="${color}" font-size="14" font-weight="bold" font-family="sans-serif">${label}</text>` : ''}
                 <g transform="translate(86, 112) rotate(180)">
                     <text x="0" y="0" fill="${color}" font-size="24" font-weight="bold" font-family="sans-serif">${val}</text>
@@ -446,14 +491,34 @@
                 document.getElementById('help-basic-2').innerHTML = t('helpBasic2');
                 document.getElementById('help-basic-3').innerHTML = t('helpBasic3');
                 document.getElementById('help-basic-4').innerHTML = t('helpBasic4');
+                document.getElementById('help-basic-5').innerHTML = t('helpBasic5');
+                document.getElementById('help-basic-6').innerHTML = t('helpBasic6');
+                document.getElementById('help-basic-7').innerHTML = t('helpBasic7');
                 document.getElementById('help-multi-title').innerHTML = t('helpMultiTitle');
                 document.getElementById('help-multi-1').innerHTML = t('helpMulti1');
                 document.getElementById('help-multi-2').innerHTML = t('helpMulti2');
                 document.getElementById('help-multi-3').innerHTML = t('helpMulti3');
-                document.getElementById('help-effect-title').innerHTML = t('helpEffectTitle');
-                document.getElementById('help-effect-1').innerHTML = t('helpEffect1');
-                document.getElementById('help-effect-2').innerHTML = t('helpEffect2');
-                document.getElementById('help-effect-3').innerHTML = t('helpEffect3');
+                
+                document.getElementById('help-cards-title').innerHTML = t('helpCardsTitle');
+                document.getElementById('help-cards-th1').innerHTML = t('helpCardsTh1');
+                document.getElementById('help-cards-th2').innerHTML = t('helpCardsTh2');
+                document.getElementById('help-cards-th3').innerHTML = t('helpCardsTh3');
+                document.getElementById('help-cards-c1').innerHTML = t('helpCardsC1');
+                document.getElementById('help-cards-c2').innerHTML = t('helpCardsC2');
+                document.getElementById('help-cards-c3').innerHTML = t('helpCardsC2');
+                document.getElementById('help-cards-c4').innerHTML = t('helpCardsC2');
+                document.getElementById('help-cards-c5').innerHTML = t('helpCardsC2');
+                document.getElementById('help-cards-c6').innerHTML = t('helpCardsC1');
+                document.getElementById('help-cards-num0').innerHTML = t('helpCardsNum');
+                document.getElementById('help-cards-num1').innerHTML = t('helpCardsNum');
+                document.getElementById('help-cards-num13').innerHTML = t('helpCardsNum');
+                document.getElementById('help-cards-peek').innerHTML = t('helpCardsPeek');
+                document.getElementById('help-cards-peek-desc').innerHTML = t('helpCardsPeekDesc');
+                document.getElementById('help-cards-spy').innerHTML = t('helpCardsSpy');
+                document.getElementById('help-cards-spy-desc').innerHTML = t('helpCardsSpyDesc');
+                document.getElementById('help-cards-swap').innerHTML = t('helpCardsSwap');
+                document.getElementById('help-cards-swap-desc').innerHTML = t('helpCardsSwapDesc');
+                
                 document.getElementById('help-ai-title').innerHTML = t('helpAiTitle');
                 document.getElementById('help-ai-desc').innerHTML = t('helpAiDesc');
                 document.getElementById('help-ai-1').innerHTML = t('helpAi1');
@@ -509,7 +574,7 @@
                 pConfigs = [{key:'H1', ai:false, c:'#3498db'}, {key:'A1', ai:true, c:'#e74c3c'}, {key:'A2', ai:true, c:'#2ecc71'}, {key:'A3', ai:true, c:'#9b59b6'}];
             }
 
-            S.players = pConfigs.map(cfg => ({ key: cfg.key, isAI: cfg.ai, color: cfg.c, score: 0, cards: [], known: [], aiMemory: [false,false,false,false] }));
+            S.players = pConfigs.map(cfg => ({ key: cfg.key, isAI: cfg.ai, color: cfg.c, score: 0, cards: [], known: [], aiMemory: [false,false,false,false], scoreReduced: false }));
             S.log = []; 
             renderLog();
             startRound();
@@ -839,6 +904,8 @@
 
         function callKabo(fromAI = false) { 
             if (S.phase !== 'TURN_START' || (S.players[S.currentPlayer].isAI && !fromAI)) return; 
+            if (S.caboCaller !== null) return; 
+            
             S.caboCaller = S.currentPlayer; 
             addLog(`!!! ${S.players[S.currentPlayer].key} ${t('logKabo')} !!!`);
             msg(S.players[S.currentPlayer].key + " " + t('msgCabo')); 
@@ -886,15 +953,27 @@
                 if (sums[S.caboCaller] > min) sums[S.caboCaller] += 10;
             }
 
+            let over100ThisRound = false;
             S.players.forEach((p, i) => { 
                 p.score += sums[i]; 
-                if(p.score === 100) p.score = 50; 
+                if(p.score > 100) {
+                    over100ThisRound = true;
+                }
             });
+
+            if (!over100ThisRound) {
+                S.players.forEach(p => {
+                    if (p.score === 100 && !p.scoreReduced) {
+                        p.score = 50;
+                        p.scoreReduced = true;
+                    }
+                });
+            }
             
             document.getElementById('btn-next-round').style.display = 'inline-block';
-            let over100 = S.players.some(p => p.score > 100);
+            let gameFinished = S.players.some(p => p.score > 100);
             
-            if(over100) {
+            if(gameFinished) {
                 let winner = S.players.reduce((prev, curr) => prev.score < curr.score ? prev : curr);
                 S.lastRoundMsg = `🏆 ${t('msgWinner') || 'VYHRÁL'}: ${winner.key}`;
                 msg(S.lastRoundMsg);
@@ -947,7 +1026,7 @@ function shouldCallCabo(player, level='easy') {
 function doEasyAI() {
     let me = S.currentPlayer;
     let player = S.players[me];
-    if(shouldCallCabo(player, 'easy')) { callKabo(true); return; }
+    if(S.caboCaller === null && shouldCallCabo(player, 'easy')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
@@ -994,7 +1073,7 @@ function doEasyAI() {
 function doMediumAI() {
     let me = S.currentPlayer;
     let player = S.players[me];
-    if(shouldCallCabo(player, 'medium')) { callKabo(true); return; }
+    if(S.caboCaller === null && shouldCallCabo(player, 'medium')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
@@ -1044,7 +1123,7 @@ function doMediumAI() {
 function doHardAI() {
     let me = S.currentPlayer;
     let player = S.players[me];
-    if(shouldCallCabo(player, 'hard')) { callKabo(true); return; }
+    if(S.caboCaller === null && shouldCallCabo(player, 'hard')) { callKabo(true); return; }
 
     let topDiscard = S.discard[S.discard.length - 1];
     let worst = findWorstCard(player);
@@ -1127,6 +1206,7 @@ function doAITurn() {
                 if (S.players) {
                     S.players.forEach(p => {
                         if (!p.aiMemory) p.aiMemory = [false, false, false, false];
+                        if (p.scoreReduced === undefined) p.scoreReduced = false;
                     });
                 }
 
@@ -1152,6 +1232,13 @@ function doAITurn() {
             } else { 
                 showToast(t('noSave')); 
             } 
+        }
+
+        // Zavírání modálních oken kliknutím mimo ně (na pozadí)
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
         }
 
         window.onload = () => {
