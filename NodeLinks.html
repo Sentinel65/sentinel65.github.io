@@ -265,6 +265,10 @@ button.action-btn.active-toggle {
     font-size: 24px; cursor: pointer; color: red;
 }
 
+.modal.show {
+    display: flex:
+}
+
 .confirm-btns {
     display: flex; justify-content: center; gap: 12px; margin-top: 20px;
 }
@@ -303,6 +307,117 @@ button.action-btn.active-toggle {
 .stat-canvas { width: 100%; display: block; margin: 0 auto 15px auto; background: var(--board-bg); border: 1px solid #eee; border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
 .stat-log { font-style: italic; font-size: 10px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; color: #333; margin: 0; border: 1px solid #e0e0e0; }
 .clear-section label { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+
+.bonus-close {
+    position: absolute !important;
+    top: 5px;
+    right: 5px;
+
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    background: transparent !important;
+    border: none !important;
+
+    color: #ff6666;
+    font-size: 20px !important;
+    font-weight: bold;
+
+    cursor: pointer;
+    line-height: 28px;
+    text-align: center;
+}
+
+#bonusChoiceModal {
+    display: none;
+    position: fixed;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+}
+
+#bonusChoiceModal.show {
+    display: block;
+}
+
+#bonusChoiceModal .bonus-box {
+    background: rgba(0,0,0,0.95);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.25);
+    text-align: center;
+    min-width: 280px;
+}
+
+#bonusChoiceModal .bonus-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+#bonusChoiceModal .bonus-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+#bonusChoiceModal button {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 110px;
+}
+
+#bonusChoiceModal button:active {
+    transform: scale(0.95);
+} 
+
+    .die, 
+    .die:focus, 
+    .die:active, 
+    button, 
+    button:focus, 
+    button:active { 
+        outline: none; 
+        -webkit-tap-highlight-color: transparent; 
+    }
+
+.bonus-box { 
+    position: relative; 
+    }
+
+.bonus-close { 
+    position: absolute; 
+    top: 8px; 
+    right: 10px; 
+    background: none; 
+    border: none; 
+    color: #ff4444; 
+    font-size: 22px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    padding: 0; 
+    width: 28px; 
+    height: 28px; 
+    line-height: 28px; 
+    text-align: center; 
+    } 
+
+.bonus-close:hover { 
+    transform: scale(1.15); 
+    }
+
 </style>
 </head>
 
@@ -468,7 +583,7 @@ const texts = {
                 <li><strong>Tah:</strong> Barevná kostka určuje barvu, bílá kostka určuje směr. Stačí kliknout na výchozí bod a čára se narýsuje automaticky. Zobrazení platných tahů z výchozího bodu na hrací desce po hodu kostkami je možné zobrazit kliknutím na tlačítko 👁️, aktivní tlačítko pak vypadá <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Dvojitý hod:</strong> Padnou-li stejná čísla, můžete změnit hodnotu jedné kostky o +1 nebo -1, druhé kostce zůstane původní hodnota.</li>
                 <li><strong>Žetony (🪙):</strong> Propojíte-li uzel všemi 6 barvami, získáte žeton, který umožňuje klikáním libovolně změnit hodnotu jedné kostky. Druhé kostce zůstane původní hodnota. Režim 🪙 aktivujeme / deaktivujeme ručně kliknutím na jednu z kostek nebo tlačítko 🪙. Aktivace  je indikována blikáním piktogramu. <span class="help-pulse">🪙</span></li>
-                <li><strong>Kombinování:</strong> Nelze současně využít žeton a úpravu z dvojitého hodu. Přednost v této situaci má žeton.</li>
+                <li><strong>Kombinace bonusů:</strong>  nastane ve 2 případech, kdy kostky vygenerují double a hráč má zároveň žeton 1) double má platný tah, pak kliknutím na kostky vyvoláme dialog, kde si vybereme bonus, 2a) double nemá platný tah, kliknutím na kostky vyvoláme dialog, kde vybereme bonus (oba mají platný tah), 2b) double nemá platný tah, kliknutím na kostky vyvoláme dialog, kde bude k dispozici pouze ten bonus, který má platný tah.</li>
                 <li><strong>Kontrola hrací desky:</strong> Ke konci hry, jak se deska zaplňuje spojnicemi v uzlech, se  může objevit hláška <i>Deska je zablokovaná! Konec hry.</i> Znamená to, že program nekontroluje jen existenci volných polí, ale ověřuje, zda lze vytvořit platný tah podle pravidel barev v uzlech.</li>
                 <li><strong>Chyby:</strong> Pokud nemáte platný tah, systém vyplní chybový kruh automaticky, nebo vás nechá tah zachránit úpravou kostek, pokud máte v zásobníku ŽETON. Záchranu lze případně vzdát dalším kliknutím na (🎲).</li>
  
@@ -521,20 +636,24 @@ const texts = {
             <h3>Log hry</h3>
             <p>Na konci hry se v logu hry vypíše bodové hodnocení s podrobným výčtem bodů za jednotlivé uzly a stupně.</p>
             <pre style="font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap;">=========================
-Konec hry! Hodnocení:
-• Skupina 2 uzlů (4 vazby): 6 b.
-• Skupina 2 uzlů (4 vazby): 6 b.
-• Skupina 2 uzlů (5 vazeb): 10 b.
-• Skupina 6 uzlů (6 vazeb): 60 b.
+📊 Double: 10× | Žetony: 6/7
 ---
-2. stupeň: 0
-3. stupeň: 0
-4. stupeň: 12
-5. stupeň: 10
+Hodnocení / Tier: Dobrá práce
+Celkové skóre: 78
+---
 6. stupeň: 60
+5. stupeň: 10
+4. stupeň: 0
+3. stupeň: 8
+2. stupeň: 0
 ---
-Celkové skóre: 82
-Hodnocení: Mistr
+• Skupina 3 uzlů (6 vazeb): 30 b.
+• Skupina 3 uzlů (6 vazeb): 30 b.
+• Skupina 2 uzlů (5 vazeb): 10 b.
+• Skupina 2 uzlů (3 vazby): 4 b.
+• Skupina 2 uzlů (3 vazby): 4 b.
+=========================
+Konec hry! Vyhodnocení:
 ---</pre>
 			<h3>Statistiky</h3>
             <p>Po skončení hry se na hrací desce graficky znázorní bodované a nebodované uzly. Podrobná data s výčtem bodů se uloží do Logu hry a také do Statistik, kde se bude ukládat hra s nejlepším skóre a poslední hra. U obou bude vidět hrací deska ve stavu na konci hry a výpis, za jaké uzly byl daný počet bodů přidělen.</p>
@@ -584,7 +703,7 @@ Hodnocení: Mistr
                 <li><strong>Turn:</strong> The colored die determines the color, the white die determines the direction. Just click the starting node and the line will be drawn automatically. Valid moves from the starting point on the board after rolling the dice can be displayed by clicking the 👁️ button, an active button then looks like <span class="help-highlight">👁️</span>.</li>
                 <li><strong>Doubles:</strong> If the same numbers are rolled, you earn a token that allows you to change the value of one die by +1 or -1, the other keeps its original value.</li>
                 <li><strong>Tokens (🪙):</strong> If you link a node with all 6 colors, you can cycle one die to freely change its value. The other die keeps its original value. You can manually enable or disable 🪙 mode by clicking on one of the dice or the 🪙 button. When enabled, the icon will flash. <span class="help-pulse">🪙</span></li>
-                <li><strong>Combining:</strong> Cannot combine token use and double roll modification. The token has priority.</li>
+                <li><strong>A bonus combination:</strong>  occurs in two cases where the dice show doubles and the player also has a token: 1) the double is a valid move; clicking on the dice opens a dialog where you select a bonus; 2a) the double is not a valid move; clicking on the dice opens a dialog where you select a bonus (both are valid moves), 2b) The double does not have a valid move; clicking on the dice opens a dialog where only the bonus with a valid move will be available. </li>
                 <li><strong>Checking the Game Board:</strong> Toward the end of the game, as the board fills with lines connecting the nodes, the message  <i>Board is completely locked! Game over.</i> may appear. This means that the program does not merely check for empty spaces, but verifies whether a valid move can be made according to the color rules at the nodes.</li>
                 <li><strong>Mistakes:</strong> If you don't have a valid move, the system will automatically fill in the error circle, or it will let you save your turn by adjusting the dice if you have a TOKEN in your stack. You can forfeit rescue by clicking (🎲) again.</li>
             </ul>
@@ -636,20 +755,24 @@ Hodnocení: Mistr
             <h3>Log game</h3>
             <p>At the end of the game, the game log displays the final score, including a detailed breakdown of points for each node and level.</p>
             <pre style="font-style: italic; font-size: 12px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; white-space: pre-wrap;">=========================
-Game Over! Evaluation:
-• Cluster of 2 nodes (4 links): 6 b.
-• Cluster of 2 nodes (4 links): 6 b.
-• Cluster of 2 nodes (5 links): 10 b.
-• Cluster of 6 nodes (6 links): 60 b.
+📊 Double: 10× | Tokens: 6/7
 ---
-2nd degree: 0
-3rd degree: 0
-4th degree: 12
-5th degree: 10
+Rank / Tier: Good job
+Total score: 78
+---
 6th degree: 60
+5th degree: 10
+4th degree: 0
+3rd degree: 8
+2nd degree: 0
 ---
-Total score: 82
-Rank / Tier: Master
+• Cluster of 3 nodes (6 links): 30 p.
+• Cluster of 3 nodes (6 links): 30 p.
+• Cluster of 2 nodes (5 links): 10 p.
+• Cluster of 2 nodes (3 links): 4 p.
+• Cluster of 2 nodes (3 links): 4 p.
+=========================
+Game Over! Evaluation:
 ---</pre>
 
 			<h3>Statistics</h3>
@@ -725,6 +848,11 @@ let scoredNodes = []; // NOVÉ: Uchovává uzly, které získaly body
 let inactiveNodes = [];  // NOVÉ: Uchovává uzly, které ne   získaly body
 let finalTotalScore = 0; // NOVÉ CELKOVÉ SCǑRE NA KONCI HRY
 let gameLogStartIndex = 0; 
+let doublesRolled = 0;
+let tokensEarnedTotal = 0;
+
+const MAX_TOKEN_NODES = 7;
+
 let currentRoll = {
     originalColor: null,
     originalDir: null,
@@ -860,6 +988,8 @@ function refreshStatus() {
         return;
     }
 
+   
+
     // =====================================================
     // PRIORITA 1: ŽETON
     // =====================================================
@@ -888,10 +1018,12 @@ function refreshStatus() {
         return;
     }
 
-    // =====================================================
     // NEEXISTUJE PLATNÝ TAH
     // =====================================================
+    // =====================================================
     if (!hasAnyValidMove()) {
+
+        
 
         const canSaveToken =
             tokens > 0 &&
@@ -900,6 +1032,25 @@ function refreshStatus() {
         const canSaveDouble =
             currentRoll.isDoubles &&
             canSaveWithDoubleRoll();
+
+        // hráč má oba bonusy
+        if (
+            tokens > 0 &&
+            currentRoll.isDoubles &&
+            !currentRoll.bonusChoice &&
+            (canSaveToken || canSaveDouble)
+        ) {
+
+            showBonusChoiceModal(true);
+
+            updateStatus(
+                isCzech
+                    ? 'Vyberte bonus pro záchranu tahu.'
+                    : 'Choose a bonus to save your turn.'
+            );
+
+            return;
+        }
 
         if (canSaveToken || canSaveDouble) {
 
@@ -922,10 +1073,35 @@ function refreshStatus() {
     // =====================================================
     // DVOJITÝ HOD (pokud není aktivní žeton)
     // =====================================================
-    if (currentRoll.isDoubles) {
+    if (
+        currentRoll.bonusChoice === 'double'
+        ||
+        (
+            currentRoll.isDoubles &&
+            tokens === 0
+        )
+    ) {
 
         updateStatus(
             texts[isCzech ? 'cs' : 'en'].statusDouble
+        );
+
+        return;
+    }
+
+    if (
+        currentRoll.bonusChoice === 'token'
+        ||
+        (
+            tokens > 0 &&
+            !currentRoll.isDoubles
+        )
+    ) {
+
+        updateStatus(
+            isCzech
+                ? 'Žeton je k dispozici - klikněte na kostku.'
+                : 'Token available - click a die.'
         );
 
         return;
@@ -990,6 +1166,13 @@ function translateLogEntry(entry) {
             return (c ? `🪙 Získán žeton! Uzel (${entry.q},${entry.r}) dokončen.` : `🪙 Token earned! Node (${entry.q},${entry.r}) completed.`) + ` [${entry.tokensNow}]`;
         case 'undo': 
             return c ? '↩️ Krok zpět (tah vrácen)' : '↩️ Undo (move reverted)';
+        case 'game_stats':
+            return c ? `📊 Double: ${entry.doubles}× | Žetony: ${entry.tokens}/${entry.maxTokens}` : `📊 Doubles: ${entry.doubles}x | Tokens: ${entry.tokens}/${entry.maxTokens}`;
+        case 'single_bonus':
+            const isToken = entry.bonus === 'token';
+            const bNameCz = isToken ? '🪙 Žeton' : '🎲 Double';
+            const bNameEn = isToken ? '🪙 Token' : '🎲 Double';
+            return c ? `Platný tah pouze: ${bNameCz}` : `Valid move only: ${bNameEn}`;
     }
     return '';
 }
@@ -1652,6 +1835,10 @@ document.getElementById('tokenDisplay')
         // PŘIDÁNO: Reset kostek do původního stavu
         currentRoll.color = currentRoll.originalColor;
         currentRoll.dir = currentRoll.originalDir;
+        currentRoll.bonusChoice = null;
+        if (currentRoll.isDoubles) {
+    doublesRolled++;
+}
 
         refreshStatus();
         updateUI();
@@ -1817,7 +2004,11 @@ function calculateScores(doLog = true) {
         gameLogStartIndex = logEntries.length;
         addLogEntry({ code: 'game_over' });
     }
+    const doublesRolled =
+    logEntries.filter(e => e.code === 'doubles').length;
 
+    const tokensEarned =
+    logEntries.filter(e => e.code === 'token_earned').length;
     let foundClusters = false;
     for (let d = 2; d <= 6; d++) {
         let nodesOfDegree = nodes.filter(n => n.links.length === d);
@@ -1892,6 +2083,12 @@ function calculateScores(doLog = true) {
         addLogEntry({ code: 'total_score', score: totalScore });
         addLogEntry({ code: 'tier', score: totalScore });
         addLogEntry({ code: 'separator' });
+        addLogEntry({
+    code: 'game_stats',
+    doubles: doublesRolled,
+    tokens: tokensEarned,
+    maxTokens: MAX_TOKEN_NODES
+});
         
         let currentStats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
         let summaryEntries = logEntries.slice(gameLogStartIndex); 
@@ -1938,6 +2135,7 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     currentRoll.originalColor = currentRoll.color;
     currentRoll.tokenChoice = null; currentRoll.tokenUsed = false;
     currentRoll.doubleChoice = null; currentRoll.active = true;
+    currentRoll.bonusChoice = null;
     currentRoll.isDoubles = (currentRoll.dir === currentRoll.color);
 
     updateUI(); drawBoard();
@@ -1950,6 +2148,15 @@ document.getElementById('rollBtn').addEventListener('click', () => {
     if (!hasAnyValidMove()) {
         let canSaveToken = tokens > 0 && canSaveWithToken();
         let canSaveDouble = currentRoll.isDoubles && canSaveWithDoubleRoll();
+
+        // NOVÉ: Pokud má hráč oba bonusy, ale platný tah nabízí jen jeden z nich
+        if (tokens > 0 && currentRoll.isDoubles) {
+            if (canSaveToken && !canSaveDouble) {
+                addLogEntry({ code: 'single_bonus', bonus: 'token' });
+            } else if (!canSaveToken && canSaveDouble) {
+                addLogEntry({ code: 'single_bonus', bonus: 'double' });
+            }
+        }
 
         if (canSaveToken || canSaveDouble) {
             refreshStatus();
@@ -2020,98 +2227,123 @@ function handleDieModification(type) {
         return;
     }
 
+    const hasToken = tokens > 0;
+    const hasDouble = currentRoll.isDoubles;
+
+    // pokud existují oba bonusy a není vybrán
+    if (
+        hasToken &&
+        hasDouble &&
+        !currentRoll.bonusChoice
+    ) {
+        showBonusChoiceModal();
+        return;
+    }
+
     currentRoll.isModifying = true;
 
     const isColor = type === 'color';
-    const hasToken = tokens > 0; // hráč má žeton?
 
     // =====================================================
-    // 1) ABSOLUTNÍ PRIORITA: ŽETON
+    // ŽETON
     // =====================================================
-    if (hasToken) {
 
-        console.log('REŽIM: ŽETON (má prioritu nad double)');
+    if (
+        currentRoll.bonusChoice === 'token' ||
+        (hasToken && !hasDouble)
+    ) {
 
-        // vypnout double režim
+        console.log('REŽIM: ŽETON');
+
         currentRoll.doubleChoice = null;
 
         if (isColor) {
 
-            console.log('ŽETON BARVA');
+            currentRoll.dir =
+                currentRoll.originalDir;
 
-            currentRoll.dir = currentRoll.originalDir;
-            currentRoll.tokenChoice = 'color';
+            currentRoll.tokenChoice =
+                'color';
 
-            currentRoll.color = getNextWildcardValue(currentRoll.color);
-
-            console.log('NOVÁ BARVA:', currentRoll.color);
-            console.log('SMĚR RESET NA:', currentRoll.dir);
+            currentRoll.color =
+                getNextWildcardValue(
+                    currentRoll.color
+                );
 
         } else {
 
-            console.log('ŽETON SMĚR');
+            currentRoll.color =
+                currentRoll.originalColor;
 
-            currentRoll.color = currentRoll.originalColor;
-            currentRoll.tokenChoice = 'dir';
+            currentRoll.tokenChoice =
+                'dir';
 
-            currentRoll.dir = getNextWildcardValue(currentRoll.dir);
-
-            console.log('NOVÝ SMĚR:', currentRoll.dir);
-            console.log('BARVA RESET NA:', currentRoll.color);
+            currentRoll.dir =
+                getNextWildcardValue(
+                    currentRoll.dir
+                );
         }
 
         currentRoll.tokenUsed = true;
 
-        // pokud se vrátí na původní hodnotu → žeton se deaktivuje
         if (
-            (currentRoll.tokenChoice === 'color' && currentRoll.color === currentRoll.originalColor) ||
-            (currentRoll.tokenChoice === 'dir' && currentRoll.dir === currentRoll.originalDir)
+            (
+                currentRoll.tokenChoice === 'color' &&
+                currentRoll.color === currentRoll.originalColor
+            )
+            ||
+            (
+                currentRoll.tokenChoice === 'dir' &&
+                currentRoll.dir === currentRoll.originalDir
+            )
         ) {
-            console.log('ŽETON VRÁCEN NA PŮVODNÍ HODNOTU');
+
             currentRoll.tokenUsed = false;
             currentRoll.tokenChoice = null;
         }
     }
 
     // =====================================================
-    // 2) DRUHÁ PRIORITA: DVOJITÝ HOD
+    // DVOJITÝ HOD
     // =====================================================
-    else if (currentRoll.isDoubles) {
 
-        console.log('REŽIM: DVOJITÝ HOD (použito jen když není žeton)');
+    else if (
+        currentRoll.bonusChoice === 'double' ||
+        (hasDouble && !hasToken)
+    ) {
+
+        console.log('REŽIM: DVOJITÝ HOD');
 
         currentRoll.tokenUsed = false;
         currentRoll.tokenChoice = null;
 
         if (isColor) {
 
-            console.log('KLIK NA BARVU');
+            currentRoll.dir =
+                currentRoll.originalDir;
 
-            currentRoll.dir = currentRoll.originalDir;
-            currentRoll.doubleChoice = 'color';
+            currentRoll.doubleChoice =
+                'color';
 
-            currentRoll.color = getNextTokenValue(
-                currentRoll.originalColor,
-                currentRoll.color
-            );
-
-            console.log('NOVÁ BARVA:', currentRoll.color);
-            console.log('SMĚR RESET NA:', currentRoll.dir);
+            currentRoll.color =
+                getNextTokenValue(
+                    currentRoll.originalColor,
+                    currentRoll.color
+                );
 
         } else {
 
-            console.log('KLIK NA SMĚR');
+            currentRoll.color =
+                currentRoll.originalColor;
 
-            currentRoll.color = currentRoll.originalColor;
-            currentRoll.doubleChoice = 'dir';
+            currentRoll.doubleChoice =
+                'dir';
 
-            currentRoll.dir = getNextTokenValue(
-                currentRoll.originalDir,
-                currentRoll.dir
-            );
-
-            console.log('NOVÝ SMĚR:', currentRoll.dir);
-            console.log('BARVA RESET NA:', currentRoll.color);
+            currentRoll.dir =
+                getNextTokenValue(
+                    currentRoll.originalDir,
+                    currentRoll.dir
+                );
         }
     }
 
@@ -2121,9 +2353,11 @@ function handleDieModification(type) {
     drawBoard();
 
     setTimeout(() => {
+
         currentRoll.isModifying = false;
-        console.log('KONEC MODIFIKACE');
+
         refreshStatus();
+
     }, 0);
 }
 
@@ -2185,6 +2419,7 @@ function attemptLink(n1, n2) {
         if (!node.tokenAwarded && colors.size === 6) {
             node.tokenAwarded = true; 
             tokens++; 
+            tokensEarnedTotal++;
             earned = true;
             addLogEntry({ code: 'token_earned', q: node.q, r: node.r, tokensNow: tokens });
         }
@@ -2195,6 +2430,8 @@ function attemptLink(n1, n2) {
     currentRoll.active = false;
     currentRoll.tokenUsed = false;
     currentRoll.tokenChoice = null;
+    currentRoll.bonusChoice = null;
+    currentRoll.doubleChoice = null;
     
     updateUI(); drawBoard(); refreshStatus();
     
@@ -2572,6 +2809,85 @@ document.getElementById('execClearBtn').addEventListener('click', () => {
         document.getElementById('statsModal').style.display = 'none';
     });
 });
+
+
+function showBonusChoiceModal(saveMode = false) {
+
+    document.getElementById('bonusTitle').textContent =
+        isCzech
+            ? 'Vyberte bonus'
+            : 'Choose Bonus';
+
+    const btnDouble =
+        document.getElementById('bonusDouble');
+
+    const btnToken =
+        document.getElementById('bonusToken');
+
+    if (saveMode) {
+
+        btnDouble.style.display =
+            (currentRoll.isDoubles && canSaveWithDoubleRoll())
+                ? ''
+                : 'none';
+
+        btnToken.style.display =
+            (tokens > 0 && canSaveWithToken())
+                ? ''
+                : 'none';
+
+    } else {
+
+        btnDouble.style.display =
+            currentRoll.isDoubles
+                ? ''
+                : 'none';
+
+        btnToken.style.display =
+            tokens > 0
+                ? ''
+                : 'none';
+    }
+
+
+    
+
+    document
+        .getElementById('bonusChoiceModal')
+        .classList.add('show');
+}
+
+function hideBonusChoiceModal() {
+
+    document
+        .getElementById('bonusChoiceModal')
+        .classList.remove('show');
+
+    }
+
+
+function cancelBonusChoice() {
+    currentRoll.bonusChoice = null;
+    hideBonusChoiceModal();
+}
+
+
+function chooseBonus(type) {
+
+    currentRoll.bonusChoice = type;
+    hideBonusChoiceModal();
+    showToast(
+    type === 'token'
+        ? (isCzech ? '🪙 Vybrán žeton' : '🪙 Token selected')
+        : (isCzech ? '🎲🎲 Vybrán double' : '🎲🎲 Double selected')
+);
+    updateUI();
+    drawBoard();
+    refreshStatus();
+}
+
+
+
 // START
 applyTranslations();
 resizeCanvas(); 
@@ -2580,5 +2896,24 @@ refreshStatus();
 
 setTimeout(updateScrollHints, 150);
 </script>
+<div id="bonusChoiceModal" class="modal">
+    <div class="bonus-box">
+<button class="bonus-close" onclick="cancelBonusChoice()">✖</button>
+
+        <div class="bonus-title" id="bonusTitle">
+            Vyberte bonus
+        </div>
+        <div class="bonus-buttons">
+            <button id="bonusDouble" onclick="chooseBonus('double')">
+                🎲🎲
+            </button>
+            <button id="bonusToken" onclick="chooseBonus('token')">
+                🪙
+            </button>
+
+        </div>
+
+    </div>
+</div>
 </body>
 </html>
