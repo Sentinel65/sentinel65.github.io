@@ -212,6 +212,7 @@
                 <li id="help-basic-5"><b>Kdo volal KABO:</b> Indikuje to žlutá záře kolem jeho kolečka se jménem (hráč).</li>
                 <li id="help-basic-6"><b>Balíček:</b> Pokud v něm zbývá 5 a méně karet, začne červeně blikat a oznamovat, že balíček bude brzo prázdný. Jakmile dojde, kolo okamžitě končí.</li>
                 <li id="help-basic-7"><b>Log hry:</b> Tlačítko logu v menu (ikona 📜) otevírá podrobnou historii odehraných tahů.</li>
+                <li id="help-basic-8"><b>Kamikaze:</b> Pokud hráč na konci kola drží přesně dvě 12 a dvě 13, získá 0 bodů a ostatní 50! Pokud jiný hráč volal KABO, obdrží navíc standardní penalizaci +10 bodů (celkem 60).</li>
             </ul>
 
             <h3 id="help-multi-title" style="margin-bottom: 5px; color: #2c3e50;">Výměna více karet</h3>
@@ -287,7 +288,7 @@
             cz: { 
 				newGame: "Nová hra", saveGame: "Uložit hru", loadGame: "Načíst hru", buttonHelp: "Pravidla",
                 deck: "Balíček", discard: "Odhoz", active: "Vytažená", btnDiscard: "Zahodit", btnEffect: "Efekt", btnNext: "Další kolo",
-                msgLook: "Podívej se na 2 své karty.", msgTurn: "Jsi na tahu. Ber kartu | volej KABO!", 
+                msgLook: "Podívej se na 2 své karty.", msgTurn: "Jsi na tahu. Lízni kartu nebo volej KABO!", 
                 msgTurnAI: "Zpracovávám tah AI...", msgDrawn: "Lízl jsi. Vyměň kartu se svou, nebo ji zahoď.", 
                 msgPeek: "KUK: Klikni na 1 svou kartu.", msgSpy: "ŠPION: Klikni na 1 soupeřovu kartu.", 
                 msgSwap1: "KŠEFT: Vyber svou kartu k výměně.", msgSwap2: "KŠEFT: Vyber soupeřovu kartu k výměně.", 
@@ -303,6 +304,7 @@
                 helpBasic5: "<b>Kdo volal KABO:</b> Indikuje to žlutá záře kolem jeho kolečka se jménem (hráč).",
                 helpBasic6: "<b>Balíček:</b> Pokud v něm zbývá 5 a méně karet, začne červeně blikat a oznamovat, že balíček bude brzo prázdný. Jakmile dojde, kolo okamžitě končí.",
                 helpBasic7: "<b>Log hry:</b> Tlačítko logu v menu (ikona 📜) otevírá podrobnou historii odehraných tahů.",
+                helpBasic8: "<b>Kamikaze:</b> Pokud hráč na konci kola drží přesně dvě 12 a dvě 13, získá 0 bodů a ostatní 50! Pokud jiný hráč volal KABO, obdrží navíc standardní penalizaci +10 bodů (celkem 60).",
                 helpCardsTitle: "Přehled karet (celkem 52)", helpCardsTh1: "Karty", helpCardsTh2: "Počet", helpCardsTh3: "Efekt",
                 helpCardsC1: "2 kusy", helpCardsC2: "4 od každé",
                 helpCardsNum: "Číslo", helpCardsPeek: "KUK", helpCardsPeekDesc: "(Podívej se na 1 svou kartu)",
@@ -312,9 +314,9 @@
                 helpAi1: "🟢 <b>Lehká:</b> Hraje spíše náhodně a KABO volá při odhadovaném součtu 6 a méně, pouze single swap",
                 helpAi2: "🟡 <b>Střední:</b> Částečně si pamatuje odkryté karty a KABO volá při součtu 5 a méně, stále jen single swap ",
                 helpAi3: "🔴 <b>Těžká:</b> Má dokonalou paměť na viděné karty, efektivně používá schopnosti, hraje agresivně a KABO volá až při součtu 4 a méně, používá multiswap, snižuje karty na ruce",
-				msgTurnAfterKabo: "Ohlášeno KABO. Odehraj svůj poslední tah.", msgWinner: "VYHRÁL",
+				msgTurnAfterKabo: "Bylo vyhlášeno KABO. Odehraj svůj poslední tah.", msgWinner: "VYHRÁL",
                 btnConfirm: "Potvrdit", msgMultiSuccess: "Výměna byla úspěšná!", msgMultiFail: "Chyba! Karty se neshodují. Zůstávají odkryté.",
-                msgPenalty: "Trest! Dobíráš skrytou kartu navíc.", helpMultiTitle: "Výměna více karet",
+                msgPenalty: "Trest! Doberáš skrytou kartu navíc.", helpMultiTitle: "Výměna více karet",
                 helpMulti1: "Pokud máte více karet stejné hodnoty, můžete je zahodit všechny najednou a vyměnit za jednu taženou. Označte je a klikněte na Potvrdit.",
                 helpMulti2: "<b>Úspěch:</b> Všechny se zahodí, nová karta jde na místo jedné z nich.",
                 helpMulti3: "<b>Neúspěch:</b> Pokud se neshodují, zůstanou lícem nahoru. Tažená se přidá k nim. Při pokusu o 3 a více karet navíc dostanete trestnou kartu z balíčku lícem dolů!",
@@ -345,6 +347,7 @@
                 helpBasic5: "<b>KABO caller:</b> The player who called KABO is indicated by a yellow glow around their name badge.",
                 helpBasic6: "<b>Deck:</b> If 5 or fewer cards remain, it starts blinking red to warn it will soon be empty. If it empties, the round ends immediately.",
                 helpBasic7: "<b>Game Log:</b> The log button in the top menu (📜 icon) opens the detailed move history.",
+                helpBasic8: "<b>Kamikaze:</b> If a player holds exactly two 12s and two 13s at the end of the round, they score 0 and others get 50! If another player called CABO, they get an extra +10 penalty (60 total).",
                 helpCardsTitle: "Card Overview (52 total)", helpCardsTh1: "Cards", helpCardsTh2: "Count", helpCardsTh3: "Effect",
                 helpCardsC1: "2 pieces", helpCardsC2: "4 of each",
                 helpCardsNum: "Number", helpCardsPeek: "PEEK", helpCardsPeekDesc: "(Look at 1 of your cards)",
@@ -417,7 +420,7 @@
             </svg>`;
         }
 
-        let S = { deck: [], discard: [], players: [], currentPlayer: 0, caboCaller: null, phase: 'INIT', drawnCard: null, mode: 'pve', lang: 'cz', aiLevel: 'easy', lookCount: 0, swapTemp: null, multiSwapSelected: [], log: [] };
+        let S = { deck: [], discard: [], players: [], currentPlayer: 0, caboCaller: null, phase: 'INIT', drawnCard: null, mode: 'pve', lang: 'cz', aiLevel: 'easy', lookCount: 0, swapTemp: null, multiSwapSelected: [], log: []};
 
         function t(key) { return langDict[S.lang][key] || key; }
         function msg(text) { document.getElementById('message-board').innerText = text; }
@@ -429,6 +432,7 @@
             toast.className = "show";
             setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
         }
+
 
         // === HERNÍ LOG FUNKCE ===
         function addLog(msgText) {
@@ -494,6 +498,7 @@
                 document.getElementById('help-basic-5').innerHTML = t('helpBasic5');
                 document.getElementById('help-basic-6').innerHTML = t('helpBasic6');
                 document.getElementById('help-basic-7').innerHTML = t('helpBasic7');
+                document.getElementById('help-basic-8').innerHTML = t('helpBasic8');
                 document.getElementById('help-multi-title').innerHTML = t('helpMultiTitle');
                 document.getElementById('help-multi-1').innerHTML = t('helpMulti1');
                 document.getElementById('help-multi-2').innerHTML = t('helpMulti2');
@@ -944,10 +949,24 @@
             S.phase = 'GAME_OVER';
             let sums = S.players.map(p => p.cards.reduce((a,b) => a+b, 0));
             
-            function isK(c) { let c12=0, c13=0; c.forEach(x=>{if(x===12)c12++; if(x===13)c13++;}); return c12===2&&c13===2; }
-            let kIndex = S.players.findIndex(p => isK(p.cards));
-            if(kIndex !== -1) sums = sums.map((s, i) => i === kIndex ? 0 : 50);
-
+            // Striktní ověření na PŘESNĚ dvě 12 a dvě 13 (a nic víc = 4 karty)
+            function isKamikaze(c) { 
+                if (c.length !== 4) return false;
+                let c12 = c.filter(x => x === 12).length;
+                let c13 = c.filter(x => x === 13).length;
+                return c12 === 2 && c13 === 2; 
+            }
+            
+            let kIndex = S.players.findIndex(p => isKamikaze(p.cards));
+            
+            // Pokud nastalo Kamikaze, přepíšeme získané skóre
+            if(kIndex !== -1) {
+                // Hráč s Kamikaze dostane 0 bodů, ostatní dostanou 50 bodů
+                sums = sums.map((s, i) => i === kIndex ? 0 : 50);
+            }
+            
+            // Penalizace za CABO se kontroluje VŽDY - nezávisle na Kamikaze
+            // Pokud hráč volal CABO a nemá nejnižší sumu, dostane +10 bodů navíc
             if (S.caboCaller !== null) {
                 let min = Math.min(...sums);
                 if (sums[S.caboCaller] > min) sums[S.caboCaller] += 10;
@@ -1009,10 +1028,22 @@ function findWorstCard(player) {
 }
 
 function shouldCallCabo(player, level='easy') {
+    // Pokud má AI tušení na Kamikaze, okamžitě a bezpečně volá KABO
+    if (player.cards.length === 4) {
+        let c12 = 0, c13 = 0;
+        for (let i = 0; i < 4; i++) {
+            let val = player.aiMemory[i] ? player.cards[i] : -1;
+            if (val === 12) c12++;
+            if (val === 13) c13++;
+        }
+        if (c12 === 2 && c13 === 2) return true;
+    }
+
     let total = 0;
     for(let i=0; i<player.cards.length; i++) {
         total += estimateCardValue(player, i);
     }
+    
     if(level === 'easy') return total <= 6;
     if(level === 'medium') return total <= 5;
     if(level === 'hard') return total <= 4;
