@@ -251,7 +251,7 @@
 
     <main id="main-content">
         <div class="board-wrapper">
-            <div class="side-label left-label">ZATRE®</div>
+            <div class="side-label left-label" style="cursor: pointer;" onclick="toggleCoordinates()">ZATRE®</div>
             <div class="board" id="board"></div>
             <div class="side-label right-label">©️ Manfred Schüling</div>
         </div>
@@ -472,8 +472,8 @@
                 confirmTurn: "Potvrdit tah",
                 passTurn: "Přeskočit tah",
                 passTurnToast: "vynechal tah",
-                draw1TileToast: "dotáhl 1 kámen",
-                draw1TileLog: "Dotáhl 1 kámen (žádný platný tah)",
+                draw1TileToast: "dobral 1 kámen",
+                draw1TileLog: "Dobral 1 kámen (žádný platný tah)",
                 gameOverToast: "Konec hry!",
                 logTitle: "📜 Log hry",
                 copy: "Kopírovat",
@@ -693,76 +693,71 @@
             return state.isAiMode ? t('computer') : t('red');
         }
 
+        
         function renderLogText() {
-            return state.gameLog.map(entry => {
-                if (typeof entry === 'string') return entry; 
+    return state.gameLog.map(entry => {
+        if (typeof entry === 'string') return entry; 
+        
+        let icon = entry.player === 0 ? '🔵' : (state.isAiMode ? '💻' : '🔴');
+
+        switch(entry.type) {
+            case "NEW_GAME": return "--- NOVÁ HRA ---";
+            case "SAVE": return "Hra uložena.";
+            case "LOAD": return "Hra načtena.";
+            case "DRAW1":
+                return `Tah ${entry.turn} ${icon}  |  Dobral 1 kámen.`;
+            case "PASS":
+                return `Tah ${entry.turn} ${icon}  |  Vzdal tah.`;
+            case "KEEP_TILE":
+                return `Tah ${entry.turn} ${icon}  |  Ponechal si kámen.`;
+            
+            case "SYSTEM_TEXT":
+                return entry.text;
+            case "PENALTY":
+                return `🚨 Penalta ${icon} -${entry.penalty} (zbylé kameny: [${entry.tiles.join(', ')}])`;
+
+            case "END_TURN":
+                let tilesStr = entry.tiles.map(t => `${String.fromCharCode(97 + t.r)}${t.c + 1} [${t.value !== undefined ? t.value : t.val}]`).join('  ');
+                if (entry.tiles.length === 0) tilesStr = "Žádný tah";
                 
-                switch(entry.type) {
-                    case "NEW_GAME": return t('newGameLog');
-                    case "SAVE": return t('logSaved');
-                    case "LOAD": return t('logLoaded');
-                    case "DRAW1":
-                        let pNameD1 = getPlayerName(entry.player);
-                        return `${t('turn')} ${entry.turn} (${pNameD1}): ${t('draw1TileLog')}`;
-                    case "PASS":
-                        let pNamePass = getPlayerName(entry.player);
-                        return `${t('turn')} ${entry.turn} (${pNamePass}): ${t('passTurn')}`;
-                    case "KEEP_TILE":
-                        let pNameKeep = getPlayerName(entry.player);
-                        return `${t('turn')} ${entry.turn} (${pNameKeep}): ${t('tileKeptLog')}`;
-                    
-                    case "SYSTEM_TEXT":
-                        return entry.text;
-                    case "PENALTY":
-                        let pNamePen = getPlayerName(entry.player);
-                        return `🚨 ${t('penaltyInfo')} ${pNamePen} -${entry.penalty} (zbylé kameny: [${entry.tiles.join(', ')}])`;
+                let gains = [];
+                let count10 = entry.pts.c10 !== undefined ? entry.pts.c10 : (entry.pts.s10 >= 1 ? entry.pts.s10 : 0);
+                let count11 = entry.pts.c11 !== undefined ? entry.pts.c11 : (entry.pts.s11 >= 1 ? entry.pts.s11 : 0);
+                let count12 = entry.pts.c12 !== undefined ? entry.pts.c12 : (entry.pts.s12 >= 1 ? entry.pts.s12 : 0);
 
-                    case "END_TURN":
-                        let pName = getPlayerName(entry.player);
-                        let tilesStr = entry.tiles.map(tile => `[${tile.value}] ${t('coords')}${tile.r+1} ${t('col')}${tile.c+1}`).join(', ');
-                        if (entry.tiles.length === 0) tilesStr = t('noTilesPlaced');
-                        
-                        let base = `${t('turn')} ${entry.turn} (${pName}): ${t('placedTile')} ${tilesStr}`;
-                        let gains = [];
-                        
-                        let count10 = entry.pts.c10 !== undefined ? entry.pts.c10 : (entry.pts.s10 >= 1 ? entry.pts.s10 : 0);
-                        let count11 = entry.pts.c11 !== undefined ? entry.pts.c11 : (entry.pts.s11 >= 1 ? entry.pts.s11 : 0);
-                        let count12 = entry.pts.c12 !== undefined ? entry.pts.c12 : (entry.pts.s12 >= 1 ? entry.pts.s12 : 0);
-
-                        if (count10) gains.push(`${count10}x 10`);
-                        if (count11) gains.push(`${count11}x 11`);
-                        if (count12) gains.push(`${count12}x 12`);
-                        if (entry.pts.dt) gains.push(`${entry.pts.dt}x Double(X)`);
-                        
-                        let endText = "";
-                        if (gains.length > 0) {
-                            endText = base + ` -> ${t('gains')}: ` + gains.join(', ');
-                        } else {
-                            endText = base + ` -> ${t('turnEndedNoPoints')}`;
-                        }
-
-                        if (entry.keptTiles && entry.keptTiles.length > 0) {
-                            let keptStr = t('tileKeptLog');
-                            endText += `\n   ↳ ℹ️ ${keptStr}: [${entry.keptTiles.join(', ')}]`;
-                        }
-
-                        return endText;
-
-                    case "SCORE_SAVED":
-                        let pNameSc = getPlayerName(entry.player);
-                        let places = entry.placements.map(p => `${p.col} (${p.val}) ${t('toRow')} ${p.row+1}`).join(', ');
-                        return `${t('turn')} ${entry.turn} (${pNameSc}): ${t('pointsSavedTo')} ${places}`;
-                    
-                    case "GAME_OVER":
-                        let winnerText = entry.msgKey === 'blueWon' ? `🏆 ${t('blue')} ${t('won')}` :
-                                         entry.msgKey === 'redWon' ? `🏆 ${t('red')} ${t('won')}` :
-                                         entry.msgKey === 'computerWon' ? `🏆 ${t('computer')} ${t('won')}` :
-                                         `🤝 ${t('draw')}`;
-                        return `${t('gameOver')}: ${winnerText} ${entry.p1}:${entry.p2}`;
+                if (count10) gains.push(`s10 (${count10})`);
+                if (count11) gains.push(`s11 (${count11})`);
+                if (count12) gains.push(`s12 (${count12})`);
+                if (entry.pts.dt) gains.push(`dt (${entry.pts.dt})`);
+                
+                let endText = `Tah ${entry.turn} ${icon}  |  ${tilesStr}`;
+                if (gains.length > 0) {
+                    endText += ` -> ` + gains.join(', ');
+                } else {
+                    endText += ` -> bez zisku bodů`;
                 }
-                return "";
-            }).reverse().join('\n\n');
+
+                if (entry.keptTiles && entry.keptTiles.length > 0) {
+                    endText += `\n   ↳ ℹ️ Ponecháno: [${entry.keptTiles.join(', ')}]`;
+                }
+                return endText;
+
+            case "SCORE_SAVED":
+                let places = entry.placements.map(p => `${p.col} [${p.val}] (r${p.row + 1})`).join(', ');
+                return `Tah ${entry.turn} ${icon}  |  Zápis -> ${places}`;
+            
+            case "GAME_OVER":
+                let winnerText = entry.msgKey === 'blueWon' ? `🏆 Modrý vyhrál` :
+                                 entry.msgKey === 'redWon' ? `🏆 Červený vyhrál` :
+                                 entry.msgKey === 'computerWon' ? `🏆 Počítač vyhrál` :
+                                 `🤝 Remíza`;
+                return `Konec hry: ${winnerText} ${entry.p1}:${entry.p2}`;
         }
+        return "";
+    }).reverse().join('\n\n');
+}
+
+
 
         function openLogModal() {
             document.getElementById('log-textarea').value = renderLogText();
@@ -807,6 +802,111 @@
                 showToast(t('noSaveFound'));
             }
         }
+
+
+let showCoords = false;
+function toggleCoordinates() {
+    showCoords = !showCoords;
+    updateUI();
+}
+
+
+function hasPriorityMove(hand) {
+    for (let i = 0; i < hand.length; i++) {
+        let val = hand[i];
+        let remainingHand = hand.filter((_, idx) => idx !== i);
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                let tp = boardTemplate[r][c];
+                if (tp === '.' || state.board[r][c] !== null) continue;
+                if (!state.isFirstMove && !hasAdjacentTile(r, c)) continue;
+
+                state.board[r][c] = val;
+                let hSum = getLineSum(r, c, 0, 1);
+                let vSum = getLineSum(r, c, 1, 0);
+                state.board[r][c] = null;
+
+                if (hSum > 12 || vSum > 12) continue;
+
+                // 1. Priorita: Platný tah na normální pole
+                if (tp !== 'w' && tp !== 'r') return true;
+
+                // 2. Priorita: Tah na double pole, který hned dává body
+                if ([10, 11, 12].includes(hSum) || [10, 11, 12].includes(vSum)) return true;
+
+                // 3. Priorita: Tah na double pole, který může dokončit do 10-12 druhý kámen z ruky
+                for (let sv of remainingHand) {
+                    state.board[r][c] = val;
+                    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                    let canComplete = false;
+                    for (let [dr, dc] of dirs) {
+                        let nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && state.board[nr][nc] === null && boardTemplate[nr][nc] !== '.') {
+                            state.board[nr][nc] = sv;
+                            let h2 = getLineSum(nr, nc, 0, 1), v2 = getLineSum(nr, nc, 1, 0);
+                            state.board[nr][nc] = null;
+                            if (h2 <= 12 && v2 <= 12 && ([10, 11, 12].includes(h2) || [10, 11, 12].includes(v2))) {
+                                canComplete = true;
+                                break;
+                            }
+                        }
+                    }
+                    state.board[r][c] = null;
+                    if (canComplete) return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+function hasUnscoredDoubles() {
+    // Projde všechny kameny, které hráč položil v aktuálním tahu
+    for (let pt of state.lastPlacedTiles) {
+        if (pt.type === 'w' || pt.type === 'r') {
+            let h = getLineSum(pt.r, pt.c, 0, 1);
+            let v = getLineSum(pt.r, pt.c, 1, 0);
+            // Pokud ani horizontálně ani vertikálně nedává 10, 11 nebo 12
+            if (h <= 12 && v <= 12 && ![10, 11, 12].includes(h) && ![10, 11, 12].includes(v)) {
+                return true; // Máme nedokončené double pole
+            }
+        }
+    }
+    return false;
+}
+
+function hasFixingMove(hand) {
+    if (!hasUnscoredDoubles()) return false;
+    
+    // Zkusíme všechny kameny v ruce na všechna volná pole
+    for (let i = 0; i < hand.length; i++) {
+        let val = hand[i];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (state.board[r][c] !== null) continue;
+                if (boardTemplate[r][c] === '.') continue;
+                if (!state.isFirstMove && !hasAdjacentTile(r, c)) continue;
+                
+                state.board[r][c] = val;
+                let hSum = getLineSum(r, c, 0, 1);
+                let vSum = getLineSum(r, c, 1, 0);
+                
+                if (hSum <= 12 && vSum <= 12) {
+                    // Pokud po tomto cvičném tahu už nedokončené double pole zmizí
+                    if (!hasUnscoredDoubles()) {
+                        state.board[r][c] = null;
+                        return true;
+                    }
+                }
+                state.board[r][c] = null;
+            }
+        }
+    }
+    return false;
+}
+
 
 
             /*        
@@ -1010,101 +1110,97 @@
         */
 
         function handleCellClick(r, c) {
-            if (state.isGameOver) return;
+    if (state.isGameOver) return;
+    
+    let last = state.lastPlacedTiles[state.lastPlacedTiles.length - 1];
+    if (last && last.r === r && last.c === c) {
+        undoLastPlacement();
+        return;
+    }
 
-            let last = state.lastPlacedTiles[state.lastPlacedTiles.length - 1];
+    if (state.selectedIdx === -1 || state.board[r][c] !== null || boardTemplate[r][c] === '.') return;
 
-            if (last && last.r === r && last.c === c) {
-                undoLastPlacement();
-                return;
-            }    
-                
-            if (state.selectedIdx === -1 || state.board[r][c] !== null || boardTemplate[r][c] === '.') return;
-            const val = state.players[state.turn].hand[state.selectedIdx];
+    if (state.isFirstMove) {
+        if (boardTemplate[r][c] !== 'r') {
+            showToast(t('firstTileCenter'));
+            return;
+        }
+    } else {
+        if (!hasAdjacentTile(r, c)) {
+            showToast(t('tileAdjacent'));
+            return;
+        }
+    }
 
-            if (state.isFirstMove) {
-                if (boardTemplate[r][c] !== 'r') { showToast(t('firstTileCenter')); return; }
-            } else {
-                if (!hasAdjacentTile(r, c)) { showToast(t('tileAdjacent')); return; }
-            }
+    let val = state.players[state.turn].hand[state.selectedIdx];
+    
+    // Zkušební položení pro zjištění hodnot a nezakončených double polí
+    state.board[r][c] = val;
+    let hSum = getLineSum(r, c, 0, 1), vSum = getLineSum(r, c, 1, 0);
+    let leavesUnscored = hasUnscoredDoubles();
+    state.board[r][c] = null; 
+    
+    if (hSum > 12 || vSum > 12) {
+        showToast(t('sumExceed'));
+        return;
+    }
+    
+    // KONTROLA DLUHU
+    if (leavesUnscored && hasFixingMove(state.players[state.turn].hand)) {
+        showToast('Musíš dokončit rozehrané double pole (10-12)!');
+        return;
+    }
 
-            state.board[r][c] = val;
-            let hSum = getLineSum(r, c, 0, 1), vSum = getLineSum(r, c, 1, 0);
+    let cellType = boardTemplate[r][c];
+    if ((cellType === 'w' || cellType === 'r') && !state.isFirstMove) {
+        let makesScore = [10, 11, 12].includes(hSum) || [10, 11, 12].includes(vSum);
+        let canComplete = false;
 
-            if (hSum > 12 || vSum > 12) {
-                state.board[r][c] = null; showToast(t('sumExceed')); return;
-            }
+        if (!makesScore) {
+            let remainingHand = state.players[state.turn].hand.filter((_, idx) => idx !== state.selectedIdx);
+            
+            // OPRAVA ZDE: Kámen musí být fyzicky na desce při testování druhého kamene!
+            state.board[r][c] = val; 
 
-            // Pravidlo double pole:
-            // Kámen smí být položen na double pole jen pokud:
-            //   a) tímto kamenem vznikne součet 10/11/12, NEBO
-            //   b) tento kámen je první ze dvou a druhý kámen (ještě v ruce) vytvoří součet, NEBO
-            //   c) neexistuje žádný jiný platný tah (ani non-double, ani double se součtem)
-            let cellType = boardTemplate[r][c];
-            if ((cellType === 'w' || cellType === 'r') && !state.isFirstMove) {
-                let makesScore = [10,11,12].includes(hSum) || [10,11,12].includes(vSum);
-                if (!makesScore) {
-                    // Zkontroluj případ b): zbývá v ruce jiný kámen, který by na tomto místě
-                    // (nebo poblíž) dokončil součet 10–12 spolu s tímto kamenem
-                    let secondTileWillScore = false;
-                    let remainingHand = state.players[state.turn].hand.filter((_, idx) => idx !== state.selectedIdx);
-                    for (let sv of remainingHand) {
-                        // Zkus všechny sousední prázdné buňky
-                        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-                        for (let [dr, dc] of dirs) {
-                            let nr2 = r+dr, nc2 = c+dc;
-                            if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
-                            if (state.board[nr2][nc2] !== null) continue;
-                            if (boardTemplate[nr2][nc2] === '.') continue;
-                            state.board[nr2][nc2] = sv;
-                            let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
-                            state.board[nr2][nc2] = null;
-                            if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
-                                secondTileWillScore = true;
-                                break;
-                            }
-                        }
-                        if (secondTileWillScore) break;
-                    }
-
-                    if (!secondTileWillScore) {
-                        // Zkontroluj případ c): existuje jiný platný tah (non-double nebo double se součtem)?
-                        let hasOtherValidMove = false;
-                        for (let rr = 0; rr < ROWS && !hasOtherValidMove; rr++) {
-                            for (let cc = 0; cc < COLS && !hasOtherValidMove; cc++) {
-                                if (rr === r && cc === c) continue; // toto pole přeskočíme
-                                let tp2 = boardTemplate[rr][cc];
-                                if (tp2 === '.') continue;
-                                if (state.board[rr][cc] !== null) continue;
-                                if (!hasAdjacentTile(rr, cc)) continue;
-                                state.board[rr][cc] = val;
-                                let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
-                                state.board[rr][cc] = null;
-                                if (hs > 12 || vs > 12) continue;
-                                // Non-double pole — vždy platný
-                                if (tp2 !== 'w' && tp2 !== 'r') { hasOtherValidMove = true; break; }
-                                // Double pole — platný jen se součtem
-                                if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasOtherValidMove = true; break; }
-                            }
-                        }
-                        if (hasOtherValidMove) {
-                            state.board[r][c] = null;
-                            showToast(t('doubleNeedsScore'));
-                            return;
-                        }
-                        // Případ c) — žádná alternativa, smí hrát sem bez bodování
+            for (let sv of remainingHand) {
+                const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (let [dr, dc] of dirs) {
+                    let nr2 = r + dr, nc2 = c + dc;
+                    if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
+                    if (state.board[nr2][nc2] !== null || boardTemplate[nr2][nc2] === '.') continue;
+                    
+                    state.board[nr2][nc2] = sv;
+                    let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
+                    state.board[nr2][nc2] = null;
+                    
+                    if (hs2 <= 12 && vs2 <= 12 && ([10, 11, 12].includes(hs2) || [10, 11, 12].includes(vs2))) {
+                        canComplete = true; break;
                     }
                 }
+                if (canComplete) break;
             }
 
-            state.lastPlacedTiles.push({ r, c, value: val });
-            state.players[state.turn].hand.splice(state.selectedIdx, 1);
-            state.selectedIdx = -1;
-            state.isFirstMove = false;
-            
-            calculateCurrentTurnPoints();
-            updateUI();
+            // OPRAVA ZDE: Zkušební kámen opět odstraníme
+            state.board[r][c] = null;
+
+            if (!canComplete && hasPriorityMove(state.players[state.turn].hand)) {
+                showToast(t('doubleNeedsScore'));
+                return;
+            }
         }
+    }
+    
+    // --- FINÁLNÍ ULOŽENÍ TAHU ---
+    state.board[r][c] = val;
+    state.lastPlacedTiles.push({ r, c, val: val, value: val, type: cellType });
+    state.players[state.turn].hand.splice(state.selectedIdx, 1);
+    state.selectedIdx = -1;
+    
+    state.isFirstMove = false;
+    calculateCurrentTurnPoints();
+    updateUI();
+}
+
 
         function hasAdjacentTile(r, c) {
             const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
@@ -1267,13 +1363,8 @@
                     state.proposedPlacements.push(
                         { col: 'dt', row: findFirstEmptyRow(pTable, 'dt'), val: 'X' });
 
-                if (state.isAiMode && state.turn === 1) {
-                    aiOptimizeScoreboard();
-                    confirmProposedPoints();
-                } else {
-                    state.isConfirming = true;
-                    openScoreModalView();
-                }
+                // OPRAVA: Plná automatizace pro člověka i AI
+                confirmProposedPoints();
                 return;
             }
 
@@ -1690,157 +1781,112 @@
         // Pomocná funkce: ohodnotí jeden tah na desce (pro daný stav).
         // Vrátí { immediate, doubleBonus, setupPenalty, opponentGain }
         // =====================
-        function aiEvalSingleMove(tileVal, r, c, isFirst, diff) {
-            diff = diff || 'medium';
-            let type = boardTemplate[r][c];
-            state.board[r][c] = tileVal;
+    function aiEvalSingleMove(r, c, tileVal, remainingHand) {
+    // 1. Poskusno polaganje in izračun vsote
+    state.board[r][c] = tileVal;
+    let hSum = getLineSum(r, c, 0, 1), vSum = getLineSum(r, c, 1, 0);
+    let leavesUnscored = hasUnscoredDoubles(); // <-- Tukaj je pravilna deklaracija
+    state.board[r][c] = null;
 
-            let sH = getLineSum(r, c, 0, 1);
-            let sV = getLineSum(r, c, 1, 0);
+    // Če preseže 12, poteza ni veljavna
+    if (hSum > 12 || vSum > 12) return null;
 
-            if (!isFirst && (sH > 12 || sV > 12)) {
+    // NOVO: Kontrola dolga. Če umetna inteligenca beži od dvojnega polja, 
+    // a ima v roki rešitev (vključno s trenutno kocko) -> prepovej potezo.
+    let fullHand = [tileVal, ...remainingHand];
+    if (leavesUnscored && hasFixingMove(fullHand)) {
+        return null;
+    }
+
+    let cellType = boardTemplate[r][c];
+    let isDouble = (cellType === 'w' || cellType === 'r');
+
+    // 2. Evalvacija pravila za dvojna polja
+    if (isDouble && !state.isFirstMove) {
+        let makesScore = [10, 11, 12].includes(hSum) || [10, 11, 12].includes(vSum);
+        let secondWillScore = false;
+
+        if (!makesScore) {
+            // Preverimo, ali druga kocka zaključi rezultat
+            for (let sv of remainingHand) {
+                state.board[r][c] = tileVal;
+                const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (let [dr, dc] of dirs) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && state.board[nr][nc] === null && boardTemplate[nr][nc] !== '.') {
+                        state.board[nr][nc] = sv;
+                        let h2 = getLineSum(nr, nc, 0, 1), v2 = getLineSum(nr, nc, 1, 0);
+                        state.board[nr][nc] = null;
+                        if (h2 <= 12 && v2 <= 12 && ([10, 11, 12].includes(h2) || [10, 11, 12].includes(v2))) {
+                            secondWillScore = true; 
+                            break;
+                        }
+                    }
+                }
                 state.board[r][c] = null;
-                return null; // nelegální tah
+                if (secondWillScore) break;
             }
 
-            // Pravidlo double pole pro AI
-            let cellType = boardTemplate[r][c];
-            if ((cellType === 'w' || cellType === 'r') && !isFirst) {
-                let makesScore = [10,11,12].includes(sH) || [10,11,12].includes(sV);
-                if (!makesScore) {
-                    // Zkontroluj jestli druhý kámen v ruce dodá součet
-                    let hand = state.players[1].hand;
-                    let secondWillScore = false;
-                    for (let sv of hand) {
-                        if (sv === tileVal) continue; // přeskočíme sebe
-                        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-                        for (let [dr, dc] of dirs) {
-                            let nr2 = r+dr, nc2 = c+dc;
-                            if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
-                            if (state.board[nr2][nc2] !== null) continue;
-                            if (boardTemplate[nr2][nc2] === '.') continue;
-                            state.board[nr2][nc2] = sv;
-                            let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
-                            state.board[nr2][nc2] = null;
-                            if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
-                                secondWillScore = true; break;
-                            }
-                        }
-                        if (secondWillScore) break;
-                    }
-                    if (!secondWillScore) {
-                        // Zkontroluj jestli existuje jiná alternativa
-                        let hasAlt = false;
-                        for (let rr = 0; rr < ROWS && !hasAlt; rr++) {
-                            for (let cc = 0; cc < COLS && !hasAlt; cc++) {
-                                if (rr === r && cc === c) continue;
-                                let tp2 = boardTemplate[rr][cc];
-                                if (tp2 === '.') continue;
-                                if (state.board[rr][cc] !== null) continue;
-                                if (!hasAdjacentTile(rr, cc)) continue;
-                                state.board[rr][cc] = tileVal;
-                                let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
-                                state.board[rr][cc] = null;
-                                if (hs > 12 || vs > 12) continue;
-                                if (tp2 !== 'w' && tp2 !== 'r') { hasAlt = true; break; }
-                                if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasAlt = true; break; }
-                            }
-                        }
-                        if (hasAlt) { state.board[r][c] = null; return null; }
-                    }
-                }
+            // Če ni rezultata in ima igralec/AI drugo prednostno potezo
+            if (!secondWillScore && hasPriorityMove(state.players[state.turn].hand)) {
+                return null; 
             }
-
-            // double bonus — počítá se níže dle diff
-            let makesSc = [10,11,12].includes(sH) || [10,11,12].includes(sV);
-
-            // okamžité body
-            let immediate = 0;
-            [sH, sV].forEach(s => {
-                if (s === 12) immediate += 4;
-                else if (s === 11) immediate += 2;
-                else if (s === 10) immediate += 1;
-                else if (s === 9) immediate += 1.5;
-                else if (s === 8) immediate += 0.5;
-            });
-
-            // penalizace za setup soupeře: pokud tah vytvoří součet 8 nebo 9
-            // sousedící s double polem, soupeř to snáze uzavře na 10–12
-            let setupPenalty = 0;
-            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-            for (let [dr, dc] of dirs) {
-                let nr = r+dr, nc = c+dc;
-                if (nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
-                    let nType = boardTemplate[nr][nc];
-                    if ((nType === 'w' || nType === 'r') && state.board[nr][nc] === null) {
-                        // toto pole je prázdné double — náš tah mu dělá setup
-                        if ([8,9].includes(sH) || [8,9].includes(sV)) setupPenalty += 1.5;
-                    }
-                }
-            }
-
-            // bonus za centrum
-            let dist = Math.abs(r - 7) + Math.abs(c - 7);
-            let centerBonus = (14 - dist) * 0.12;
-
-            // 2-ply: simulace nejlepší odpovědi soupeře (top-3 tahy)
-            let opponentHand = state.players[0].hand;
-            let oppResponses = [];
-
-            for (let oi = 0; oi < opponentHand.length; oi++) {
-                for (let rr = 0; rr < ROWS; rr++) {
-                    for (let cc = 0; cc < COLS; cc++) {
-                        if (state.board[rr][cc] !== null || boardTemplate[rr][cc] === '.') continue;
-                        if (!hasAdjacentTile(rr, cc)) continue;
-
-                        state.board[rr][cc] = opponentHand[oi];
-                        let oh = getLineSum(rr, cc, 0, 1);
-                        let ov = getLineSum(rr, cc, 1, 0);
-
-                        if (oh <= 12 && ov <= 12) {
-                            let replyScore = 0;
-                            [oh, ov].forEach(s => {
-                                if (s === 12) replyScore += 4;
-                                else if (s === 11) replyScore += 2;
-                                else if (s === 10) replyScore += 1;
-                            });
-                            let oType = boardTemplate[rr][cc];
-                            if ((oType === 'w' || oType === 'r') && ([10,11,12].includes(oh) || [10,11,12].includes(ov))) {
-                                replyScore += 5;
-                            }
-                            oppResponses.push(replyScore);
-                        }
-                        state.board[rr][cc] = null;
-                    }
-                }
-            }
-
-            // seřaď odpovědi — těžká bere max, střední průměr top-3, lehká ignoruje
-            oppResponses.sort((a,b) => b-a);
-            let top3 = oppResponses.slice(0, 3);
-
-            // Váhy dle obtížnosti
-            // Lehká: ignoruje soupeře a setup penalizaci
-            // Střední: standardní váhy
-            // Těžká: agresivnější penalizace soupeře, setup × 1.5
-            let oppWeight   = diff === 'easy' ? 0    : diff === 'hard' ? 1.1  : 0.85;
-            let setupWeight = diff === 'easy' ? 0    : diff === 'hard' ? 2.0  : 1.0;
-            let doubleW     = diff === 'easy' ? 3    : diff === 'hard' ? 7    : 5;
-
-            // Těžká: lookahead — vezme max místo průměru top-3
-            let opponentGainFinal = diff === 'hard'
-                ? (oppResponses.length > 0 ? oppResponses[0] : 0)   // oppResponses již seřazeno
-                : (top3.length > 0 ? top3.reduce((a,b)=>a+b,0) / top3.length : 0);
-
-            state.board[r][c] = null;
-
-            let dBonus = (type === 'w' || type === 'r') && makesSc ? doubleW : 0;
-            let finalScore = immediate + dBonus + centerBonus
-                - setupPenalty * setupWeight
-                - opponentGainFinal * oppWeight;
-
-            return { finalScore, immediate, doubleBonus: dBonus, centerBonus, setupPenalty, opponentGain: opponentGainFinal };
         }
+    }
+
+    // 3. Osnovni izračun rezultata za AI
+    let score = 0;
+    if (hSum === 12) score += 4; else if (hSum === 11) score += 2; else if (hSum === 10) score += 1;
+    if (vSum === 12) score += 4; else if (vSum === 11) score += 2; else if (vSum === 10) score += 1;
+
+    let isDt = isDouble && (score > 0);
+    let finalScore = score * (isDt ? 2 : 1);
+
+    // 4. Manjša hevristika (priprava terena)
+    if (hSum === 9 || vSum === 9) finalScore += 0.5;
+
+    // 5. Hevristika tveganja (AI preverja, ali bo nasprotniku omogočil lahke točke)
+    let diffBtn = document.getElementById('diff-btn');
+    let isHard = diffBtn && (diffBtn.innerText.includes('🔴') || diffBtn.innerText.includes('Hard'));
+    
+    if (isHard) {
+        state.board[r][c] = tileVal;
+        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        let maxOpponentReply = 0;
+        
+        for (let [dr, dc] of dirs) {
+            let rr = r + dr, cc = c + dc;
+            if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS && state.board[rr][cc] === null && boardTemplate[rr][cc] !== '.') {
+                // Test povprečnih vrednosti (npr. 1 do 6)
+                for (let oppVal = 1; oppVal <= 6; oppVal++) {
+                    state.board[rr][cc] = oppVal;
+                    let oh = getLineSum(rr, cc, 0, 1);
+                    let ov = getLineSum(rr, cc, 1, 0);
+                    state.board[rr][cc] = null;
+                    
+                    if (oh <= 12 && ov <= 12) {
+                        let replyScore = 0;
+                        if (oh === 12) replyScore += 4; else if (oh === 11) replyScore += 2; else if (oh === 10) replyScore += 1;
+                        if (ov === 12) replyScore += 4; else if (ov === 11) replyScore += 2; else if (ov === 10) replyScore += 1;
+                        
+                        let oType = boardTemplate[rr][cc];
+                        if ((oType === 'w' || oType === 'r') && replyScore > 0) replyScore *= 2;
+                        
+                        if (replyScore > maxOpponentReply) maxOpponentReply = replyScore;
+                    }
+                }
+            }
+        }
+        state.board[r][c] = null;
+        
+        // Znižanje privlačnosti poteze, če ustvari veliko priložnost za nasprotnika
+        finalScore -= maxOpponentReply * 0.4; 
+    }
+
+    return { finalScore };
+}
+
+
 
         function aiTurn() {
             if (state.isGameOver) return;
@@ -1849,26 +1895,35 @@
 
             // Sestaví seznam všech legálních tahů s ohodnocením
             function getAllMoves() {
-                let hand = state.players[1].hand;
-                let moves = [];
-                for (let i = 0; i < hand.length; i++) {
-                    for (let r = 0; r < ROWS; r++) {
-                        for (let c = 0; c < COLS; c++) {
-                            let type = boardTemplate[r][c];
-                            if (state.board[r][c] !== null || type === '.') continue;
-                            if (state.isFirstMove) {
-                                if (type !== 'r') continue;
-                            } else {
-                                if (!hasAdjacentTile(r, c)) continue;
-                            }
-                            let ev = aiEvalSingleMove(hand[i], r, c, state.isFirstMove, diff);
-                            if (ev === null) continue;
-                            moves.push({ i, r, c, score: ev.finalScore });
-                        }
-                    }
+    let moves = [];
+    let p = state.players[state.turn];
+    
+    for (let i = 0; i < p.hand.length; i++) {
+        let val = p.hand[i];
+        let remainingHand = p.hand.filter((_, idx) => idx !== i);
+        
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                let tp = boardTemplate[r][c];
+                if (tp === '.') continue;
+                if (state.board[r][c] !== null) continue;
+                
+                // OPRAVA: Zajištění pravidla pro úplně první tah!
+                if (state.isFirstMove) {
+                    if (tp !== 'r') continue; 
+                } else {
+                    if (!hasAdjacentTile(r, c)) continue; 
                 }
-                return moves;
+                
+                let ev = aiEvalSingleMove(r, c, val, remainingHand);
+                
+                if (ev === null) continue;
+                moves.push({ i, r, c, val: val, value: val, score: ev.finalScore });
             }
+        }
+    }
+    return moves;
+}
 
             function findBestMove() {
                 let moves = getAllMoves();
@@ -1914,83 +1969,77 @@
 
 
         function showLegalMoves() {
-            document.querySelectorAll('.cell').forEach(cell => { cell.classList.remove('legal-move'); });
-            if (state.selectedIdx === -1) return;
+    document.querySelectorAll('.cell').forEach(cell => { cell.classList.remove('legal-move'); });
+    if (state.selectedIdx === -1) return;
 
-            let val = state.players[state.turn].hand[state.selectedIdx];
-            let remainingHand = state.players[state.turn].hand.filter((_, idx) => idx !== state.selectedIdx);
+    let hand = state.players[state.turn].hand;
+    let val = hand[state.selectedIdx];
+    let remainingHand = hand.filter((_, idx) => idx !== state.selectedIdx);
 
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    if (state.board[r][c] !== null) continue;
-                    let tp = boardTemplate[r][c];
-                    if (tp === '.') continue;
+    // Zjistíme globálně, zda má hráč jakýkoliv prioritní tah
+    let priorityExists = hasPriorityMove(hand);
+	let fixingMoveExists = hasFixingMove(hand); // Přidáno
 
-                    if (state.isFirstMove) {
-                        if (tp === 'r') document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
-                        continue;
-                    }
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (state.board[r][c] !== null) continue;
+            let tp = boardTemplate[r][c];
+            if (tp === '.') continue;
 
-                    if (!hasAdjacentTile(r, c)) continue;
+            if (state.isFirstMove) {
+                if (tp === 'r') document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
+                continue;
+            }
 
-                    state.board[r][c] = val;
-                    let hSum = getLineSum(r, c, 0, 1);
-                    let vSum = getLineSum(r, c, 1, 0);
-                    state.board[r][c] = null;
+            if (!hasAdjacentTile(r, c)) continue;
 
-                    if (hSum > 12 || vSum > 12) continue;
+            state.board[r][c] = val;
+            let hSum = getLineSum(r, c, 0, 1);
+            let vSum = getLineSum(r, c, 1, 0);
+			// Zjistíme, zda tento tah nechává na stole rozehrané double pole z předchozího kliku
+			let leavesUnscored = hasUnscoredDoubles();
+            state.board[r][c] = null;
 
-                    let isDouble = (tp === 'w' || tp === 'r');
-                    if (isDouble) {
-                        let makesScore = [10,11,12].includes(hSum) || [10,11,12].includes(vSum);
-                        if (!makesScore) {
-                            // Zkontroluj jestli druhý kámen dodá součet
-                            let secondWillScore = false;
-                            for (let sv of remainingHand) {
-                                const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-                                for (let [dr, dc] of dirs) {
-                                    let nr2 = r+dr, nc2 = c+dc;
-                                    if (nr2 < 0 || nr2 >= ROWS || nc2 < 0 || nc2 >= COLS) continue;
-                                    if (state.board[nr2][nc2] !== null) continue;
-                                    if (boardTemplate[nr2][nc2] === '.') continue;
-                                    state.board[r][c] = val; // první kámen zůstává
-                                    state.board[nr2][nc2] = sv;
-                                    let hs2 = getLineSum(nr2, nc2, 0, 1), vs2 = getLineSum(nr2, nc2, 1, 0);
-                                    state.board[nr2][nc2] = null;
-                                    state.board[r][c] = null;
-                                    if (hs2 <= 12 && vs2 <= 12 && ([10,11,12].includes(hs2) || [10,11,12].includes(vs2))) {
-                                        secondWillScore = true; break;
-                                    }
+            if (hSum > 12 || vSum > 12) continue;
+			
+			// POKUD tah neřeší dluh na double poli a hráč MÁ jak to vyřešit, tah zakážeme
+			if (leavesUnscored && fixingMoveExists) continue;
+
+            let isDouble = (tp === 'w' || tp === 'r');
+            if (isDouble) {
+                let makesScore = [10, 11, 12].includes(hSum) || [10, 11, 12].includes(vSum);
+                let canComplete = false;
+
+                if (!makesScore) {
+                    for (let sv of remainingHand) {
+                        state.board[r][c] = val;
+                        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                        for (let [dr, dc] of dirs) {
+                            let nr = r + dr, nc = c + dc;
+                            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && state.board[nr][nc] === null && boardTemplate[nr][nc] !== '.') {
+                                state.board[nr][nc] = sv;
+                                let h2 = getLineSum(nr, nc, 0, 1), v2 = getLineSum(nr, nc, 1, 0);
+                                state.board[nr][nc] = null;
+                                if (h2 <= 12 && v2 <= 12 && ([10, 11, 12].includes(h2) || [10, 11, 12].includes(v2))) {
+                                    canComplete = true; break;
                                 }
-                                if (secondWillScore) break;
-                            }
-                            if (!secondWillScore) {
-                                // Zkontroluj jestli existuje jiný platný tah
-                                let hasOther = false;
-                                for (let rr = 0; rr < ROWS && !hasOther; rr++) {
-                                    for (let cc = 0; cc < COLS && !hasOther; cc++) {
-                                        if (rr === r && cc === c) continue;
-                                        let tp2 = boardTemplate[rr][cc];
-                                        if (tp2 === '.') continue;
-                                        if (state.board[rr][cc] !== null) continue;
-                                        if (!hasAdjacentTile(rr, cc)) continue;
-                                        state.board[rr][cc] = val;
-                                        let hs = getLineSum(rr, cc, 0, 1), vs = getLineSum(rr, cc, 1, 0);
-                                        state.board[rr][cc] = null;
-                                        if (hs > 12 || vs > 12) continue;
-                                        if (tp2 !== 'w' && tp2 !== 'r') { hasOther = true; break; }
-                                        if ([10,11,12].includes(hs) || [10,11,12].includes(vs)) { hasOther = true; break; }
-                                    }
-                                }
-                                if (hasOther) continue; // toto double pole není legální
                             }
                         }
+                        state.board[r][c] = null;
+                        if (canComplete) break;
                     }
+                }
 
-                    document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
+                // Zákaz napovídání na double pole bez bodů, pokud má hráč jinou možnost
+                if (!makesScore && !canComplete && priorityExists) {
+                    continue; 
                 }
             }
+
+            document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('legal-move');
         }
+    }
+}
 
         function getDominoHtml(value) {
             const patterns = {
@@ -2096,6 +2145,26 @@
             }
             
             document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
+
+            // Vykreslení souřadnic na prázdná pole
+            document.querySelectorAll('.cell').forEach(cell => {
+                let r = parseInt(cell.dataset.r);
+                let c = parseInt(cell.dataset.c);
+                if (state.board[r][c] === null) {
+                    if (showCoords) {
+                        cell.innerText = String.fromCharCode(97 + r) + (c + 1);
+                        
+                        // Detekce tmavého pole (např. 'r' = červené středové, 'g' = tmavě šedé)
+                        let tp = boardTemplate[r][c];
+                        let isDark = (tp === 'o' || tp === 'r'); 
+                        
+                        cell.style.color = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)';
+                        cell.style.fontSize = '12px';
+                    } else {
+                        cell.innerText = '';
+                    }
+                }
+            });
         }
 
         function openHelpModal() { document.getElementById('help-modal').style.display = 'flex'; }
