@@ -298,6 +298,7 @@
             <div class="tab-buttons" id="modal-tabs">
                 <button class="tab-btn" id="tab-btn-0" onclick="renderModalTable(0)">🔵 Modrý</button>
                 <button class="tab-btn" id="tab-btn-1" onclick="renderModalTable(1)">🔴 Červený</button>
+                <button class="tab-btn" id="tab-btn-2" onclick="renderModalTable(2)">📈 Statistiky</button>
             </div>
 
             <div id="confirm-instructions" style="display:none; background:#fffacd; padding:10px; text-align:center; font-weight:bold; border-bottom: 2px solid #ccc;">
@@ -311,6 +312,41 @@
                     <tfoot><tr><td colspan="5" id="td-total-label" style="text-align:right; font-weight:bold;">Celkem:</td><td id="modal-total" style="font-weight:bold; color:#27ae60;">0</td></tr></tfoot>
                 </table>
             </div>
+            <div id="statistics-tab" style="display:none; padding:15px;">
+
+    <h3>🏆 Nejlepší výsledek</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Typ hry</th>
+                <th>Obtížnost</th>
+                <th>Vítěz</th>
+                <th>Skóre</th>
+            </tr>
+        </thead>
+        <tbody id="best-game-body">
+        </tbody>
+    </table>
+
+    <br>
+
+    <h3>🕒 Poslední hra</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Typ hry</th>
+            <th>Obtížnost</th>
+            <th>Vítěz</th>
+            <th>Skóre</th>
+            </tr>
+        </thead>
+        <tbody id="last-game-body">
+        </tbody>
+    </table>
+
+</div>
 
             <div id="confirm-footer" style="display:none; padding:15px; text-align:center; background:#f4f4f9; border-top: 2px solid #ccc;">
                 <button class="action-btn" id="btn-confirm-score" style="width: 100%; border-radius: 8px;" onclick="confirmProposedPoints()">Potvrdit zápis ✅</button>
@@ -344,6 +380,7 @@
                         <li>Kliknutím na pole kámen položíte. Poslední položený kámen vrátíte kliknutím na něj.</li>
                         <li>Musíte položit <strong>oba kameny</strong>, pokud to pravidla dovolují.</li>
                         <li>Tah ukončíte tlačítkem ✅.</li>
+                        <li><strong>Zobrazení kamenů:</strong> Pokud máte v ruce více než 3 kameny, zobrazí se na obrazovce z kapacitních důvodů vždy maximálně 3 a podbarví se žlutě jako varování. Jakmile nějaký zahrajete a celkový počet klesne na 3, žluté podbarvení zmizí.</li>
                     </ul>
 
                     <h3>Pravidla kladení</h3>
@@ -408,6 +445,7 @@
                         <li>Click a square to place the tile. Click the last placed tile to take it back.</li>
                         <li>You <strong>must place both tiles</strong> if the rules allow it.</li>
                         <li>End your turn with the ✅ button.</li>
+                        <li><strong>Tile Display:</strong> If you have more than 3 tiles in hand, only a maximum of 3 are displayed at a time and highlighted in yellow as a warning. Once you play a tile and the total drops to 3, the yellow highlight disappears.</li>
                     </ul>
 
                     <h3>Placement Rules</h3>
@@ -947,6 +985,7 @@ function hasFixingMove(hand) {
             state.recentTiles = [];
             state.recentOwner = -1;
             state.isGameOver = false;
+            state.consecutivePasses = 0;
             
             addLogObj({ type: "NEW_GAME" });
 
@@ -1302,6 +1341,76 @@ function hasFixingMove(hand) {
             return false;
         }
 
+
+        function gameModeText(mode) {
+            return mode === 'ai' ? '💻 AI' : '👤 PvP';
+        }
+
+        function difficultyText(diff) {
+            if (!diff) return '—';
+
+            return {
+                easy: '🟢 Lehká',
+                medium: '🟡 Střední',
+                hard: '🔴 Těžká'
+            }[diff];
+        }
+
+
+
+        function winnerText(game) {
+
+            if (game.mode === 'ai') {
+                return game.winner === 'ai'
+                    ? '🖥️'
+                    : '🔵';
+            }
+
+            return game.winner === 'blue'
+                ? '🔵'
+                : '🔴';
+        }
+
+
+
+        function renderStatisticsTab() {
+
+            const stats = JSON.parse(
+                localStorage.getItem('zatre_stats')
+            ) || {};
+
+            const bestBody =
+                document.getElementById('best-game-body');
+
+            const lastBody =
+                document.getElementById('last-game-body');
+
+            bestBody.innerHTML = '';
+            lastBody.innerHTML = '';
+
+            if (stats.bestGame) {
+                bestBody.innerHTML = `
+                    <tr>
+                        <td>${gameModeText(stats.bestGame.mode)}</td>
+                        <td>${difficultyText(stats.bestGame.difficulty)}</td>
+                        <td>${winnerText(stats.bestGame)}</td>
+                        <td>${stats.bestGame.score0} : ${stats.bestGame.score1}</td>
+                    </tr>`;
+            }
+
+            if (stats.lastGame) {
+                lastBody.innerHTML = `
+                    <tr>
+                        <td>${gameModeText(stats.lastGame.mode)}</td>
+                        <td>${difficultyText(stats.lastGame.difficulty)}</td>
+                        <td>${winnerText(stats.lastGame)}</td>
+                        <td>${stats.lastGame.score0} : ${stats.lastGame.score1}</td>
+                    </tr>`;
+            }
+        }
+
+
+
         /*
         funkce endTurnBtnClick()
         Účel
@@ -1405,11 +1514,106 @@ function hasFixingMove(hand) {
             } else {
                 // Prázdný váček nebo 0 kamenů → čistý PASS
                 addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
-                showToast(`${pIconToast} ${t('passTurnToast')}`);
+               function endTurnBtnClick() {
+    let currentHand = [...state.players[state.turn].hand];
+    let pIconToast = state.turn === 0
+        ? '<span style="color:var(--p1-color)">👤</span>'
+        : (state.isAiMode ? '💻' : '<span style="color:var(--p2-color)">👤</span>');
+
+    // Inicializace počítadla pasů
+    if (typeof state.consecutivePasses === 'undefined') state.consecutivePasses = 0;
+
+    // ── Případ A: hráč NĚCO položil ──
+    if (state.lastPlacedTiles.length > 0) {
+
+        if (currentHand.length > 0 && hasAnyValidMove(state.turn)) {
+            showToast(t('mustPlay'));
+            return;
+        }
+
+        // Hráč položil kámen, patová situace se přerušuje
+        state.consecutivePasses = 0;
+
+        let bagEmpty = state.bag.length === 0;
+        let opponent = state.turn === 0 ? 1 : 0;
+        let oppEmpty = state.players[opponent].hand.length === 0;
+        let willBeGameOver = bagEmpty && (currentHand.length === 0 || oppEmpty ||
+            (!hasAnyValidMove(state.turn) && !hasAnyValidMove(opponent)));
+
+        if (currentHand.length > 0 && !willBeGameOver) {
+            showToast(`${pIconToast} ${t('tileKeptToast')}`);
+        }
+
+        let tp = state.turnPendingPoints;
+        let keptTiles = (currentHand.length > 0 && !willBeGameOver) ? currentHand : null;
+        addLogObj({ type: "END_TURN", player: state.turn, turn: state.turnCounter,
+            tiles: [...state.lastPlacedTiles], pts: { ...tp }, keptTiles });
+
+        if (tp.s10 === 0 && tp.s11 === 0 && tp.s12 === 0 && tp.dt === 0) {
+            finalizeTurn();
+            return;
+        }
+
+        state.proposedPlacements = [];
+        let pTable = state.players[state.turn].table;
+        ['s10', 's11', 's12'].forEach(col => {
+            if (tp[col] > 0) state.proposedPlacements.push(
+                { col, row: findFirstEmptyRow(pTable, col), val: tp[col] });
+        });
+        for (let i = 0; i < tp.dt; i++)
+            state.proposedPlacements.push(
+                { col: 'dt', row: findFirstEmptyRow(pTable, 'dt'), val: 'X' });
+
+        confirmProposedPoints();
+        return;
+    }
+
+    // ── Případ B: hráč NIC nepoložil ──
+
+    if (hasAnyValidMove(state.turn)) {
+        showToast(t('mustPlay'));
+        return;
+    }
+
+    let bagEmpty = state.bag.length === 0;
+
+    if (currentHand.length >= 2 && !bagEmpty) {
+        let newTile = state.bag.pop();
+        state.players[state.turn].hand.push(newTile);
+        addLogObj({ type: "DRAW1", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+        showToast(`${pIconToast} ${t('draw1TileToast')}`);
+
+        if (hasAnyValidMove(state.turn)) {
+            updateUI();
+            if (state.isAiMode && state.turn === 1) setTimeout(aiTurn, 800);
+            return;
+        }
+        
+        // Stále nemůže hrát -> počítadlo pasů roste
+        state.consecutivePasses++;
+        addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+        showToast(`${pIconToast} ${t('passTurnToast')}`);
+
+    } else if (currentHand.length === 1 && !bagEmpty) {
+        // Přenáší kámen -> počítadlo pasů roste
+        state.consecutivePasses++;
+        addLogObj({ type: "KEEP_TILE", player: state.turn, turn: state.turnCounter, tiles: currentHand });
+        showToast(`${pIconToast} ${t('tileKeptToast')}`);
+
+    } else {
+        // Čistý PASS -> počítadlo pasů roste
+        state.consecutivePasses++;
+        addLogObj({ type: "PASS", player: state.turn, turn: state.turnCounter });
+        showToast(`${pIconToast} ${t('passTurnToast')}`);
+    }
+
+    finalizeTurn();
+} showToast(`${pIconToast} ${t('passTurnToast')}`);
             }
 
             finalizeTurn();
         }
+
 
         function findFirstEmptyRow(pTable, col) {
             for(let i=0; i<25; i++) {
@@ -1436,7 +1640,7 @@ function hasFixingMove(hand) {
                 document.getElementById('modal-close-btn').style.display = 'block';
                 let initialTab = forceTabIdx !== null ? forceTabIdx : state.turn;
                 document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
-                renderModalTable(initialTab);
+                renderModalTable(0);
             }
         }
 
@@ -1446,9 +1650,29 @@ function hasFixingMove(hand) {
 
         // Vykreslení score tabulky
         function renderModalTable(pIdx) {
-            if (!state.isConfirming) {
+
+    const statsTab = document.getElementById('statistics-tab');
+    const tableContainer = document.querySelector('.table-container');
+
+    if (pIdx === 2) {
+        tableContainer.style.display = 'none';
+        statsTab.style.display = 'block';
+
+        document.getElementById('tab-btn-0').style.borderBottomColor = 'transparent';
+        document.getElementById('tab-btn-1').style.borderBottomColor = 'transparent';
+        document.getElementById('tab-btn-2').style.borderBottomColor = '#27ae60';
+
+        renderStatisticsTab();
+        return;
+    }
+
+    tableContainer.style.display = 'block';
+    statsTab.style.display = 'none';
+
+    if (!state.isConfirming) {
                 document.getElementById('tab-btn-0').style.borderBottomColor = pIdx===0 ? '#3498db' : 'transparent';
                 document.getElementById('tab-btn-1').style.borderBottomColor = pIdx===1 ? (state.isAiMode?'#7f8c8d':'#e74c3c') : 'transparent';
+                document.getElementById('tab-btn-2').style.borderBottomColor = pIdx===2 ? '#27ae60' : 'transparent';
             }
 
             let tbody = document.getElementById('modal-tbody'); tbody.innerHTML = '';
@@ -1510,6 +1734,53 @@ function hasFixingMove(hand) {
             props[0].row = targetRow;
             renderModalTable(state.turn);
         }
+
+
+        function saveStatistics() {
+
+    const stats =
+        JSON.parse(localStorage.getItem('zatre_stats')) || {};
+
+    const bestScore = Math.max(
+        state.players[0].score,
+        state.players[1].score
+    );
+
+    const p0 = state.players[0].score;
+    const p1 = state.players[1].score;
+
+    let winner;
+
+    if (state.isAiMode) {
+        winner = p0 > p1 ? 'player' : 'ai';
+    } else {
+        winner = p0 > p1 ? 'blue' : 'red';
+    }
+
+    const gameData = {
+        mode: state.isAiMode ? 'ai' : 'pvp',
+        difficulty: state.isAiMode ? state.aiDifficulty : null,
+        winner,
+        score0: p0,
+        score1: p1,
+        score: Math.max(p0, p1) // nech pro porovnání rekordu
+    };
+
+    stats.lastGame = gameData;
+
+    if (!stats.bestGame ||
+        bestScore > stats.bestGame.score) {
+
+        stats.bestGame = gameData;
+    }
+
+    localStorage.setItem(
+        'zatre_stats',
+        JSON.stringify(stats)
+    );
+}
+
+
 
         /*
         funkce confirmProposedPoints()
@@ -1705,6 +1976,7 @@ function hasFixingMove(hand) {
                 });
 
                 recalcScores();
+                saveStatistics();
                 updateUI();
 
                 let p1 = state.players[0].score;
@@ -2063,109 +2335,200 @@ function hasFixingMove(hand) {
             return html;
         }
 
+
         function updateUI() {
-            document.getElementById('p1-score').innerText = state.players[0].score;
-            document.getElementById('p2-score').innerText = state.players[1].score;
-            document.getElementById('tiles-left').innerText = `🎒 ${state.bag.length}`;
+    document.getElementById('p1-score').innerText = state.players[0].score;
+    document.getElementById('p2-score').innerText = state.players[1].score;
+    document.getElementById('tiles-left').innerText = `🎒 ${state.bag.length}`;
 
-            document.getElementById('p1-info').classList.toggle('active', !state.isGameOver && state.turn === 0);
-            document.getElementById('p2-info').classList.toggle('active', !state.isGameOver && state.turn === 1);
-            
-            document.getElementById('p2-icon').innerText = state.isAiMode ? '💻' : '🔴';
-            document.getElementById('p2-icon').style.color = state.isAiMode ? '#ecf0f1' : 'var(--p2-color)';
+    document.getElementById('p1-info').classList.toggle('active', !state.isGameOver && state.turn === 0);
+    document.getElementById('p2-info').classList.toggle('active', !state.isGameOver && state.turn === 1);
+    
+    document.getElementById('p2-icon').innerText = state.isAiMode ? '💻' : '🔴';
+    document.getElementById('p2-icon').style.color = state.isAiMode ? '#ecf0f1' : 'var(--p2-color)';
 
-            const hDiv = document.getElementById('player-hand'); hDiv.innerHTML = '';
-            state.players[state.turn].hand.forEach((v, idx) => {
-                const tNode = document.createElement('div'); tNode.className = 'hand-tile';
-                if (state.selectedIdx === idx) tNode.classList.add('selected');
-                tNode.innerHTML = getDominoHtml(v); 
-                tNode.onclick = () => { 
-                    if (state.isGameOver) return; 
-                    if(state.isAiMode && state.turn===1) return; 
-                    state.selectedIdx = state.selectedIdx===idx ? -1 : idx; 
-                    updateUI(); 
-                };
-                hDiv.appendChild(tNode);
-            });
+    const hDiv = document.getElementById('player-hand'); 
+    hDiv.innerHTML = '';
+    
+    let currentHand = state.players[state.turn].hand;
+    let maxOffset = Math.max(0, currentHand.length - 3);
 
-            document.querySelectorAll('.cell').forEach(c => {
-                c.innerHTML = '';
-                c.classList.remove('recent-cell-p1', 'recent-cell-p2');
-            });
-            
-            for (let r=0; r<ROWS; r++) {
-                for (let c=0; c<COLS; c++) {
-                    if (state.board[r][c] !== null) {
-                        const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-                        
-                        if (state.recentTiles && state.recentTiles.some(pt => pt.r === r && pt.c === c)) {
-                            cell.classList.add(state.recentOwner === 0 ? 'recent-cell-p1' : 'recent-cell-p2');
+    if (window.lastTurnForOffset !== state.turn || window.lastHandLength !== currentHand.length) {
+        window.lastTurnForOffset = state.turn;
+        window.lastHandLength = currentHand.length;
+        
+        state.handOffset = 0; 
+        
+        if (currentHand.length > 3 && !state.isGameOver) {
+            if (typeof getAllMoves === 'function') {
+                let moves = getAllMoves(); 
+                if (moves.length > 0) {
+                    let bestIdx = -1;
+                    let minVal = 999;
+                    
+                    moves.forEach(m => {
+                        let v = currentHand[m.i];
+                        if (v < minVal) { 
+                            minVal = v; 
+                            bestIdx = m.i; 
                         }
-                        
-                        const tNode = document.createElement('div'); 
-                        tNode.className = 'tile'; 
-                        tNode.innerHTML = getDominoHtml(state.board[r][c]); 
-
-                        if (state.lastPlacedTiles && state.lastPlacedTiles.some(pt => pt.r === r && pt.c === c)) {
-                            tNode.classList.add('highlight');
+                    });
+                    
+                    if (bestIdx !== -1) {
+                        if (bestIdx >= 3) {
+                            state.handOffset = Math.min(maxOffset, bestIdx - 1);
+                        } else {
+                            state.handOffset = 0;
                         }
-
-                        cell.appendChild(tNode);
-                        if(!state.isGameOver) showLegalMoves();
                     }
                 }
             }
-
-            let confirmBtn = document.getElementById('btn-confirm-turn');
-            let goText = document.getElementById('game-over-text');
-            
-            if (state.isGameOver) {
-                confirmBtn.style.display = 'none';
-                goText.style.display = 'inline';
-                
-                let p1 = state.players[0].score;
-                let p2 = state.players[1].score;
-                if (p1 > p2) goText.innerHTML = `🏆 🔵 ${t('won')}`;
-                else if (p2 > p1) goText.innerHTML = `🏆 ${state.isAiMode ? '💻' : '🔴'} ${t('won')}`;
-                else goText.innerHTML = `🤝 ${t('draw')}`;
-            } else {
-                confirmBtn.style.display = 'block';
-                goText.style.display = 'none';
-                
-                let validMovePossible = hasAnyValidMove(state.turn);
-                if (state.lastPlacedTiles.length === 0 && !validMovePossible) {
-                    confirmBtn.innerText = '⏭';
-                    confirmBtn.title = t('passTurn');
-                    confirmBtn.style.backgroundColor = '#95a5a6';
-                } else {
-                    confirmBtn.innerText = '✅';
-                    confirmBtn.title = t('confirmTurn');
-                    confirmBtn.style.backgroundColor = '#27ae60';
-                }
-            }
-            
-            document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
-
-            // Vykreslení souřadnic na prázdná pole
-            document.querySelectorAll('.cell').forEach(cell => {
-                let r = parseInt(cell.dataset.r);
-                let c = parseInt(cell.dataset.c);
-                if (state.board[r][c] === null) {
-                    if (showCoords) {
-                        cell.innerText = String.fromCharCode(97 + r) + (c + 1);
-                        
-                        // Detekce tmavého pole (např. 'r' = červené středové, 'g' = tmavě šedé)
-                        let tp = boardTemplate[r][c];
-                        let isDark = (tp === 'o' || tp === 'r'); 
-                        
-                        cell.style.color = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)';
-                        cell.style.fontSize = '12px';
-                    } else {
-                        cell.innerText = '';
-                    }
-                }
-            });
         }
+    }
+
+    if (typeof state.handOffset === 'undefined') state.handOffset = 0;
+    if (state.handOffset > maxOffset) state.handOffset = maxOffset;
+
+    let hasHidden = currentHand.length > 3;
+
+    if (state.handOffset > 0) {
+        let leftArrow = document.createElement('div');
+        leftArrow.innerHTML = '◀';
+        leftArrow.style.cssText = 'display:flex; align-items:center; justify-content:center; padding:0 15px; font-size:24px; cursor:pointer; color:var(--ui-text, #ecf0f1); user-select:none;';
+        leftArrow.onclick = () => { state.handOffset--; updateUI(); };
+        hDiv.appendChild(leftArrow);
+    }
+
+    let endIdx = Math.min(currentHand.length, state.handOffset + 3);
+    for (let idx = state.handOffset; idx < endIdx; idx++) {
+        let v = currentHand[idx];
+        const tNode = document.createElement('div'); 
+        tNode.className = 'hand-tile';
+        
+        if (state.selectedIdx === idx) tNode.classList.add('selected');
+        
+        if (hasHidden) {
+            tNode.style.backgroundColor = '#f1c40f'; 
+        }
+        
+        tNode.innerHTML = getDominoHtml(v); 
+        tNode.onclick = () => { 
+            if (state.isGameOver) return; 
+            if(state.isAiMode && state.turn === 1) return; 
+            state.selectedIdx = state.selectedIdx === idx ? -1 : idx; 
+            updateUI(); 
+        };
+        hDiv.appendChild(tNode);
+    }
+
+    if (state.handOffset < maxOffset) {
+        let rightArrow = document.createElement('div');
+        rightArrow.innerHTML = '▶';
+        rightArrow.style.cssText = 'display:flex; align-items:center; justify-content:center; padding:0 15px; font-size:24px; cursor:pointer; color:var(--ui-text, #ecf0f1); user-select:none;';
+        rightArrow.onclick = () => { state.handOffset++; updateUI(); };
+        hDiv.appendChild(rightArrow);
+    }
+
+    document.querySelectorAll('.cell').forEach(c => {
+        c.innerHTML = '';
+        c.classList.remove('recent-cell-p1', 'recent-cell-p2');
+    });
+    
+    for (let r=0; r<ROWS; r++) {
+        for (let c=0; c<COLS; c++) {
+            if (state.board[r][c] !== null) {
+                const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                
+                if (state.recentTiles && state.recentTiles.some(pt => pt.r === r && pt.c === c)) {
+                    cell.classList.add(state.recentOwner === 0 ? 'recent-cell-p1' : 'recent-cell-p2');
+                }
+                
+                const tNode = document.createElement('div'); 
+                tNode.className = 'tile'; 
+                tNode.innerHTML = getDominoHtml(state.board[r][c]); 
+
+                if (state.lastPlacedTiles && state.lastPlacedTiles.some(pt => pt.r === r && pt.c === c)) {
+                    tNode.classList.add('highlight');
+                }
+
+                cell.appendChild(tNode);
+            }
+        }
+    }
+    
+    if (!state.isGameOver) showLegalMoves();
+
+    // --- NOVÁ ČÁST: Detekce zablokování (Deadlock) ---
+    if (!state.isGameOver) {
+        if (typeof state.consecutivePasses === 'undefined') state.consecutivePasses = 0;
+        
+        let bagEmpty = state.bag.length === 0;
+        let p1NoMove = !hasAnyValidMove(0);
+        let p2NoMove = !hasAnyValidMove(1);
+
+        // Hra končí, pokud:
+        // 1. Je prázdný sáček a ani jeden hráč nemá platný tah
+        // 2. Nebo pokud se sešly 2 vynechané tahy po sobě (hráči se točí v bludném kruhu s plným sáčkem)
+        if ((bagEmpty && p1NoMove && p2NoMove) || state.consecutivePasses >= 2) {
+            state.isGameOver = true;
+            if (typeof recalcScores === 'function') recalcScores();
+            if (typeof saveGameStats === 'function') saveGameStats();
+            if (typeof addLogObj === 'function') {
+                addLogObj({ type: "SYSTEM_TEXT", text: "Konec hry: Deska je zablokována (nebo oba hráči vynechali tah)." });
+            }
+        }
+    }
+    // ------------------------------------------------------------------
+
+    let confirmBtn = document.getElementById('btn-confirm-turn');
+    let goText = document.getElementById('game-over-text');
+    
+    if (state.isGameOver) {
+        confirmBtn.style.display = 'none';
+        goText.style.display = 'inline';
+        
+        let p1 = state.players[0].score;
+        let p2 = state.players[1].score;
+        if (p1 > p2) goText.innerHTML = `🏆 🔵 ${t('won')}`;
+        else if (p2 > p1) goText.innerHTML = `🏆 ${state.isAiMode ? '💻' : '🔴'} ${t('won')}`;
+        else goText.innerHTML = `🤝 ${t('draw')}`;
+    } else {
+        confirmBtn.style.display = 'block';
+        goText.style.display = 'none';
+        
+        let validMovePossible = hasAnyValidMove(state.turn);
+        
+        if (state.players[state.turn].hand.length > 0 && !validMovePossible) {
+            confirmBtn.innerText = '⏭';
+            confirmBtn.title = 'Ukončit tah a ponechat kameny';
+            confirmBtn.style.backgroundColor = '#95a5a6';
+        } else {
+            confirmBtn.innerText = '✅';
+            confirmBtn.title = 'Potvrdit tah';
+            confirmBtn.style.backgroundColor = '#27ae60';
+        }
+    }
+    
+    document.getElementById('tab-btn-1').innerText = state.isAiMode ? t('computer') : t('red');
+
+    document.querySelectorAll('.cell').forEach(cell => {
+        let r = parseInt(cell.dataset.r);
+        let c = parseInt(cell.dataset.c);
+        if (state.board[r][c] === null) {
+            if (typeof showCoords !== 'undefined' && showCoords) {
+                cell.innerText = String.fromCharCode(97 + r) + (c + 1);
+                let tp = boardTemplate[r][c];
+                let isDark = (tp === 'o' || tp === 'r'); 
+                cell.style.color = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)';
+                cell.style.fontSize = '12px';
+            } else {
+                cell.innerText = '';
+            }
+        }
+    });
+}
+
+
 
         function openHelpModal() { document.getElementById('help-modal').style.display = 'flex'; }
         function closeHelpModal() { document.getElementById('help-modal').style.display = 'none'; }
