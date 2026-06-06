@@ -2350,63 +2350,59 @@ function hasFixingMove(hand) {
     const hDiv = document.getElementById('player-hand'); 
     hDiv.innerHTML = '';
     
-    let currentHand = state.players[state.turn].hand;
-    let maxOffset = Math.max(0, currentHand.length - 3);
+    // --- OPRAVA LAYOUTU: Nativní "Swipe" (karusel) namísto šipek ---
+    hDiv.style.display = 'flex';
+    hDiv.style.overflowX = 'auto'; // Umožní scrollování/swipe
+    hDiv.style.flexWrap = 'nowrap';
+    hDiv.style.scrollbarWidth = 'none'; // Skryje posuvník (Firefox)
+    hDiv.style.msOverflowStyle = 'none'; // Skryje posuvník (IE/Edge)
+    hDiv.style.maxWidth = '45vw'; // Bezpečná šířka - už nikdy nevytlačí skóre na okraji!
+    hDiv.style.scrollBehavior = 'smooth'; // Plynulý dojezd
+    hDiv.style.WebkitOverflowScrolling = 'touch'; // Plynulý swipe na iOS
+    hDiv.style.gap = '5px'; // Drobná mezera mezi kostkami
 
-    if (window.lastTurnForOffset !== state.turn || window.lastHandLength !== currentHand.length) {
-        window.lastTurnForOffset = state.turn;
-        window.lastHandLength = currentHand.length;
-        
-        state.handOffset = 0; 
-        
-        if (currentHand.length > 3 && !state.isGameOver) {
-            if (typeof getAllMoves === 'function') {
-                let moves = getAllMoves(); 
-                if (moves.length > 0) {
-                    let bestIdx = -1;
-                    let minVal = 999;
-                    
-                    moves.forEach(m => {
-                        let v = currentHand[m.i];
-                        if (v < minVal) { 
-                            minVal = v; 
-                            bestIdx = m.i; 
-                        }
-                    });
-                    
-                    if (bestIdx !== -1) {
-                        if (bestIdx >= 3) {
-                            state.handOffset = Math.min(maxOffset, bestIdx - 1);
-                        } else {
-                            state.handOffset = 0;
+    let currentHand = state.players[state.turn].hand;
+    let hasHidden = currentHand.length > 3;
+
+    // Hledáme nejnižší hratelný kámen
+    let bestIdx = -1;
+    if (currentHand.length > 3 && !state.isGameOver) {
+        let minVal = 999;
+        for (let i = 0; i < currentHand.length; i++) {
+            let v = currentHand[i];
+            let isPlayable = false;
+            
+            for (let r = 0; r < ROWS && !isPlayable; r++) {
+                for (let c = 0; c < COLS && !isPlayable; c++) {
+                    if (state.board[r][c] === null && boardTemplate[r][c] !== '.') {
+                        if (state.isFirstMove) {
+                            if (boardTemplate[r][c] === 'r') isPlayable = true;
+                        } else if (hasAdjacentTile(r, c)) {
+                            state.board[r][c] = v;
+                            let hs = getLineSum(r, c, 0, 1), vs = getLineSum(r, c, 1, 0);
+                            state.board[r][c] = null;
+                            if (hs <= 12 && vs <= 12) isPlayable = true;
                         }
                     }
                 }
             }
+            if (isPlayable && v < minVal) {
+                minVal = v;
+                bestIdx = i;
+            }
         }
     }
 
-    if (typeof state.handOffset === 'undefined') state.handOffset = 0;
-    if (state.handOffset > maxOffset) state.handOffset = maxOffset;
-
-    let hasHidden = currentHand.length > 3;
-
-    if (state.handOffset > 0) {
-        let leftArrow = document.createElement('div');
-        leftArrow.innerHTML = '◀';
-        leftArrow.style.cssText = 'display:flex; align-items:center; justify-content:center; padding:0 15px; font-size:24px; cursor:pointer; color:var(--ui-text, #ecf0f1); user-select:none;';
-        leftArrow.onclick = () => { state.handOffset--; updateUI(); };
-        hDiv.appendChild(leftArrow);
-    }
-
-    let endIdx = Math.min(currentHand.length, state.handOffset + 3);
-    for (let idx = state.handOffset; idx < endIdx; idx++) {
+    // Vykreslíme VŠECHNY kameny (schovají se do swipovacího boxu)
+    for (let idx = 0; idx < currentHand.length; idx++) {
         let v = currentHand[idx];
         const tNode = document.createElement('div'); 
         tNode.className = 'hand-tile';
+        tNode.style.flexShrink = '0'; // Zabrání tomu, aby se kostky při nedostatku místa mačkaly/zmenšovaly
         
         if (state.selectedIdx === idx) tNode.classList.add('selected');
         
+        // Žluté varování zůstává
         if (hasHidden) {
             tNode.style.backgroundColor = '#f1c40f'; 
         }
@@ -2421,13 +2417,22 @@ function hasFixingMove(hand) {
         hDiv.appendChild(tNode);
     }
 
-    if (state.handOffset < maxOffset) {
-        let rightArrow = document.createElement('div');
-        rightArrow.innerHTML = '▶';
-        rightArrow.style.cssText = 'display:flex; align-items:center; justify-content:center; padding:0 15px; font-size:24px; cursor:pointer; color:var(--ui-text, #ecf0f1); user-select:none;';
-        rightArrow.onclick = () => { state.handOffset++; updateUI(); };
-        hDiv.appendChild(rightArrow);
+    // Auto-scroll na správnou kostku při změně
+    if (window.lastTurnForOffset !== state.turn || window.lastHandLength !== currentHand.length) {
+        window.lastTurnForOffset = state.turn;
+        window.lastHandLength = currentHand.length;
+        
+        setTimeout(() => {
+            if (bestIdx !== -1 && hDiv.children[bestIdx]) {
+                // Odroluje přímo na nejlepší kámen
+                hDiv.children[bestIdx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            } else {
+                // Jinak zarovná doleva
+                hDiv.scrollLeft = 0;
+            }
+        }, 50);
     }
+    // ------------------------------------------------------------------
 
     document.querySelectorAll('.cell').forEach(c => {
         c.innerHTML = '';
@@ -2458,7 +2463,6 @@ function hasFixingMove(hand) {
     
     if (!state.isGameOver) showLegalMoves();
 
-    // --- NOVÁ ČÁST: Detekce zablokování (Deadlock) ---
     if (!state.isGameOver) {
         if (typeof state.consecutivePasses === 'undefined') state.consecutivePasses = 0;
         
@@ -2466,19 +2470,15 @@ function hasFixingMove(hand) {
         let p1NoMove = !hasAnyValidMove(0);
         let p2NoMove = !hasAnyValidMove(1);
 
-        // Hra končí, pokud:
-        // 1. Je prázdný sáček a ani jeden hráč nemá platný tah
-        // 2. Nebo pokud se sešly 2 vynechané tahy po sobě (hráči se točí v bludném kruhu s plným sáčkem)
         if ((bagEmpty && p1NoMove && p2NoMove) || state.consecutivePasses >= 2) {
             state.isGameOver = true;
             if (typeof recalcScores === 'function') recalcScores();
-            if (typeof saveGameStats === 'function') saveGameStats();
+            if (typeof saveStatistics === 'function') saveStatistics();
             if (typeof addLogObj === 'function') {
                 addLogObj({ type: "SYSTEM_TEXT", text: "Konec hry: Deska je zablokována (nebo oba hráči vynechali tah)." });
             }
         }
     }
-    // ------------------------------------------------------------------
 
     let confirmBtn = document.getElementById('btn-confirm-turn');
     let goText = document.getElementById('game-over-text');
