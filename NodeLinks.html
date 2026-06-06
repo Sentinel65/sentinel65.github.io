@@ -838,6 +838,37 @@ function applyTranslations() {
 const directions = [null, '↘', '↗', '↑', '↖', '↙', '↓'];
 const dirOffsets = [null, {q:1, r:1}, {q:1, r:-1}, {q:0, r:-2}, {q:-1, r:-1}, {q:-1, r:1}, {q:0, r:2}];
 
+function calculateMaxLinks() {
+    // Sestavíme set všech platných uzlů z boardDefinition
+    const validCoords = new Set();
+    for (let col of boardDefinition) {
+        for (let r of col.r_axes) {
+            validCoords.add(`${col.c},${r}`);
+        }
+    }
+    // Spočítáme unikátní hrany (každou dvojici pouze jednou)
+    const edges = new Set();
+    for (let col of boardDefinition) {
+        for (let r of col.r_axes) {
+            for (let d = 1; d <= 6; d++) {
+                const off = dirOffsets[d];
+                const nq = col.c + off.q;
+                const nr = r + off.r;
+                if (validCoords.has(`${nq},${nr}`)) {
+                    // Kanonický klíč — menší souřadnice první
+                    const key = col.c < nq || (col.c === nq && r < nr)
+                        ? `${col.c},${r}-${nq},${nr}`
+                        : `${nq},${nr}-${col.c},${r}`;
+                    edges.add(key);
+                }
+            }
+        }
+    }
+    return edges.size;
+}
+
+
+
 let errors = 0;
 let tokens = 0;
 let gameOver = false;
@@ -1167,7 +1198,10 @@ function translateLogEntry(entry) {
         case 'undo': 
             return c ? '↩️ Krok zpět (tah vrácen)' : '↩️ Undo (move reverted)';
         case 'game_stats':
-            return c ? `📊 Double: ${entry.doubles}× | Žetony: ${entry.tokens}/${entry.maxTokens}` : `📊 Doubles: ${entry.doubles}x | Tokens: ${entry.tokens}/${entry.maxTokens}`;
+            const linksStr = (entry.linksUsed !== undefined)
+                ? (c ? ` | Spojnice: ${entry.linksUsed}/${entry.maxLinks}` : ` | Links: ${entry.linksUsed}/${entry.maxLinks}`)
+                : '';
+            return c ? `📊 Double: ${entry.doubles}× | Žetony: ${entry.tokens}/${entry.maxTokens}${linksStr}` : `📊 Doubles: ${entry.doubles}x | Tokens: ${entry.tokens}/${entry.maxTokens}${linksStr}`;
         case 'single_bonus':
             const isToken = entry.bonus === 'token';
             const bNameCz = isToken ? '🪙 Žeton' : '🎲 Double';
@@ -1205,6 +1239,8 @@ const boardDefinition = [
     { c: 5, r_axes: [2,4,6], errors: [0,8] },
     { c: 6, r_axes: [1,3,5,7], errors: [] }
 ];
+
+const MAX_LINKS = calculateMaxLinks();
 
 function resizeCanvas() {
     canvas.width = wrapper.clientWidth;
@@ -2087,7 +2123,9 @@ function calculateScores(doLog = true) {
     code: 'game_stats',
     doubles: doublesRolled,
     tokens: tokensEarned,
-    maxTokens: MAX_TOKEN_NODES
+    maxTokens: MAX_TOKEN_NODES,
+    linksUsed: links.length,
+    maxLinks: MAX_LINKS
 });
         
         let currentStats = JSON.parse(localStorage.getItem('nodeLinksStats') || '{"best":null, "last":null}');
