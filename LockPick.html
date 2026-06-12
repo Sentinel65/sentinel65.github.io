@@ -1,0 +1,3286 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Lock Pick</title>
+
+<style>
+
+:root{
+    --bg:#111;
+    --panel:#1d1d1d;
+    --border:#444;
+    --text:#f0f0f0;
+    --accent:#e0a800;
+    --good:#4caf50;
+    --bad:#f44336;
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial,sans-serif;
+    padding:10px;
+}
+
+button{
+    cursor:pointer;
+}
+
+.panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px;
+    margin-bottom:10px;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:10px;
+}
+
+.row{
+    display:flex;
+    gap:8px;
+}
+
+.column{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.center{
+    text-align:center;
+}
+
+#topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+#pins{
+    display:flex;
+    justify-content: center;
+    gap:4px;
+    flex-wrap: nowrap;
+}
+
+.pin-card{
+    border:1px solid #555;
+    border-radius:10px;
+    padding:8px;
+    text-align:center;
+    min-height:90px;
+    background:#222;
+    flex:1;
+    min-width:0;
+}
+
+.pin-card.set{
+    background:#1d4020;
+}
+
+.pin-card.current{
+    outline:2px solid gold;
+}
+
+#timeTrack{
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    gap:3px;
+}
+
+.time-cell{
+    height:24px;
+    border-radius:4px;
+    border:1px solid #555;
+    background:#222;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.time-cell.used{
+    background:#666;
+}
+
+#gauge{
+    display:flex;
+    justify-content:center;
+    gap:5px;
+}
+
+.gauge-cell{
+    width:45px;
+    height:45px;
+    border:1px solid #555;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.gauge-active{
+    background:gold;
+    color:black;
+    font-weight:bold;
+}
+
+#diceArea{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+}
+
+.die{
+    height:60px;
+    border-radius:10px;
+    border:2px solid #666;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    background:#222;
+}
+
+#controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-group-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.btn-group-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.control-btn{
+    height:45px;
+    border:none;
+    border-radius:10px;
+    background:#333;
+    color:white;
+}
+
+.control-btn:hover{
+    background:#555;
+}
+
+#log{
+    height:220px;
+    overflow-y:auto;
+    font-size:13px;
+    white-space:pre-line;
+}
+
+@media (max-width:600px){
+
+    .die{
+        height:55px;
+    }
+    
+    /* Zmenšení písma u tří tlačítek vedle sebe pro mobily */
+    .btn-group-3 .control-btn {
+        font-size: 12px;
+        padding: 0 2px;
+    }
+}
+
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.8);
+    z-index:999;
+}
+
+.modal-content{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:min(95vw,700px);
+    max-height:90vh;
+    overflow-y:auto;
+    background:#222;
+    border-radius:12px;
+    border:1px solid #555;
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px;
+    border-bottom:1px solid #444;
+}
+
+.help-body{
+    padding:15px;
+    line-height:1.5;
+}
+
+.help-body h3{
+    margin-top:16px;
+    margin-bottom:8px;
+    color:gold;
+}
+
+.help-body ul{
+    margin-left:20px;
+}
+
+.help-body table td{
+    border-bottom:1px solid #333;
+    vertical-align:top;
+}
+
+.help-body table tr:last-child td{
+    border-bottom:none;
+}
+
+.help-body p{
+    margin-bottom:6px;
+}
+
+.dir-btn{
+    width:34px;
+    height:34px;
+    padding:0;
+    font-size:16px;
+    line-height:34px;
+    text-align:center;
+    cursor:pointer;
+    background:#333;
+    border:1px solid #555;
+    color:#e8e0d0;
+    border-radius:4px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    margin:1px;
+}
+.dir-btn:hover:not(:disabled){ background:#444; border-color:#c8a84b; }
+.dir-btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+#gridArea{
+    margin-top:15px;
+}
+
+.setting-grid{
+    border-collapse:collapse;
+    margin:auto;
+}
+
+.setting-grid td,
+.setting-grid th{
+    width:36px;
+    height:36px;
+    text-align:center;
+    border:1px solid #555;
+}
+
+.setting-grid td{
+    background:#222;
+}
+
+.grid-a{
+    background:#2e7d32 !important;
+}
+
+.grid-b{
+    background:#1565c0 !important;
+}
+
+.grid-ab{
+    background:#9c27b0 !important;
+}
+
+#calcArea{
+    margin-top:15px;
+    text-align:center;
+    font-weight:bold;
+    line-height:1.8;
+}
+
+.icon-btn{
+
+    width:36px;
+    height:36px;
+
+    border:none;
+
+    border-radius:8px;
+
+    background:#333;
+
+    color:white;
+
+    font-size:18px;
+}
+
+.icon-btn:hover{
+
+    background:#555;
+}
+
+.assign-btn{
+
+    min-height:44px;
+
+    padding:8px 10px;
+
+    margin:2px;
+
+    border:none;
+
+    border-radius:8px;
+
+    font-size:14px;
+
+    cursor:pointer;
+}
+
+@media (max-width: 600px){
+
+    .assign-btn{
+
+        min-height:32px;
+
+        min-width:56px;
+
+        font-size:16px;
+    }
+}
+
+#toast{
+
+    position:fixed;
+
+    left:50%;
+    top:20px;
+
+    transform:translateX(-50%);
+
+    background:#222;
+
+    color:white;
+
+    padding:12px 18px;
+
+    border-radius:12px;
+
+    border:2px solid #666;
+
+    font-weight:bold;
+
+    text-align:center;
+
+    z-index:9999;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:all .25s;
+
+    max-width:90vw;
+
+    box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+
+#toast.show{
+
+    opacity:1;
+
+    top:60px;
+}
+
+.toast-success{
+    border-color:#4caf50;
+}
+
+.toast-warning{
+    border-color:#ff9800;
+}
+
+.toast-error{
+    border-color:#f44336;
+}
+
+.toast-info{
+    border-color:#2196f3;
+}
+
+
+.control-btn:disabled{
+
+    opacity:0.5;
+
+    cursor:not-allowed;
+
+    filter:grayscale(100%);
+}
+
+.btn-next{
+    background:#2e7d32 !important;
+
+}
+
+@keyframes pulse{
+
+    0%{
+        transform:scale(1);
+    }
+
+    50%{
+        transform:scale(1.05);
+    }
+
+    100%{
+        transform:scale(1);
+    }
+}
+
+
+.time-cell.tension{
+    background:#ad1457;
+}
+
+.time-cell.tension.used{
+    background:#f06292;
+}
+
+.tension-track-cell{
+
+    width:28px;
+    height:28px;
+
+    border:1px solid #555;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    background:#222;
+
+    border-radius:4px;
+
+    font-size:12px;
+}
+
+.tension-track-cell.used{
+
+    background:#ad1457;
+
+    color:white;
+
+    font-weight:bold;
+}
+
+#tensionTracks{
+    overflow-x:auto;
+}
+
+@keyframes diceRoll{
+
+    0%{
+        transform:rotateY(0deg);
+    }
+
+    50%{
+        transform:rotateY(180deg);
+    }
+
+    100%{
+        transform:rotateY(360deg);
+    }
+}
+
+.die.rolling{
+
+    animation:diceRoll .5s;
+}
+
+.die.held{
+    border:3px solid gold;
+    box-shadow:0 0 12px gold;
+}
+
+
+.grid-blocked{
+    background:#444 !important;
+    color:#999;
+}
+
+.grid-error {
+    background-color: var(--bad) !important;
+    color: white !important;
+    border: 2px dashed white !important; /* Přidá přerušovaný okraj pro ještě větší zvýraznění */
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔒 LOCK PICK</h1>
+
+<div id="topbar" class="panel">
+    <div style="display: flex; gap: 15px;">
+        <div>🕐 <span id="timeText">0</span></div>
+        <div>🪛 <span id="pickText">0</span></div>
+        <div>🎯 <span id="scoreText">0</span></div>
+    </div>
+    
+    <div style="display: flex; gap: 8px;">
+        <button class="icon-btn" onclick="deleteSave()" title="Smazat save">🗑️</button>
+        <button class="icon-btn" onclick="saveGame()" title="Uložit">💾</button>
+        <button class="icon-btn" onclick="loadGame()" title="Načíst">📂</button>
+        <button class="icon-btn" onclick="showHelp()" title="Nápověda">💡</button>
+    </div>
+</div>
+
+<div class="panel">
+    <h3>Piny</h3>
+    <div id="pins"></div>
+</div>
+
+<div class="panel">
+    <h3>Čas</h3>
+    <div id="timeTrack"></div>
+</div>
+
+<div class="panel">
+    <h3>Tension Gauge</h3>
+    <div id="gauge"></div>
+</div>
+
+<div class="panel">
+    <h3>Tension Tracks</h3>
+    <div id="tensionTracks"></div>
+</div>
+
+<div class="panel">
+    <h3>Kostky</h3>
+    <div id="diceArea"></div>
+</div>
+
+<div class="panel">
+    <div id="controls">
+
+        <div class="btn-group-3">
+            <button class="control-btn" onclick="confirmNewGame(4)">Hra 4 piny</button>
+            <button class="control-btn" onclick="confirmNewGame(5)">Hra 5 pinů</button>
+            <button class="control-btn" onclick="confirmNewGame(6)">Hra 6 pinů</button>
+        </div>
+
+        <div class="btn-group-3">
+        <button id="btnTensionRoll" class="control-btn" onclick="rollDice()">
+            Tension Roll
+        </button>
+            <button id="btnSetPin" class="control-btn" onclick="startSettingPin()">Set PIN</button>
+        <button id="btnEvaluate" class="control-btn" style="width: 100%;" onclick="evaluateSetting()">
+            Vyhodnotit
+        </button>
+        </div>
+        
+        <div class="btn-group-3">
+			<button id="btnFinishTension" class="control-btn" onclick="finishTension()">Potvrdit napětí</button>
+            <button id="btnCheckBinding" class="control-btn" onclick="startBindingCheck()">Check Binding</button> 
+            <button id="btnBindingRoll" class="control-btn" onclick="bindingRoll()">Binding Roll</button>
+       
+
+        </div>
+
+
+
+        <div class="btn-group-3">
+            <button class="control-btn pick-btn" onclick="setPick(-1)">Pick -1</button>
+            <button class="control-btn pick-btn" onclick="setPick(0)">Pick 0</button>
+            <button class="control-btn pick-btn" onclick="setPick(1)">Pick +1</button>
+        </div>
+
+         <div id="powersArea" class="btn-group-3">
+            <button id="btnPowerReroll" class="control-btn" onclick="usePowerReroll()">🎲 Přehodit</button>
+            <button id="btnPowerModify" class="control-btn" onclick="usePowerModify()">➕➖ 1</button>
+            <button id="btnPowerPick2" class="control-btn" onclick="usePowerPick2()">↔ Pick 2</button>
+         </div>
+    </div>
+</div>
+
+
+<div class="panel">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0;">Setting PIN</h3>
+        <div id="settingPinHeader" style="font-size: 1.1em; font-weight: bold; color: gold;"></div>
+    </div>
+
+    <div id="settingInfo" style="margin-top: 8px;">
+        Neaktivní
+    </div>
+
+    <div id="assignmentArea" style="margin-top: 15px;"></div>
+	<div id="calcArea"></div>
+	<div id="gridArea"></div>
+	<div id="intersectionControls"></div>
+</div>
+
+
+<div class="panel">
+
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:8px;
+    ">
+
+        <h3>Log</h3>
+
+        <div style="
+            display:flex;
+            gap:6px;
+        ">
+
+            <button
+                class="icon-btn"
+                onclick="clearLog()">
+
+                🗑️
+            </button>
+
+            <button
+                class="icon-btn"
+                onclick="copyLog()"
+                title="Kopírovat log">
+
+                📋
+            </button>
+
+        </div>
+
+    </div>
+
+    <div id="log"></div>
+
+</div>
+
+
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🔒 Lock Pick — Nápověda</h2>
+            <button onclick="hideHelp()">✖</button>
+        </div>
+        <div class="help-body">
+
+            <h3>🎯 Cíl hry</h3>
+            <p>Byl jsi neprávem uvězněn. Máš 5 minut (30 časových kroků), než se vrátí strážci. Nastav všechny závěrky zámku na správnou výšku a unikni!</p>
+
+            <h3>⏱ Časomíra</h3>
+            <p>Každá akce spotřebuje 1 nebo více časových kroků. Červeně podbarvená políčka časomíry spouštějí <b>Tension Check</b>. Pokud potřebuješ označit políčko č. 31 — hra končí prohrou.</p>
+            <table style="width:100%;font-size:11px;border-collapse:collapse;margin:6px 0;">
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>B</b></td><td>Check Binding — testování závěrky</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>X</b></td><td>Časová penalizace (symbol ⏱ na tracku)</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>R</b></td><td>Návrat na nejnižší závěrku</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>S</b></td><td>Set PIN — pokus o nastavení závěrky</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>P</b></td><td>Změna hrotu (2 kroky)</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>M</b></td><td>Posun průsečíku v mřížce</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>O</b></td><td>Overset nebo napětí mimo rozsah</td></tr>
+            </table>
+
+            <h3>🔍 1. Hledání pořadí (Binding)</h3>
+            <p>Závěrky musíš nastavovat v určitém pořadí — to musíš nejdříve zjistit. Stiskni <b>Check Binding</b> (spotřebuje 1×B), pak opakovaně <b>Binding Roll</b> (hod 1 kostkou).</p>
+            <p>Token se pohybuje po Binding Tracku — hodnota kostky se <b>přičítá kumulativně</b> k aktuální pozici:</p>
+            <ul>
+                <li><b>✓</b> — závěrka nalezena! Zobrazí se její výška, přejdi na Set PIN.</li>
+                <li><b>⏱</b> — časová penalizace (1×X), přejdi na další závěrku.</li>
+                <li><b>—</b> — na výběr: hodit znovu nebo přejít na další závěrku.</li>
+            </ul>
+            <p>Maximum jsou 4 hody (token max. na pozici 24). Po 4. hodu s výsledkem <b>—</b> přejdi bez penalizace. <b>Poslední závěrka</b> se odhalí automaticky — netestuje se.</p>
+            <p>⚠ Pokud neuspěješ u nejvyšší závěrky, vrátíš se na nejnižší nenastavenou závěrku (1×R).</p>
+
+            <h3>⚙ 2. Nastavení napětí (Tension Check)</h3>
+            <p>Kdykoli je označeno červeně podbarvené políčko na časomíře, musíš <b>před další akcí</b> nastavit napětí. Všechna ostatní tlačítka jsou v tu chvíli zamčena.</p>
+            <p>Stiskni <b>Tension Roll</b> — hodí se 4 kostky. Máš až 3 hody (jako u Yahtzee — při dalších hodech si můžeš kliknout na zvolenou kostku, kostka se označí a je pro další hody zamčena). Po 1. hodu se aktivuje <b>Potvrdit napětí</b>. Třetím hodem se napětí potvrdí automaticky.</p>
+            <p>Součet 4 kostek určí řádek v tabulce napětí. Z levé strany se označí vždy první volné políčko v daném řádku — šipka posune ukazatel napětí doleva/doprava, <b>X</b> = zůstane.</p>
+            <p>Ukazatel napětí má 5 pozic s náklady <b>3 — 2 — 1 — 2 — 3</b>. Pokud ukazatel vypadne mimo rozsah, dojde k resetu všech závěrek!</p>
+
+            <h3>🎯 3. Nastavení závěrky (Set PIN)</h3>
+            <p>Stiskni <b>Set PIN</b> (1×S). Hodí se 4 kostky. Každou přiřaď tlačítky pod kostkami:</p>
+            <ul>
+                <li><b>A-Row</b> a <b>A-Col</b> — určují průsečík A v mřížce</li>
+                <li><b>B-Row</b> a <b>B-Col</b> — určují průsečík B v mřížce</li>
+            </ul>
+            <p>Hodnota buňky A + hodnota buňky B + modifikátor hrotu určují výšku závěrky.</p>
+            <ul>
+                <li>✅ <b>Přesně</b> — závěrka nastavena! Obě buňky se zablokují.</li>
+                <li>⬇ <b>Příliš nízko</b> — obě buňky se zablokují, zkus znovu (1×S).</li>
+                <li>💥 <b>Overset (je příliš vysoko)</b> — všechny nastavené závěrky se resetují, mřížka se vymaže, blokované buňky také (1×O).</li>
+            </ul>
+            <p>⚠ <b>Červená buňka</b> = zablokovaná (již použitá). Průsečík na červené buňce nelze vyhodnotit — musíš ho posunout!</p>
+
+            <h3>↔ 4. Posun průsečíku</h3>
+            <p>Pokud součet nevychází, můžeš posunout průsečík A nebo B o 1 pole (nahoru/dolů/vlevo/vpravo). Cena = aktuální hodnota ukazatele napětí (1–3 kroky M). Nelze na zablokovanou buňku.</p>
+
+            <h3>🔧 5. Hrot (Pick)</h3>
+            <p>Hrot přidává modifikátor k součtu A+B. Tlačítka Pick jsou aktivní (zelená) až po přiřazení všech 4 kostek. Kliknutí změní hrot <b>bez spotřeby času</b> — ale pozor, změna hrotu uprostřed hry stojí 2×P.</p>
+            <ul>
+                <li><b>Pick −1</b> — kratší hrot, snižuje součet o 1</li>
+                <li><b>Pick ±0</b> — střední hrot (výchozí)</li>
+                <li><b>Pick +1</b> — hlubší hrot, zvyšuje součet o 1</li>
+            </ul>
+
+            <h3>✨ 6. Jednorázové schopnosti</h3>
+            <p>Každou schopnost lze použít <b>nejvýše jednou za hru</b>. Po použití se tlačítko zakáže.</p>
+            <ul>
+                <li><b>🎲 Přehodit</b> — aktivní při Set PIN nebo Tension Roll. Klikni na schopnost, pak klikni na kostku kterou chceš přehodit.</li>
+                <li><b>➕➖ 1</b> — aktivní při Set PIN nebo Tension Roll. Klikni na schopnost, pak klikni na kostku — zobrazí se volba +1 nebo −1 (hodnota 1 = pouze +1, hodnota 6 = pouze −1).</li>
+                <li><b>↔ Pick 2 Away</b> — aktivní až po přiřazení všech 4 kostek (bez červených průsečíků). Povolí 2 posuny průsečíků zdarma (libovolná kombinace A nebo B).</li>
+            </ul>
+
+            <h3>🏆 Bodování</h3>
+            <table style="width:100%;font-size:11px;border-collapse:collapse;margin:6px 0;">
+                <tr><td style="padding:3px 6px;">Za každou nastavenou závěrku</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 8 bodů</td></tr>
+                <tr><td style="padding:3px 6px;">Za každý zbývající časový krok</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 1 bod</td></tr>
+                <tr><td style="padding:3px 6px;">Za každou nepoužitou schopnost</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 5 bodů</td></tr>
+                <tr><td style="padding:3px 6px;">Za každou závěrku výšky 2 nebo 3</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 5 bodů</td></tr>
+                <tr><td style="padding:3px 6px;">Napětí na středu při konci hry</td><td style="text-align:right;color:#c8a84b;font-weight:700;">6 bodů</td></tr>
+                <tr><td style="padding:3px 6px;">Bez jediného resetu závěrek</td><td style="text-align:right;color:#c8a84b;font-weight:700;">4 body</td></tr>
+                <tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#c8a84b;font-weight:700;">100 bodů</td></tr>
+            </table>
+
+        </div>
+    </div>
+</div>
+<script>
+const PIN_DECK = [
+    2,
+    3,
+    4,4,
+    5,5,
+    6,6,6,
+    7,7,7,
+    8,8,
+    9,9,
+    10,10
+];
+
+const GRID = [
+    [1,3,2,6,4,5],
+    [4,1,5,2,4,3],
+    [4,2,1,3,4,0],
+    [5,0,6,1,6,5],
+    [3,5,2,4,1,2],
+    [2,6,3,3,6,1]
+];
+
+
+const BINDING_TRACK = [
+null,
+"-",
+"-",
+"-",
+"CHECK",
+"-",
+"-",
+"TIME",
+"-",
+"CHECK",
+"-",
+"TIME",
+"-",
+"-",
+"CHECK",
+"TIME",
+"CHECK",
+"-",
+"CHECK",
+"CHECK",
+"TIME",
+"CHECK",
+"TIME",
+"CHECK",
+"CHECK"
+];
+
+
+const TENSION_TRACKS = [
+
+{
+    min:4,
+    max:6,
+    spaces:["X","→","X","X","←","X","X","→","X","X"]
+},
+
+{
+    min:7,
+    max:11,
+    spaces:["←","X","←","→","X","←","→","X","→","←"]
+},
+
+{
+    min:12,
+    max:17,
+    spaces:["→","→","←←","X","→","→→","X","←","←←","→"]
+},
+
+{
+    min:18,
+    max:24,
+    spaces:["←←","→→","←","→→","←←","→","←←","←←","→→","→"]
+}
+
+];
+
+const state = {
+
+    assignment: {
+    aRow:null,
+    aCol:null,
+    bRow:null,
+    bCol:null
+    },
+    powers:{
+    reroll:true,
+    modify:true,
+    pick2:true
+    },
+	pick2Active:false,
+    blockedCells: [],
+    usedDice:[],
+    difficulty:5,
+    pins:[],
+    time:0,
+	lastAction:null,
+    dice:[1,1,1,1],
+    freeMoveRemaining:0,
+    pickModifier:0,
+	mustCheckTension:false,
+    tensionMode:false,
+	tensionRollNumber:0,
+	tensionLastTotal:0,
+    lastTensionDice:[1,1,1,1],
+	heldDice:[false,false,false,false],
+	tensionUsed:[0,0,0,0],
+    tensionPos:2,
+    tensionMarks:{},
+    tensionRolls:0,
+    tensionDice:[1,1,1,1],
+    settingDice: [],
+    currentSettingPin: null,
+	intersectionA: {row:null,col:null},
+	intersectionB: {row:null,col:null},
+    settingTotal: 0,
+    nextBindingOrder: 1,
+    score:0,
+    gameOver:false,
+    bindingTrackPos:0,
+    bindingRollCount:0,
+    currentCheckPin:null,
+    bindingFound:0,
+    log:[]
+};
+
+function rand(max){
+    return Math.floor(Math.random()*max);
+}
+
+function shuffle(array){
+
+    for(let i=array.length-1;i>0;i--){
+
+        const j=Math.floor(Math.random()*(i+1));
+
+        [array[i],array[j]] =
+        [array[j],array[i]];
+    }
+
+    return array;
+}
+
+function addLog(text, doSave = true){
+
+    state.log.unshift(text);
+
+    document.getElementById("log").innerHTML =
+        state.log.join("<br>");
+        
+    // Uloží hru pouze pokud je doSave true
+    if (doSave) {
+        autoSave();
+    }
+}
+
+
+function animateDice(){
+
+    document
+        .querySelectorAll(".die")
+        .forEach(die=>{
+
+            die.classList.remove(
+                "rolling"
+            );
+
+            void die.offsetWidth;
+
+            die.classList.add(
+                "rolling"
+            );
+        });
+}
+
+
+function rollDice(){
+
+	
+
+    if(!state.mustCheckTension){
+
+        showToast(
+            "⚙ Tension Check není potřeba",
+            "warning"
+        );
+
+        return;
+    }
+
+    state.tensionRolls++;
+
+    let total = 0;
+
+    for(let i=0;i<4;i++){
+
+    if(
+			!state.heldDice[i]
+		){
+			state.dice[i] =
+				rand(6)+1;
+		}
+
+		total += state.dice[i];
+	}
+    state.lastTensionDice = [...state.dice];
+
+    renderDice();
+	animateDice();
+    render();
+    addLog(
+     `🎲 Tension Roll ${state.tensionRolls}/3 = ${total} 🎲 ${state.dice.join(", ")}`
+    );
+	state.tensionLastTotal = total;
+    if(state.tensionRolls >= 3){
+	 finishTension();
+		render();
+		return;
+    }
+}
+
+
+function spendTime(count,mark=""){
+
+    state.time += count;
+	addLog(
+    "🕐 Čas = " + state.time
+);
+if(
+    TENSION_SLOTS.has(state.time)
+){
+
+    addLog(
+        "⚙ TENSION SLOT " +
+        state.time
+    );
+
+    state.mustCheckTension = true;
+
+    showToast(
+        "⚙ Proveď Tension Check",
+        "warning"
+    );
+}
+
+    if(state.time > 30){
+
+        state.gameOver = true;
+
+        addLog("⌛ Vypršel čas");
+
+        showToast(
+            "⌛ Vypršel čas",
+            "error"
+        );
+
+        addLog(
+            "🏁 Konec hry"
+        );
+
+        showToast(
+            `⌛ Konec hry (${state.time}/30)`,
+            "error"
+        );
+
+
+        render();
+
+        return false;
+    }
+
+    render();
+
+    return true;
+}
+
+
+function getNextUncheckedPin(){
+
+    for(let i=0;i<state.pins.length;i++){
+
+        if(!state.pins[i].found){
+
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
+function startBindingCheck(){
+state.lastBindingDie = null;
+console.log(
+    "lastBindingDie=",
+    state.lastBindingDie
+);
+    state.tensionRolls = 0;
+
+	if(state.mustCheckTension){
+
+    showToast(
+        "⚙ Nejprve proveď Tension Check",
+        "warning"
+    );
+
+    return;
+}
+
+    if(state.gameOver) return;
+
+    // Pokud už zbývá jen poslední pin, odhalí se automaticky
+    if(state.bindingFound >= state.difficulty - 1){
+        autoRevealLastPin();
+        return;
+    }
+
+    // Cyklické hledání dalšího neodhaleného PIN
+    let foundIndex = -1;
+    let startIndex = state.bindingSearchIndex;
+
+    for(let i = 0; i < state.pins.length; i++) {
+        let checkIdx = (startIndex + i) % state.pins.length;
+        if(!state.pins[checkIdx].found) {
+            foundIndex = checkIdx;
+            
+            // Logika pravidla (R): Návrat k nižší závěrce. 
+            // Zde by šlo přidat extra časovou penalizaci spendTime(1, "R"), pokud ji hra vyžaduje.
+            if(i > 0 && checkIdx < startIndex) {
+                addLog("🔄 Návrat k předchozím nenastaveným pinům");
+                spendTime(1,"R");
+            }
+            break;
+        }
+    }
+
+    if(foundIndex === -1) return; // Všechny piny byly nalezeny
+
+    state.bindingSearchIndex = foundIndex;
+    state.currentCheckPin = foundIndex;
+    state.bindingTrackPos = 0;
+    state.bindingRollCount = 0;
+
+    spendTime(1,"B");
+    addLog("🔎 Kontrola PIN " + (state.pins[foundIndex].id));
+}
+
+
+function bindingRoll(){
+	
+	if(state.gameOver) return;
+
+	if(state.mustCheckTension){
+
+    showToast(
+        "⚙ Nejprve proveď Tension Check",
+        "warning"
+    );
+
+    return;
+}
+
+    if(state.gameOver)
+        return;
+
+    if(
+        state.currentCheckPin === null ||
+        state.currentCheckPin === undefined ||
+        state.currentCheckPin < 0
+    ){
+        showToast(
+            "Neprobíhá kontrola PIN",
+            "warning"
+        );
+        return;
+    }
+
+    const die = rand(6) + 1;
+
+    state.lastBindingDie = die;
+
+    state.bindingRollCount++;
+    
+
+    renderDice();
+	animateDice();
+
+    state.bindingTrackPos += die;
+
+    addLog(
+        `Binding Roll ${state.bindingRollCount}/4: 🎲  ${die}`
+    );
+    showToast(
+        `Binding Roll ${state.bindingRollCount}/4: 🎲 ${die}`, 
+        "info"
+    );
+
+    if(
+        state.bindingTrackPos >=
+        BINDING_TRACK.length
+    ){
+        state.bindingTrackPos =
+            BINDING_TRACK.length - 1;
+    }
+
+    const result =
+        BINDING_TRACK[
+            state.bindingTrackPos
+        ];
+
+    // Úspěch
+    if(result === "CHECK"){
+
+        bindingSuccess();
+
+        
+        state.bindingTrackPos = 0;
+        state.bindingRollCount = 0;
+        state.currentCheckPin = null;
+        return;
+    }
+
+    // Penalizace
+    if(result === "TIME"){
+        addLog("⏱ Časová penalizace");
+        showToast("⏱ Časová penalizace", "warning");
+
+        state.currentCheckPin = null; // Vyčistit PŘED stržením času
+        state.bindingSearchIndex++;
+        state.bindingTrackPos = 0;
+        state.bindingRollCount = 0;
+
+        spendTime(1,"X");
+        return;
+    }
+
+    // Vyčerpány 4 hody
+    if(state.bindingRollCount >= 4){
+        addLog("❌ Vyčerpány 4 hody");
+        showToast("❌ Bez výsledku", "warning");
+
+        state.bindingSearchIndex++;
+        state.bindingTrackPos = 0;
+        state.bindingRollCount = 0;
+        state.currentCheckPin = null;
+
+        render(); // OPRAVA: Tento render chyběl, proto tlačítko nezhaslo!
+        return;
+    }
+
+    addLog(
+        "➜ Pokračuj dalším hodem"
+    );
+}
+
+
+
+function bindingSuccess() {
+    const pin = state.pins[state.currentCheckPin];
+    if (!pin) return;
+
+    pin.found = true;
+    state.bindingFound++;
+
+    let logMsg = `✅ PIN ${pin.id} má hodnotu ${pin.bindingOrder}`;
+    addLog(logMsg);
+
+    // Základ textu pro toast
+    let toastText = `✅ PIN ${pin.id} má hodnotu ${pin.bindingOrder}`;
+
+    // Kompletně vyčistíme stav testování AKTÁLNÍHO PIN před kontrolou konce fáze
+    state.currentCheckPin = null;
+    state.bindingTrackPos = 0;
+    state.bindingRollCount = 0;
+    state.bindingSearchIndex++;
+
+    // OPRAVA: Pokud nyní zbývá už jen 1 neodhalený pin, automaticky ho odhalíme
+    if (state.bindingFound === state.difficulty - 1) {
+        const lastPin = autoRevealLastPin(true); // předáme true, aby nevyhazoval vlastní toast
+        if (lastPin) {
+            // Přidáme informaci o posledním PIN do stejného toastu na nový řádek
+            toastText += `\n🔓 PIN ${lastPin.id} má hodnotu ${lastPin.bindingOrder}`;
+        }
+    }
+
+    showToast(toastText, "success");
+    render();
+}
+
+
+
+function autoRevealLastPin(calledFromSuccess = false) {
+    const lastPin = state.pins.find(p => !p.found);
+    if (!lastPin) return null;
+
+    lastPin.found = true;
+    state.bindingFound++;
+    
+    const logMsg = `🔓 Poslední PIN ${lastPin.id} automaticky odhalen má hodnotu ${lastPin.bindingOrder}`;
+    addLog(logMsg);
+
+    // Pokud se funkce volá samostatně (mimo úspěšný hod), ukáže svůj vlastní toast
+    if (!calledFromSuccess) {
+        showToast(`🔓 PIN ${lastPin.id} má hodnotu ${lastPin.bindingOrder}`, "success");
+        render();
+    }
+    return lastPin;
+}
+
+
+
+function getNextPinToSet(){
+
+    return state.pins.find(
+        p =>
+            p.bindingOrder ===
+            state.nextBindingOrder
+    );
+}
+
+
+function startSettingPin(){
+    if(state.gameOver) return;
+    state.tensionRolls = 0;
+
+	if(state.mustCheckTension){
+
+    showToast(
+        "⚙ Nejprve proveď Tension Check",
+        "warning"
+    );
+
+    return;
+}
+
+    if(state.gameOver)
+        return;
+
+    if(
+        state.currentSettingPin &&
+        !state.currentSettingPin.set
+    ){
+
+        addLog(
+            "↻ Nový pokus o nastavení PIN "
+            + state.currentSettingPin.id
+        );
+    }
+
+    const pin =
+        getNextPinToSet();
+
+    if(!pin){
+
+        addLog(
+            "⚠ Není žádný PIN k nastavení"
+        );
+
+        return;
+    }
+
+    if(pin.set){
+
+        addLog(
+            "Pin již nastaven"
+        );
+
+        return;
+    }
+
+    spendTime(1,"S");
+
+    state.currentSettingPin = pin;
+
+    state.settingDice = [];
+    state.usedDice = [];   // ← SEM
+    state.usedTargets = {}; // <--- PŘIDAT TENTO ŘÁDEK PRO BARVY TLAČÍTEK
+    state.assignment = {
+
+    aRow:null,
+    aCol:null,
+    bRow:null,
+    bCol:null
+    };
+
+    for(let i=0;i<4;i++){
+
+        state.settingDice.push(
+            rand(6)+1
+        );
+    }
+
+    // PŘIDÁNO: Zápis do logu včetně konkrétních hodnot kostek
+    addLog(`🎯 Nastavení PIN ${pin.id} [${pin.height}] 🎲 ${state.settingDice.join(", ")}`);
+
+    renderSetting();
+    render();
+}
+
+
+function confirmNewGame(pinCount){
+    // Pokud hra ještě nezačala (čas=0), spusť rovnou
+    if(state.time === 0 && !state.gameOver){
+        newGame(pinCount);
+        return;
+    }
+    showConfirmToast(
+        `Spustit novou hru (${pinCount} piny)?`,
+        `⚠ Data stávající hry budou nenávratně ztracena!`,
+        () => newGame(pinCount)
+    );
+}
+
+
+function showConfirmToast(title, message, onConfirm){
+    // Odstraň případný předchozí confirm dialog
+    const existing = document.getElementById("confirmToast");
+    if(existing) existing.remove();
+
+    const el = document.createElement("div");
+    el.id = "confirmToast";
+    el.style.cssText = `
+        position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        background:#2a2a2a; border:2px solid #c8a84b; padding:20px 24px;
+        z-index:9999; min-width:280px; max-width:360px; text-align:center;
+        box-shadow:0 8px 32px rgba(0,0,0,0.7); border-radius:4px;
+    `;
+    el.innerHTML = `
+        <div style="font-size:15px;font-weight:700;color:#c8a84b;margin-bottom:8px;">${title}</div>
+        <div style="font-size:12px;color:#e05a2b;margin-bottom:16px;">${message}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button id="confirmYes" style="padding:9px 22px;background:#c8a84b;border:none;color:#111;font-weight:700;cursor:pointer;font-size:13px;">ANO, spustit</button>
+            <button id="confirmNo" style="padding:9px 22px;background:#3a3a3a;border:1px solid #555;color:#e8e0d0;cursor:pointer;font-size:13px;">Zrušit</button>
+        </div>
+    `;
+    document.body.appendChild(el);
+    document.getElementById("confirmYes").onclick = () => { el.remove(); onConfirm(); };
+    document.getElementById("confirmNo").onclick = () => el.remove();
+}
+
+
+function usePowerReroll(){
+    if(state.gameOver) return;
+    if(!state.powers.reroll){
+        showToast("🎲 Přehodit již bylo použito", "warning");
+        return;
+    }
+    // Lze použít pouze když jsou kostky k dispozici (nastavování nebo tension)
+    if(!state.currentSettingPin && !state.mustCheckTension){
+        showToast("🎲 Přehodit lze použít pouze během nastavování pinu nebo tension check", "warning");
+        return;
+    }
+    state.powerMode = "reroll";
+    showToast("🎲 Klikni na kostku kterou chceš přehodit", "info");
+    renderDiceClickable();
+}
+
+
+function usePowerModify(){
+    if(state.gameOver) return;
+    if(!state.powers.modify){
+        showToast("➕➖ Upravit hodnotu již bylo použito", "warning");
+        return;
+    }
+    if(!state.currentSettingPin && !state.mustCheckTension){
+        showToast("➕➖ Upravit hodnotu lze použít pouze během nastavování pinu nebo tension check", "warning");
+        return;
+    }
+    state.powerMode = "modify";
+    showToast("➕➖ Klikni na kostku jejíž hodnotu chceš upravit (+1 nebo -1)", "info");
+    renderDiceClickable();
+}
+
+
+function renderDiceClickable(){
+    // Přidá onclick handlery na kostky pro výběr schopnosti
+    const area = document.getElementById("diceArea");
+    const dice = area.querySelectorAll(".die");
+    const diceToShow = state.mustCheckTension ? state.lastTensionDice : state.settingDice;
+
+    dice.forEach((die, index) => {
+        die.style.outline = "2px solid #e05a2b";
+        die.style.cursor = "pointer";
+        die.onclick = () => applyPowerToDie(index, diceToShow);
+    });
+}
+
+
+function syncDiceAfterPower(diceArray){
+    // Pro tension: synchronizuj lastTensionDice → state.dice (evaluateTension čte state.dice)
+    if(state.mustCheckTension){
+        state.dice = [...diceArray];
+        state.lastTensionDice = [...diceArray];
+        // Přepočítej a loguj nový součet
+        const newTotal = state.dice.reduce((a,b)=>a+b,0);
+        addLog(`🔄 Nový součet po úpravě: ${newTotal}`);
+        state.tensionLastTotal = newTotal;
+    }
+    // Pro setting: synchronizuj settingDice a obnov assignment hodnoty
+    if(state.currentSettingPin && !state.mustCheckTension){
+        // Přepočítej assignment — pokud byla přiřazena kostka která se změnila,
+        // aktualizuj hodnotu v state.assignment
+        const targets = ['aRow','aCol','bRow','bCol'];
+        // state.usedTargets mapuje dieIndex → target
+        for(const [dieIdx, target] of Object.entries(state.usedTargets || {})){
+            if(diceArray[parseInt(dieIdx)] !== undefined){
+                state.assignment[target] = diceArray[parseInt(dieIdx)];
+            }
+        }
+        // Překresli assignment buttony
+        if(typeof renderSetting === 'function') renderSetting();
+    }
+    renderDice();
+    render();
+}
+
+
+function applyPowerToDie(index, diceArray){
+    if(!state.powerMode) return;
+
+    const mode = state.powerMode;
+    state.powerMode = null;
+
+    // Odstraň zvýraznění
+    const area = document.getElementById("diceArea");
+    area.querySelectorAll(".die").forEach(d => {
+        d.style.outline = "";
+        d.style.cursor = "";
+        if(state.mustCheckTension){
+            const i = Array.from(area.querySelectorAll(".die")).indexOf(d);
+            d.onclick = () => toggleHold(i);
+        } else {
+            d.onclick = null;
+        }
+    });
+
+    if(mode === "reroll"){
+        const newVal = rand(6) + 1;
+        diceArray[index] = newVal;
+        state.powers.reroll = false;
+        addLog(`🎲 Přehodit použit: kostka ${index+1} → ${newVal}`);
+        showToast(`🎲 Kostka ${index+1} přehozena na ${newVal}`, "success");
+        syncDiceAfterPower(diceArray);
+
+    } else if(mode === "modify"){
+        const cur = diceArray[index];
+        if(cur === 1){
+            diceArray[index] = 2;
+            state.powers.modify = false;
+            addLog(`➕ Upravit použit: kostka ${index+1}: 1 → 2`);
+            showToast(`Kostka ${index+1} upravena na 2`, "success");
+            syncDiceAfterPower(diceArray);
+        } else if(cur === 6){
+            diceArray[index] = 5;
+            state.powers.modify = false;
+            addLog(`➖ Upravit použit: kostka ${index+1}: 6 → 5`);
+            showToast(`Kostka ${index+1} upravena na 5`, "success");
+            syncDiceAfterPower(diceArray);
+        } else {
+            // Nabídni +1 nebo -1
+            showConfirmToast(
+                `Kostka ${index+1} = ${cur}`,
+                `Zvýšit na ${cur+1} nebo snížit na ${cur-1}?`,
+                null
+            );
+            setTimeout(() => {
+                const yes = document.getElementById("confirmYes");
+                const no = document.getElementById("confirmNo");
+                const dlg = document.getElementById("confirmToast");
+                yes.textContent = `+1 → ${cur+1}`;
+                yes.onclick = () => {
+                    dlg.remove();
+                    diceArray[index] = cur + 1;
+                    state.powers.modify = false;
+                    addLog(`➕ Upravit použit: kostka ${index+1}: ${cur} → ${cur+1}`);
+                    showToast(`Kostka ${index+1} upravena na ${cur+1}`, "success");
+                    syncDiceAfterPower(diceArray);
+                };
+                no.textContent = `-1 → ${cur-1}`;
+                no.onclick = () => {
+                    dlg.remove();
+                    diceArray[index] = cur - 1;
+                    state.powers.modify = false;
+                    addLog(`➖ Upravit použit: kostka ${index+1}: ${cur} → ${cur-1}`);
+                    showToast(`Kostka ${index+1} upravena na ${cur-1}`, "success");
+                    syncDiceAfterPower(diceArray);
+                };
+            }, 50);
+        }
+    }
+}
+
+
+function usePowerPick2(){
+    if(state.gameOver) return;
+
+    if(!state.powers.pick2){
+        showToast("↔ Pick 2 Away již bylo použito", "warning");
+        return;
+    }
+
+    if(!state.currentSettingPin){
+        showToast("↔ Pick 2 Away lze použít pouze při nastavování pinu", "warning");
+        return;
+    }
+
+    if(!isReadyToEvaluate()){
+        showToast("↔ Pick 2 Away lze aktivovat až po přiřazení všech 4 kostek (bez červených průsečíků)", "warning");
+        return;
+    }
+
+    state.powers.pick2 = false;
+    state.pick2Active = true;
+    state.pick2MovesRemaining = 2;
+
+    // Okamžitě zakáže a odbarví tlačítko
+    const btnPick2 = document.getElementById("btnPowerPick2");
+    btnPick2.disabled = true;
+    btnPick2.style.background = "";
+    btnPick2.style.color = "";
+
+    addLog("↔ Pick 2 Away aktivováno — 2 pohyby zdarma (A nebo B, libovolná kombinace)");
+    showToast("↔ Pick 2 Away aktivováno!\n2 pohyby průsečíků zdarma", "success");
+
+    render();
+}
+
+
+function assignDie(dieIndex, target){
+
+    if(state.gameOver)
+        return;
+
+    // Pokud je už tato kostka použitá, nic nedělej
+    if(state.usedDice.includes(dieIndex)){
+        return;
+    }
+
+    if(!state.usedTargets) state.usedTargets = {};
+
+    // BONUS: Pokud už nějaká JINÁ kostka obsadila tento cíl (např. A-R), 
+    // uvolníme ji a zrušíme její obarvení, abyste ji mohli použít znovu.
+    for (let key in state.usedTargets) {
+        if (state.usedTargets[key] === target) {
+            delete state.usedTargets[key];
+            state.usedDice = state.usedDice.filter(id => id !== parseInt(key));
+        }
+    }
+
+    // Zapsání nové kostky a cíle
+    state.usedDice.push(dieIndex);
+    state.assignment[target] = state.settingDice[dieIndex];
+    state.usedTargets[dieIndex] = target; // Uložení barvy tlačítka
+
+    renderSetting();
+    renderGrid();
+    // PŘIDÁNO: Překreslí celou hru, takže tlačítko "Vyhodnotit" může hned zezelenat
+    render();
+}
+
+
+function renderSetting(){
+    const headerDiv = document.getElementById("settingPinHeader");
+    const div = document.getElementById("settingInfo");
+    const assignDiv = document.getElementById("assignmentArea");
+    const pin = state.currentSettingPin;
+
+    if(!pin){
+        headerDiv.innerHTML = "";
+        div.innerHTML = "Neaktivní";
+        assignDiv.innerHTML = "";
+        return;
+    }
+
+    // 1. Zápis do sdíleného řádku s "Setting PIN"
+    headerDiv.innerHTML = `PIN ${pin.id}`;
+
+    // 2. Cílová výška a planžeta sdílí jeden řádek pod tím
+    div.innerHTML = `
+        <div style="display: flex; justify-content: space-between;">
+            <span>Cílová výška: <b>${pin.height}</b></span>
+            <span>Bonus planžety: <b>${state.pickModifier}</b></span>
+        </div>
+    `;
+
+    assignDiv.innerHTML = "";
+
+    // 3. Vykreslení kostek a tlačítek s podbarvením
+    state.settingDice.forEach((value, index) => {
+        const row = document.createElement("div");
+        row.style.marginBottom = "8px";
+
+        const targets = [
+            { id: 'aRow', label: 'A - R' },
+            { id: 'aCol', label: 'A - C' },
+            { id: 'bRow', label: 'B - R' },
+            { id: 'bCol', label: 'B - C' }
+        ];
+
+        let buttonsHtml = "";
+        targets.forEach(tgt => {
+            // Kontrola, zda bylo stisknuto právě toto tlačítko u této kostky
+            const isSelected = (state.usedTargets && state.usedTargets[index] === tgt.id);
+            
+            // Podbarvení pastelově zelenou barvou a zčernání písma pro čitelnost
+            const style = isSelected ? "background-color: #a5d6a7; color: #000; font-weight: bold;" : "";
+            
+            buttonsHtml += `<button class="assign-btn" style="${style}" onclick="assignDie(${index},'${tgt.id}')">${tgt.label}</button>\n`;
+        });
+
+        row.innerHTML = `🎲 ${value} &nbsp; ${buttonsHtml}`;
+        assignDiv.appendChild(row);
+    });
+
+    renderGrid();
+}
+
+
+
+function renderGrid(){
+    console.log(
+    "renderGrid blocked:",
+    state.blockedCells
+);
+	
+	console.log("Aktuální stav přiřazení:", state.assignment);
+
+    const area = document.getElementById("gridArea");
+    const calc = document.getElementById("calcArea");
+
+    area.innerHTML = "";
+
+    const a = state.assignment;
+
+    // --- 1. Generování tabulky průsečíků ---
+    let html = "<table class='setting-grid'>";
+    html += "<tr><th></th>";
+
+    for(let c=1;c<=6;c++){ html += "<th>"+c+"</th>"; }
+    html += "</tr>";
+
+    for(let r=0;r<6;r++){
+        html += "<tr><th>"+(r+1)+"</th>";
+        for(let c=0;c<6;c++){
+            let cls="";
+            
+            // 1. Zjistíme, jestli je toto konkrétní políčko trvale zablokované
+            const isBlockedCell = state.blockedCells.some(
+                cell => cell.row === r+1 && cell.col === c+1
+            );
+
+            // 2. Zjistíme, jestli má na sobě umístěné A nebo B
+            const hasA = (a.aRow === r+1 && a.aCol === c+1);
+            const hasB = (a.bRow === r+1 && a.bCol === c+1);
+
+            // 3. Rozhodneme o barvě podle priority
+            if (hasA && hasB) {
+                // Obě kostky jsou zde. Je to zablokované? Pokud ano -> chyba, jinak fialová (nebo jakou máte pro AB)
+                cls = isBlockedCell ? "grid-error" : "grid-ab";
+            } else if (hasA) {
+                // Je tu kostka A. Je to zablokované? Pokud ano -> chyba, jinak zelená
+                cls = isBlockedCell ? "grid-error" : "grid-a";
+            } else if (hasB) {
+                // Je tu kostka B. Je to zablokované? Pokud ano -> chyba, jinak modrá
+                cls = isBlockedCell ? "grid-error" : "grid-b";
+            } else if (isBlockedCell) {
+                // Není tu žádná kostka, ale je to zablokované -> běžná šedá
+                cls = "grid-blocked";
+            }
+
+            html += `<td class="${cls}">${GRID[r][c]}</td>`;
+        }
+        html += "</tr>";
+    }
+    html += "</table>";
+    area.innerHTML = html;
+
+    // --- 2. Generování přehledu přiřazení a výpočtů do stejného řádku ---
+    let calcHTML = "<hr style='margin: 10px 0; border-color: #444;'><div style='display: flex; justify-content: space-between; font-weight: normal; text-align: left;'>";
+    
+    // Levá část (Hodnoty řádků a sloupců)
+    calcHTML += `
+        <div>
+            A Row: ${a.aRow ?? "-"}<br>
+            A Col: ${a.aCol ?? "-"}<br>
+            B Row: ${a.bRow ?? "-"}<br>
+            B Col: ${a.bCol ?? "-"}
+        </div>
+    `;
+
+    // Pravá část (Výpočet A, B, Pick, Total)
+    if(a.aRow && a.aCol && a.bRow && a.bCol){
+
+        const A = GRID[a.aRow-1][a.aCol-1];
+        const B = GRID[a.bRow-1][a.bCol-1];
+        const total = A + B + state.pickModifier;
+
+        const blockedA =
+            state.blockedCells.some(
+                cell =>
+                    cell.row === a.aRow &&
+                    cell.col === a.aCol
+            );
+
+        const blockedB =
+            state.blockedCells.some(
+                cell =>
+                    cell.row === a.bRow &&
+                    cell.col === a.bCol
+            );
+
+        if(blockedA || blockedB){
+
+            showToast(
+                "Tato buňka je uzavřena",
+                "warning"
+            );
+}
+
+        calcHTML += `
+            <div style="text-align: right;">
+                A = ${A}<br>
+                B = ${B}<br>
+                Pick = ${state.pickModifier}<br>
+                <b>Total = ${total}</b>
+            </div>
+        `;
+    }
+    else{
+        // Pokud ještě nejsou všechny kostky přiřazené
+        calcHTML += `
+            <div style="text-align: right; color: #888;">
+                A = ?<br>
+                B = ?<br>
+                Pick = ${state.pickModifier}<br>
+                <b>Total = ?</b>
+            </div>
+        `;
+    }
+
+    calcHTML += "</div><hr style='margin: 10px 0; border-color: #444;'>";
+    calc.innerHTML = calcHTML;
+	const ctrl =
+    document.getElementById(
+        "intersectionControls"
+    );
+
+if(
+    a.aRow &&
+    a.aCol &&
+    a.bRow &&
+    a.bCol
+){
+
+    ctrl.innerHTML = `
+
+    <hr>
+
+    <div style="margin-top:8px">
+
+        <b>A</b>
+
+        <button class="dir-btn" onclick="moveIntersection('A','up')">↑</button>
+        <button class="dir-btn" onclick="moveIntersection('A','down')">↓</button>
+        <button class="dir-btn" onclick="moveIntersection('A','left')">←</button>
+        <button class="dir-btn" onclick="moveIntersection('A','right')">→</button>
+
+        <br><br>
+
+        <b>B</b>
+
+        <button class="dir-btn" onclick="moveIntersection('B','up')">↑</button>
+        <button class="dir-btn" onclick="moveIntersection('B','down')">↓</button>
+        <button class="dir-btn" onclick="moveIntersection('B','left')">←</button>
+        <button class="dir-btn" onclick="moveIntersection('B','right')">→</button>
+
+        <br><br>
+
+      Cena pohybu:
+<b>${getTensionCost()}</b>
+
+${
+    state.freeMoveRemaining > 0
+    ? `<br>↔ Zdarma: ${state.freeMoveRemaining}`
+    : ""
+}
+
+    </div>
+    `;
+
+}else{
+
+    ctrl.innerHTML = "";
+}
+// --- 3. Správa stavu tlačítka Vyhodnotit ---
+    const evalBtn = document.getElementById("btnEvaluate");
+    if(evalBtn && !state.gameOver){
+        const ready = isReadyToEvaluate();
+        evalBtn.disabled = !ready;
+        evalBtn.style.background = ready ? "#2e7d32" : "";
+        evalBtn.style.color = ready ? "white" : "";
+        evalBtn.style.opacity = ready ? "1" : "0.5";
+        evalBtn.style.cursor = ready ? "pointer" : "not-allowed";
+    }
+
+}
+
+
+// Vrátí true pokud jsou přiřazeny všechny 4 kostky AND žádný průsečík není na blokované buňce
+function isReadyToEvaluate(){
+    const a = state.assignment;
+    if(a.aRow === null || a.aCol === null || a.bRow === null || a.bCol === null)
+        return false;
+    const blockedA = state.blockedCells.some(cell => cell.row === a.aRow && cell.col === a.aCol);
+    const blockedB = state.blockedCells.some(cell => cell.row === a.bRow && cell.col === a.bCol);
+    return !blockedA && !blockedB;
+}
+
+
+function calculateIntersections(){
+
+    const a =
+        state.assignment;
+
+    if(
+
+        a.aRow===null ||
+        a.aCol===null ||
+        a.bRow===null ||
+        a.bCol===null
+
+    ){
+
+        addLog(
+            "Nejsou přiřazeny všechny kostky"
+        );
+
+        return false;
+    }
+
+    const aValue =
+        GRID[
+            a.aRow-1
+        ][
+            a.aCol-1
+        ];
+
+    const bValue =
+        GRID[
+            a.bRow-1
+        ][
+            a.bCol-1
+        ];
+
+	state.intersectionA = aValue;
+	state.intersectionB = bValue;	
+
+    state.settingTotal =
+
+        aValue +
+        bValue +
+        state.pickModifier;
+
+    return true;
+}
+
+
+function blockUsedIntersections() {
+    // Přidá průsečík A do zablokovaných buněk
+    if (state.assignment.aRow !== null && state.assignment.aCol !== null) {
+        state.blockedCells.push({ 
+            row: state.assignment.aRow, 
+            col: state.assignment.aCol 
+        });
+    }
+    
+    // Přidá průsečík B do zablokovaných buněk
+    if (state.assignment.bRow !== null && state.assignment.bCol !== null) {
+        state.blockedCells.push({ 
+            row: state.assignment.bRow, 
+            col: state.assignment.bCol 
+        });
+    }
+}
+
+
+function evaluateSetting(){
+
+    if(state.gameOver)
+        return;
+
+    // KONTROLA ZABLOKOVANÝCH BUNĚK PŘED VYHODNOCENÍM
+    const a = state.assignment;
+    const blockedA = state.blockedCells.some(cell => cell.row === a.aRow && cell.col === a.aCol);
+    const blockedB = state.blockedCells.some(cell => cell.row === a.bRow && cell.col === a.bCol);
+    
+    if (blockedA || blockedB) {
+        showToast("Nelze vyhodnotit, používáte zablokovanou buňku!", "error");
+        return; // ZDE je return správně, protože zastaví logiku vyhodnocení (nepustí hráče dál)
+    }
+
+    if(!calculateIntersections())
+        return;
+
+    const pin = state.currentSettingPin;
+
+    if(!pin)
+        return;
+
+    addLog(
+        "A=" +
+        state.intersectionA +
+        " B=" +
+        state.intersectionB
+    );
+
+    addLog(
+        "Total=" +
+        state.settingTotal
+    );
+
+    // =========================
+    // ÚSPĚCH
+    // =========================
+
+    if(state.settingTotal === pin.height){
+
+        pin.set = true;
+
+        // použité průsečíky jsou trvale vyřazeny
+        blockUsedIntersections();
+
+        state.nextBindingOrder++;
+
+        state.assignment = {
+            aRow:null,
+            aCol:null,
+            bRow:null,
+            bCol:null
+        };
+
+        state.usedDice = [];
+        state.usedTargets = {};
+
+        state.settingDice = [];
+
+        state.intersectionA = null;
+        state.intersectionB = null;
+        state.settingTotal = 0;
+
+        state.currentSettingPin = null;
+
+        addLog(
+            "✅ PIN " +
+            pin.id +
+            " nastaven"
+        );
+
+        showToast(
+            `✅ PIN ${pin.id} nastaven`,
+            "success"
+        );
+
+        checkVictory();
+
+        render();
+        renderSetting();
+
+        return;
+    }
+
+    // =========================
+    // OVERSET
+    // =========================
+
+    if(state.settingTotal > pin.height){
+
+        oversetPins();
+
+        return;
+    }
+
+    // =========================
+    // UNDERSET
+    // =========================
+
+    addLog(
+        "⬇ Výška příliš malá"
+    );
+
+    showToast(
+        "⬇ Výška příliš malá",
+        "warning"
+    );
+
+    // použité průsečíky jsou trvale vyřazeny
+    blockUsedIntersections();
+
+    state.assignment = {
+        aRow:null,
+        aCol:null,
+        bRow:null,
+        bCol:null
+    };
+
+    state.usedDice = [];
+    state.usedTargets = {};
+
+    state.settingDice = [];
+
+    state.intersectionA = null;
+    state.intersectionB = null;
+    state.settingTotal = 0;
+
+    state.currentSettingPin = null;
+
+    render();
+    renderSetting();
+}
+
+
+
+function oversetPins(){
+
+    const pin = state.currentSettingPin;
+
+    state.currentSettingPin = null;
+
+    state.assignment = {
+        aRow:null,
+        bRow:null,
+        aCol:null,
+        bCol:null
+    };
+
+    state.usedDice = [];
+    state.usedTargets = {};
+
+    state.intersectionA = null;
+    state.intersectionB = null;
+    state.settingTotal = 0;
+
+    // vymazání všech překřížených buněk
+    state.blockedCells = [];
+    console.log("OVERSET cleared:", state.blockedCells);
+    renderGrid();
+
+    // reset všech nastavených pinů
+    state.pins.forEach(pin=>{
+        pin.set = false;
+    });
+
+    state.nextBindingOrder = 1;
+    state.hasReset = true;
+
+    spendTime(1,"O");
+
+    addLog("💥 OVERSET");
+
+    showToast(
+        "💥 OVERSET!",
+        "error"
+    );
+
+    addLog(
+        "↻ Nový pokus o nastavení PIN " +
+        pin.id
+    );
+
+    render();
+    renderSetting();
+}
+
+
+
+function checkVictory(){
+
+    const done =
+        state.pins.every(
+            p => p.set
+        );
+
+    if(!done)
+        return;
+
+    state.gameOver = true;
+
+    addLog(
+        "🔓 Zámek otevřen"
+    );
+    showToast(
+    "🔓 Zámek otevřen!",
+    "success"
+);
+
+    calculateScore();
+}
+
+
+function calculateScore(){
+    let score = 0;
+    let details = [];
+
+    // 1. Za každou nastavenou závěrku (8 bodů)
+    const setPinsCount = state.pins.filter(p => p.set).length;
+    score += setPinsCount * 8;
+    details.push(`• Závěrky (${setPinsCount}x8): ${setPinsCount * 8} b`);
+
+    // 2. Za každý zbývající časový krok (1 bod)
+    const timeRemaining = Math.max(0, 30 - state.time);
+    score += timeRemaining;
+    details.push(`• Ušetřený čas (${timeRemaining}x1): ${timeRemaining} b`);
+
+    // 3. Za každou nepoužitou schopnost (5 bodů) 
+    const abilities = state.unusedAbilities || 0;
+    if (abilities > 0) {
+        score += abilities * 5;
+        details.push(`• Nepoužité schop. (${abilities}x5): ${abilities * 5} b`);
+    }
+
+    // 4. Za každou závěrku výšky 2 nebo 3 (5 bodů)
+    const lowPinsCount = state.pins.filter(p => p.set && (p.height === 2 || p.height === 3)).length;
+    if (lowPinsCount > 0) {
+        score += lowPinsCount * 5;
+        details.push(`• Piny výšky 2-3 (${lowPinsCount}x5): ${lowPinsCount * 5} b`);
+    }
+
+    // 5. Napětí na středu na konci hry (6 bodů)
+    if (state.tensionPos === 2) {
+        score += 6;
+        details.push(`• Napětí na středu: 6 b`);
+    }
+
+    // 6. Žádné resetování závěrek (4 body)
+    if (!state.hasReset) {
+        score += 4;
+        details.push(`• Žádný reset pinů: 4 b`);
+    }
+
+    // Maximum je 100 bodů
+    if (score > 100) {
+        score = 100;
+    }
+
+    state.score = score;
+    render();
+
+    // Výpis detailního skóre (znak \n odřádkuje text v logu)
+    addLog(`🏆 KONEČNÉ SKÓRE: ${score} / 100\n` + details.join("\n"));
+}
+
+
+
+function setPick(value){
+    if(state.gameOver) return;
+
+    spendTime(2,"P");
+
+    state.pickModifier =
+        value;
+
+    addLog(
+        "🔧 Pick "
+        + value
+    );
+
+    renderSetting();
+}
+
+
+function usePowerPick2(){
+    if(state.gameOver) return;
+
+    if(!state.currentSettingPin){
+        showToast("↔ Pick 2 Away lze použít pouze při nastavování pinu", "warning");
+        return;
+    }
+
+    if(!state.powers.pick2){
+        showToast("↔ Pick 2 Away již bylo použito", "warning");
+        return;
+    }
+
+    if(!isReadyToEvaluate()){
+        showToast("↔ Pick 2 Away lze aktivovat až po přiřazení všech 4 kostek (bez červených průsečíků)", "warning");
+        return;
+    }
+
+    state.powers.pick2 = false;
+    state.pick2Active = true;
+    state.pick2MovesRemaining = 2;
+
+    const btnPick2 = document.getElementById("btnPowerPick2");
+    btnPick2.disabled = true;
+    btnPick2.style.background = "";
+    btnPick2.style.color = "";
+
+    addLog("↔ Pick 2 Away aktivováno — 2 pohyby zdarma (A nebo B, libovolná kombinace)");
+    showToast("↔ Pick 2 Away aktivováno!\n2 pohyby průsečíků zdarma", "success");
+
+    render();
+}
+
+
+function toggleHold(index){
+
+    if(!state.mustCheckTension)
+        return;
+
+    state.heldDice[index] =
+        !state.heldDice[index];
+
+    renderDice();
+}
+
+
+function renderDice(){
+
+    const area =
+        document.getElementById("diceArea");
+
+    area.innerHTML = "";
+
+    let diceToShow = [];
+
+    // TENSION má nejvyšší prioritu
+    if(
+    state.mustCheckTension ||
+    state.tensionRolls > 0
+){
+
+    diceToShow =
+        state.lastTensionDice;
+}
+
+    // Nastavování PIN
+    else if(
+        state.currentSettingPin &&
+        state.settingDice
+    ){
+
+        diceToShow = state.settingDice;
+    }
+
+    // Binding
+    else if(
+        state.currentCheckPin !== null &&
+        state.lastBindingDie
+    ){
+
+        diceToShow = [
+            state.lastBindingDie
+        ];
+    }
+
+    // Výchozí
+    else{
+
+        diceToShow = state.dice;
+    }
+
+    diceToShow.forEach((value,index)=>{
+
+        const die =
+            document.createElement("div");
+
+        die.className = "die";
+
+        // Zamykání kostek pouze při Tension Check
+        if(
+            state.mustCheckTension &&
+            state.heldDice[index]
+        ){
+            die.classList.add("held");
+        }
+
+        if(state.mustCheckTension){
+
+            die.onclick = () =>
+                toggleHold(index);
+        }
+
+        die.textContent = value;
+
+        area.appendChild(die);
+    });
+}
+
+
+
+function startTensionCheck(){
+
+    state.tensionRolls = 0;
+
+    rollTensionDice();
+}
+
+
+function finishTension(){
+    if(state.gameOver) return;
+
+    evaluateTension();
+
+    state.mustCheckTension = false;
+    state.tensionRolls = 0;
+	state.heldDice =
+    [false,false,false,false];
+
+    addLog(
+        "⚙ Tension Check dokončen"
+    );
+
+    render();
+    renderDice();
+}
+
+function rollTensionDice(){
+
+	
+
+    for(let i=0;i<4;i++){
+
+        state.tensionDice[i] =
+            rand(6)+1;
+    }
+
+    renderDice();
+	animateDice();
+}
+
+
+
+function getTensionCost(){
+
+    const costs = [3,2,1,2,3];
+
+    return costs[state.tensionPos];
+}
+
+
+function moveIntersection(which, dir) {
+    if(state.gameOver) return;
+
+    if (!state.currentSettingPin)
+        return;
+
+    const moveByTwo = state.pick2Active === true;
+
+    if(moveByTwo){
+        // Zdarma — odečteme jeden ze dvou povolených pohybů
+        state.pick2MovesRemaining--;
+        if(state.pick2MovesRemaining <= 0){
+            state.pick2Active = false;
+            state.pick2MovesRemaining = 0;
+        }
+        addLog(`↔ Pick 2 Away: pohyb zdarma (zbývá ${state.pick2MovesRemaining})`);
+    } else {
+        // Normální posun: stojí tension cost časových kroků
+        const cost = getTensionCost();
+        if (!spendTime(cost, "M"))
+            return;
+    }
+
+    // 1. ZMĚNA: Načítáme aktuální souřadnice přímo ze state.assignment
+    let row = which === "A" ? state.assignment.aRow : state.assignment.bRow;
+    let col = which === "A" ? state.assignment.aCol : state.assignment.bCol;
+
+    // 2. POJISTKA: Pokud ještě nejsou souřadnice přiřazeny (jsou null), nemůžeme s nimi hýbat
+    if (row === null || col === null)
+        return;
+
+    // 3. JISTOTA: Převod na číslo, aby se zamezilo nechtěným textovým operacím
+    row = parseInt(row, 10);
+    col = parseInt(col, 10);
+
+    // Samotný pohyb
+    if (dir === "up") row--;
+    if (dir === "down") row++;
+    if (dir === "left") col--;
+    if (dir === "right") col++;
+
+    // Udržení v mřížce 6x6
+    row = Math.max(1, Math.min(6, row));
+    col = Math.max(1, Math.min(6, col));
+
+    // Uložení zpět na stejné místo
+    if (which === "A") {
+        state.assignment.aRow = row;
+        state.assignment.aCol = col;
+    } else {
+        state.assignment.bRow = row;
+        state.assignment.bCol = col;
+    }
+
+    renderGrid();
+}
+
+
+function tensionOutOfRange(){
+
+    // reset všech nastavených pinů
+    state.pins.forEach(pin=>{
+
+        pin.set = false;
+    });
+
+    state.nextBindingOrder = 1;
+    state.hasReset = true;
+
+    // návrat napětí na střed
+    state.tensionPos = 2;
+
+    // zrušení rozpracovaného nastavování
+    state.currentSettingPin = null;
+
+    state.assignment = {
+        aRow:null,
+        aCol:null,
+        bRow:null,
+        bCol:null
+    };
+
+    state.usedDice = [];
+    state.usedTargets = {};
+
+    state.intersectionA = null;
+    state.intersectionB = null;
+    state.settingTotal = 0;
+
+    spendTime(1,"O");
+
+    addLog(
+        "⚠ Napětí mimo rozsah"
+    );
+
+    addLog(
+        "⚠ Reset všech PIN"
+    );
+
+    showToast(
+        "⚠ Reset všech PIN",
+        "error"
+    );
+
+    render();
+    renderSetting();
+}
+
+
+
+function getTensionTrack(total){
+
+    return TENSION_TRACKS.find(
+        track =>
+            total >= track.min &&
+            total <= track.max
+    );
+}
+
+
+
+function evaluateTension(){
+    if(state.gameOver) return;
+
+    const total =
+        state.dice.reduce(
+            (a,b)=>a+b,
+            0
+        );
+
+    const trackIndex =
+        TENSION_TRACKS.findIndex(
+            track =>
+                total >= track.min &&
+                total <= track.max
+        );
+
+    if(trackIndex === -1)
+        return;
+
+    const pos =
+        state.tensionUsed[trackIndex];
+
+    if(pos >= 10){
+
+        addLog(
+            "⚠ Řádek napětí vyčerpán"
+        );
+
+        return;
+    }
+
+    const effect =
+        TENSION_TRACKS[trackIndex]
+        .spaces[pos];
+		
+
+	addLog(
+		"📍 Symbols = " +
+		effect
+	);	
+
+    state.tensionUsed[trackIndex]++;
+
+    applyTensionEffect(effect);
+	
+	const gaugeValues = [3,2,1,2,3];
+
+addLog(
+    "📍 Napětí = " +
+    gaugeValues[state.tensionPos]
+);
+
+
+    render();
+}
+
+
+function applyTensionEffect(effect){
+
+    switch(effect){
+
+        case "←":
+            state.tensionPos--;
+            break;
+
+        case "←←":
+            state.tensionPos -= 2;
+            break;
+
+        case "→":
+            state.tensionPos++;
+            break;
+
+        case "→→":
+            state.tensionPos += 2;
+            break;
+    }
+
+    if(
+        state.tensionPos < 0 ||
+        state.tensionPos > 4
+    ){
+        tensionOutOfRange();
+		return;
+    }
+		renderGauge();
+}
+
+
+
+function newGame(pinCount){
+
+    state.difficulty = pinCount;
+
+    state.time = 0;
+    state.score = 0;
+
+    state.gameOver = false;
+    state.hasReset = false;
+    state.tensionPos = 2;
+
+    state.bindingFound = 0;
+    state.nextBindingOrder = 1;
+
+    state.currentSettingPin = null;
+    state.currentCheckPin = -1;
+
+    state.bindingTrackPos = 0;
+
+    state.pickModifier = 0;
+    state.blockedCells = [];
+    state.usedDice = [];
+    state.usedTargets = {};
+
+    state.settingDice = [];
+
+    state.assignment = {
+        aRow:null,
+        aCol:null,
+        bRow:null,
+        bCol:null
+    };
+
+    state.bindingSearchIndex = 0;
+    state.bindingFound = 0;
+    state.currentCheckPin = null;
+    state.lastBindingDie = null;
+    state.intersectionA = null;
+    state.intersectionB = null;
+    state.pick2Active = false;
+    state.pick2MovesRemaining = 0;
+    state.powerMode = null;
+    state.powers = { reroll:true, modify:true, pick2:true };
+    state.tensionRolls = 0;
+	state.tensionUsed = [0,0,0,0];
+	state.mustCheckTension = false;
+    state.settingTotal = 0;
+
+    state.log = [];
+
+    const deck = [...PIN_DECK];
+
+    shuffle(deck);
+
+    const order = [];
+
+    for(let i=1;i<=pinCount;i++){
+        order.push(i);
+    }
+
+    shuffle(order);
+
+    state.pins = [];
+
+    for(let i=0;i<pinCount;i++){
+
+        state.pins.push({
+
+            id:i+1,
+
+            height:deck[i],
+
+            bindingOrder:order[i],
+
+            found:false,
+
+            set:false
+        });
+    }
+
+    addLog(
+        `🔒 Nová hra (${pinCount} pinů)`,
+        false
+    );
+
+    render();
+    renderSetting();
+}
+
+
+function render(){
+
+    document.getElementById("timeText")
+        .textContent =
+        state.time + "";
+
+    document.getElementById("scoreText")
+        .textContent =
+        state.score;
+
+    document.getElementById("pickText").textContent = state.pickModifier;
+
+    renderPins();
+    renderGauge();
+	renderTensionTracks();
+    renderTimeTrack();
+    renderDice();
+
+
+    document
+        .querySelectorAll(".control-btn")
+        .forEach(btn => {
+
+            btn.disabled =
+                state.gameOver;
+        });
+
+const isCheckingBinding = state.currentCheckPin !== null;
+    const allBindingsFound = state.bindingFound >= state.difficulty;
+    const isSettingPin = state.currentSettingPin !== null;
+    const inTension = state.mustCheckTension;
+
+    // Uzamknutí herních tlačítek podle fáze hry nebo při jejím KONCI
+    document.getElementById("btnCheckBinding").disabled = state.gameOver || inTension || isCheckingBinding || allBindingsFound;
+    document.getElementById("btnBindingRoll").disabled  = state.gameOver || inTension || !isCheckingBinding;
+    document.getElementById("btnSetPin").disabled       = state.gameOver || inTension || !allBindingsFound || isSettingPin;
+    // btnFinishTension: aktivní až po 1. hodu tension
+    document.getElementById("btnFinishTension").disabled = state.gameOver || !inTension || state.tensionRolls < 1;
+    // Přehodit a +-1: dostupné jen během nastavování nebo tension, jinak disabled
+    document.getElementById("btnPowerReroll").disabled = !state.powers.reroll || state.gameOver || (!state.currentSettingPin && !inTension);
+    document.getElementById("btnPowerModify").disabled = !state.powers.modify || state.gameOver || (!state.currentSettingPin && !inTension);
+
+    // Pick 2: aktivní a zelené až když jsou všechny 4 kostky přiřazeny, průsečíky OK, a není tension check
+    const btnPick2 = document.getElementById("btnPowerPick2");
+    const pick2Available = state.powers.pick2 && !!state.currentSettingPin && !state.gameOver && !state.mustCheckTension && isReadyToEvaluate();
+    btnPick2.disabled = !pick2Available;
+    btnPick2.style.background = pick2Available ? "#2e7d32" : "";
+    btnPick2.style.color = pick2Available ? "white" : "";
+
+    // Pick -1 / 0 / +1: aktivní a zelené až když jsou všechny 4 kostky přiřazeny, průsečíky OK, a není tension check
+    const pickReady = !!state.currentSettingPin && !state.gameOver && !inTension && isReadyToEvaluate();
+    document.querySelectorAll(".pick-btn").forEach(btn => {
+        btn.disabled = !pickReady;
+        btn.style.background = pickReady ? "#2e7d32" : "";
+        btn.style.color = pickReady ? "white" : "";
+    });
+
+    const btnTension = document.getElementById("btnTensionRoll");
+    if(btnTension){
+        btnTension.disabled = state.gameOver || !inTension;
+    }
+
+    // Vyhodnotit: aktivní až když jsou všechny 4 kostky OK, průsečíky nejsou červené, a není tension check
+    const btnEvaluate = document.getElementById("btnEvaluate");
+    if (btnEvaluate) {
+        const ready = !state.gameOver && !inTension && isReadyToEvaluate();
+        btnEvaluate.disabled = !ready;
+        btnEvaluate.style.background = ready ? "#2e7d32" : "";
+        btnEvaluate.style.color = ready ? "white" : "";
+        btnEvaluate.style.opacity = ready ? "1" : "0.5";
+        btnEvaluate.style.cursor = ready ? "pointer" : "not-allowed";
+    }
+
+    // Generický loop — při tension check zakáže vše kromě tension tlačítek
+    const managedBtns = ['btnCheckBinding','btnBindingRoll','btnSetPin','btnEvaluate','btnFinishTension',
+                         'btnPowerPick2','btnPowerReroll','btnPowerModify','btnTensionRoll'];
+    document.querySelectorAll(".control-btn").forEach(btn => {
+        if(!managedBtns.includes(btn.id) && !btn.classList.contains("pick-btn")) {
+            btn.disabled = state.gameOver || inTension;
+        }
+    });
+
+    // Confirm New Game tlačítka — nikdy nedisablovat
+    document.querySelectorAll("[onclick^='confirmNewGame']").forEach(btn => {
+        btn.disabled = false;
+    });
+
+    // Pokud je konec hry, zablokujeme pro jistotu i tlačítka u kostek
+    if (state.gameOver) {
+        document.querySelectorAll(".assign-btn").forEach(btn => btn.disabled = true);
+    }
+
+    updateHints();
+}
+
+
+
+function renderPins(){
+
+    const div =
+        document.getElementById("pins");
+
+    div.innerHTML="";
+
+    state.pins.forEach((pin,index)=>{
+
+        const card=document.createElement("div");
+
+        card.className="pin-card";
+
+        if(pin.set)
+            card.classList.add("set");
+
+        if(
+            state.currentCheckPin === index
+        )
+            card.classList.add("current");
+
+
+        card.innerHTML=`
+
+            <div>PIN ${pin.id}</div>
+
+            <br>
+
+            <div>
+                ${
+                    pin.found
+                    ? pin.bindingOrder
+                    : "?"
+                }
+            </div>
+
+        `;
+
+        div.appendChild(card);
+    });
+}
+
+function renderGauge(){
+
+    const gauge=
+        document.getElementById("gauge");
+
+    gauge.innerHTML="";
+
+    const costs=[3,2,1,2,3];
+
+    costs.forEach((cost,index)=>{
+
+        const cell=document.createElement("div");
+
+        cell.className="gauge-cell";
+
+        if(index===state.tensionPos)
+            cell.classList.add("gauge-active");
+
+        cell.textContent=cost;
+
+        gauge.appendChild(cell);
+    });
+}
+
+
+//Vykreslí TENSION_TRACKS
+function renderTensionTracks(){
+
+    const div =
+        document.getElementById(
+            "tensionTracks"
+        );
+
+    div.innerHTML = "";
+
+    TENSION_TRACKS.forEach(
+        (track,rowIndex)=>{
+
+            const used =
+                state.tensionUsed[rowIndex];
+
+            let html = `
+                <div style="
+                    margin-bottom:4px;
+                    display:flex;
+                    align-items:center;
+                    gap:2px;
+                ">
+                <div style="
+					width:40px;
+					min-width:40px;
+					font-size:11px;
+					text-align:right;
+				">
+                    ${track.min}-${track.max}
+                </div>
+            `;
+
+            track.spaces.forEach(
+                (symbol,index)=>{
+
+                    const usedClass =
+                        index < used
+                        ? "used"
+                        : "";
+
+                    html += `
+                        <div
+                            class="
+                                tension-track-cell
+                                ${usedClass}
+                            ">
+                            ${symbol}
+                        </div>
+                    `;
+                }
+            );
+
+            html += "</div>";
+
+            div.innerHTML += html;
+        }
+    );
+}
+
+
+//Vykreslení Time Tracks na časové ose (30 políček)
+const TENSION_SLOTS = new Set([
+    2,6,10,13,16,19,22,25,27,29
+]);
+
+function renderTimeTrack(){
+
+    const div =
+        document.getElementById("timeTrack");
+
+    div.innerHTML = "";
+
+    for(let i=0;i<30;i++){
+
+        const pos = i + 1;
+
+        const cell =
+            document.createElement("div");
+
+        cell.className = "time-cell";
+
+        if(TENSION_SLOTS.has(pos)){
+            cell.classList.add("tension");
+        }
+
+        if(i < state.time){
+            cell.classList.add("used");
+        }
+
+        cell.textContent = pos;
+
+        div.appendChild(cell);
+    }
+}
+
+
+function updateHints() {
+    // 1. Odebereme zvýraznění ze VŠECH tlačítek
+    document.getElementById("btnCheckBinding").classList.remove("btn-next");
+    document.getElementById("btnBindingRoll").classList.remove("btn-next");
+    document.getElementById("btnSetPin").classList.remove("btn-next");
+	document.getElementById("btnFinishTension").classList.remove("btn-next");
+ 
+    const btnTension =
+		document.getElementById(
+			"btnTensionRoll"
+    );
+
+	if(btnTension){
+
+		btnTension.disabled =
+			state.gameOver ||
+			!state.mustCheckTension;
+	}
+	
+    const btnEvaluate = document.getElementById("btnEvaluate");
+    if (btnEvaluate) btnEvaluate.classList.remove("btn-next");
+
+    // PŘIDÁNO: Pokud hra skončila, nebudeme žádná tlačítka obarvovat
+		if (state.gameOver) {
+			return;
+		}
+
+		// TENSION CHECK má absolutní prioritu
+	    if(state.mustCheckTension){
+
+        if(state.tensionRolls === 0){
+
+            const tensionBtn =
+                document.querySelector(
+                    'button[onclick="rollDice()"]'
+                );
+
+            if(tensionBtn){
+                tensionBtn.classList.add("btn-next");
+            }
+
+        }else{
+
+            document
+                .getElementById("btnFinishTension")
+                .classList.add("btn-next");
+        }
+
+        return;
+    }
+
+
+    // Zjištění aktuálních fází hry
+    const isCheckingBinding = state.currentCheckPin !== null;
+    const allBindingsFound = state.bindingFound >= state.difficulty;
+    const isSettingPin = state.currentSettingPin !== null;
+    
+    // Zjistíme, zda už hráč přiřadil všechny 4 kostky (souřadnice)
+    const isReadyToEvaluate = state.usedDice && state.usedDice.length === 4;
+
+    if (isCheckingBinding) {
+        // Fáze: Hází se kostkou na binding
+        document.getElementById("btnBindingRoll").classList.add("btn-next");
+    } else if (!allBindingsFound) {
+        // Fáze: Hledá se binding
+        document.getElementById("btnCheckBinding").classList.add("btn-next");
+    } else {
+        // Fáze: Nastavování pinů
+        if (isSettingPin) {
+            // Kostky jsou hozeny, hráč je přiřazuje.
+            // Zelené tlačítko Vyhodnotit se rozsvítí AŽ tehdy, kdy jsou zadány všechny 4.
+            if (isReadyToEvaluate && btnEvaluate) {
+                btnEvaluate.classList.add("btn-next");
+            }
+        } else {
+            // PIN není vybrán, čekáme na stisk Set PIN (nebo nový pokus)
+            document.getElementById("btnSetPin").classList.add("btn-next");
+        }
+    }
+}
+
+
+
+
+function isGameOver(){
+
+    if(!state.gameOver){
+        return false;
+    }
+
+    showToast(
+        "⌛ Hra skončila",
+        "error"
+    );
+
+    return true;
+}
+
+
+function saveGame(){
+
+    try{
+
+        localStorage.setItem(
+            "lockpick_save",
+            JSON.stringify(state)
+        );
+
+        addLog(
+            "💾 Hra uložena"
+        );
+
+        showToast(
+            "💾 Hra uložena",
+            "success"
+        );
+    }
+    catch(err){
+
+        showToast(
+            "❌ Uložení selhalo",
+            "error"
+        );
+    }
+}
+
+
+function loadGame(){
+
+    try{
+
+        const save =
+            localStorage.getItem(
+                "lockpick_save"
+            );
+
+        if(!save){
+
+            showToast(
+                "⚠ Nenalezen save",
+                "warning"
+            );
+
+            return;
+        }
+
+        const loaded =
+            JSON.parse(save);
+
+        Object.assign(
+            state,
+            loaded
+        );
+
+        // Obnovení reference currentSettingPin
+        if(state.currentSettingPin){
+
+            state.currentSettingPin =
+                state.pins.find(
+                    p =>
+                        p.id ===
+                        state.currentSettingPin.id
+                ) || null;
+        }
+
+        render();
+        renderSetting();
+
+        if(
+            state.gameOver ||
+            state.time > 30
+        ){
+
+            addLog(
+                "⌛ Načtena ukončená hra"
+            );
+
+            showToast(
+                "⌛ Tato hra již skončila",
+                "warning"
+            );
+        }
+        else{
+
+            addLog(
+                "📂 Hra načtena"
+            );
+
+            showToast(
+                "📂 Hra načtena",
+                "success"
+            );
+        }
+    }
+    catch(err){
+
+        console.error(err);
+
+        showToast(
+            "❌ Načtení selhalo",
+            "error"
+        );
+    }
+}
+
+
+function autoSave(){
+
+    localStorage.setItem(
+        "lockpick_save",
+        JSON.stringify(state)
+    );
+}
+
+
+function deleteSave(){
+
+    localStorage.removeItem(
+        "lockpick_save"
+    );
+
+    showToast(
+        "🗑️ Uložená hra smazána",
+        "success"
+    );
+}
+
+
+let toastTimer = null;
+
+function showToast(text, type="info") {
+    const toast = document.getElementById("toast");
+    toast.className = "";
+    
+    // ZMĚNA: Použijeme innerHTML a nahradíme konce řádků (\n) za HTML značku <br>
+    toast.innerHTML = text.replace(/\n/g, "<br>");
+
+    toast.classList.add(
+        type === "success" ? "toast-success" :
+        type === "warning" ? "toast-warning" :
+        type === "error" ? "toast-error" : "toast-info"
+    );
+
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 4000); // Mírně prodloužíme čas zobrazení, aby hráč stihl přečíst oba piny
+}
+
+
+function showHelp(){
+
+    document.getElementById(
+        "helpModal"
+    ).style.display = "block";
+}
+
+function hideHelp(){
+
+    document.getElementById(
+        "helpModal"
+    ).style.display = "none";
+}
+
+async function copyLog(){
+
+    try{
+
+        const text =
+            state.log.join("\n");
+
+        await navigator.clipboard.writeText(
+            text
+        );
+
+        addLog(
+            "📋 Log zkopírován"
+        );
+    }
+    catch(err){
+
+        alert(
+            "Kopírování se nepodařilo."
+        );
+    }
+}
+
+function clearLog(){
+
+    state.log=[];
+
+    document.getElementById(
+        "log"
+    ).innerHTML="";
+
+    autoSave();
+}
+
+newGame(4);
+</script>
+<div id="toast"></div>
+</body>
+</html>
