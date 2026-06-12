@@ -285,6 +285,7 @@ h1{
 
 #gridArea{
     margin-top:15px;
+    padding-bottom: 15px;
 }
 
 .setting-grid{
@@ -297,11 +298,13 @@ h1{
     width:36px;
     height:36px;
     text-align:center;
-    border:1px solid #555;
+    color:#fff3b0;
+    font-weight:bold;
 }
 
 .setting-grid td{
     background:#222;
+    color: #fff;
 }
 
 .grid-a{
@@ -403,8 +406,8 @@ h1{
     pointer-events:none;
 
     transition:all .25s;
-
-    max-width:90vw;
+    width:90%;
+    max-width:500px;
 
     box-shadow:0 4px 12px rgba(0,0,0,.4);
 }
@@ -1691,8 +1694,26 @@ function renderSetting(){
             // Kontrola, zda bylo stisknuto právě toto tlačítko u této kostky
             const isSelected = (state.usedTargets && state.usedTargets[index] === tgt.id);
             
-            // Podbarvení pastelově zelenou barvou a zčernání písma pro čitelnost
-            const style = isSelected ? "background-color: #a5d6a7; color: #000; font-weight: bold;" : "";
+        // Podbarvení zelenou barvou a modrou barvou, zčernání písma pro čitelnost
+        let style = "";
+
+        if(isSelected){
+
+        if(
+        tgt.id === "aRow" ||
+        tgt.id === "aCol"
+        ){
+        style =
+            "background-color:#2e7d32;color:#000;font-weight:bold;";
+        }
+         else{
+       style =
+            "background-color:#1565c0;color:#000;font-weight:bold;";
+       }
+       }
+
+           // Podbarvení pastelově zelenou barvou a zčernání písma pro čitelnost
+          //  const style = isSelected ? "background-color: #a5d6a7; color: #000; font-weight: bold;" : "";
             
             buttonsHtml += `<button class="assign-btn" style="${style}" onclick="assignDie(${index},'${tgt.id}')">${tgt.label}</button>\n`;
         });
