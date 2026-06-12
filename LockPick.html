@@ -701,7 +701,7 @@ h1{
 
             <h3>⏱ Časomíra</h3>
             <p>Každá akce spotřebuje 1 nebo více časových kroků. Červeně podbarvená políčka časomíry spouštějí <b>Tension Check</b>. Pokud potřebuješ označit políčko č. 31 — hra končí prohrou.</p>
-            <table style="width:100%;font-size:11px;border-collapse:collapse;margin:6px 0;">
+            <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
                 <tr><td style="padding:2px 6px;color:#c8a84b;"><b>B</b></td><td>Check Binding — testování závěrky</td></tr>
                 <tr><td style="padding:2px 6px;color:#c8a84b;"><b>X</b></td><td>Časová penalizace (symbol ⏱ na tracku)</td></tr>
                 <tr><td style="padding:2px 6px;color:#c8a84b;"><b>R</b></td><td>Návrat na nejnižší závěrku</td></tr>
@@ -762,16 +762,15 @@ h1{
             </ul>
 
             <h3>🏆 Bodování</h3>
-            <table style="width:100%;font-size:11px;border-collapse:collapse;margin:6px 0;">
-                <tr><td style="padding:3px 6px;">Za každou nastavenou závěrku</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 8 bodů</td></tr>
-                <tr><td style="padding:3px 6px;">Za každý zbývající časový krok</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 1 bod</td></tr>
-                <tr><td style="padding:3px 6px;">Za každou nepoužitou schopnost</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 5 bodů</td></tr>
-                <tr><td style="padding:3px 6px;">Za každou závěrku výšky 2 nebo 3</td><td style="text-align:right;color:#c8a84b;font-weight:700;">× 5 bodů</td></tr>
-                <tr><td style="padding:3px 6px;">Napětí na středu při konci hry</td><td style="text-align:right;color:#c8a84b;font-weight:700;">6 bodů</td></tr>
-                <tr><td style="padding:3px 6px;">Bez jediného resetu závěrek</td><td style="text-align:right;color:#c8a84b;font-weight:700;">4 body</td></tr>
-                <tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#c8a84b;font-weight:700;">100 bodů</td></tr>
+            <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou nastavenou závěrku</td><td>x 8 bodů</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každý zbývající časový krok</b></td><td>x 1 bod</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou nepoužitou schopnost</b></td><td>x 5 bodů</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou závěrku výšky 2 nebo 3</b></td><td>x 5 bodů</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Napětí na středu při konci hry</b></td><td>6 bodů</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Bez jediného resetu závěrek</b></td><td>4 body</td></tr>
+                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Maximum</b></td><td>100</td></tr>
             </table>
-
         </div>
     </div>
 </div>
@@ -1008,7 +1007,17 @@ function spendTime(count,mark=""){
 );
 if(
     TENSION_SLOTS.has(state.time)
-){
+){  
+
+    if(state.currentSettingPin){
+        state.lastAction = "setting";
+    }
+    else if(state.currentCheckPin !== null){
+        state.lastAction = "binding";
+    }
+    else{
+        state.lastAction = null;
+    }
 
     addLog(
         "⚙ TENSION SLOT " +
@@ -1875,7 +1884,9 @@ ${
 // --- 3. Správa stavu tlačítka Vyhodnotit ---
     const evalBtn = document.getElementById("btnEvaluate");
     if(evalBtn && !state.gameOver){
-        const ready = isReadyToEvaluate();
+        const ready =
+        isReadyToEvaluate() &&
+        !state.mustCheckTension;
         evalBtn.disabled = !ready;
         evalBtn.style.background = ready ? "#2e7d32" : "";
         evalBtn.style.color = ready ? "white" : "";
@@ -2178,55 +2189,105 @@ function checkVictory(){
 
 
 function calculateScore(){
+
     let score = 0;
+
     let details = [];
 
-    // 1. Za každou nastavenou závěrku (8 bodů)
-    const setPinsCount = state.pins.filter(p => p.set).length;
-    score += setPinsCount * 8;
-    details.push(`• Závěrky (${setPinsCount}x8): ${setPinsCount * 8} b`);
+    const setPinsCount =
+        state.pins.filter(
+            p => p.set
+        ).length;
 
-    // 2. Za každý zbývající časový krok (1 bod)
-    const timeRemaining = Math.max(0, 30 - state.time);
+    const setPinsScore =
+        setPinsCount * 8;
+
+    score += setPinsScore;
+
+    details.push(
+        `• Závěrky (${setPinsCount}x8): ${setPinsScore} b`
+    );
+
+    const timeRemaining =
+        Math.max(
+            0,
+            30 - state.time
+        );
+
     score += timeRemaining;
-    details.push(`• Ušetřený čas (${timeRemaining}x1): ${timeRemaining} b`);
 
-    // 3. Za každou nepoužitou schopnost (5 bodů) 
-    const abilities = state.unusedAbilities || 0;
-    if (abilities > 0) {
-        score += abilities * 5;
-        details.push(`• Nepoužité schop. (${abilities}x5): ${abilities * 5} b`);
-    }
+    details.push(
+        `• Ušetřený čas (${timeRemaining}x1): ${timeRemaining} b`
+    );
 
-    // 4. Za každou závěrku výšky 2 nebo 3 (5 bodů)
-    const lowPinsCount = state.pins.filter(p => p.set && (p.height === 2 || p.height === 3)).length;
-    if (lowPinsCount > 0) {
-        score += lowPinsCount * 5;
-        details.push(`• Piny výšky 2-3 (${lowPinsCount}x5): ${lowPinsCount * 5} b`);
-    }
+    const abilities =
+        Object.values(state.powers)
+        .filter(v => v)
+        .length;
 
-    // 5. Napětí na středu na konci hry (6 bodů)
-    if (state.tensionPos === 2) {
-        score += 6;
-        details.push(`• Napětí na středu: 6 b`);
-    }
+    const abilityScore =
+        abilities * 5;
 
-    // 6. Žádné resetování závěrek (4 body)
-    if (!state.hasReset) {
-        score += 4;
-        details.push(`• Žádný reset pinů: 4 b`);
-    }
+    score += abilityScore;
 
-    // Maximum je 100 bodů
-    if (score > 100) {
-        score = 100;
-    }
+    details.push(
+        `• Nepoužité schopnosti (${abilities}x5): ${abilityScore} b`
+    );
+
+    const lowPinsCount =
+        state.pins.filter(
+            p =>
+                p.set &&
+                (
+                    p.height === 2 ||
+                    p.height === 3
+                )
+        ).length;
+
+    const lowPinsScore =
+        lowPinsCount * 5;
+
+    score += lowPinsScore;
+
+    details.push(
+        `• Piny výšky 2-3 (${lowPinsCount}x5): ${lowPinsScore} b`
+    );
+
+    const tensionScore =
+        state.tensionPos === 2
+        ? 6
+        : 0;
+
+    score += tensionScore;
+
+    details.push(
+        `• Napětí na středu: ${tensionScore} b`
+    );
+
+    const resetScore =
+        !state.hasReset
+        ? 4
+        : 0;
+
+    score += resetScore;
+
+    details.push(
+        `• Žádný reset pinů: ${resetScore} b`
+    );
+
+    score = Math.min(
+        score,
+        100
+    );
 
     state.score = score;
+
     render();
 
-    // Výpis detailního skóre (znak \n odřádkuje text v logu)
-    addLog(`🏆 KONEČNÉ SKÓRE: ${score} / 100\n` + details.join("\n"));
+    addLog(
+        `🏆 KONEČNÉ SKÓRE: ${score} / 100\n`
+        + details.join("\n")
+    );
 }
 
 
@@ -2390,6 +2451,16 @@ function finishTension(){
         "⚙ Tension Check dokončen"
     );
 
+
+    if(state.lastAction === "setting"){
+        addLog("↩ Návrat k nastavování PIN");
+    }
+    else if(state.lastAction === "binding"){
+        addLog("↩ Návrat ke kontrole PIN");
+    }
+
+    state.lastAction = null;
+
     render();
     renderDice();
 }
@@ -2452,6 +2523,8 @@ function moveIntersection(which, dir) {
     // 3. JISTOTA: Převod na číslo, aby se zamezilo nechtěným textovým operacím
     row = parseInt(row, 10);
     col = parseInt(col, 10);
+    const oldRow = row;
+        const oldCol = col;
 
     // Samotný pohyb
     if (dir === "up") row--;
@@ -2470,6 +2543,18 @@ function moveIntersection(which, dir) {
     } else {
         state.assignment.bRow = row;
         state.assignment.bCol = col;
+    }
+
+    if(oldRow !== row || oldCol !== col){
+
+        const costText =
+            moveByTwo
+            ? "zdarma"
+            : `${getTensionCost()} ⏱`;
+
+        addLog(
+            `↔ ${which}: (${oldRow},${oldCol}) → (${row},${col}) [${costText}]`
+        );
     }
 
     renderGrid();
@@ -2750,6 +2835,27 @@ const isCheckingBinding = state.currentCheckPin !== null;
     const allBindingsFound = state.bindingFound >= state.difficulty;
     const isSettingPin = state.currentSettingPin !== null;
     const inTension = state.mustCheckTension;
+
+if(inTension){
+
+    document.querySelectorAll(".control-btn").forEach(btn=>{
+        btn.disabled = true;
+    });
+
+    document.querySelectorAll(".pick-btn").forEach(btn=>{
+        btn.disabled = true;
+    });
+
+    document.getElementById("btnTensionRoll").disabled = false;
+
+    if(state.tensionRolls > 0){
+        document.getElementById("btnFinishTension").disabled = false;
+    }
+
+    updateHints();
+    return;
+}
+
 
     // Uzamknutí herních tlačítek podle fáze hry nebo při jejím KONCI
     document.getElementById("btnCheckBinding").disabled = state.gameOver || inTension || isCheckingBinding || allBindingsFound;
@@ -3244,6 +3350,16 @@ function hideHelp(){
         "helpModal"
     ).style.display = "none";
 }
+
+window.addEventListener("click", function(event){
+
+    const modal =
+        document.getElementById("helpModal");
+
+    if(event.target === modal){
+        hideHelp();
+    }
+});
 
 async function copyLog(){
 
