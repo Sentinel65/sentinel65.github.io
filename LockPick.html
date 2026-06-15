@@ -298,13 +298,24 @@ h1{
     width:36px;
     height:36px;
     text-align:center;
-    color:#fff3b0;
+    vertical-align:middle;
     font-weight:bold;
+}
+
+.setting-grid th{
+    color:#e0a800;
+    padding:2px;
+}
+
+.setting-grid th svg{
+    display:block;
+    margin:auto;
+    color:#e0a800;
 }
 
 .setting-grid td{
     background:#222;
-    color: #fff;
+    color:#fff;
 }
 
 .grid-a{
@@ -540,9 +551,79 @@ h1{
 .grid-error {
     background-color: var(--bad) !important;
     color: white !important;
-    border: 2px dashed white !important; /* Přidá přerušovaný okraj pro ještě větší zvýraznění */
+    border: 2px dashed white !important;
     font-weight: bold;
 }
+
+#bindingTrackDisplay {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+}
+
+.bt-cell {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid #444;
+    border-radius: 3px;
+    background: #222;
+    color: #aaa;
+    position: relative;
+}
+
+.bt-cell.bt-current {
+    border: 2px solid #e0a800;
+    background: #3a2e00;
+    color: #e0a800;
+    box-shadow: 0 0 6px rgba(224,168,0,0.5);
+}
+
+.bt-cell.bt-passed {
+    background: #1a1a1a;
+    color: #555;
+    border-color: #333;
+}
+
+.bt-cell.bt-check { color: #4caf50; }
+.bt-cell.bt-time  { color: #e05a2b; }
+.bt-cell.bt-dash  { color: #888; }
+.bt-cell.bt-current.bt-check { color: #4caf50; border-color: #4caf50; background: #0d2e0d; }
+.bt-cell.bt-current.bt-time  { color: #e05a2b; border-color: #e05a2b; background: #2e0d00; }
+.bt-cell.bt-current.bt-dash  { color: #e0a800; border-color: #e0a800; background: #3a2e00; }
+
+.bt-num {
+    font-size: 7px;
+    color: #555;
+    position: absolute;
+    top: 1px;
+    left: 2px;
+}
+    background-color: var(--bad) !important;
+    color: white !important;
+    border: 2px dashed white !important;
+    font-weight: bold;
+}
+
+.lang-btn {
+    cursor: pointer;
+    background: #333;
+    border: 1px solid #666;
+    color: #f0f0f0;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: background .15s, border-color .15s;
+}
+.lang-btn:hover { background: #444; border-color: var(--accent); }
 </style>
 </head>
 
@@ -557,7 +638,8 @@ h1{
         <div>🎯 <span id="scoreText">0</span></div>
     </div>
     
-    <div style="display: flex; gap: 8px;">
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="icon-btn" id="langBtn" onclick="toggleLang()" title="Switch language">🇨🇿</button>
         <button class="icon-btn" onclick="deleteSave()" title="Smazat save">🗑️</button>
         <button class="icon-btn" onclick="saveGame()" title="Uložit">💾</button>
         <button class="icon-btn" onclick="loadGame()" title="Načíst">📂</button>
@@ -566,27 +648,32 @@ h1{
 </div>
 
 <div class="panel">
-    <h3>Piny</h3>
+    <h3 data-i18n="pins">PIN</h3>
     <div id="pins"></div>
 </div>
 
 <div class="panel">
-    <h3>Čas</h3>
+    <h3 data-i18n="time">Časomíra</h3>
     <div id="timeTrack"></div>
 </div>
 
+<div class="panel" id="bindingTrackPanel">
+    <h3 data-i18n="bindingTrackTitle">Binding Track</h3>
+    <div id="bindingTrackDisplay"></div>
+</div>
+
 <div class="panel">
-    <h3>Tension Gauge</h3>
+    <h3 data-i18n="tensionGauge">Tension Gauge</h3>
     <div id="gauge"></div>
 </div>
 
 <div class="panel">
-    <h3>Tension Tracks</h3>
+    <h3 data-i18n="tensionTracks">Tension Tracks</h3>
     <div id="tensionTracks"></div>
 </div>
 
 <div class="panel">
-    <h3>Kostky</h3>
+    <h3 data-i18n="dice">Kostky</h3>
     <div id="diceArea"></div>
 </div>
 
@@ -594,25 +681,25 @@ h1{
     <div id="controls">
 
         <div class="btn-group-3">
-            <button class="control-btn" onclick="confirmNewGame(4)">Hra 4 piny</button>
-            <button class="control-btn" onclick="confirmNewGame(5)">Hra 5 pinů</button>
-            <button class="control-btn" onclick="confirmNewGame(6)">Hra 6 pinů</button>
+            <button class="control-btn" onclick="confirmNewGame(4)" data-i18n="game4">Hra 4 piny</button>
+            <button class="control-btn" onclick="confirmNewGame(5)" data-i18n="game5">Hra 5 pinů</button>
+            <button class="control-btn" onclick="confirmNewGame(6)" data-i18n="game6">Hra 6 pinů</button>
         </div>
 
         <div class="btn-group-3">
         <button id="btnTensionRoll" class="control-btn" onclick="rollDice()">
             Tension Roll
         </button>
-            <button id="btnSetPin" class="control-btn" onclick="startSettingPin()">Set PIN</button>
-        <button id="btnEvaluate" class="control-btn" style="width: 100%;" onclick="evaluateSetting()">
+            <button id="btnSetPin" class="control-btn" onclick="startSettingPin()" data-i18n="setPin">Set PIN</button>
+        <button id="btnEvaluate" class="control-btn" style="width: 100%;" onclick="evaluateSetting()" data-i18n="evaluate">
             Vyhodnotit
         </button>
         </div>
         
         <div class="btn-group-3">
-			<button id="btnFinishTension" class="control-btn" onclick="finishTension()">Potvrdit napětí</button>
-            <button id="btnCheckBinding" class="control-btn" onclick="startBindingCheck()">Check Binding</button> 
-            <button id="btnBindingRoll" class="control-btn" onclick="bindingRoll()">Binding Roll</button>
+			<button id="btnFinishTension" class="control-btn" onclick="finishTension()" data-i18n="confirmTension">Potvrdit napětí</button>
+            <button id="btnCheckBinding" class="control-btn" onclick="startBindingCheck()" data-i18n="checkBinding">Check Binding</button> 
+            <button id="btnBindingRoll" class="control-btn" onclick="bindingRoll()" data-i18n="bindingRoll">Binding Roll</button>
        
 
         </div>
@@ -626,9 +713,9 @@ h1{
         </div>
 
          <div id="powersArea" class="btn-group-3">
-            <button id="btnPowerReroll" class="control-btn" onclick="usePowerReroll()">🎲 Přehodit</button>
-            <button id="btnPowerModify" class="control-btn" onclick="usePowerModify()">➕➖ 1</button>
-            <button id="btnPowerPick2" class="control-btn" onclick="usePowerPick2()">↔ Pick 2</button>
+            <button id="btnPowerReroll" class="control-btn" onclick="usePowerReroll()" data-i18n="powerReroll">🎲 Přehodit</button>
+            <button id="btnPowerModify" class="control-btn" onclick="usePowerModify()" data-i18n="powerModify">➕➖ 1</button>
+            <button id="btnPowerPick2" class="control-btn" onclick="usePowerPick2()" data-i18n="powerPick2">↔ Pick 2</button>
          </div>
     </div>
 </div>
@@ -636,11 +723,11 @@ h1{
 
 <div class="panel">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0;">Setting PIN</h3>
+        <h3 style="margin:0;" data-i18n="settingPin">Setting PIN</h3>
         <div id="settingPinHeader" style="font-size: 1.1em; font-weight: bold; color: gold;"></div>
     </div>
 
-    <div id="settingInfo" style="margin-top: 8px;">
+    <div id="settingInfo" style="margin-top: 8px;" data-i18n="inactive">
         Neaktivní
     </div>
 
@@ -660,7 +747,7 @@ h1{
         margin-bottom:8px;
     ">
 
-        <h3>Log</h3>
+        <h3 data-i18n="log">Log</h3>
 
         <div style="
             display:flex;
@@ -694,87 +781,10 @@ h1{
 <div id="helpModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>🔒 Lock Pick — Nápověda</h2>
+            <h2 id="helpModalTitle">🔒 Lock Pick — Nápověda</h2>
             <button onclick="hideHelp()">✖</button>
         </div>
-        <div class="help-body">
-
-            <h3>🎯 Cíl hry</h3>
-            <p>Byl jsi neprávem uvězněn. Máš 5 minut (30 časových kroků), než se vrátí strážci. Nastav všechny závěrky zámku na správnou výšku a unikni!</p>
-
-            <h3>⏱ Časomíra</h3>
-            <p>Každá akce spotřebuje 1 nebo více časových kroků. Červeně podbarvená políčka časomíry spouštějí <b>Tension Check</b>. Pokud potřebuješ označit políčko č. 31 — hra končí prohrou.</p>
-            <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>B</b></td><td>Check Binding — testování závěrky</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>X</b></td><td>Časová penalizace (symbol ⏱ na tracku)</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>R</b></td><td>Návrat na nejnižší závěrku</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>S</b></td><td>Set PIN — pokus o nastavení závěrky</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>P</b></td><td>Změna hrotu (2 kroky)</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>M</b></td><td>Posun průsečíku v mřížce</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>O</b></td><td>Overset nebo napětí mimo rozsah</td></tr>
-            </table>
-
-            <h3>🔍 1. Hledání pořadí (Binding)</h3>
-            <p>Závěrky musíš nastavovat v určitém pořadí — to musíš nejdříve zjistit. Stiskni <b>Check Binding</b> (spotřebuje 1×B), pak opakovaně <b>Binding Roll</b> (hod 1 kostkou).</p>
-            <p>Token se pohybuje po Binding Tracku — hodnota kostky se <b>přičítá kumulativně</b> k aktuální pozici:</p>
-            <ul>
-                <li><b>✓</b> — závěrka nalezena! Zobrazí se její výška, přejdi na Set PIN.</li>
-                <li><b>⏱</b> — časová penalizace (1×X), přejdi na další závěrku.</li>
-                <li><b>—</b> — na výběr: hodit znovu nebo přejít na další závěrku.</li>
-            </ul>
-            <p>Maximum jsou 4 hody (token max. na pozici 24). Po 4. hodu s výsledkem <b>—</b> přejdi bez penalizace. <b>Poslední závěrka</b> se odhalí automaticky — netestuje se.</p>
-            <p>⚠ Pokud neuspěješ u nejvyšší závěrky, vrátíš se na nejnižší nenastavenou závěrku (1×R).</p>
-
-            <h3>⚙ 2. Nastavení napětí (Tension Check)</h3>
-            <p>Kdykoli je označeno červeně podbarvené políčko na časomíře, musíš <b>před další akcí</b> nastavit napětí. Všechna ostatní tlačítka jsou v tu chvíli zamčena.</p>
-            <p>Stiskni <b>Tension Roll</b> — hodí se 4 kostky. Máš až 3 hody (jako u Yahtzee — při dalších hodech si můžeš kliknout na zvolenou kostku, kostka se označí a je pro další hody zamčena). Po 1. hodu se aktivuje <b>Potvrdit napětí</b>. Třetím hodem se napětí potvrdí automaticky.</p>
-            <p>Součet 4 kostek určí řádek v tabulce napětí. Z levé strany se označí vždy první volné políčko v daném řádku — šipka posune ukazatel napětí doleva/doprava, <b>X</b> = zůstane.</p>
-            <p>Ukazatel napětí má 5 pozic s náklady <b>3 — 2 — 1 — 2 — 3</b>. Pokud ukazatel vypadne mimo rozsah, dojde k resetu všech závěrek!</p>
-
-            <h3>🎯 3. Nastavení závěrky (Set PIN)</h3>
-            <p>Stiskni <b>Set PIN</b> (1×S). Hodí se 4 kostky. Každou přiřaď tlačítky pod kostkami:</p>
-            <ul>
-                <li><b>A-Row</b> a <b>A-Col</b> — určují průsečík A v mřížce</li>
-                <li><b>B-Row</b> a <b>B-Col</b> — určují průsečík B v mřížce</li>
-            </ul>
-            <p>Hodnota buňky A + hodnota buňky B + modifikátor hrotu určují výšku závěrky.</p>
-            <ul>
-                <li>✅ <b>Přesně</b> — závěrka nastavena! Obě buňky se zablokují.</li>
-                <li>⬇ <b>Příliš nízko</b> — obě buňky se zablokují, zkus znovu (1×S).</li>
-                <li>💥 <b>Overset (je příliš vysoko)</b> — všechny nastavené závěrky se resetují, mřížka se vymaže, blokované buňky také (1×O).</li>
-            </ul>
-            <p>⚠ <b>Červená buňka</b> = zablokovaná (již použitá). Průsečík na červené buňce nelze vyhodnotit — musíš ho posunout!</p>
-
-            <h3>↔ 4. Posun průsečíku</h3>
-            <p>Pokud součet nevychází, můžeš posunout průsečík A nebo B o 1 pole (nahoru/dolů/vlevo/vpravo). Cena = aktuální hodnota ukazatele napětí (1–3 kroky M). Nelze na zablokovanou buňku.</p>
-
-            <h3>🔧 5. Hrot (Pick)</h3>
-            <p>Hrot přidává modifikátor k součtu A+B. Tlačítka Pick jsou aktivní (zelená) až po přiřazení všech 4 kostek. Kliknutí změní hrot <b>bez spotřeby času</b> — ale pozor, změna hrotu uprostřed hry stojí 2×P.</p>
-            <ul>
-                <li><b>Pick −1</b> — kratší hrot, snižuje součet o 1</li>
-                <li><b>Pick ±0</b> — střední hrot (výchozí)</li>
-                <li><b>Pick +1</b> — hlubší hrot, zvyšuje součet o 1</li>
-            </ul>
-
-            <h3>✨ 6. Jednorázové schopnosti</h3>
-            <p>Každou schopnost lze použít <b>nejvýše jednou za hru</b>. Po použití se tlačítko zakáže.</p>
-            <ul>
-                <li><b>🎲 Přehodit</b> — aktivní při Set PIN nebo Tension Roll. Klikni na schopnost, pak klikni na kostku kterou chceš přehodit.</li>
-                <li><b>➕➖ 1</b> — aktivní při Set PIN nebo Tension Roll. Klikni na schopnost, pak klikni na kostku — zobrazí se volba +1 nebo −1 (hodnota 1 = pouze +1, hodnota 6 = pouze −1).</li>
-                <li><b>↔ Pick 2 Away</b> — aktivní až po přiřazení všech 4 kostek (bez červených průsečíků). Povolí 2 posuny průsečíků zdarma (libovolná kombinace A nebo B).</li>
-            </ul>
-
-            <h3>🏆 Bodování</h3>
-            <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou nastavenou závěrku</td><td>x 8 bodů</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každý zbývající časový krok</b></td><td>x 1 bod</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou nepoužitou schopnost</b></td><td>x 5 bodů</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Za každou závěrku výšky 2 nebo 3</b></td><td>x 5 bodů</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Napětí na středu při konci hry</b></td><td>6 bodů</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Bez jediného resetu závěrek</b></td><td>4 body</td></tr>
-                <tr><td style="padding:2px 6px;color:#c8a84b;"><b>Maximum</b></td><td>100</td></tr>
-            </table>
-        </div>
+        <div class="help-body" id="helpModalBody"></div>
     </div>
 </div>
 <script>
@@ -878,6 +888,7 @@ const state = {
     time:0,
 	lastAction:null,
     dice:[1,1,1,1],
+	bindingPhaseFinished:false,
     freeMoveRemaining:0,
     pickModifier:0,
 	mustCheckTension:false,
@@ -903,6 +914,8 @@ const state = {
     bindingRollCount:0,
     currentCheckPin:null,
     bindingFound:0,
+    bindingNextPinId:null,
+    bindingDashPending:false,
     log:[]
 };
 
@@ -1006,7 +1019,7 @@ function spendTime(count,mark=""){
 
     state.time += count;
 	addLog(
-    "🕐 Čas = " + state.time
+    t("logTime", state.time)
 );
 if(
     TENSION_SLOTS.has(state.time)
@@ -1023,14 +1036,13 @@ if(
     }
 
     addLog(
-        "⚙ TENSION SLOT " +
-        state.time
+        t("logTensionSlot", state.time)
     );
 
     state.mustCheckTension = true;
 
     showToast(
-        "⚙ Proveď Tension Check",
+        t("toastTensionCheck"),
         "warning"
     );
 }
@@ -1039,19 +1051,19 @@ if(
 
         state.gameOver = true;
 
-        addLog("⌛ Vypršel čas");
+        addLog(t("logTimeUp"));
 
         showToast(
-            "⌛ Vypršel čas",
+            t("logTimeUp"),
             "error"
         );
 
         addLog(
-            "🏁 Konec hry"
+            t("logGameOver")
         );
 
         showToast(
-            `⌛ Konec hry (${state.time}/30)`,
+            t("toastGameOver", state.time),
             "error"
         );
 
@@ -1081,169 +1093,227 @@ function getNextUncheckedPin(){
 }
 
 
-function startBindingCheck(){
-state.lastBindingDie = null;
-console.log(
-    "lastBindingDie=",
-    state.lastBindingDie
-);
-    state.tensionRolls = 0;
-
-	if(state.mustCheckTension){
-
-    showToast(
-        "⚙ Nejprve proveď Tension Check",
-        "warning"
-    );
-
-    return;
+// Pomocná funkce: vrátí pin s nejvyšším ID mezi nenalezenými
+function getTopmostUnsetPin(){
+    const unset = state.pins.filter(p => !p.found);
+    if(unset.length === 0) return null;
+    return unset.reduce((a, b) => a.id > b.id ? a : b);
 }
 
+function getBottommostUnsetPin(){
+    const unset = state.pins.filter(p => !p.found);
+    if(unset.length === 0) return null;
+    return unset.reduce((a, b) => a.id < b.id ? a : b);
+}
+
+// Pomocná funkce: vrátí další pin výše (vyšší ID) od aktuálního
+function getNextPinUp(currentPin){
+    const higher = state.pins
+        .filter(p => !p.found && p.id > currentPin.id)
+        .sort((a, b) => a.id - b.id);
+    // Pokud žádný vyšší neexistuje, vrátí null (= jsme na topmost)
+    return higher.length > 0 ? higher[0] : null;
+}
+
+
+function startBindingCheck(){
+    if(state.mustCheckTension){
+        showToast(t("toastTensionFirst"), "warning");
+        return;
+    }
     if(state.gameOver) return;
 
-    // Pokud už zbývá jen poslední pin, odhalí se automaticky
+    // Při dashPending: hráč se rozhodl přeskočit na další pin (místo dalšího hodu)
+    if(state.bindingDashPending){
+        state.bindingDashPending = false;
+        bindingMoveToNextPin("DASH_SKIP");
+        return;
+    }
+
+    // Pokud zbývá jen poslední pin — odhalit automaticky
     if(state.bindingFound >= state.difficulty - 1){
         autoRevealLastPin();
         return;
     }
 
-    // Cyklické hledání dalšího neodhaleného PIN
-    let foundIndex = -1;
-    let startIndex = state.bindingSearchIndex;
-
-    for(let i = 0; i < state.pins.length; i++) {
-        let checkIdx = (startIndex + i) % state.pins.length;
-        if(!state.pins[checkIdx].found) {
-            foundIndex = checkIdx;
-            
-            // Logika pravidla (R): Návrat k nižší závěrce. 
-            // Zde by šlo přidat extra časovou penalizaci spendTime(1, "R"), pokud ji hra vyžaduje.
-            if(i > 0 && checkIdx < startIndex) {
-                addLog("🔄 Návrat k předchozím nenastaveným pinům");
-                spendTime(1,"R");
-            }
-            break;
-        }
+    // Najdi pin ke kontrole
+    let targetPin;
+    if(state.bindingNextPinId !== null && state.bindingNextPinId !== undefined){
+        targetPin = state.pins.find(p => p.id === state.bindingNextPinId && !p.found);
     }
+    // Fallback: nejnižší nenastavený
+    if(!targetPin){
+        targetPin = getBottommostUnsetPin();
+    }
+    if(!targetPin) return;
 
-    if(foundIndex === -1) return; // Všechny piny byly nalezeny
-
-    state.bindingSearchIndex = foundIndex;
-    state.currentCheckPin = foundIndex;
+    state.currentCheckPin = state.pins.indexOf(targetPin);
+    state.bindingNextPinId = null;
     state.bindingTrackPos = 0;
     state.bindingRollCount = 0;
+    state.bindingDashPending = false;
 
-    spendTime(1,"B");
-    addLog("🔎 Kontrola PIN " + (state.pins[foundIndex].id));
+    spendTime(1, "B");
+    addLog(t("logCheckPin", targetPin.id));
+    render();
+}
+
+
+function bindingMoveToNextPin(reason){
+    // reason: "TIME" nebo "DASH_EXHAUSTED" nebo "DASH_SKIP"
+    const currentPin = state.pins[state.currentCheckPin];
+    if(!currentPin) return;
+
+    const isTopmost = !getNextPinUp(currentPin);
+    
+    if(isTopmost){
+        // Topmost pin rule: R penalizace + přechod na nejnižší
+        addLog(t("logTopmostPin", currentPin.id));
+		showToast(t("logTopmostPin", currentPin.id), "warning");
+        spendTime(1, "R");
+        state.bindingNextPinId = getBottommostUnsetPin()?.id ?? null;
+    } else {
+        // Přejdi na další pin výše
+        const nextPin = getNextPinUp(currentPin);
+        state.bindingNextPinId = nextPin ? nextPin.id : null;
+        if(reason !== "DASH_SKIP") addLog(t("logBindingSkip"));
+        else addLog(t("logBindingSkip")); 
+    }
+
+    // Vyčisti stav aktuálního testování (Binding track)
+    state.bindingRollCount = 0;
+    state.bindingDashPending = false;
+    state.currentCheckPin = null;
+
+    // ZMĚNA: Přímé nastavení nového cíle při úmyslném přeskoku (DASH_SKIP)
+    if (reason === "DASH_SKIP" && state.bindingNextPinId !== null) {
+        const targetPin = state.pins.find(p => p.id === state.bindingNextPinId && !p.found);
+        if (targetPin) {
+            // Ihned zaměří hru na další PIN bez zrušení aktivity
+            state.currentCheckPin = state.pins.indexOf(targetPin);
+            state.bindingNextPinId = null; 
+			state.bindingTrackPos = 0;
+            addLog(t("logCheckPin", targetPin.id));
+        } else {
+            state.currentCheckPin = null;
+        }
+    } else {
+        // Standardní chování po propadnutí časem nebo dojití dechu – vyřadí fokus
+        state.currentCheckPin = null;
+    }
+
+    render();
+}
+
+
+function evaluateBindingTrackPosition(){
+
+    const result =
+        BINDING_TRACK[state.bindingTrackPos];
+
+    // ✓ Úspěch
+    if(result === "CHECK"){
+
+        addLog("✅ Binding Track = CHECK");
+
+        bindingSuccess();
+        return;
+    }
+
+    // ⏱ Penalizace
+    if(result === "TIME"){
+
+        addLog(t("logTimePenalty"));
+
+        showToast(
+            t("logTimePenalty"),
+            "warning"
+        );
+
+        spendTime(1,"X");
+
+        bindingMoveToNextPin("TIME");
+
+        return;
+    }
+
+    // —
+    if(result === "-"){
+
+        if(state.bindingRollCount >= 4){
+
+            addLog(
+                t("logRollsExhausted")
+            );
+
+            showToast(
+                t("toastNoResult"),
+                "warning"
+            );
+
+            bindingMoveToNextPin(
+                "DASH_EXHAUSTED"
+            );
+
+            return;
+        }
+
+        state.bindingDashPending = true;
+
+        addLog(
+            t("logContinueRoll")
+        );
+
+        showToast(
+            t("logContinueRoll"),
+            "info"
+        );
+
+        render();
+
+        return;
+    }
 }
 
 
 function bindingRoll(){
-	
-	if(state.gameOver) return;
+    if(state.gameOver) return;
 
-	if(state.mustCheckTension){
-
-    showToast(
-        "⚙ Nejprve proveď Tension Check",
-        "warning"
-    );
-
-    return;
-}
-
-    if(state.gameOver)
+    if(state.mustCheckTension){
+        showToast(t("toastTensionFirst"), "warning");
         return;
+    }
 
-    if(
-        state.currentCheckPin === null ||
-        state.currentCheckPin === undefined ||
-        state.currentCheckPin < 0
-    ){
-        showToast(
-            "Neprobíhá kontrola PIN",
-            "warning"
-        );
+    if(state.currentCheckPin === null || state.currentCheckPin === undefined || state.currentCheckPin < 0){
+        showToast(t("toastNoBinding"), "warning");
         return;
     }
 
     const die = rand(6) + 1;
-
     state.lastBindingDie = die;
-
     state.bindingRollCount++;
-    
 
     renderDice();
-	animateDice();
+    animateDice();
 
+    state.bindingPrevPos = state.bindingTrackPos;
+    // Kumulativní posun tokenu po tracku
     state.bindingTrackPos += die;
-
-    addLog(
-        `Binding Roll ${state.bindingRollCount}/4: 🎲  ${die}`
-    );
-    showToast(
-        `Binding Roll ${state.bindingRollCount}/4: 🎲 ${die}`, 
-        "info"
-    );
-
-    if(
-        state.bindingTrackPos >=
-        BINDING_TRACK.length
-    ){
-        state.bindingTrackPos =
-            BINDING_TRACK.length - 1;
+    
+    // Clamp na konec tracku
+    if(state.bindingTrackPos >= BINDING_TRACK.length){
+        state.bindingTrackPos = BINDING_TRACK.length - 1;
     }
 
-    const result =
-        BINDING_TRACK[
-            state.bindingTrackPos
-        ];
+    const result = BINDING_TRACK[state.bindingTrackPos];
 
-    // Úspěch
-    if(result === "CHECK"){
+    addLog(t("logBindingRoll", state.bindingRollCount, die));
+    evaluateBindingTrackPosition();
 
-        bindingSuccess();
+    render();
+    return;
+  }
 
-        
-        state.bindingTrackPos = 0;
-        state.bindingRollCount = 0;
-        state.currentCheckPin = null;
-        return;
-    }
-
-    // Penalizace
-    if(result === "TIME"){
-        addLog("⏱ Časová penalizace");
-        showToast("⏱ Časová penalizace", "warning");
-
-        state.currentCheckPin = null; // Vyčistit PŘED stržením času
-        state.bindingSearchIndex++;
-        state.bindingTrackPos = 0;
-        state.bindingRollCount = 0;
-
-        spendTime(1,"X");
-        return;
-    }
-
-    // Vyčerpány 4 hody
-    if(state.bindingRollCount >= 4){
-        addLog("❌ Vyčerpány 4 hody");
-        showToast("❌ Bez výsledku", "warning");
-
-        state.bindingSearchIndex++;
-        state.bindingTrackPos = 0;
-        state.bindingRollCount = 0;
-        state.currentCheckPin = null;
-
-        render(); // OPRAVA: Tento render chyběl, proto tlačítko nezhaslo!
-        return;
-    }
-
-    addLog(
-        "➜ Pokračuj dalším hodem"
-    );
-}
 
 
 
@@ -1254,24 +1324,24 @@ function bindingSuccess() {
     pin.found = true;
     state.bindingFound++;
 
-    let logMsg = `✅ PIN ${pin.id} má hodnotu ${pin.bindingOrder}`;
-    addLog(logMsg);
+    addLog(t("logPinFound", pin.id, pin.bindingOrder));
+    let toastText = t("logPinFound", pin.id, pin.bindingOrder);
 
-    // Základ textu pro toast
-    let toastText = `✅ PIN ${pin.id} má hodnotu ${pin.bindingOrder}`;
-
-    // Kompletně vyčistíme stav testování AKTÁLNÍHO PIN před kontrolou konce fáze
+    // Vyčisti stav testování
     state.currentCheckPin = null;
-    state.bindingTrackPos = 0;
+    // NERESETUJ bindingTrackPos — token zůstane na ✓ dokud hráč neklikne Check Binding
     state.bindingRollCount = 0;
-    state.bindingSearchIndex++;
+    state.bindingDashPending = false;
 
-    // OPRAVA: Pokud nyní zbývá už jen 1 neodhalený pin, automaticky ho odhalíme
-    if (state.bindingFound === state.difficulty - 1) {
-        const lastPin = autoRevealLastPin(true); // předáme true, aby nevyhazoval vlastní toast
-        if (lastPin) {
-            // Přidáme informaci o posledním PIN do stejného toastu na nový řádek
-            toastText += `\n🔓 PIN ${lastPin.id} má hodnotu ${lastPin.bindingOrder}`;
+    // Pravidla: po úspěchu jdi na nejnižší nenastavenou (bottommost unset)
+    const bottommost = getBottommostUnsetPin();
+    state.bindingNextPinId = bottommost ? bottommost.id : null;
+
+    // Pokud zbývá jen 1 neodhalený pin — odhal automaticky
+    if(state.bindingFound === state.difficulty - 1){
+        const lastPin = autoRevealLastPin(true);
+        if(lastPin){
+            toastText += "\n" + t("logLastPinAuto", lastPin.id, lastPin.bindingOrder);
         }
     }
 
@@ -1288,12 +1358,12 @@ function autoRevealLastPin(calledFromSuccess = false) {
     lastPin.found = true;
     state.bindingFound++;
     
-    const logMsg = `🔓 Poslední PIN ${lastPin.id} automaticky odhalen má hodnotu ${lastPin.bindingOrder}`;
+    const logMsg = t("logLastPinAutoFull", lastPin.id, lastPin.bindingOrder);
     addLog(logMsg);
 
     // Pokud se funkce volá samostatně (mimo úspěšný hod), ukáže svůj vlastní toast
     if (!calledFromSuccess) {
-        showToast(`🔓 PIN ${lastPin.id} má hodnotu ${lastPin.bindingOrder}`, "success");
+        showToast(t("logLastPinAuto", lastPin.id, lastPin.bindingOrder), "success");
         render();
     }
     return lastPin;
@@ -1312,6 +1382,8 @@ function getNextPinToSet(){
 
 
 function startSettingPin(){
+	state.bindingPhaseFinished = true;
+	renderBindingTrack();
     if(state.gameOver) return;
     state.tensionRolls = 0;
 
@@ -1383,7 +1455,7 @@ function startSettingPin(){
     }
 
     // PŘIDÁNO: Zápis do logu včetně konkrétních hodnot kostek
-    addLog(`🎯 Nastavení PIN ${pin.id} [${pin.height}] 🎲 ${state.settingDice.join(", ")}`);
+    addLog(t("logSettingPin", pin.id, pin.height, state.settingDice.join(", ")));
 
     renderSetting();
     render();
@@ -1434,41 +1506,60 @@ function showConfirmToast(title, message, onConfirm){
 function usePowerReroll(){
     if(state.gameOver) return;
     if(!state.powers.reroll){
-        showToast("🎲 Přehodit již bylo použito", "warning");
+        showToast(t("toastRerollUsed"), "warning");
         return;
     }
-    // Lze použít pouze když jsou kostky k dispozici (nastavování nebo tension)
-    if(!state.currentSettingPin && !state.mustCheckTension){
-        showToast("🎲 Přehodit lze použít pouze během nastavování pinu nebo tension check", "warning");
+    
+    // Proměnná pro ověření fáze rozhodování u Binding Rollu
+    const isBindingDecision = state.currentCheckPin !== null && state.bindingRollCount >= 1;
+    
+    // Lze použít při nastavování, tension NEBO po 1. hodu na Binding
+    if(!state.currentSettingPin && !state.mustCheckTension && !isBindingDecision){
+        showToast(t("toastRerollWhen"), "warning");
         return;
     }
+    
     state.powerMode = "reroll";
-    showToast("🎲 Klikni na kostku kterou chceš přehodit", "info");
+    showToast(t("toastRerollClick"), "info");
     renderDiceClickable();
 }
-
 
 function usePowerModify(){
     if(state.gameOver) return;
     if(!state.powers.modify){
-        showToast("➕➖ Upravit hodnotu již bylo použito", "warning");
+        showToast(t("toastModifyUsed"), "warning");
         return;
     }
-    if(!state.currentSettingPin && !state.mustCheckTension){
-        showToast("➕➖ Upravit hodnotu lze použít pouze během nastavování pinu nebo tension check", "warning");
+    
+    const isBindingDecision = state.currentCheckPin !== null && state.bindingRollCount >= 1;
+    
+    if(!state.currentSettingPin && !state.mustCheckTension && !isBindingDecision){
+        showToast(t("toastModifyWhen"), "warning");
         return;
     }
+    
     state.powerMode = "modify";
-    showToast("➕➖ Klikni na kostku jejíž hodnotu chceš upravit (+1 nebo -1)", "info");
+    showToast(t("toastModifyClick"), "info");
     renderDiceClickable();
 }
 
 
 function renderDiceClickable(){
-    // Přidá onclick handlery na kostky pro výběr schopnosti
-    const area = document.getElementById("diceArea");
-    const dice = area.querySelectorAll(".die");
-    const diceToShow = state.mustCheckTension ? state.lastTensionDice : state.settingDice;
+    const isBindingDecision = state.currentCheckPin !== null && state.bindingRollCount >= 1;
+    
+    let area = document.getElementById("diceArea");
+    // Pokud jsme v Binding fázi, kostka může být vykreslena jinde, takže vyhledáme všechny kostky se třídou .die
+    let dice = isBindingDecision ? document.querySelectorAll(".die") : (area ? area.querySelectorAll(".die") : []);
+    
+    let diceToShow;
+    if (state.mustCheckTension) {
+        diceToShow = state.lastTensionDice;
+    } else if (isBindingDecision) {
+        // Zde používám pole state.dice (případně změň na state.bindingDice, pokud to máš u sebe pojmenované jinak)
+        diceToShow = [state.lastBindingDie]; 
+    } else {
+        diceToShow = state.settingDice;
+    }
 
     dice.forEach((die, index) => {
         die.style.outline = "2px solid #e05a2b";
@@ -1479,13 +1570,51 @@ function renderDiceClickable(){
 
 
 function syncDiceAfterPower(diceArray){
+    // Binding Roll
+    if(
+        state.currentCheckPin !== null &&
+        state.bindingRollCount > 0 &&
+        !state.mustCheckTension &&
+        !state.currentSettingPin
+    ){
+
+        const oldPos = state.bindingTrackPos;
+
+        const newDie = diceArray[0];
+
+        state.lastBindingDie = newDie;
+
+        state.bindingTrackPos =
+            state.bindingPrevPos +
+            newDie;
+
+        if(
+            state.bindingTrackPos >=
+            BINDING_TRACK.length
+        ){
+            state.bindingTrackPos =
+                BINDING_TRACK.length - 1;
+        }
+
+        renderBindingTrack();
+        renderDice();
+        render();
+
+        if(oldPos !== state.bindingTrackPos){
+            state.bindingDashPending = false;
+            evaluateBindingTrackPosition();
+        }
+
+        return;
+    }
+
     // Pro tension: synchronizuj lastTensionDice → state.dice (evaluateTension čte state.dice)
     if(state.mustCheckTension){
         state.dice = [...diceArray];
         state.lastTensionDice = [...diceArray];
         // Přepočítej a loguj nový součet
         const newTotal = state.dice.reduce((a,b)=>a+b,0);
-        addLog(`🔄 Nový součet po úpravě: ${newTotal}`);
+        addLog(t("logNewSum", newTotal));
         state.tensionLastTotal = newTotal;
     }
     // Pro setting: synchronizuj settingDice a obnov assignment hodnoty
@@ -1513,11 +1642,18 @@ function applyPowerToDie(index, diceArray){
     const mode = state.powerMode;
     state.powerMode = null;
 
+    const isBindingDecision =
+    state.currentCheckPin !== null &&
+    state.bindingRollCount > 0 &&
+    !state.mustCheckTension &&
+    !state.currentSettingPin;
+
     // Odstraň zvýraznění
     const area = document.getElementById("diceArea");
     area.querySelectorAll(".die").forEach(d => {
         d.style.outline = "";
         d.style.cursor = "";
+        d.onclick = null;
         if(state.mustCheckTension){
             const i = Array.from(area.querySelectorAll(".die")).indexOf(d);
             d.onclick = () => toggleHold(i);
@@ -1530,8 +1666,21 @@ function applyPowerToDie(index, diceArray){
         const newVal = rand(6) + 1;
         diceArray[index] = newVal;
         state.powers.reroll = false;
-        addLog(`🎲 Přehodit použit: kostka ${index+1} → ${newVal}`);
-        showToast(`🎲 Kostka ${index+1} přehozena na ${newVal}`, "success");
+        addLog(t("logRerollUsed", index+1, newVal));
+        showToast(t("toastRerolled", index+1, newVal), "success");
+    
+        if(isBindingDecision){
+
+    addLog(
+        `🎲 Binding Reroll: ${state.lastBindingDie} → ${newVal}`
+    );
+
+    showToast(
+        `🎲 ${state.lastBindingDie} → ${newVal}`,
+        "success"
+    );
+}
+
         syncDiceAfterPower(diceArray);
 
     } else if(mode === "modify"){
@@ -1539,14 +1688,14 @@ function applyPowerToDie(index, diceArray){
         if(cur === 1){
             diceArray[index] = 2;
             state.powers.modify = false;
-            addLog(`➕ Upravit použit: kostka ${index+1}: 1 → 2`);
-            showToast(`Kostka ${index+1} upravena na 2`, "success");
+            addLog(t("logModifyUsed", index+1, 1, 2));
+            showToast(t("toastModified", index+1, 2), "success");
             syncDiceAfterPower(diceArray);
         } else if(cur === 6){
             diceArray[index] = 5;
             state.powers.modify = false;
-            addLog(`➖ Upravit použit: kostka ${index+1}: 6 → 5`);
-            showToast(`Kostka ${index+1} upravena na 5`, "success");
+            addLog(t("logModifyUsed", index+1, 6, 5));
+            showToast(t("toastModified", index+1, 5), "success");
             syncDiceAfterPower(diceArray);
         } else {
             // Nabídni +1 nebo -1
@@ -1564,8 +1713,8 @@ function applyPowerToDie(index, diceArray){
                     dlg.remove();
                     diceArray[index] = cur + 1;
                     state.powers.modify = false;
-                    addLog(`➕ Upravit použit: kostka ${index+1}: ${cur} → ${cur+1}`);
-                    showToast(`Kostka ${index+1} upravena na ${cur+1}`, "success");
+                    addLog(t("logModifyUsed", index+1, cur, cur+1));
+                    showToast(t("toastModified", index+1, cur+1), "success");
                     syncDiceAfterPower(diceArray);
                 };
                 no.textContent = `-1 → ${cur-1}`;
@@ -1573,8 +1722,8 @@ function applyPowerToDie(index, diceArray){
                     dlg.remove();
                     diceArray[index] = cur - 1;
                     state.powers.modify = false;
-                    addLog(`➖ Upravit použit: kostka ${index+1}: ${cur} → ${cur-1}`);
-                    showToast(`Kostka ${index+1} upravena na ${cur-1}`, "success");
+                    addLog(t("logModifyUsed", index+1, cur, cur-1));
+                    showToast(t("toastModified", index+1, cur-1), "success");
                     syncDiceAfterPower(diceArray);
                 };
             }, 50);
@@ -1587,17 +1736,17 @@ function usePowerPick2(){
     if(state.gameOver) return;
 
     if(!state.powers.pick2){
-        showToast("↔ Pick 2 Away již bylo použito", "warning");
+        showToast(t("toastPick2Used"), "warning");
         return;
     }
 
     if(!state.currentSettingPin){
-        showToast("↔ Pick 2 Away lze použít pouze při nastavování pinu", "warning");
+        showToast(t("toastPick2Setting"), "warning");
         return;
     }
 
     if(!isReadyToEvaluate()){
-        showToast("↔ Pick 2 Away lze aktivovat až po přiřazení všech 4 kostek (bez červených průsečíků)", "warning");
+        showToast(t("toastPick2Ready"), "warning");
         return;
     }
 
@@ -1611,8 +1760,8 @@ function usePowerPick2(){
     btnPick2.style.background = "";
     btnPick2.style.color = "";
 
-    addLog("↔ Pick 2 Away aktivováno — 2 pohyby zdarma (A nebo B, libovolná kombinace)");
-    showToast("↔ Pick 2 Away aktivováno!\n2 pohyby průsečíků zdarma", "success");
+    addLog(t("logPick2Active"));
+    showToast(t("toastPick2Active"), "success");
 
     render();
 }
@@ -1620,33 +1769,55 @@ function usePowerPick2(){
 
 function assignDie(dieIndex, target){
 
-    if(state.gameOver)
-        return;
-
-    // Pokud je už tato kostka použitá, nic nedělej
-    if(state.usedDice.includes(dieIndex)){
-        return;
-    }
+    if(state.gameOver) return;
 
     if(!state.usedTargets) state.usedTargets = {};
 
-    // BONUS: Pokud už nějaká JINÁ kostka obsadila tento cíl (např. A-R), 
-    // uvolníme ji a zrušíme její obarvení, abyste ji mohli použít znovu.
-    for (let key in state.usedTargets) {
-        if (state.usedTargets[key] === target) {
+    // Pokud jsou už všechny 4 targety obsazeny — zamčeno, nelze měnit
+    const assignedCount = Object.keys(state.usedTargets).length;
+    const allAssigned = assignedCount >= 4;
+    if(allAssigned && state.usedTargets[dieIndex] !== target){
+        showToast(t("toastAssignmentLocked"), "warning");
+        return;
+    }
+
+    // Kliknutí na již vybrané tlačítko = odznačení (jen pokud není zamčeno)
+    if(state.usedTargets[dieIndex] === target){
+        if(allAssigned){
+            showToast(t("toastAssignmentLocked"), "warning");
+            return;
+        }
+        delete state.usedTargets[dieIndex];
+        state.usedDice = state.usedDice.filter(id => id !== dieIndex);
+        state.assignment[target] = null;
+        renderSetting();
+        renderGrid();
+        render();
+        return;
+    }
+
+    // Pokud tato kostka už byla přiřazena jinam — přeřaď (jen pokud není zamčeno)
+    if(state.usedTargets[dieIndex]){
+        const oldTarget = state.usedTargets[dieIndex];
+        state.assignment[oldTarget] = null;
+        delete state.usedTargets[dieIndex];
+        state.usedDice = state.usedDice.filter(id => id !== dieIndex);
+    }
+
+    // Pokud jiná kostka obsadila tento cíl — uvolni ji
+    for(let key in state.usedTargets){
+        if(state.usedTargets[key] === target){
             delete state.usedTargets[key];
             state.usedDice = state.usedDice.filter(id => id !== parseInt(key));
         }
     }
 
-    // Zapsání nové kostky a cíle
     state.usedDice.push(dieIndex);
     state.assignment[target] = state.settingDice[dieIndex];
-    state.usedTargets[dieIndex] = target; // Uložení barvy tlačítka
+    state.usedTargets[dieIndex] = target;
 
     renderSetting();
     renderGrid();
-    // PŘIDÁNO: Překreslí celou hru, takže tlačítko "Vyhodnotit" může hned zezelenat
     render();
 }
 
@@ -1659,10 +1830,11 @@ function renderSetting(){
 
     if(!pin){
         headerDiv.innerHTML = "";
-        div.innerHTML = "Neaktivní";
+        div.innerHTML = t("inactive");
         assignDiv.innerHTML = "";
         return;
     }
+
 
     // 1. Zápis do sdíleného řádku s "Setting PIN"
     headerDiv.innerHTML = `PIN ${pin.id}`;
@@ -1670,8 +1842,8 @@ function renderSetting(){
     // 2. Cílová výška a planžeta sdílí jeden řádek pod tím
     div.innerHTML = `
         <div style="display: flex; justify-content: space-between;">
-            <span>Cílová výška: <b>${pin.height}</b></span>
-            <span>Bonus planžety: <b>${state.pickModifier}</b></span>
+            <span>${t("targetHeight")}: <b>${pin.height}</b></span>
+            <span>${t("pickBonus")}: <b>${state.pickModifier >= 0 ? '+' : ''}${state.pickModifier}</b></span>
         </div>
     `;
 
@@ -1690,32 +1862,29 @@ function renderSetting(){
         ];
 
         let buttonsHtml = "";
+        const totalAssigned = Object.keys(state.usedTargets || {}).length;
+        const allAssigned = totalAssigned >= 4;
+
         targets.forEach(tgt => {
-            // Kontrola, zda bylo stisknuto právě toto tlačítko u této kostky
             const isSelected = (state.usedTargets && state.usedTargets[index] === tgt.id);
-            
-        // Podbarvení zelenou barvou a modrou barvou, zčernání písma pro čitelnost
-        let style = "";
+            let style = "";
+            let disabled = "";
 
-        if(isSelected){
+            if(isSelected){
+                if(tgt.id === "aRow" || tgt.id === "aCol"){
+                    style = "background-color:#2e7d32;color:#fff;font-weight:bold;";
+                } else {
+                    style = "background-color:#1565c0;color:#fff;font-weight:bold;";
+                }
+            }
 
-        if(
-        tgt.id === "aRow" ||
-        tgt.id === "aCol"
-        ){
-        style =
-            "background-color:#2e7d32;color:#000;font-weight:bold;";
-        }
-         else{
-       style =
-            "background-color:#1565c0;color:#000;font-weight:bold;";
-       }
-       }
+            // Po zamčení (všechny 4 přiřazeny) — neoznačené buttony jsou disabled
+            if(allAssigned && !isSelected){
+                disabled = "disabled";
+                style += "opacity:0.35;cursor:not-allowed;";
+            }
 
-           // Podbarvení pastelově zelenou barvou a zčernání písma pro čitelnost
-          //  const style = isSelected ? "background-color: #a5d6a7; color: #000; font-weight: bold;" : "";
-            
-            buttonsHtml += `<button class="assign-btn" style="${style}" onclick="assignDie(${index},'${tgt.id}')">${tgt.label}</button>\n`;
+            buttonsHtml += `<button class="assign-btn" style="${style}" ${disabled} onclick="assignDie(${index},'${tgt.id}')">${tgt.label}</button>\n`;
         });
 
         row.innerHTML = `🎲 ${value} &nbsp; ${buttonsHtml}`;
@@ -1745,12 +1914,11 @@ function renderGrid(){
     // --- 1. Generování tabulky průsečíků ---
     let html = "<table class='setting-grid'>";
     html += "<tr><th></th>";
-
-    for(let c=1;c<=6;c++){ html += "<th>"+c+"</th>"; }
+    for(let c=1;c<=6;c++){ html += `<th>${DICE_SVG[c]}</th>`; }
     html += "</tr>";
 
     for(let r=0;r<6;r++){
-        html += "<tr><th>"+(r+1)+"</th>";
+        html += `<tr><th>${DICE_SVG[r+1]}</th>`;
         for(let c=0;c<6;c++){
             let cls="";
             
@@ -1822,7 +1990,7 @@ function renderGrid(){
         if(blockedA || blockedB){
 
             showToast(
-                "Tato buňka je uzavřena",
+                t("toastBlockedCell"),
                 "warning"
             );
 }
@@ -1866,37 +2034,33 @@ if(
 
     <hr>
 
-    <div style="margin-top:8px">
+        <div style="margin-top:8px">
 
         <b>A</b>
 
-        <button class="dir-btn" onclick="moveIntersection('A','up')">↑</button>
-        <button class="dir-btn" onclick="moveIntersection('A','down')">↓</button>
-        <button class="dir-btn" onclick="moveIntersection('A','left')">←</button>
-        <button class="dir-btn" onclick="moveIntersection('A','right')">→</button>
+        <button class="dir-btn" onclick="moveIntersection('A','up')" ${state.mustCheckTension ? 'disabled' : ''}>↑</button>
+        <button class="dir-btn" onclick="moveIntersection('A','down')" ${state.mustCheckTension ? 'disabled' : ''}>↓</button>
+        <button class="dir-btn" onclick="moveIntersection('A','left')" ${state.mustCheckTension ? 'disabled' : ''}>←</button>
+        <button class="dir-btn" onclick="moveIntersection('A','right')" ${state.mustCheckTension ? 'disabled' : ''}>→</button>
 
         <br><br>
 
         <b>B</b>
 
-        <button class="dir-btn" onclick="moveIntersection('B','up')">↑</button>
-        <button class="dir-btn" onclick="moveIntersection('B','down')">↓</button>
-        <button class="dir-btn" onclick="moveIntersection('B','left')">←</button>
-        <button class="dir-btn" onclick="moveIntersection('B','right')">→</button>
+        <button class="dir-btn" onclick="moveIntersection('B','up')" ${state.mustCheckTension ? 'disabled' : ''}>↑</button>
+        <button class="dir-btn" onclick="moveIntersection('B','down')" ${state.mustCheckTension ? 'disabled' : ''}>↓</button>
+        <button class="dir-btn" onclick="moveIntersection('B','left')" ${state.mustCheckTension ? 'disabled' : ''}>←</button>
+        <button class="dir-btn" onclick="moveIntersection('B','right')" ${state.mustCheckTension ? 'disabled' : ''}>→</button>
 
         <br><br>
 
-      Cena pohybu:
-<b>${getTensionCost()}</b>
+      ${t("moveCost")}: <b>${getTensionCost()}</b>
 
-${
-    state.freeMoveRemaining > 0
-    ? `<br>↔ Zdarma: ${state.freeMoveRemaining}`
-    : ""
-}
+${state.freeMoveRemaining > 0 ? `<br>↔ ${t("free")}: ${state.freeMoveRemaining}` : ""}
 
     </div>
     `;
+
 
 }else{
 
@@ -1944,7 +2108,7 @@ function calculateIntersections(){
     ){
 
         addLog(
-            "Nejsou přiřazeny všechny kostky"
+            t("logNotAllAssigned")
         );
 
         return false;
@@ -2007,7 +2171,7 @@ function evaluateSetting(){
     const blockedB = state.blockedCells.some(cell => cell.row === a.bRow && cell.col === a.bCol);
     
     if (blockedA || blockedB) {
-        showToast("Nelze vyhodnotit, používáte zablokovanou buňku!", "error");
+        showToast(t("toastBlockedCell"), "error");
         return; // ZDE je return správně, protože zastaví logiku vyhodnocení (nepustí hráče dál)
     }
 
@@ -2020,15 +2184,11 @@ function evaluateSetting(){
         return;
 
     addLog(
-        "A=" +
-        state.intersectionA +
-        " B=" +
-        state.intersectionB
+        t("logAB", state.intersectionA, state.intersectionB)
     );
 
     addLog(
-        "Total=" +
-        state.settingTotal
+        t("logTotal", state.settingTotal)
     );
 
     // =========================
@@ -2063,13 +2223,11 @@ function evaluateSetting(){
         state.currentSettingPin = null;
 
         addLog(
-            "✅ PIN " +
-            pin.id +
-            " nastaven"
+            t("logPinSet", pin.id)
         );
 
         showToast(
-            `✅ PIN ${pin.id} nastaven`,
+            t("logPinSet", pin.id),
             "success"
         );
 
@@ -2097,13 +2255,10 @@ function evaluateSetting(){
     // =========================
 
     addLog(
-        "⬇ Výška příliš malá"
+        t("logTooLow")
     );
 
-    showToast(
-        "⬇ Výška příliš malá",
-        "warning"
-    );
+    showToast(t("logTooLow"), "warning");
 
     // použité průsečíky jsou trvale vyřazeny
     blockUsedIntersections();
@@ -2167,16 +2322,15 @@ function oversetPins(){
 
     spendTime(1,"O");
 
-    addLog("💥 OVERSET");
+    addLog(t("logOverset"));
 
     showToast(
-        "💥 OVERSET!",
+        t("toastOverset"),
         "error"
     );
 
     addLog(
-        "↻ Nový pokus o nastavení PIN " +
-        pin.id
+        t("logRetryPin", pin.id)
     );
 
     render();
@@ -2198,10 +2352,10 @@ function checkVictory(){
     state.gameOver = true;
 
     addLog(
-        "🔓 Zámek otevřen"
+        t("logUnlocked")
     );
     showToast(
-    "🔓 Zámek otevřen!",
+    t("toastUnlocked"),
     "success"
 );
 
@@ -2226,7 +2380,7 @@ function calculateScore(){
     score += setPinsScore;
 
     details.push(
-        `• Závěrky (${setPinsCount}x8): ${setPinsScore} b`
+        t("scorePins", setPinsCount, setPinsScore)
     );
 
     const timeRemaining =
@@ -2238,7 +2392,7 @@ function calculateScore(){
     score += timeRemaining;
 
     details.push(
-        `• Ušetřený čas (${timeRemaining}x1): ${timeRemaining} b`
+        t("scoreTime", timeRemaining)
     );
 
     const abilities =
@@ -2252,7 +2406,7 @@ function calculateScore(){
     score += abilityScore;
 
     details.push(
-        `• Nepoužité schopnosti (${abilities}x5): ${abilityScore} b`
+        t("scoreAbilities", abilities, abilityScore)
     );
 
     const lowPinsCount =
@@ -2271,7 +2425,7 @@ function calculateScore(){
     score += lowPinsScore;
 
     details.push(
-        `• Piny výšky 2-3 (${lowPinsCount}x5): ${lowPinsScore} b`
+        t("scoreLowPins", lowPinsCount, lowPinsScore)
     );
 
     const tensionScore =
@@ -2282,7 +2436,7 @@ function calculateScore(){
     score += tensionScore;
 
     details.push(
-        `• Napětí na středu: ${tensionScore} b`
+        t("scoreTension", tensionScore)
     );
 
     const resetScore =
@@ -2293,7 +2447,7 @@ function calculateScore(){
     score += resetScore;
 
     details.push(
-        `• Žádný reset pinů: ${resetScore} b`
+        t("scoreNoReset", resetScore)
     );
 
     score = Math.min(
@@ -2306,8 +2460,7 @@ function calculateScore(){
     render();
 
     addLog(
-        `🏆 KONEČNÉ SKÓRE: ${score} / 100\n`
-        + details.join("\n")
+        t("logFinalScore", score) + "\n" + details.join("\n")
     );
 }
 
@@ -2322,8 +2475,7 @@ function setPick(value){
         value;
 
     addLog(
-        "🔧 Pick "
-        + value
+        t("logPick", value)
     );
 
     renderSetting();
@@ -2357,8 +2509,8 @@ function usePowerPick2(){
     btnPick2.style.background = "";
     btnPick2.style.color = "";
 
-    addLog("↔ Pick 2 Away aktivováno — 2 pohyby zdarma (A nebo B, libovolná kombinace)");
-    showToast("↔ Pick 2 Away aktivováno!\n2 pohyby průsečíků zdarma", "success");
+    addLog(t("logPick2Active"));
+    showToast(t("toastPick2Active"), "success");
 
     render();
 }
@@ -2469,21 +2621,22 @@ function finishTension(){
     [false,false,false,false];
 
     addLog(
-        "⚙ Tension Check dokončen"
+        t("logTensionDone")
     );
-
+    renderGrid();
 
     if(state.lastAction === "setting"){
-        addLog("↩ Návrat k nastavování PIN");
+        addLog(t("logReturnSetting"));
     }
     else if(state.lastAction === "binding"){
-        addLog("↩ Návrat ke kontrole PIN");
+        addLog(t("logReturnBinding"));
     }
 
     state.lastAction = null;
 
     render();
     renderDice();
+    
 }
 
 function rollTensionDice(){
@@ -2525,7 +2678,7 @@ function moveIntersection(which, dir) {
             state.pick2Active = false;
             state.pick2MovesRemaining = 0;
         }
-        addLog(`↔ Pick 2 Away: pohyb zdarma (zbývá ${state.pick2MovesRemaining})`);
+        addLog(t("logPick2Move", state.pick2MovesRemaining));
     } else {
         // Normální posun: stojí tension cost časových kroků
         const cost = getTensionCost();
@@ -2570,11 +2723,11 @@ function moveIntersection(which, dir) {
 
         const costText =
             moveByTwo
-            ? "zdarma"
-            : `${getTensionCost()} ⏱`;
+            ? t("free")
+            : t("tensionCostStr", getTensionCost());
 
         addLog(
-            `↔ ${which}: (${oldRow},${oldCol}) → (${row},${col}) [${costText}]`
+            t("logMoveIntersection", which, oldRow, oldCol, row, col, costText)
         );
     }
 
@@ -2616,17 +2769,14 @@ function tensionOutOfRange(){
     spendTime(1,"O");
 
     addLog(
-        "⚠ Napětí mimo rozsah"
+        t("logTensionOutOfRange")
     );
 
     addLog(
-        "⚠ Reset všech PIN"
+        t("logResetPins")
     );
 
-    showToast(
-        "⚠ Reset všech PIN",
-        "error"
-    );
+    showToast(t("logResetPins"), "error");
 
     render();
     renderSetting();
@@ -2670,7 +2820,7 @@ function evaluateTension(){
     if(pos >= 10){
 
         addLog(
-            "⚠ Řádek napětí vyčerpán"
+            t("logTensionRowFull")
         );
 
         return;
@@ -2682,8 +2832,7 @@ function evaluateTension(){
 		
 
 	addLog(
-		"📍 Symbols = " +
-		effect
+		t("logTensionSymbol", effect)
 	);	
 
     state.tensionUsed[trackIndex]++;
@@ -2693,8 +2842,7 @@ function evaluateTension(){
 	const gaugeValues = [3,2,1,2,3];
 
 addLog(
-    "📍 Napětí = " +
-    gaugeValues[state.tensionPos]
+    t("logTensionPos", gaugeValues[state.tensionPos])
 );
 
 
@@ -2771,9 +2919,12 @@ function newGame(pinCount){
     state.bindingSearchIndex = 0;
     state.bindingFound = 0;
     state.currentCheckPin = null;
+    state.bindingNextPinId = null;
+    state.bindingDashPending = false;
     state.lastBindingDie = null;
     state.intersectionA = null;
     state.intersectionB = null;
+	state.bindingPhaseFinished = false;
     state.pick2Active = false;
     state.pick2MovesRemaining = 0;
     state.powerMode = null;
@@ -2786,6 +2937,16 @@ function newGame(pinCount){
     state.log = [];
 
     const deck = [...PIN_DECK];
+
+   // Vyčisti DOM panely Setting PIN
+    document.getElementById("gridArea").innerHTML = "";
+    document.getElementById("calcArea").innerHTML = "";
+    document.getElementById("assignmentArea").innerHTML = "";
+    document.getElementById("intersectionControls").innerHTML = "";
+    document.getElementById("settingPinHeader").innerHTML = "";
+    const si = document.getElementById("settingInfo");
+    if(si){ si.innerHTML = t("inactive"); si.setAttribute("data-i18n","inactive"); }
+  
 
     shuffle(deck);
 
@@ -2815,18 +2976,54 @@ function newGame(pinCount){
         });
     }
 
-    addLog(
-        `🔒 Nová hra (${pinCount} pinů)`,
-        false
+  addLog(
+    t("logNewGame", pinCount),
+    false
     );
 
     render();
     renderSetting();
+   //applyTranslations();
+
 }
 
 
-function render(){
+function renderBindingTrack(){
+    const panel = document.getElementById("bindingTrackPanel");
+    const el = document.getElementById("bindingTrackDisplay");
+    if(!el) return;
 
+    // Panel skrýt pokud neprobíhá binding fáze
+    const isBinding = !state.allBindingsFound && !state.currentSettingPin && !state.gameOver;
+    const allFound = state.bindingFound >= state.difficulty - 1;
+    panel.style.display =  state.bindingPhaseFinished ? "none" : "block";
+
+    const pos = state.bindingTrackPos; // aktuální pozice tokenu (0 = start)
+
+    let html = "";
+    // Pole 1–24 (index 1–24 v BINDING_TRACK)
+    for(let i = 1; i <= 24; i++){
+        const sym = BINDING_TRACK[i];
+        const isCurrent = (pos === i);
+        const isPassed  = (pos > i && pos > 0);
+
+        let symIcon = "";
+        let typeClass = "";
+        if(sym === "CHECK"){ symIcon = "✓"; typeClass = "bt-check"; }
+        else if(sym === "TIME"){ symIcon = "⏱"; typeClass = "bt-time"; }
+        else if(sym === "-"){ symIcon = "—"; typeClass = "bt-dash"; }
+
+        const currentClass = isCurrent ? " bt-current" : "";
+        const passedClass  = isPassed  ? " bt-passed"  : "";
+
+        html += `<div class="bt-cell${currentClass}${passedClass} ${typeClass}">
+            <span class="bt-num">${i}</span>${symIcon}
+        </div>`;
+    }
+    el.innerHTML = html;
+}
+
+function render(){
     document.getElementById("timeText")
         .textContent =
         state.time + "";
@@ -2841,6 +3038,7 @@ function render(){
     renderGauge();
 	renderTensionTracks();
     renderTimeTrack();
+    renderBindingTrack();
     renderDice();
 
 
@@ -2852,10 +3050,24 @@ function render(){
                 state.gameOver;
         });
 
-const isCheckingBinding = state.currentCheckPin !== null;
-    const allBindingsFound = state.bindingFound >= state.difficulty;
+    const isCheckingBinding = state.currentCheckPin !== null;
+    const isDashPending = state.bindingDashPending === true;
+    const allBindingsFound = state.bindingFound >= state.difficulty - 1;
     const isSettingPin = state.currentSettingPin !== null;
     const inTension = state.mustCheckTension;
+
+    const assignmentComplete =
+    state.assignment.aRow !== null &&
+    state.assignment.aCol !== null &&
+    state.assignment.bRow !== null &&
+    state.assignment.bCol !== null;
+    
+    const canUseDicePowers =
+    (
+        state.currentSettingPin &&
+        !assignmentComplete
+    ) ||
+    inTension;    
 
 if(inTension){
 
@@ -2878,15 +3090,37 @@ if(inTension){
 }
 
 
-    // Uzamknutí herních tlačítek podle fáze hry nebo při jejím KONCI
-    document.getElementById("btnCheckBinding").disabled = state.gameOver || inTension || isCheckingBinding || allBindingsFound;
-    document.getElementById("btnBindingRoll").disabled  = state.gameOver || inTension || !isCheckingBinding;
+    // Uzamknutí a zbarvení binding tlačítek
+    const btnCB = document.getElementById("btnCheckBinding");
+    const btnBR = document.getElementById("btnBindingRoll");
+
+    btnCB.disabled = state.gameOver || inTension || (isCheckingBinding && !isDashPending) || allBindingsFound;
+    btnBR.disabled = state.gameOver || inTension || !isCheckingBinding;
+
+    // Při dashPending: obě tlačítka zelená + aktualizace labelů
+    if(isDashPending && !inTension && !state.gameOver){
+        btnCB.style.background = "#2e7d32";
+        btnCB.style.color = "white";
+        btnCB.textContent = t("bindingSkipBtn");
+        btnBR.style.background = "#1565c0";
+        btnBR.style.color = "white";
+        btnBR.textContent = t("bindingRollAgainBtn");
+    } else {
+        btnCB.style.background = "";
+        btnCB.style.color = "";
+        btnCB.textContent = t("checkBinding");
+        btnBR.style.background = "";
+        btnBR.style.color = "";
+        btnBR.textContent = t("bindingRoll");
+    }
     document.getElementById("btnSetPin").disabled       = state.gameOver || inTension || !allBindingsFound || isSettingPin;
     // btnFinishTension: aktivní až po 1. hodu tension
     document.getElementById("btnFinishTension").disabled = state.gameOver || !inTension || state.tensionRolls < 1;
     // Přehodit a +-1: dostupné jen během nastavování nebo tension, jinak disabled
-    document.getElementById("btnPowerReroll").disabled = !state.powers.reroll || state.gameOver || (!state.currentSettingPin && !inTension);
-    document.getElementById("btnPowerModify").disabled = !state.powers.modify || state.gameOver || (!state.currentSettingPin && !inTension);
+    document.getElementById("btnPowerReroll").disabled = !state.powers.reroll || state.gameOver || (!state.currentSettingPin && !inTension) ||
+    !canUseDicePowers;;
+    document.getElementById("btnPowerModify").disabled = !state.powers.modify || state.gameOver || (!state.currentSettingPin && !inTension) ||
+    !canUseDicePowers;;
 
     // Pick 2: aktivní a zelené až když jsou všechny 4 kostky přiřazeny, průsečíky OK, a není tension check
     const btnPick2 = document.getElementById("btnPowerPick2");
@@ -2902,6 +3136,30 @@ if(inTension){
         btn.style.background = pickReady ? "#2e7d32" : "";
         btn.style.color = pickReady ? "white" : "";
     });
+
+
+    // Přehodit a +-1: aktivní a zelené po Set PIN a není tension check
+const rerollBtn = document.getElementById("btnPowerReroll");
+    const modifyBtn = document.getElementById("btnPowerModify");
+
+    // Identifikace, že jsme zrovna v pauze po prvním hodu na Binding
+    const isBindingDecision = state.currentCheckPin !== null && state.bindingRollCount >= 1;
+
+    // Tlačítka jsou "Ready", pokud hra neskončila a je platný Setting PIN nebo Binding Decision
+    const dicePowerReady = (!state.gameOver) && (canUseDicePowers || isBindingDecision);
+
+    // Odemčení / Zamčení tlačítek
+    if (rerollBtn) {
+        rerollBtn.disabled = !(dicePowerReady && state.powers.reroll);
+        rerollBtn.style.background = dicePowerReady && state.powers.reroll ? "#2e7d32" : "";
+        rerollBtn.style.color = dicePowerReady && state.powers.reroll ? "white" : "";
+    }
+
+    if (modifyBtn) {
+        modifyBtn.disabled = !(dicePowerReady && state.powers.modify);
+        modifyBtn.style.background = dicePowerReady && state.powers.modify ? "#2e7d32" : "";
+        modifyBtn.style.color = dicePowerReady && state.powers.modify ? "white" : "";
+    }
 
     const btnTension = document.getElementById("btnTensionRoll");
     if(btnTension){
@@ -2940,6 +3198,8 @@ if(inTension){
 
     updateHints();
 }
+
+
 
 
 
@@ -3161,7 +3421,7 @@ function updateHints() {
 
     // Zjištění aktuálních fází hry
     const isCheckingBinding = state.currentCheckPin !== null;
-    const allBindingsFound = state.bindingFound >= state.difficulty;
+    const allBindingsFound = state.bindingFound >= state.difficulty - 1;
     const isSettingPin = state.currentSettingPin !== null;
     
     // Zjistíme, zda už hráč přiřadil všechny 4 kostky (souřadnice)
@@ -3359,10 +3619,10 @@ function showToast(text, type="info") {
 
 
 function showHelp(){
-
-    document.getElementById(
-        "helpModal"
-    ).style.display = "block";
+    // Naplň obsah nápovědy aktuálním jazykem
+    document.getElementById("helpModalTitle").textContent = t('helpTitle');
+    document.getElementById("helpModalBody").innerHTML = t('helpBody');
+    document.getElementById("helpModal").style.display = "block";
 }
 
 function hideHelp(){
@@ -3415,6 +3675,517 @@ function clearLog(){
 
     autoSave();
 }
+
+// SVG piktogramy kostek pro záhlaví mřížky
+const DICE_SVG = {
+    1: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2" fill="currentColor"/></svg>`,
+    2: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+    3: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="10" cy="10" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+    4: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="14" cy="6" r="2" fill="currentColor"/><circle cx="6" cy="14" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+    5: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="14" cy="6" r="2" fill="currentColor"/><circle cx="10" cy="10" r="2" fill="currentColor"/><circle cx="6" cy="14" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+    6: `<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="5" r="2" fill="currentColor"/><circle cx="14" cy="5" r="2" fill="currentColor"/><circle cx="6" cy="10" r="2" fill="currentColor"/><circle cx="14" cy="10" r="2" fill="currentColor"/><circle cx="6" cy="15" r="2" fill="currentColor"/><circle cx="14" cy="15" r="2" fill="currentColor"/></svg>`,
+};
+const TRANSLATIONS = {
+    cs: {
+        // UI panely
+        pins:            "PIN",
+        time:            "Časomíra",
+        tensionGauge:    "Měřidlo napětí",
+        tensionTracks:   "Tabulky napětí",
+        dice:            "Kostky",
+        settingPin:      "Nastavení závěrky",
+        log:             "Log",
+        inactive:        "Neaktivní",
+        targetHeight:    "Cílová výška",
+        pickBonus:       "Modifikátor hrotu",
+        // Tlačítka
+        game4:           "Hra 4 PIN",
+        game5:           "Hra 5 PIN",
+        game6:           "Hra 6 PIN",
+        tensionRoll:     "Tension Roll",
+        setPin:          "Set PIN",
+        evaluate:        "Vyhodnotit",
+        confirmTension:  "Potvrdit napětí",
+        checkBinding:    "Check Binding",
+        bindingRoll:     "Binding Roll",
+        powerReroll:     "🎲 Přehodit",
+        powerModify:     "➕➖ 1",
+        powerPick2:      "↔ Pick 2",
+        // Topbar
+        titleSave:       "Uložit",
+        titleLoad:       "Načíst",
+        titleDelete:     "Smazat save",
+        titleHelp:       "Nápověda",
+        // Lang btn
+        langFlag:        "🇬🇧",
+        langTitle:       "Switch to English",
+        // Confirm dialog
+        confirmNewGameTitle: (n) => `Spustit novou hru (${n} piny)?`,
+        confirmNewGameMsg:   "⚠ Data stávající hry budou nenávratně ztracena!",
+        confirmYes:      "ANO, spustit",
+        confirmNo:       "Zrušit",
+        // Log a toast texty
+        logNewGame:         "🔒 Nová hra",
+        logTime:           (n) => `🕐 Čas = ${n}`,
+        logTensionSlot:    (n) => `⚙ TENSION SLOT ${n}`,
+        toastTensionCheck: "⚙ Proveď Tension Check",
+        logTimeUp:         "⌛ Vypršel čas",
+        toastGameOver:     (n) => `⌛ Konec hry (${n}/30)`,
+        logGameOver:       "🏁 Konec hry",
+        toastTensionFirst: "⚙ Nejprve proveď Tension Check",
+        toastNoBinding:    "Neprobíhá kontrola PIN",
+        logBindingRoll:    (r, d) => `Binding Roll ${r}/4: 🎲 ${d}`,
+        logTimePenalty:    "⏱ Časová penalizace",
+        logRollsExhausted: "❌ Vyčerpány 4 hody — přechod na další závěrku",
+        toastNoResult:     "❌ Bez výsledku — přechod na další závěrku",
+        logContinueRoll:   "— Vyber: hodit znovu, další PIN,\npřehodit kostku nebo +-1",
+        logBindingSkip:    "➜ Přechod na další závěrku",
+        bindingTrackTitle: "Binding Track (token na pozici)",
+        bindingRollAgainBtn: "🎲 Hodit znovu",
+        bindingSkipBtn:     "Další PIN",
+        logTopmostPin:     (id) => `⚠ PIN ${id} je nejvyšší (topmost) — R penalizace, přechod na nejnižší nenastavenou`,
+        logPinFound:       (id, val) => `✅ PIN ${id} má hodnotu ${val}`,
+        logLastPinAuto:    (id, val) => `🔓 PIN ${id} má hodnotu ${val}`,
+        logLastPinAutoFull:(id, val) => `🔓 Poslední PIN ${id} automaticky odhalen, hodnota ${val}`,
+        logCheckPin:       (id) => `🔎 Kontrola PIN ${id}`,
+        logReturnPins:     "🔄 Návrat k předchozím nenastaveným pinům",
+        logSettingPin:     (id, h, d) => `🎯 Nastavení PIN ${id} [${h}] 🎲 ${d}`,
+        logNotAllAssigned: "Nejsou přiřazeny všechny kostky",
+        logAB:             (a, b) => `A=${a} B=${b}`,
+        logTotal:          (t) => `Total=${t}`,
+        logPinSet:         (id) => `✅ PIN ${id} nastaven`,
+        logTooLow:         "⬇ Výška příliš malá",
+        toastBlockedCell:  "Tato buňka je uzavřena — posuň průsečík!",
+        toastAssignmentLocked: "Přiřazení je zamčeno — všechny 4 kostky jsou již přiřazeny. Spusť nový Set PIN.",
+        logOverset:        "💥 OVERSET",
+        toastOverset:      "💥 OVERSET!",
+        logRetryPin:       (id) => `↻ Nový pokus o nastavení PIN ${id}`,
+        logUnlocked:       "🔓 Zámek otevřen",
+        toastUnlocked:     "🔓 Zámek otevřen!",
+        logTensionDone:    "⚙ Tension Check dokončen",
+        logReturnSetting:  "↩ Návrat k nastavování PIN",
+        logReturnBinding:  "↩ Návrat ke kontrole PIN",
+        logTensionSymbol:  (e) => `📍 Symbol = ${e}`,
+        logTensionPos:     (v) => `📍 Napětí = ${v}`,
+        logTensionRowFull: "⚠ Řádek napětí vyčerpán",
+        logTensionOutOfRange: "⚠ Napětí mimo rozsah",
+        logResetPins:      "⚠ Reset všech PIN",
+        logPick:           (v) => `🔧 Pick ${v >= 0 ? '+' : ''}${v}`,
+        logPick2Active:    "↔ Pick 2 aktivováno — 2 pohyby zdarma",
+        toastPick2Active:  "↔ Pick 2 aktivováno!\n2 pohyby průsečíků zdarma",
+        toastPick2Used:    "↔ Pick 2 již bylo použito",
+        toastPick2Setting: "↔ Pick 2 lze použít pouze při nastavování pinu",
+        toastPick2Ready:   "↔ Pick 2 lze aktivovat až po přiřazení všech 4 kostek (bez červených průsečíků)",
+        logPick2Move:      (r) => `↔ Pick 2: pohyb zdarma (zbývá ${r})`,
+        logMoveIntersection: (w, r1, c1, r2, c2, cost) => `↔ ${w}: (${r1},${c1}) → (${r2},${c2}) [${cost}]`,
+        free:              "zdarma",
+        moveCost:          "Cena pohybu",
+        tensionCostStr:    (c) => `${c} ⏱`,
+        toastRerollUsed:   "🎲 Přehodit již bylo použito",
+        toastRerollWhen:   "🎲 Přehodit lze použít pouze při nastavování nebo tension check",
+        toastRerollClick:  "🎲 Klikni na kostku kterou chceš přehodit",
+        toastModifyUsed:   "➕➖ Upravit hodnotu již bylo použito",
+        toastModifyWhen:   "➕➖ Upravit hodnotu lze použít pouze při nastavování nebo tension check",
+        toastModifyClick:  "➕➖ Klikni na kostku jejíž hodnotu chceš upravit (+1 nebo -1)",
+        logRerollUsed:     (i, v) => `🎲 Přehodit použit: kostka ${i} → ${v}`,
+        toastRerolled:     (i, v) => `🎲 Kostka ${i} přehozena na ${v}`,
+        logModifyUsed:     (i, a, b) => `${b > a ? '➕' : '➖'} Upravit použit: kostka ${i}: ${a} → ${b}`,
+        toastModified:     (i, v) => `Kostka ${i} upravena na ${v}`,
+        logNewSum:         (s) => `🔄 Nový součet po úpravě: ${s}`,
+        scorePins:         (n, p) => `• Závěrky (${n}×8): ${p} b`,
+        scoreTime:         (n) => `• Ušetřený čas (${n}×1): ${n} b`,
+        scoreAbilities:    (n, p) => `• Nepoužité schopnosti (${n}×5): ${p} b`,
+        scoreLowPins:      (n, p) => `• Závěrky výšky 2–3 (${n}×5): ${p} b`,
+        scoreTension:      (p) => `• Napětí na středu: ${p} b`,
+        scoreNoReset:      (p) => `• Bez resetu závěrek: ${p} b`,
+        logFinalScore:     (s) => `🏆 KONEČNÉ SKÓRE: ${s} / 100`,
+        logNewGame: (n) => `🔒 Nová hra (${n} PIN)`,
+        //Help
+        helpTitle:          "Lock Pick - Nápověda",    
+        helpBody: `
+<h3>🎯 Cíl hry</h3>
+<p>Byl jsi neprávem uvězněn. Máš 5 minut (30 časových kroků), než se vrátí strážci. Nastav všechny závěrky zámku na správnou výšku a unikni!</p>
+
+<h3>⏱ Časomíra</h3>
+<p>Každá akce spotřebuje 1 nebo více časových kroků. Červeně podbarvená políčka spouštějí <b>Tension Check</b>. Pokud potřebuješ označit políčko č. 31 — hra končí prohrou.</p>
+<table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>B</b></td><td>Check Binding — testování závěrky</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>X</b></td><td>Časová penalizace (symbol ⏱ na tracku)</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>R</b></td><td>Návrat na nejnižší nenastavenou závěrku</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>S</b></td><td>Set PIN — pokus o nastavení závěrky</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>P</b></td><td>Změna hrotu (2 kroky)</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>M</b></td><td>Posun průsečíku v mřížce</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>O</b></td><td>Overset nebo napětí mimo rozsah</td></tr>
+</table>
+
+<h3>🔍 1. Hledání pořadí (Binding)</h3>
+<p>Závěrky musíš nastavovat ve správném pořadí. Stiskni <b>Check Binding</b> (1×B), poté <b>Binding Roll</b>. Hodí se 1 kostka a token se posune po Binding Tracku o její hodnotu.</p>
+<p>Po každém hodu se vyhodnotí pole, na kterém token skončí:</p>
+<ul>
+<li><b>✓ CHECK</b> — závěrka nalezena. Odhalí se její výška a můžeš přejít na <b>Set PIN</b>.</li>
+<li><b>⏱ TIME</b> — získáš časovou penalizaci (1×X) a pokračuješ k další závěrce.</li>
+<li><b>—</b> — můžeš znovu hodit nebo stisknout <b>Další PIN</b> a přejít na další závěrku bez penalizace.</li>
+</ul>
+<p>Na jednu závěrku můžeš provést maximálně <b>4x Binding Roll</b>. Pokud po čtvrtém hodu skončíš na <b>—</b>, přejdeš automaticky na další závěrku bez penalizace.</p>
+<p><b>Poslední nenalezená závěrka</b> se odhalí automaticky.</p>
+<p>⚠ Pokud neuspěješ u nejvýše pořadové závěrky, vrátíš se na nejnižší dosud nenastavenou závěrku (1×R).</p>
+
+<h3>⚙ 2. Nastavení napětí (Tension Check)</h3>
+<p>Při označení červeně podbarveného políčka musíš <b>před další akcí</b> nastavit napětí. Ostatní tlačítka jsou zamčena.</p>
+<p>Stiskni <b>Tension Roll</b> — hodí se 4 kostky. Máš až 3 hody (Yahtzee styl — kliknutím kostku zamkneš). Po 1. hodu se aktivuje <b>Potvrdit napětí</b>. Třetím hodem se potvrdí automaticky.</p>
+<p>Součet 4 kostek určí řádek v tabulce. Označí se nejlevější volné políčko — šipka posune ukazatel, <b>X</b> = zůstane.</p>
+<p>Ukazatel napětí má 5 pozic s náklady <b>3 — 2 — 1 — 2 — 3</b>. Pokud vypadne mimo rozsah → reset všech závěrek!</p>
+
+<h3>🎯 3. Nastavení závěrky (Set PIN)</h3>
+<p>Stiskni <b>Set PIN</b> (1×S). Hodí se 4 kostky. Každou přiřaď:</p>
+<ul>
+<li><b>A-Row</b> a <b>A-Col</b> — průsečík A v mřížce</li>
+<li><b>B-Row</b> a <b>B-Col</b> — průsečík B v mřížce</li>
+</ul>
+<p>Hodnota A + hodnota B + modifikátor hrotu = výška závěrky?</p>
+<ul>
+<li>✅ <b>Přesně</b> — závěrka nastavena! Obě buňky se zablokují.</li>
+<li>⬇ <b>Příliš nízko</b> — buňky se zablokují, zkus znovu (1×S).</li>
+<li>💥 <b>Overset</b> — reset všech závěrek + vymazání mřížky (1×O).</li>
+</ul>
+<p>⚠ <b>Červená buňka</b> = zablokovaná. Průsečík na červené buňce nelze vyhodnotit — posuň ho!</p>
+
+<h3>↔ 4. Posun průsečíku</h3>
+<p>Posuň průsečík A nebo B o 1 pole. Cena = hodnota ukazatele napětí (1–3 kroky M). Nelze na zablokovanou buňku.</p>
+
+<h3>🔧 5. Hrot (Pick)</h3>
+<p>Modifikátor k součtu A+B. Tlačítka Pick jsou aktivní (zelená) až po přiřazení všech 4 kostek.</p>
+<ul>
+<li><b>Pick −1</b> — snižuje součet o 1</li>
+<li><b>Pick ±0</b> — bez změny (výchozí)</li>
+<li><b>Pick +1</b> — zvyšuje součet o 1</li>
+</ul>
+
+<h3>✨ 6. Jednorázové schopnosti</h3>
+<p>Každou schopnost lze použít <b>nejvýše jednou za hru</b>. Po použití se tlačítko deaktivuje.</p>
+<ul>
+<li>
+<b>🎲 Přehodit</b> — lze použít během <b>Binding Roll</b>, <b>Tension Roll</b> nebo <b>Další PIN</b>.
+Klikni na schopnost a následně na kostku.
+Při Bindingu se nejedná o nový hod — původní hodnota kostky se nahradí novou hodnotou a Binding Track se okamžitě přepočítá.
+</li>
+<li>
+<b>➕➖ 1</b> — lze použít během <b>Binding Roll</b>, <b>Tension Roll</b> nebo <b>Další PIN</b>.
+Klikni na schopnost a následně na kostku. Hodnota kostky se zvýší nebo sníží o 1 (v rozsahu 1–6).
+Při Bindingu se Binding Track okamžitě přepočítá podle nové hodnoty.
+</li>
+<li>
+<b>↔ Pick 2</b> — po přiřazení všech 4 kostek a pokud žádný průsečík neleží na červené buňce.
+Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
+</li>
+</ul>
+
+<h3>🏆 Bodování</h3>
+<table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
+<tr><td style="padding:3px 6px;">Za každou nastavenou závěrku</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 8 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Za každý zbývající časový krok</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 1 bod</td></tr>
+<tr><td style="padding:3px 6px;">Za každou nepoužitou schopnost</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Za každou závěrku výšky 2 nebo 3</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Napětí na středu při konci hry</td><td style="text-align:right;color:#e0a800;font-weight:700;">6 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Bez jediného resetu závěrek</td><td style="text-align:right;color:#e0a800;font-weight:700;">4 body</td></tr>
+<tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#e0a800;font-weight:700;">100 bodů</td></tr>
+</table>`
+    },
+
+    en: {
+        // UI panels
+        pins:            "PINS",
+        time:            "Time Tracker",
+        tensionGauge:    "Tension Gauge",
+        tensionTracks:   "Tension Tracks",
+        dice:            "Dice",
+        settingPin:      "Setting Pin",
+        log:             "Log",
+        inactive:        "Inactive",
+        targetHeight:    "Target height",
+        pickBonus:       "Pick modifier",
+        // Buttons
+        game4:           "Game 4 PINS",
+        game5:           "Game 5 PINS",
+        game6:           "Game 6 PINS",
+        tensionRoll:     "Tension Roll",
+        setPin:          "Set PIN",
+        evaluate:        "Evaluate",
+        confirmTension:  "Confirm tension",
+        checkBinding:    "Check Binding",
+        bindingRoll:     "Binding Roll",
+        powerReroll:     "🎲 Reroll",
+        powerModify:     "➕➖ 1",
+        powerPick2:      "↔ Pick 2",
+        // Topbar
+        titleSave:       "Save",
+        titleLoad:       "Load",
+        titleDelete:     "Delete save",
+        titleHelp:       "Help",
+        // Lang btn
+        langFlag:        "🇨🇿",
+        langTitle:       "Přepnout do češtiny",
+        // Confirm dialog
+        confirmNewGameTitle: (n) => `Start new game (${n} PINS)?`,
+        confirmNewGameMsg:   "⚠ Current game data will be permanently lost!",
+        confirmYes:      "YES, start",
+        confirmNo:       "Cancel",
+        // Log a toast texty
+        logNewGame:         "🔒 New Game",
+        logTime:           (n) => `🕐 Time = ${n}`,
+        logTensionSlot:    (n) => `⚙ TENSION SLOT ${n}`,
+        toastTensionCheck: "⚙ Perform Tension Check",
+        logTimeUp:         "⌛ Time's up",
+        toastGameOver:     (n) => `⌛ Game over (${n}/30)`,
+        logGameOver:       "🏁 Game over",
+        toastTensionFirst: "⚙ Perform Tension Check first",
+        toastNoBinding:    "No binding check in progress",
+        logBindingRoll:    (r, d) => `Binding Roll ${r}/4: 🎲 ${d}`,
+        logTimePenalty:    "⏱ Time penalty",
+        logRollsExhausted: "❌ 4 rolls exhausted — move to next pin",
+        toastNoResult:     "❌ No result — move to next pin",
+        logContinueRoll:   "— Choose: roll again, next pin,\nreroll or +-1",
+        logBindingSkip:    "➜ Moving to next pin",
+        bindingTrackTitle: "Binding Track (token position)",
+        bindingRollAgainBtn: "🎲 Roll again",
+        bindingSkipBtn:     "Next PIN",
+        logTopmostPin:     (id) => `⚠ PIN ${id} is topmost — R penalty, moving to lowest unset pin`,
+        logPinFound:       (id, val) => `✅ PIN ${id} value is ${val}`,
+        logLastPinAuto:    (id, val) => `🔓 PIN ${id} value is ${val}`,
+        logLastPinAutoFull:(id, val) => `🔓 Last PIN ${id} auto-revealed, value ${val}`,
+        logCheckPin:       (id) => `🔎 Checking PIN ${id}`,
+        logReturnPins:     "🔄 Returning to previous unset PINS",
+        logSettingPin:     (id, h, d) => `🎯 Setting PIN ${id} [${h}] 🎲 ${d}`,
+        logNotAllAssigned: "Not all dice assigned",
+        logAB:             (a, b) => `A=${a} B=${b}`,
+        logTotal:          (t) => `Total=${t}`,
+        logPinSet:         (id) => `✅ PIN ${id} set`,
+        logTooLow:         "⬇ Height too low",
+        toastBlockedCell:  "Cell is blocked — move the intersection!",
+        toastAssignmentLocked: "Assignment locked — all 4 dice already assigned. Start a new Set PIN.",
+        logOverset:        "💥 OVERSET",
+        toastOverset:      "💥 OVERSET!",
+        logRetryPin:       (id) => `↻ Retry setting PIN ${id}`,
+        logUnlocked:       "🔓 Lock opened",
+        toastUnlocked:     "🔓 Lock opened!",
+        logTensionDone:    "⚙ Tension Check complete",
+        logReturnSetting:  "↩ Returning to setting PIN",
+        logReturnBinding:  "↩ Returning to binding check",
+        logTensionSymbol:  (e) => `📍 Symbol = ${e}`,
+        logTensionPos:     (v) => `📍 Tension = ${v}`,
+        logTensionRowFull: "⚠ Tension track row exhausted",
+        logTensionOutOfRange: "⚠ Tension out of range",
+        logResetPins:      "⚠ All PINS reset",
+        logPick:           (v) => `🔧 Pick ${v >= 0 ? '+' : ''}${v}`,
+        logPick2Active:    "↔ Pick 2 activated — 2 free moves",
+        toastPick2Active:  "↔ Pick 2 activated!\n2 free intersection moves",
+        toastPick2Used:    "↔ Pick 2 already used",
+        toastPick2Setting: "↔ Pick 2 can only be used while setting a pin",
+        toastPick2Ready:   "↔ Pick 2 can only be activated after all 4 dice assigned (no red intersections)",
+        logPick2Move:      (r) => `↔ Pick 2: free move (${r} remaining)`,
+        logMoveIntersection: (w, r1, c1, r2, c2, cost) => `↔ ${w}: (${r1},${c1}) → (${r2},${c2}) [${cost}]`,
+        free:              "free",
+        moveCost:          "Move cost",
+        tensionCostStr:    (c) => `${c} ⏱`,
+        toastRerollUsed:   "🎲 Reroll already used",
+        toastRerollWhen:   "🎲 Reroll can only be used during setting or tension check",
+        toastRerollClick:  "🎲 Click the die you want to reroll",
+        toastModifyUsed:   "➕➖ Modify already used",
+        toastModifyWhen:   "➕➖ Modify can only be used during setting or tension check",
+        toastModifyClick:  "➕➖ Click the die you want to modify (+1 or -1)",
+        logRerollUsed:     (i, v) => `🎲 Reroll used: die ${i} → ${v}`,
+        toastRerolled:     (i, v) => `🎲 Die ${i} rerolled to ${v}`,
+        logModifyUsed:     (i, a, b) => `${b > a ? '➕' : '➖'} Modify used: die ${i}: ${a} → ${b}`,
+        toastModified:     (i, v) => `Die ${i} modified to ${v}`,
+        logNewSum:         (s) => `🔄 New sum after modification: ${s}`,
+        scorePins:         (n, p) => `• Pins set (${n}×8): ${p} pts`,
+        scoreTime:         (n) => `• Time remaining (${n}×1): ${n} pts`,
+        scoreAbilities:    (n, p) => `• Unused powers (${n}×5): ${p} pts`,
+        scoreLowPins:      (n, p) => `• Pins height 2–3 (${n}×5): ${p} pts`,
+        scoreTension:      (p) => `• Tension at center: ${p} pts`,
+        scoreNoReset:      (p) => `• No pin resets: ${p} pts`,
+        logFinalScore:     (s) => `🏆 FINAL SCORE: ${s} / 100`,
+        logNewGame: (n) => `🔒 New game (${n} PINS)`,
+        //Help
+        helpTitle:          "Lock Pick - Game Rules",
+        helpBody: `
+<h3>🎯 Goal</h3>
+<p>You have been wrongfully imprisoned. You have 5 minutes (30 time steps) before the guards return. Set all pins to the correct height and escape!</p>
+
+<h3>⏱ Time Tracker</h3>
+<p>Each action uses 1 or more time steps. Red-highlighted spaces trigger a <b>Tension Check</b>. If you need to mark space 31 — game over.</p>
+<table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>B</b></td><td>Check Binding — testing a pin</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>X</b></td><td>Time penalty (⏱ symbol on track)</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>R</b></td><td>Return to lowest unset pin</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>S</b></td><td>Set PIN — attempt to set a pin</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>P</b></td><td>Change pick (2 steps)</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>M</b></td><td>Move intersection in grid</td></tr>
+<tr><td style="padding:2px 6px;color:#e0a800;"><b>O</b></td><td>Overset or tension out of range</td></tr>
+</table>
+
+<h3>🔍 1. Finding the Order (Binding)</h3>
+<p>Pins must be set in the correct order. Press <b>Check Binding</b> (1×B), then <b>Binding Roll</b>. One die is rolled and the token advances on the Binding Track by that value.</p>
+<p>After each roll, the space reached by the token is resolved:</p>
+<ul>
+<li><b>✓ CHECK</b> — the pin is found. Its height is revealed and you may proceed to <b>Set PIN</b>.</li>
+<li><b>⏱ TIME</b> — gain a time penalty (1×X) and move on to the next pin.</li>
+<li><b>—</b> — you may roll again or press <b>Next PIN</b> to continue without penalty.</li>
+</ul>
+<p>You may make up to <b>4 Binding Rolls</b> for a pin. If the fourth roll still lands on <b>—</b>, you automatically move to the next pin without penalty.</p>
+<p>The <b>last remaining unfound pin</b> is revealed automatically.</p>
+<p>⚠ Failing to find the highest-order pin sends you back to the lowest unset pin (1×R).</p>
+
+<h3>⚙ 2. Tension Check</h3>
+<p>Whenever you mark a red time space, you must adjust tension <b>before any other action</b>. All other buttons are locked.</p>
+<p>Press <b>Tension Roll</b> — 4 dice are rolled. Up to 3 rolls (Yahtzee style — click a die to hold it). After roll 1, <b>Confirm tension</b> activates. The 3rd roll confirms automatically.</p>
+<p>The sum of 4 dice determines the track row. The leftmost unused space is marked — an arrow moves the gauge, <b>X</b> = stays.</p>
+<p>The tension gauge has 5 positions with costs <b>3 — 2 — 1 — 2 — 3</b>. If the marker goes out of range → all pins reset!</p>
+
+<h3>🎯 3. Setting a Pin (Set PIN)</h3>
+<p>Press <b>Set PIN</b> (1×S). Roll 4 dice. Assign each die:</p>
+<ul>
+<li><b>A-Row</b> and <b>A-Col</b> — intersection A in the grid</li>
+<li><b>B-Row</b> and <b>B-Col</b> — intersection B in the grid</li>
+</ul>
+<p>Value A + Value B + pick modifier = pin height?</p>
+<ul>
+<li>✅ <b>Exact</b> — pin set! Both cells are blocked.</li>
+<li>⬇ <b>Too low</b> — cells are blocked, try again (1×S).</li>
+<li>💥 <b>Overset</b> — all pins reset + grid cleared (1×O).</li>
+</ul>
+<p>⚠ <b>Red cell</b> = blocked (already used). Cannot evaluate with a red intersection — move it!</p>
+
+<h3>↔ 4. Moving an Intersection</h3>
+<p>Move intersection A or B by 1 space. Cost = current tension gauge value (1–3 steps M). Cannot move onto a blocked cell.</p>
+
+<h3>🔧 5. Pick</h3>
+<p>Modifier applied to A+B sum. Pick buttons activate (green) only after all 4 dice are assigned.</p>
+<ul>
+<li><b>Pick −1</b> — reduces sum by 1</li>
+<li><b>Pick ±0</b> — no change (default)</li>
+<li><b>Pick +1</b> — increases sum by 1</li>
+</ul>
+
+<h3>✨ 6. One-Time Powers</h3>
+<p>Each power may be used <b>once per game</b>. After use, its button becomes disabled.</p>
+<ul>
+<li>
+<b>🎲 Reroll</b> — may be used during <b>Binding Roll</b>, <b>Tension Roll</b>, or <b>Set PIN</b>.
+Click the power, then click a die.
+During Binding, this does not count as a new roll — the original die value is replaced and the Binding Track is immediately recalculated.
+</li>
+<li>
+<b>➕➖ 1</b> — may be used during <b>Binding Roll</b>, <b>Tension Roll</b>, or <b>Set PIN</b>.
+Click the power, then click a die. The die value is increased or decreased by 1 (within the range 1–6).
+During Binding, the Binding Track is immediately recalculated using the new value.
+</li>
+<li>
+<b>↔ Pick 2</b> — after all 4 dice have been assigned and neither intersection is on a red cell.
+Gain 2 free intersection moves with no time cost.
+</li>
+</ul>
+
+<h3>🏆 Scoring</h3>
+<table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
+<tr><td style="padding:3px 6px;">Per pin set</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 8 pts</td></tr>
+<tr><td style="padding:3px 6px;">Per remaining time step</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 1 pt</td></tr>
+<tr><td style="padding:3px 6px;">Per unused power</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 pts</td></tr>
+<tr><td style="padding:3px 6px;">Per pin of height 2 or 3</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 pts</td></tr>
+<tr><td style="padding:3px 6px;">Tension at center at end</td><td style="text-align:right;color:#e0a800;font-weight:700;">6 pts</td></tr>
+<tr><td style="padding:3px 6px;">No pin resets</td><td style="text-align:right;color:#e0a800;font-weight:700;">4 pts</td></tr>
+<tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#e0a800;font-weight:700;">100 pts</td></tr>
+</table>`
+    }
+};
+
+let currentLang = 'en';
+
+function t(key, ...args) {
+    const val = TRANSLATIONS[currentLang][key];
+    if (typeof val === 'function') return val(...args);
+    return val || TRANSLATIONS['cs'][key] || key;
+}
+
+function applyTranslations() {
+    // Přelož všechny elementy s data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = t(key);
+        if (val !== undefined) el.textContent = val;
+    });
+
+    // Přelož title atributy icon-btn
+    const iconBtns = document.querySelectorAll('.icon-btn');
+    iconBtns.forEach(btn => {
+        if (btn.onclick && btn.onclick.toString().includes('saveGame')) btn.title = t('titleSave');
+        if (btn.onclick && btn.onclick.toString().includes('loadGame')) btn.title = t('titleLoad');
+        if (btn.onclick && btn.onclick.toString().includes('deleteSave')) btn.title = t('titleDelete');
+        if (btn.onclick && btn.onclick.toString().includes('showHelp')) btn.title = t('titleHelp');
+    });
+
+    // Přelož lang tlačítko
+    const langBtn = document.getElementById('langBtn');
+    if (langBtn) {
+        langBtn.textContent = t('langFlag');
+        langBtn.title = t('langTitle');
+    }
+
+    // Přelož nápovědu pokud je otevřená
+    const helpTitle = document.querySelector('#helpModal .modal-header h2');
+    if (helpTitle) helpTitle.textContent = t('helpTitle');
+    const helpBody = document.querySelector('#helpModal .help-body');
+    if (helpBody) helpBody.innerHTML = t('helpBody');
+
+    // Přelož settingInfo pokud je neaktivní
+    const si = document.getElementById('settingInfo');
+    if (si && si.getAttribute('data-i18n') === 'inactive') si.textContent = t('inactive');
+
+    // Přelož html lang atribut
+    document.documentElement.lang = currentLang;
+}
+
+function toggleLang() {
+    currentLang = currentLang === 'cs' ? 'en' : 'cs';
+    applyTranslations();
+}
+
+// Patch confirmNewGame aby používal přeložené texty
+const _origConfirmNewGame = confirmNewGame;
+function confirmNewGame(pinCount) {
+    if (state.time === 0 && !state.gameOver) { newGame(pinCount); return; }
+    showConfirmToast(
+        t('confirmNewGameTitle', pinCount),
+        t('confirmNewGameMsg'),
+        () => newGame(pinCount)
+    );
+}
+
+// Patch showConfirmToast tlačítek
+const _origShowConfirmToast = showConfirmToast;
+function showConfirmToast(title, message, onConfirm) {
+    const existing = document.getElementById("confirmToast");
+    if (existing) existing.remove();
+    const el = document.createElement("div");
+    el.id = "confirmToast";
+    el.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:#2a2a2a;border:2px solid #e0a800;padding:20px 24px;
+        z-index:9999;min-width:280px;max-width:360px;text-align:center;
+        box-shadow:0 8px 32px rgba(0,0,0,.7);border-radius:4px;`;
+    el.innerHTML = `
+        <div style="font-size:15px;font-weight:700;color:#e0a800;margin-bottom:8px;">${title}</div>
+        <div style="font-size:12px;color:#f44336;margin-bottom:16px;">${message}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button id="confirmYes" style="padding:9px 22px;background:#e0a800;border:none;color:#111;font-weight:700;cursor:pointer;font-size:13px;">${t('confirmYes')}</button>
+            <button id="confirmNo"  style="padding:9px 22px;background:#3a3a3a;border:1px solid #555;color:#f0f0f0;cursor:pointer;font-size:13px;">${t('confirmNo')}</button>
+        </div>`;
+    document.body.appendChild(el);
+    if (onConfirm) document.getElementById("confirmYes").onclick = () => { el.remove(); onConfirm(); };
+    document.getElementById("confirmNo").onclick = () => el.remove();
+}
+
+// Spustit překlad po načtení
+document.addEventListener('DOMContentLoaded', applyTranslations);
 
 newGame(4);
 </script>
