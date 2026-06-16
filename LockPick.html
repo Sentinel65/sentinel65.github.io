@@ -950,28 +950,21 @@ function addLog(text, doSave = true){
 }
 
 
-function animateDice(){
-
-    document
-        .querySelectorAll(".die")
-        .forEach(die=>{
-
-            die.classList.remove(
-                "rolling"
-            );
-
-            void die.offsetWidth;
-
-            die.classList.add(
-                "rolling"
-            );
-        });
+function animateDice(targetIndex = null) {
+    const diceElements = document.querySelectorAll(".die");
+    
+    diceElements.forEach((die, index) => {
+        // Zkontrolujeme, zda animujeme všechny, nebo jen tu s konkrétním indexem
+        if (targetIndex === null || targetIndex === index) {
+            die.classList.remove("rolling");
+            void die.offsetWidth; // Restart animace
+            die.classList.add("rolling");
+        }
+    });
 }
 
 
 function rollDice(){
-
-	
 
     if(!state.mustCheckTension){
 
@@ -1001,8 +994,10 @@ function rollDice(){
     state.lastTensionDice = [...state.dice];
 
     renderDice();
-	animateDice();
     render();
+    requestAnimationFrame(()=>{
+    animateDice();
+});
     addLog(
      `🎲 Tension Roll ${state.tensionRolls}/3 = ${total} 🎲 ${state.dice.join(", ")}`
     );
@@ -1293,9 +1288,6 @@ function bindingRoll(){
     state.lastBindingDie = die;
     state.bindingRollCount++;
 
-    renderDice();
-    animateDice();
-
     state.bindingPrevPos = state.bindingTrackPos;
     // Kumulativní posun tokenu po tracku
     state.bindingTrackPos += die;
@@ -1309,8 +1301,10 @@ function bindingRoll(){
 
     addLog(t("logBindingRoll", state.bindingRollCount, die));
     evaluateBindingTrackPosition();
-
     render();
+    requestAnimationFrame(()=>{
+    animateDice();
+});
     return;
   }
 
@@ -1381,84 +1375,83 @@ function getNextPinToSet(){
 }
 
 
-function startSettingPin(){
-	state.bindingPhaseFinished = true;
-	renderBindingTrack();
-    if(state.gameOver) return;
+function startSettingPin() {
+    state.bindingPhaseFinished = true;
+    renderBindingTrack();
+    
+    if (state.gameOver) return;
     state.tensionRolls = 0;
 
-	if(state.mustCheckTension){
-
-    showToast(
-        "⚙ Nejprve proveď Tension Check",
-        "warning"
-    );
-
-    return;
-}
-
-    if(state.gameOver)
-        return;
-
-    if(
-        state.currentSettingPin &&
-        !state.currentSettingPin.set
-    ){
-
-        addLog(
-            "↻ Nový pokus o nastavení PIN "
-            + state.currentSettingPin.id
-        );
-    }
-
-    const pin =
-        getNextPinToSet();
-
-    if(!pin){
-
-        addLog(
-            "⚠ Není žádný PIN k nastavení"
-        );
-
+    if (state.mustCheckTension) {
+        showToast("⚙ Nejprve proveď Tension Check", "warning");
         return;
     }
 
-    if(pin.set){
+    if (state.gameOver) return;
 
-        addLog(
-            "Pin již nastaven"
-        );
+    if (state.currentSettingPin && !state.currentSettingPin.set) {
+        addLog("↻ Nový pokus o nastavení PIN " + state.currentSettingPin.id);
+    }
 
+    const pin = getNextPinToSet();
+
+    if (!pin) {
+        addLog("⚠ Není žádný PIN k nastavení");
         return;
     }
 
-    spendTime(1,"S");
+    if (pin.set) {
+        addLog("Pin již nastaven");
+        return;
+    }
+
+    // 1. ZDE SE POSUNE ČAS
+    spendTime(1, "S");
+
+    // 2. KONTROLA: Způsobilo strávení času výše Tension Check?
+    const tensionTriggered = state.mustCheckTension;
 
     state.currentSettingPin = pin;
-
-    state.settingDice = [];
-    state.usedDice = [];   // ← SEM
-    state.usedTargets = {}; // <--- PŘIDAT TENTO ŘÁDEK PRO BARVY TLAČÍTEK
+    state.usedDice = [];
+    state.usedTargets = {};
     state.assignment = {
-
-    aRow:null,
-    aCol:null,
-    bRow:null,
-    bCol:null
+        aRow: null,
+        aCol: null,
+        bRow: null,
+        bCol: null
     };
 
-    for(let i=0;i<4;i++){
-
-        state.settingDice.push(
-            rand(6)+1
-        );
+    if (tensionTriggered) {
+        // Pokud vlétl Tension Check, NEBUDEME přehrávat animaci Setting PINu.
+        // Rovnou skrytě vygenerujeme čísla a necháme UI ukázat Tension Check.
+        state.settingDice = [];
+        for (let i = 0; i < 4; i++) {
+            state.settingDice.push(rand(6) + 1);
+        }
+        addLog(t("logSettingPin", pin.id, pin.height, state.settingDice.join(", ")));
+        renderSetting();
+        render();
+        return; // DŮLEŽITÉ: Ukončíme funkci zde
     }
 
-    // PŘIDÁNO: Zápis do logu včetně konkrétních hodnot kostek
-    addLog(t("logSettingPin", pin.id, pin.height, state.settingDice.join(", ")));
+    // --- PŘÍPRAVA NA ANIMACI (jen pokud NENÍ aktivní Tension Check) ---
+    state.settingDice = [rand(6)+1, rand(6)+1, rand(6)+1, rand(6)+1]; 
+    renderDice(); 
 
-    renderSetting();
-    render();
+    setTimeout(() => {
+        animateDice();
+    }, 10);
+
+    setTimeout(() => {
+        state.settingDice = [];
+        for (let i = 0; i < 4; i++) {
+            state.settingDice.push(rand(6) + 1);
+        }
+        
+        addLog(t("logSettingPin", pin.id, pin.height, state.settingDice.join(", ")));
+        renderSetting();
+        render();
+    }, 510); 
 }
 
 
@@ -1643,10 +1636,10 @@ function applyPowerToDie(index, diceArray){
     state.powerMode = null;
 
     const isBindingDecision =
-    state.currentCheckPin !== null &&
-    state.bindingRollCount > 0 &&
-    !state.mustCheckTension &&
-    !state.currentSettingPin;
+        state.currentCheckPin !== null &&
+        state.bindingRollCount > 0 &&
+        !state.mustCheckTension &&
+        !state.currentSettingPin;
 
     // Odstraň zvýraznění
     const area = document.getElementById("diceArea");
@@ -1662,41 +1655,52 @@ function applyPowerToDie(index, diceArray){
         }
     });
 
+    // Délka trvání animace v milisekundách (lze upravit podle CSS)
+    const animDuration = 500; 
+
     if(mode === "reroll"){
-        const newVal = rand(6) + 1;
-        diceArray[index] = newVal;
-        state.powers.reroll = false;
-        addLog(t("logRerollUsed", index+1, newVal));
-        showToast(t("toastRerolled", index+1, newVal), "success");
-    
-        if(isBindingDecision){
+        animateDice(index); // Spustí animaci jen na této kostce
+        
+        // Počkáme na konec animace a až pak změníme data a překreslíme
+        setTimeout(() => {
+            const newVal = rand(6) + 1;
+            diceArray[index] = newVal;
+            state.powers.reroll = false;
+            
+            addLog(t("logRerollUsed", index+1, newVal));
+            showToast(t("toastRerolled", index+1, newVal), "success");
+            
+            if(isBindingDecision){
+                addLog(`🎲 Binding Reroll: ${state.lastBindingDie} → ${newVal}`);
+                showToast(`🎲 ${state.lastBindingDie} → ${newVal}`, "success");
+            }
 
-    addLog(
-        `🎲 Binding Reroll: ${state.lastBindingDie} → ${newVal}`
-    );
-
-    showToast(
-        `🎲 ${state.lastBindingDie} → ${newVal}`,
-        "success"
-    );
-}
-
-        syncDiceAfterPower(diceArray);
+            syncDiceAfterPower(diceArray); // Toto zajistí finální render a uložení stavu
+        }, animDuration);
 
     } else if(mode === "modify"){
         const cur = diceArray[index];
+        
         if(cur === 1){
-            diceArray[index] = 2;
-            state.powers.modify = false;
-            addLog(t("logModifyUsed", index+1, 1, 2));
-            showToast(t("toastModified", index+1, 2), "success");
-            syncDiceAfterPower(diceArray);
+            animateDice(index);
+            setTimeout(() => {
+                diceArray[index] = 2;
+                state.powers.modify = false;
+                addLog(t("logModifyUsed", index+1, 1, 2));
+                showToast(t("toastModified", index+1, 2), "success");
+                syncDiceAfterPower(diceArray);
+            }, animDuration);
+            
         } else if(cur === 6){
-            diceArray[index] = 5;
-            state.powers.modify = false;
-            addLog(t("logModifyUsed", index+1, 6, 5));
-            showToast(t("toastModified", index+1, 5), "success");
-            syncDiceAfterPower(diceArray);
+            animateDice(index);
+            setTimeout(() => {
+                diceArray[index] = 5;
+                state.powers.modify = false;
+                addLog(t("logModifyUsed", index+1, 6, 5));
+                showToast(t("toastModified", index+1, 5), "success");
+                syncDiceAfterPower(diceArray);
+            }, animDuration);
+            
         } else {
             // Nabídni +1 nebo -1
             showConfirmToast(
@@ -1704,29 +1708,40 @@ function applyPowerToDie(index, diceArray){
                 `Zvýšit na ${cur+1} nebo snížit na ${cur-1}?`,
                 null
             );
+            
             setTimeout(() => {
                 const yes = document.getElementById("confirmYes");
                 const no = document.getElementById("confirmNo");
                 const dlg = document.getElementById("confirmToast");
+                
                 yes.textContent = `+1 → ${cur+1}`;
                 yes.onclick = () => {
                     dlg.remove();
-                    diceArray[index] = cur + 1;
-                    state.powers.modify = false;
-                    addLog(t("logModifyUsed", index+1, cur, cur+1));
-                    showToast(t("toastModified", index+1, cur+1), "success");
-                    syncDiceAfterPower(diceArray);
+                    animateDice(index); // Animace po kliknutí na "Ano"
+                    
+                    setTimeout(() => {
+                        diceArray[index] = cur + 1;
+                        state.powers.modify = false;
+                        addLog(t("logModifyUsed", index+1, cur, cur+1));
+                        showToast(t("toastModified", index+1, cur+1), "success");
+                        syncDiceAfterPower(diceArray);
+                    }, animDuration);
                 };
+                
                 no.textContent = `-1 → ${cur-1}`;
                 no.onclick = () => {
                     dlg.remove();
-                    diceArray[index] = cur - 1;
-                    state.powers.modify = false;
-                    addLog(t("logModifyUsed", index+1, cur, cur-1));
-                    showToast(t("toastModified", index+1, cur-1), "success");
-                    syncDiceAfterPower(diceArray);
+                    animateDice(index); // Animace po kliknutí na "Ne"
+                    
+                    setTimeout(() => {
+                        diceArray[index] = cur - 1;
+                        state.powers.modify = false;
+                        addLog(t("logModifyUsed", index+1, cur, cur-1));
+                        showToast(t("toastModified", index+1, cur-1), "success");
+                        syncDiceAfterPower(diceArray);
+                    }, animDuration);
                 };
-            }, 50);
+            }, 50); // Zpoždění pro správné připojení DOM událostí po zobrazení Toastu
         }
     }
 }
@@ -2527,75 +2542,49 @@ function toggleHold(index){
     renderDice();
 }
 
-
 function renderDice(){
-
-    const area =
-        document.getElementById("diceArea");
-
+    const area = document.getElementById("diceArea");
     area.innerHTML = "";
 
     let diceToShow = [];
 
-    // TENSION má nejvyšší prioritu
-    if(
-    state.mustCheckTension ||
-    state.tensionRolls > 0
-){
-
-    diceToShow =
-        state.lastTensionDice;
-}
-
-    // Nastavování PIN
-    else if(
-        state.currentSettingPin &&
-        state.settingDice
-    ){
-
+    // 1. TENSION CHECK:
+    if (state.mustCheckTension || state.tensionRolls > 0) {
+        if (state.mustCheckTension && state.tensionRolls === 0) {
+            // Hráč má udělat Tension Check, ale JEŠTĚ NEHODIL -> otazníky
+            diceToShow = ["?", "?", "?", "?"]; 
+        } else {
+            diceToShow = state.lastTensionDice;
+        }
+    }
+    // 2. SET PIN (Nastavování aktivního PINu, který ještě NENÍ úspěšně vyřešen):
+    else if (state.currentSettingPin && !state.currentSettingPin.set && state.settingDice) {
         diceToShow = state.settingDice;
     }
-
-    // Binding
-    else if(
-        state.currentCheckPin !== null &&
-        state.lastBindingDie
-    ){
-
-        diceToShow = [
-            state.lastBindingDie
-        ];
+    // 3. PO BINDING FÁZI: Čeká se na kliknutí na "Set PIN" pro první nebo další hod -> otazníky
+    else if (state.bindingPhaseFinished) {
+        diceToShow = ["?", "?", "?", "?"]; 
+    }
+    // 4. BINDING FÁZE: (Na začátku hry)
+    else {
+        diceToShow = [state.lastBindingDie || state.dice[0]];
     }
 
-    // Výchozí
-    else{
-
-        diceToShow = state.dice;
-    }
-
-    diceToShow.forEach((value,index)=>{
-
-        const die =
-            document.createElement("div");
-
+    // Následné vykreslení
+    diceToShow.forEach((value, index) => {
+        const die = document.createElement("div");
         die.className = "die";
 
-        // Zamykání kostek pouze při Tension Check
-        if(
-            state.mustCheckTension &&
-            state.heldDice[index]
-        ){
+        if (state.mustCheckTension && state.heldDice[index]) {
             die.classList.add("held");
         }
 
-        if(state.mustCheckTension){
-
-            die.onclick = () =>
-                toggleHold(index);
+        // Hráč smí kostku "zamknout" (hold) až tehdy, když už má nahozená čísla u Tension Checku
+        if (state.mustCheckTension && state.tensionRolls > 0) {
+            die.onclick = () => toggleHold(index);
         }
 
         die.textContent = value;
-
         area.appendChild(die);
     });
 }
@@ -3803,6 +3792,7 @@ const TRANSLATIONS = {
         //Help
         helpTitle:          "Lock Pick - Nápověda",    
         helpBody: `
+<p><em>Tato hra je napínavý simulátor otevírání zámků ve formě hry typu „roll-and-write“ pro jednoho nebo více hráčů.<br>Autor hry: <strong>© Stuart Jantzen 2026</strong></em></p>
 <h3>🎯 Cíl hry</h3>
 <p>Byl jsi neprávem uvězněn. Máš 5 minut (30 časových kroků), než se vrátí strážci. Nastav všechny závěrky zámku na správnou výšku a unikni!</p>
 
@@ -4009,7 +3999,8 @@ Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
         //Help
         helpTitle:          "Lock Pick - Game Rules",
         helpBody: `
-<h3>🎯 Goal</h3>
+<p><em>This game is a nail-biting lockpicking simulator roll-and-write game for one or more players.<br>Game developer: <strong>© Stuart Jantzen 2026</strong></em></p>		
+<h3>🎯 Objective</h3>
 <p>You have been wrongfully imprisoned. You have 5 minutes (30 time steps) before the guards return. Set all pins to the correct height and escape!</p>
 
 <h3>⏱ Time Tracker</h3>
