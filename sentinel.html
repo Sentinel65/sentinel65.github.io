@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sentinel - Desková Hra</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --text-color: #cdd6f4;
+            --board-bg: #313244;
+            --cell-bg: #45475a;
+            --cell-hover: #585b70;
+            --btn-bg: #89b4fa;
+            --btn-hover: #b4befe;
+            --btn-text: #11111b;
+            --p1-color: #a6e3a1; 
+            --p2-color: #f38ba8; 
+            
+            --highlight-move: rgba(166, 227, 161, 0.6);
+            --highlight-sow: rgba(137, 180, 250, 0.6);
+            
+            --last-move-from: #a6adc8; 
+            --last-move-to: #cba6f7;   
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        h1 { margin-top: 5px; margin-bottom: 10px; font-size: 24px; }
+        .status-bar {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .controls{
+            display:flex;
+            flex-wrap:nowrap;
+            justify-content:center;
+            align-items:center;
+            gap:4px;
+            margin-bottom:10px;
+            width:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            padding:2px;
+        }
+        
+        button.icon-btn {
+            background-color: var(--btn-bg);
+            flex:0 0 auto;
+            color: var(--btn-text);
+            border: none;
+            padding: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            min-height: 34px;
+        }
+        button.icon-btn:hover:not(:disabled) { background-color: var(--btn-hover); transform: scale(1.05); }
+        button.icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .board-container {
+            width: 100%;
+            max-width: 600px; /* Na PC nebude obří */
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            gap: 2px;
+            background-color: var(--board-bg);
+            padding: 4px;
+            border-radius: 6px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        
+        .cell {
+            background-color: var(--cell-bg);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .cell:hover { filter: brightness(1.2); }
+        
+        .cell.center { 
+            background-color: #11111b; 
+            cursor: not-allowed; 
+            box-shadow: inset 0 0 10px #000; 
+            background-image: radial-gradient(circle, #45475a 15%, transparent 20%);
+        }
+        
+        .cell.selected { box-shadow: inset 0 0 0 3px #f9e2af; }
+        .cell.highlight-move { box-shadow: inset 0 0 0 3px var(--p1-color); background-color: var(--highlight-move); }
+        .cell.highlight-sow { box-shadow: inset 0 0 0 3px var(--btn-bg); background-color: var(--highlight-sow); }
+
+        /* Vnitřní souřadnice */
+        .coord-label {
+            position: absolute;
+            font-size: 10px;
+            opacity: 0.5;
+            pointer-events: none;
+            font-weight: bold;
+            color: #a6adc8;
+        }
+        .y-coord { top: 2px; left: 3px; }
+        .x-coord { bottom: 1px; right: 3px; }
+
+        .stone {
+            width: 75%;
+            height: 75%;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: clamp(12px, 3.5vw, 20px);
+            color: #11111b;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            box-sizing: border-box;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        .stone-player { background-color: var(--p1-color); }
+        .stone-ai { background-color: var(--p2-color); }
+        
+        #overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .action-bar { width: 100%; max-width: 500px; display: flex; justify-content: center; margin-bottom: 10px; }
+        
+        .log-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--board-bg);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #585b70;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: #45475a;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .log-header button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .log-header button:hover { color: var(--btn-hover); }
+        .log-box {
+            height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+        }
+        .log-entry { margin-bottom: 4px; }
+        
+        /* Modal pro nápovědu */
+        .modal {
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 100; 
+            justify-content: center; 
+            align-items: center;
+            padding: 15px;
+        }
+        .modal-content {
+            background: var(--bg-color); 
+            padding: 20px; 
+            border-radius: 8px; 
+            max-width: 500px; 
+            width: 100%;
+            border: 1px solid #585b70;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .close-btn:hover { color: var(--p2-color); }
+        .modal h2 { margin-top: 0; color: var(--btn-bg); }
+        .modal ul { padding-left: 20px; }
+        .modal li { margin-bottom: 8px; }
+
+
+    #toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--board-bg);
+        color: var(--text-color);
+        padding: 12px 24px;
+        border: 1px solid var(--btn-bg);
+        border-radius: 8px;
+        font-size: 16px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        z-index: 10000; /* Zaručí, že bude vždy úplně nahoře nad vším */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    #toast.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    </style>
+</head>
+<body>
+
+    <h1>Sentinel</h1>
+            <div id="toast"></div>
+    <div class="status-bar" id="statusBar">Tah: 🟢 Zelený (Hráč)</div>
+    
+    <div class="controls">
+        <button id="langBtn" class="icon-btn" title="Změnit jazyk / Change language">🇬🇧</button>
+        <button id="helpBtn" class="icon-btn" title="Nápověda / Help">💡</button>
+        <button id="diffBtn" class="icon-btn" title="Obtížnost: Střední">🟡</button>
+        <button id="saveBtn" class="icon-btn">💾</button>
+        <button id="loadBtn" class="icon-btn">📂</button>
+        <button id="soundToggle" class="icon-btn" title="Přepnout zvuk">🔊</button>
+        <button id="offBoardBtn" class="icon-btn" title="Odejít kamenem z desky" disabled>📤</button>
+        <button id="restartBtn" class="icon-btn" title="Nová hra">🔄</button>
+    </div>
+
+    <div class="board-container">
+        <div class="board-wrapper">
+            <div class="board" id="board"></div>
+            <svg id="overlay"></svg>
+        </div>
+    </div>
+    <div class="log-container">
+        <div class="log-header">
+            <span id="logHeaderTitle">Záznam hry</span>
+            <button id="copyLogBtn" title="Kopírovat log hry">📋</button>
+        </div>
+        <div id="gameLog" class="log-box"></div>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeHelpBtn">&times;</button>
+            <div id="helpCs">
+                <h2>Pravidla hry</h2>
+                <p><strong>Cíl hry:</strong></p>
+                <ul>
+                    <li>Hráč vyhrává, pokud má na začátku svého tahu pět nebo více vlastních kamenů, které mají přímou viditelnost na střed hrací desky.</li>
+
+                    <li>Hráč prohrává, pokud přijde o všechny své kameny.</li>
+
+                    <li>Hráč také prohrává, pokud na konci svého tahu žádný z jeho kamenů nemá přímou viditelnost na střed hrací desky.</li>
+
+                    <li>Přímá viditelnost na střed hrací desky je indikována přerušovanou čarou barvy daného hráče od kamene ke středu hrací desky.</li>
+                </ul>
+                <p><strong>Možnosti tahu:</strong></p>
+                <ul>
+                    <li><strong>Jednoduchý kámen:</strong> Může se pohnout o 1 pole <strong>vpřed nebo do stran</strong> (ortogonálně i diagonálně) směrem k protější straně desky. Kámen může také opustit hrací desku (tím je odstraněn).</li>
+                    <li><strong>Rozklad stohu:</strong> Celý stoh (více kamenů) lze "rozložit" (1 kámen na 1 pole) v jakémkoliv ortogonálním nebo diagonálním směru. Před zahájením se do stohu automaticky přidá 1 kámen navíc. Počáteční pole zůstane po rozkladu prázdné. Nelze použít rozklad mimo desku.</li>
+                </ul>
+                <p><strong>Zabírání a skládání:</strong></p>
+                <ul>
+                    <li>Pohyb na vlastní kámen vytvoří/zvětší stoh.</li>
+                    <li>Pohyb na nepřátelský kámen ho vždy nahradí (zajme) bez ohledu na jeho velikost.</li>
+                    <li>Není povoleno se pohybovat nebo rozsévat přes středové pole.</li>
+                </ul>
+                <p><strong>Balanční pravidlo:</strong></p>
+                <ul>
+                    <li>Hráč, který začíná hru, nesmí ve svém <strong>druhém tahu</strong> vytvořit stoh (ani pohybem na vlastní kámen, ani rozséváním).</li>
+                </ul>
+            </div>
+            <div id="helpEn" style="display: none;">
+            <h2>Rules</h2>
+
+            <p><strong>Goal:</strong></p>
+            <ul>
+                <li>A player wins if, at the start of their turn, five or more of their stones have direct line of sight to the center square.</li>
+
+                <li>A player loses if all of their stones are removed.</li>
+
+                <li>A player also loses if, at the end of their turn, none of their stones has direct line of sight to the center square.</li>
+
+                <li>A direct line of sight to the center is indicated by a dashed line in the player's color connecting a stone to the center square.</li>
+            </ul>
+
+            <p><strong>Move Options:</strong></p>
+            <ul>
+                <li>
+                    <strong>Single stone:</strong>
+                    A stone may move one square <strong>forward or sideways</strong>
+                    (orthogonally or diagonally) toward the opposite side of the board.
+                    A stone may also leave the board, removing itself from play.
+                </li>
+
+                <li>
+                    <strong>Stack sowing:</strong>
+                    A stack (two or more stones) may be spread by placing
+                    one stone on each square in any orthogonal or diagonal direction.
+                    Before sowing, one additional stone is automatically added to the stack.
+                    The starting square becomes empty after sowing.
+                    Sowing off the board is not allowed.
+                </li>
+            </ul>
+
+            <p><strong>Capturing & Stacking:</strong></p>
+            <ul>
+                <li>Moving onto a friendly stone creates or enlarges a stack.</li>
+                <li>Moving onto an enemy stone always captures and replaces it, regardless of its size.</li>
+                <li>Neither movement nor sowing may pass through the center square.</li>
+            </ul>
+
+            <p><strong>Balancing Rule:</strong></p>
+            <ul>
+                <li>
+                    The player who starts the game may not create a stack during
+                    their <strong>second turn</strong>
+                    (neither by moving onto a friendly stone nor by sowing).
+                </li>
+            </ul>
+        </div>
+
+    <script>
+        const boardSize = 9;
+        const columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+        let boardState = []; 
+        let currentPlayer = 'Player';
+        let startingPlayer = 'Player'; // Kdo začne aktuální hru (střídá se)
+        let gameActive = true;
+        let p1MovesCount = 0;
+        let aiMovesCount = 0;
+        
+        let selectedPiece = null;
+        let validMoves = [];
+        let offBoardMove = null;
+        let lastMove = null; 
+        
+        let currentLang = 'cs';
+
+        // Slovník textů pro jazyky
+        const txt = {
+            cs: {
+                startPlayer: 'Hra zahájena. Začíná 🟢 (Hráč).',
+                startAI: 'Hra zahájena. Začíná 🔴 (AI).',
+                turnPlayer: 'Tah: 🟢 Zelený (Hráč)',
+                turnAI: 'Tah: 🔴 Červený (AI)',
+                winAIStones: '🔴 (AI) přišel o všechny kameny. Vyhrává 🟢 (Hráč)!',
+                winPlayerStones: '🟢 (Hráč) přišel o všechny kameny. Vyhrává 🔴 (AI)!',
+                winAILoS: '🔴 (AI) ztratil výhled na střed. Vyhrává 🟢 (Hráč)!',
+                winPlayerLoS: '🟢 (Hráč) ztratil výhled na střed. Vyhrává 🔴 (AI)!',
+                winAIMoves: '🔴 (AI) nemá žádné platné tahy. Vyhrává 🟢 (Hráč)!',
+                offBoard: 'mimo desku',
+                logHeader: 'Záznam hry',
+                gameOver: '>>> KONEC HRY: '
+            },
+            en: {
+                startPlayer: 'Game started. 🟢 (Player) begins.',
+                startAI: 'Game started. 🔴 (AI) begins.',
+                turnPlayer: 'Turn: 🟢 Green (Player)',
+                turnAI: 'Turn: 🔴 Red (AI)',
+                winAIStones: '🔴 (AI) lost all pieces. 🟢 (Player) wins!',
+                winPlayerStones: '🟢 (Player) lost all pieces. 🔴 (AI) wins!',
+                winAILoS: '🔴 (AI) lost Line of Sight. 🟢 (Player) wins!',
+                winPlayerLoS: '🟢 (Player) lost Line of Sight. 🔴 (AI) wins!',
+                winAIMoves: '🔴 (AI) has no valid moves. 🟢 (Player) wins!',
+                offBoard: 'off board',
+                logHeader: 'Game Log',
+                gameOver: '>>> GAME OVER: '
+            }
+        };
+
+        // Zvuk z localStorage (zachováno z historických preferencí)
+        let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+        const soundToggleBtn = document.getElementById('soundToggle');
+        
+        function updateSoundButton() {
+            soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+        }
+        soundToggleBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('soundEnabled', soundEnabled);
+            updateSoundButton();
+        });
+        updateSoundButton();
+
+        // UI Jazyk a nápověda
+        const langBtn = document.getElementById('langBtn');
+        langBtn.addEventListener('click', () => {
+            currentLang = currentLang === 'cs' ? 'en' : 'cs';
+            langBtn.textContent = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
+            document.getElementById('logHeaderTitle').textContent = txt[currentLang].logHeader;
+            document.getElementById('helpCs').style.display = currentLang === 'cs' ? 'block' : 'none';
+            document.getElementById('helpEn').style.display = currentLang === 'en' ? 'block' : 'none';
+            if (gameActive) updateStatusBar();
+        });
+
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+        helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
+        closeHelpBtn.addEventListener('click', () => helpModal.style.display = 'none');
+        window.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
+
+        const difficulties = [
+            { val: 'easy', icon: '🟢', title: 'Obtížnost: Lehká' },
+            { val: 'medium', icon: '🟡', title: 'Obtížnost: Střední' },
+            { val: 'hard', icon: '🔴', title: 'Obtížnost: Těžká' }
+        ];
+        let diffIdx = 1; 
+        const diffBtn = document.getElementById('diffBtn');
+        diffBtn.addEventListener('click', () => {
+            diffIdx = (diffIdx + 1) % 3;
+            diffBtn.textContent = difficulties[diffIdx].icon;
+            diffBtn.title = difficulties[diffIdx].title;
+        });
+
+        const boardEl = document.getElementById('board');
+        const statusBar = document.getElementById('statusBar');
+        const offBoardBtn = document.getElementById('offBoardBtn');
+        const logBox = document.getElementById('gameLog');
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type === 'player' ? 'sine' : type === 'ai' ? 'triangle' : 'square';
+            osc.frequency.setValueAtTime(type === 'player' ? 600 : type === 'ai' ? 400 : 200, audioCtx.currentTime);
+            if (type === 'end') osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+
+        function checkStartTurnVictory(player) {
+
+        const losCount = countPiecesWithLoS(player);
+
+        logMessage(
+            `DEBUG: ${player} start turn LoS = ${losCount}`
+        );
+
+        if (losCount >= 5) {
+
+            endGame(
+                player === 'Player'
+                    ? '🟢 (Hráč) má 5+ kamenů s výhledem na střed. Vyhrává!'
+                    : '🔴 (AI) má 5+ kamenů s výhledem na střed. Vyhrává!'
+            );
+
+            return true;
+        }
+
+        return false;
+    }
+
+
+        function initDOM() {
+            boardEl.innerHTML = ''; 
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    if (r === 4 && c === 4) cell.classList.add('center');
+                    cell.dataset.row = r; cell.dataset.col = c;
+                    
+                    // Vnitřní souřadnice
+                    if (c === 0) {
+                        const yLabel = document.createElement('span');
+                        yLabel.className = 'coord-label y-coord';
+                        yLabel.textContent = boardSize - r;
+                        cell.appendChild(yLabel);
+                    }
+                    if (r === boardSize - 1) {
+                        const xLabel = document.createElement('span');
+                        xLabel.className = 'coord-label x-coord';
+                        xLabel.textContent = columns[c];
+                        cell.appendChild(xLabel);
+                    }
+
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+
+
+        function setupGame() {
+            boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+            for (let c = 2; c <= 6; c++) boardState[8][c] = { owner: 'Player', count: 1 };
+            for (let c = 2; c <= 6; c++) boardState[0][c] = { owner: 'AI', count: 1 };
+
+            gameActive = true; 
+            currentPlayer = startingPlayer;
+            p1MovesCount = 0; aiMovesCount = 0;
+            selectedPiece = null; validMoves = []; offBoardMove = null; lastMove = null;
+            logBox.innerHTML = ''; offBoardBtn.disabled = true;
+            
+            updateStatusBar();
+            renderBoard();
+            
+            logMessage(currentPlayer === 'Player' ? txt[currentLang].startPlayer : txt[currentLang].startAI, 'system');
+
+            // Pokud po střídání začíná AI, hraje jako první
+            if (currentPlayer === 'AI') {
+                setTimeout(makeAIMove, 500);
+            }
+        }
+
+
+
+        function renderBoard() {
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = boardEl.children[r * boardSize + c];
+                    // Reset stavů tříd pro výběry
+                    cell.className = 'cell';
+                    if (r === 4 && c === 4) cell.classList.add('center');
+                    
+                    // Odstraní pouze kámen, ponechá vnitřní souřadnice
+                    const existingStone = cell.querySelector('.stone');
+                    if (existingStone) existingStone.remove();
+
+                    const piece = boardState[r][c];
+                    if (piece) {
+                        const stone = document.createElement('div');
+                        stone.className = `stone ${piece.owner === 'Player' ? 'stone-player' : 'stone-ai'}`;
+                        if (piece.count > 1) stone.textContent = piece.count;
+                        cell.appendChild(stone);
+                    }
+
+                    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) cell.classList.add('selected');
+                    
+                    const moveHighlight = validMoves.find(m => {
+                        if (m.type === 'single') return m.toR === r && m.toC === c;
+                        if (m.type === 'sow') {
+                            const finalStep = m.path[m.path.length - 1];
+                            return finalStep.r === r && finalStep.c === c;
+                        }
+                        return false;
+                    });
+                    
+                    if (moveHighlight) {
+                        cell.classList.add(moveHighlight.type === 'single' ? 'highlight-move' : 'highlight-sow');
+                    }
+                }
+            }
+            requestAnimationFrame(() => {
+                drawLOSLines();
+                drawLastMoveLine();
+            });  
+        }
+
+        function updateStatusBar() {
+            statusBar.textContent = currentPlayer === 'Player' ? txt[currentLang].turnPlayer : txt[currentLang].turnAI;
+            statusBar.style.color = currentPlayer === 'Player' ? 'var(--p1-color)' : 'var(--p2-color)';
+        }
+
+        // ---- AI & State Logic ----
+
+        function hasLineOfSightState(state, r, c) {
+            if (r === 4 && c === 4) return false;
+            const dr = 4 - r, dc = 4 - c;
+            if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return false; 
+            
+            const stepR = dr === 0 ? 0 : dr / Math.abs(dr);
+            const stepC = dc === 0 ? 0 : dc / Math.abs(dc);
+            let cr = r + stepR, cc = c + stepC;
+            
+            while (cr !== 4 || cc !== 4) {
+                if (state[cr][cc] !== null) return false;
+                cr += stepR; cc += stepC;
+            }
+            return true;
+        }
+
+        function getCellCenter(r,c){
+            const cell = boardEl.children[r * boardSize + c];
+            const rect = cell.getBoundingClientRect();
+            const boardRect = boardEl.getBoundingClientRect();
+
+            return {
+                x: rect.left - boardRect.left + rect.width/2,
+                y: rect.top - boardRect.top + rect.height/2
+            };
+        }
+
+        function drawLOSLines() {
+            const svg = document.getElementById("overlay");
+            svg.innerHTML = "";
+            const center = getCellCenter(4, 4);
+            const firstCell = boardEl.children[0];
+            const stoneRadius = firstCell.offsetWidth * 0.40;
+
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const piece = boardState[r][c];
+                    if (!piece) continue;
+                    if (!hasLineOfSightState(boardState, r, c)) continue;
+
+                    const p = getCellCenter(r, c);
+                    const dx = center.x - p.x;
+                    const dy = center.y - p.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+
+                    const x1 = p.x + (dx / len) * stoneRadius;
+                    const y1 = p.y + (dy / len) * stoneRadius;
+                    const x2 = center.x - (dx / len) * stoneRadius;
+                    const y2 = center.y - (dy / len) * stoneRadius;
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+                    line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+                    line.setAttribute("stroke", piece.owner === "Player" ? "#a6e3a1" : "#f38ba8");
+                    line.setAttribute("stroke-width", "1.5");
+                    line.setAttribute("stroke-dasharray", "4 4");
+                    line.setAttribute("stroke-linecap", "round");
+                    line.setAttribute("opacity", "0.8");
+                    svg.appendChild(line);
+                }
+            }
+        }
+
+        function drawLastMoveLine() {
+            if (!lastMove) return;
+            const svg = document.getElementById("overlay");
+            const firstCell = boardEl.children[0];
+            const stoneRadius = firstCell.offsetWidth * 0.40;
+            const from = getCellCenter(lastMove.from.r, lastMove.from.c);
+
+            for (const dest of lastMove.to) {
+                const to = getCellCenter(dest.r, dest.c);
+                const dx = to.x - from.x;
+                const dy = to.y - from.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+
+                const x1 = from.x + (dx / len) * stoneRadius;
+                const y1 = from.y + (dy / len) * stoneRadius;
+                const x2 = to.x - (dx / len) * stoneRadius;
+                const y2 = to.y - (dy / len) * stoneRadius;
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+                line.setAttribute("stroke", "#ffffff");
+                line.setAttribute("stroke-width", "1");
+                line.setAttribute("stroke-linecap", "round");
+                line.setAttribute("opacity", "0.6");
+                svg.appendChild(line);
+            }
+        }
+
+        function getValidMovesState(state, r, c, player, p1MoveCnt, aiMoveCnt) {
+    const piece = state[r][c];
+    if (!piece || piece.owner !== player) return [];
+
+    const moves = [];
+
+    const moveCount =
+        player === 'Player'
+            ? p1MoveCnt
+            : aiMoveCnt;
+
+    const isStarterSecondMove =
+        player === startingPlayer &&
+        moveCount === 1;
+
+    // ===== JEDNODUCHÝ KÁMEN =====
+
+    if (piece.count === 1) {
+
+        const forwardDir = player === 'Player' ? -1 : 1;
+
+        const singleDirs = [
+            [forwardDir, -1],
+            [forwardDir, 0],
+            [forwardDir, 1],
+            [0, -1],
+            [0, 1]
+        ];
+
+        singleDirs.forEach(([dr, dc]) => {
+
+            const tr = r + dr;
+            const tc = c + dc;
+
+            if (
+                tr < 0 ||
+                tr >= boardSize ||
+                tc < 0 ||
+                tc >= boardSize
+            ) {
+
+                moves.push({
+                    type: 'single',
+                    offBoard: true,
+                    fromR: r,
+                    fromC: c
+                });
+
+            } else if (!(tr === 4 && tc === 4)) {
+
+                const targetPiece = state[tr][tc];
+
+                let canMove = true;
+
+                // zákaz vytvoření stohu ve 2. tahu začínajícího hráče
+                if (
+                    isStarterSecondMove &&
+                    targetPiece &&
+                    targetPiece.owner === player
+                ) {
+                    canMove = false;
+                }
+
+                if (canMove) {
+                    moves.push({
+                        type: 'single',
+                        offBoard: false,
+                        fromR: r,
+                        fromC: c,
+                        toR: tr,
+                        toC: tc
+                    });
+                }
+            }
+        });
+    }
+
+    // ===== STOH / ROZSÉVÁNÍ =====
+
+    else if (piece.count >= 2) {
+
+        const stonesToDrop = piece.count + 1;
+
+        const allDirs = [
+            [-1,0],
+            [-1,1],
+            [0,1],
+            [1,1],
+            [1,0],
+            [1,-1],
+            [0,-1],
+            [-1,-1]
+        ];
+
+        allDirs.forEach(([dr, dc]) => {
+
+            let pathValid = true;
+            let path = [];
+
+            for (let step = 1; step <= stonesToDrop; step++) {
+
+                const stepR = r + step * dr;
+                const stepC = c + step * dc;
+
+                if (
+                    stepR < 0 ||
+                    stepR >= boardSize ||
+                    stepC < 0 ||
+                    stepC >= boardSize ||
+                    (stepR === 4 && stepC === 4)
+                ) {
+                    pathValid = false;
+                    break;
+                }
+
+                path.push({
+                    r: stepR,
+                    c: stepC
+                });
+            }
+
+            if (!pathValid) return;
+
+            // zákaz vytvoření stohu ve 2. tahu začínajícího hráče
+            if (isStarterSecondMove) {
+
+                let createsStack = false;
+
+                for (const p of path) {
+
+                    const target = state[p.r][p.c];
+
+                    if (
+                        target &&
+                        target.owner === player
+                    ) {
+                        createsStack = true;
+                        break;
+                    }
+                }
+
+                if (createsStack) return;
+            }
+
+            moves.push({
+                type: 'sow',
+                fromR: r,
+                fromC: c,
+                dr,
+                dc,
+                stones: stonesToDrop,
+                path
+            });
+        });
+    }
+
+    return moves;
+}
+
+
+
+
+        function getAllValidMovesState(state, player, p1MoveCnt, aiMoveCnt) {
+            let moves = [];
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    if(state[r][c] && state[r][c].owner === player) {
+                        moves.push(...getValidMovesState(state, r, c, player, p1MoveCnt, aiMoveCnt));
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function cloneState(state) {
+            let newState = new Array(9);
+            for(let r=0; r<9; r++) {
+                newState[r] = new Array(9);
+                for(let c=0; c<9; c++) {
+                    let p = state[r][c];
+                    newState[r][c] = p ? {owner: p.owner, count: p.count} : null;
+                }
+            }
+            return newState;
+        }
+
+        function simulateMove(state, move, player) {
+            let newState = cloneState(state);
+            let origin = newState[move.fromR][move.fromC];
+            
+            if (move.type === 'single') {
+                origin.count--;
+                if (origin.count <= 0) newState[move.fromR][move.fromC] = null;
+                if (!move.offBoard) {
+                    let target = newState[move.toR][move.toC];
+                    if (!target) newState[move.toR][move.toC] = { owner: player, count: 1 };
+                    else if (target.owner === player) target.count++;
+                    else newState[move.toR][move.toC] = { owner: player, count: 1 };
+                }
+            } else if (move.type === 'sow') {
+                newState[move.fromR][move.fromC] = null; 
+                for (let p of move.path) {
+                    let target = newState[p.r][p.c];
+                    if (!target) newState[p.r][p.c] = { owner: player, count: 1 };
+                    else if (target.owner === player) target.count++;
+                    else newState[p.r][p.c] = { owner: player, count: 1 };
+                }
+            }
+            return newState;
+        }
+
+        function evaluateState(state) {
+
+        let aiStones = 0, plStones = 0;
+        let aiPieces = 0, plPieces = 0;
+        let aiLoS = 0, plLoS = 0;
+        let aiStacks = 0, plStacks = 0;
+
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+
+                let p = state[r][c];
+
+                if (!p) continue;
+
+                if (p.owner === 'AI') {
+
+                    aiStones += p.count;
+                    aiPieces++;
+
+                    if (hasLineOfSightState(state, r, c))
+                        aiLoS++;
+
+                    if (p.count > 1)
+                        aiStacks++;
+
+                } else {
+
+                    plStones += p.count;
+                    plPieces++;
+
+                    if (hasLineOfSightState(state, r, c))
+                        plLoS++;
+
+                    if (p.count > 1)
+                        plStacks++;
+                }
+            }
+        }
+
+        // okamžité prohry podle pravidel
+
+        if (aiPieces === 0 || aiLoS === 0)
+            return -10000;
+
+        if (plPieces === 0 || plLoS === 0)
+            return 10000;
+
+        let score = 0;
+
+        score += (aiStones - plStones) * 15;
+        score += (aiLoS - plLoS) * 25;
+        score += (aiStacks - plStacks) * 20;
+
+        // bonus za blízkost vítězství
+
+        if (aiLoS >= 5)
+            score += 300;
+
+        if (plLoS >= 5)
+            score -= 300;
+
+        return score;
+    }
+
+
+        const TT = new Map();
+        
+        function minimax(state, depth, alpha, beta, isMaximizing, currentPlayerTurn, p1MoveCnt, aiMoveCnt) {
+            const key = JSON.stringify(state) + depth + currentPlayerTurn + p1MoveCnt + aiMoveCnt;
+            if(TT.has(key)) return TT.get(key);
+            let score = evaluateState(state);
+            
+            if (score <= -10000) { const result = score - depth; TT.set(key, result); return result; }
+            if (score >= 10000) { const result = score + depth; TT.set(key, result); return result; }
+            if (depth === 0) { TT.set(key, score); return score; }
+
+            let moves = getAllValidMovesState(state,currentPlayerTurn,p1MoveCnt,aiMoveCnt);
+            if (moves.length === 0) {
+                return isMaximizing ? (-10000 - depth) : (10000 + depth);
+            }
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let move of moves) {
+
+    let nextState =
+        simulateMove(
+            state,
+            move,
+            currentPlayerTurn
+        );
+
+    let nextP1 = p1MoveCnt;
+    let nextAI = aiMoveCnt;
+
+    if (currentPlayerTurn === 'Player')
+        nextP1++;
+    else
+        nextAI++;
+
+    let evalScore =
+        minimax(
+            nextState,
+            depth - 1,
+            alpha,
+            beta,
+            false,
+            'Player',
+            nextP1,
+            nextAI
+        );
+                    maxEval = Math.max(maxEval, evalScore);
+                    alpha = Math.max(alpha, evalScore);
+                    if (beta <= alpha) break;
+                }
+                TT.set(key, maxEval);
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let move of moves) {
+
+    let nextState =
+        simulateMove(
+            state,
+            move,
+            currentPlayerTurn
+        );
+
+    let nextP1 = p1MoveCnt;
+    let nextAI = aiMoveCnt;
+
+    if (currentPlayerTurn === 'Player')
+        nextP1++;
+    else
+        nextAI++;
+
+    let evalScore =
+        minimax(
+            nextState,
+            depth - 1,
+            alpha,
+            beta,
+            true,
+            'AI',
+            nextP1,
+            nextAI
+        );
+                    minEval = Math.min(minEval, evalScore);
+                    beta = Math.min(beta, evalScore);
+                    if (beta <= alpha) break;
+                }
+                TT.set(key, minEval);
+                return minEval;
+            }
+        }
+
+        function countTotalPieces(player) {
+            let count = 0;
+            for (let r=0; r<boardSize; r++) for (let c=0; c<boardSize; c++) if (boardState[r][c] && boardState[r][c].owner === player) count++;
+            return count;
+        }
+        
+        function countPiecesWithLoS(player) {
+            let count = 0;
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (boardState[r][c] && boardState[r][c].owner === player && hasLineOfSightState(boardState, r, c)) count++;
+                }
+            }
+            return count;
+        }
+
+        function endGame(msg) {
+            logMessage(txt[currentLang].gameOver + msg, 'system');
+            gameActive = false;
+            playSound('end');
+        }
+
+        // ---- UI Interakce ----
+
+        function handleCellClick(r, c) {
+            if (!gameActive || currentPlayer !== 'Player') return;
+
+            const move = validMoves.find(m => {
+                if (m.type === 'single') return m.toR === r && m.toC === c;
+                if (m.type === 'sow') {
+                    const finalStep = m.path[m.path.length - 1];
+                    return finalStep.r === r && finalStep.c === c;
+                }
+                return false;
+            });
+
+            if (selectedPiece && move) {
+                executeMove(move, 'Player');
+                return;
+            }
+
+            if (boardState[r][c] && boardState[r][c].owner === 'Player') {
+                if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
+                    clearSelection();
+                } else {
+                    selectedPiece = {r, c};
+                    validMoves = getValidMovesState(boardState, r, c, 'Player', p1MovesCount, aiMovesCount);
+                    offBoardMove = validMoves.find(m => m.offBoard);
+                    offBoardBtn.disabled = !offBoardMove;
+                }
+                renderBoard();
+            }
+        }
+
+        offBoardBtn.addEventListener('click', () => {
+            if (gameActive && currentPlayer === 'Player' && offBoardMove) {
+                executeMove(offBoardMove, 'Player');
+            }
+        });
+
+        function clearSelection() {
+            selectedPiece = null;
+            validMoves = [];
+            offBoardMove = null;
+            offBoardBtn.disabled = true;
+            renderBoard(); 
+        }
+
+        function executeMove(move, player) {
+
+    if (player === 'Player')
+        p1MovesCount++;
+    else
+        aiMovesCount++;
+
+    const fromPos =
+        `${columns[move.fromC]}${boardSize - move.fromR}`;
+
+    lastMove = {
+        from: {
+            r: move.fromR,
+            c: move.fromC
+        },
+        to: []
+    };
+
+    const icon =
+        player === 'Player'
+            ? '🟢'
+            : '🔴';
+
+    let logStr =
+        `${icon}: ${fromPos} -> `;
+
+    boardState =
+        simulateMove(
+            boardState,
+            move,
+            player
+        );
+
+    if (move.type === 'single') {
+
+        if (move.offBoard) {
+
+            logStr +=
+                txt[currentLang].offBoard;
+
+        } else {
+
+            lastMove.to.push({
+                r: move.toR,
+                c: move.toC
+            });
+
+            logStr +=
+                `${columns[move.toC]}${boardSize - move.toR}`;
+        }
+
+    } else if (move.type === 'sow') {
+
+        let dests = [];
+
+        for (let p of move.path) {
+
+            lastMove.to.push({
+                r: p.r,
+                c: p.c
+            });
+
+            let currentCount =
+                boardState[p.r][p.c].count;
+
+            dests.push(
+                `${columns[p.c]}${boardSize - p.r}${currentCount > 1 ? `[${currentCount}]` : ''}`
+            );
+        }
+
+        logStr += `{ ${dests.join(', ')} }`;
+    }
+
+    logMessage(logStr, 'html');
+
+    playSound(
+        player === 'Player'
+            ? 'player'
+            : 'ai'
+    );
+
+    selectedPiece = null;
+    validMoves = [];
+    offBoardMove = null;
+    offBoardBtn.disabled = true;
+
+    renderBoard();
+
+        // okamžitá prohra při ztrátě všech kamenů
+
+    if (countTotalPieces('Player') === 0) {
+        // Hráč má 0 kamenů -> voláme hlášku, že hráč přišel o kameny
+        endGame(txt[currentLang].winPlayerStones);
+        return;
+    }
+
+    if (countTotalPieces('AI') === 0) {
+        // AI má 0 kamenů -> voláme hlášku, že AI přišlo o kameny
+        endGame(txt[currentLang].winAIStones);
+        return;
+    }
+
+    // hráč, který právě dokončil tah,
+    // musí mít alespoň 1 LoS
+
+    if (countPiecesWithLoS(player) === 0) {
+
+        endGame(
+            player === 'Player'
+                ? txt[currentLang].winPlayerLoS // Hráč ztratil výhled
+                : txt[currentLang].winAILoS     // AI ztratilo výhled
+        );
+
+        return;
+    }
+ 
+
+    // hráč, který právě dokončil tah,
+    // musí mít alespoň 1 LoS
+
+    if (countPiecesWithLoS(player) === 0) {
+
+        endGame(
+            player === 'Player'
+                ? txt[currentLang].winAILoS
+                : txt[currentLang].winPlayerLoS
+        );
+
+        return;
+    }
+
+    // předání tahu
+
+    currentPlayer =
+        player === 'Player'
+            ? 'AI'
+            : 'Player';
+
+    updateStatusBar();
+
+    // výhra se kontroluje na začátku tahu
+
+    if (
+        checkStartTurnVictory(
+            currentPlayer
+        )
+    ) {
+        return;
+    }
+
+    // spuštění AI
+
+    if (currentPlayer === 'AI') {
+
+        setTimeout(
+            makeAIMove,
+            100
+        );
+    }
+}
+
+
+
+        function makeAIMove() {
+            if (!gameActive) return;
+            TT.clear();
+            
+            let allMoves = getAllValidMovesState(boardState, 'AI', p1MovesCount, aiMovesCount);
+
+            if (allMoves.length === 0) {
+                endGame(txt[currentLang].winAIMoves);
+                return;
+            }
+
+            const difficulty = difficulties[diffIdx].val;
+            let chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+
+            if (difficulty !== 'easy') {
+                let bestScore = -Infinity;
+                let bestMoves = [];
+                const depth = difficulty === 'medium' ? 3: 5;
+
+                allMoves.sort(() => Math.random() - 0.5);
+                allMoves.sort((a, b) => {
+                    const sa = evaluateState(simulateMove(boardState, a, 'AI'));
+                    const sb = evaluateState(simulateMove(boardState, b, 'AI'));
+                    return sb - sa;
+                });
+                
+                for (let move of allMoves) {
+                    let nextState = simulateMove(boardState, move, 'AI');
+                    let score = minimax(
+    nextState,
+    depth - 1,
+    -Infinity,
+    Infinity,
+    false,
+    'Player',
+    p1MovesCount,
+    aiMovesCount + 1
+);
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoves = [move];
+                    } else if (score === bestScore) {
+                        bestMoves.push(move);
+                    }
+                }
+                if (bestMoves.length > 0) chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            }
+
+            executeMove(chosenMove, 'AI');
+        }
+
+
+        function saveGame() {
+            const saveData = {
+                boardState,
+                currentPlayer,
+                startingPlayer,
+                p1MovesCount,
+                aiMovesCount,
+                gameActive,
+                lastMove,
+                currentLang,
+                diffIdx
+            };
+
+            localStorage.setItem('sentinelSave', JSON.stringify(saveData));
+            
+            showToast('💾 Hra uložena');
+            logMessage(currentLang === 'cs' ? '💾 Hra uložena' : '💾 Game saved', 'system');
+        }
+
+        function loadGame() {
+            const data = localStorage.getItem('sentinelSave');
+
+            if (!data) {
+                showToast('⚠️ Uložená hra nebyla nalezena');
+                logMessage(currentLang === 'cs' ? '⚠️ Uložená hra nebyla nalezena' : '⚠️ Saved game not found', 'system');
+                return;
+            }
+
+            const save = JSON.parse(data);
+
+            boardState = save.boardState;
+            currentPlayer = save.currentPlayer;
+            startingPlayer = save.startingPlayer;
+            p1MovesCount = save.p1MovesCount;
+            aiMovesCount = save.aiMovesCount;
+            gameActive = save.gameActive;
+            lastMove = save.lastMove;
+            currentLang = save.currentLang;
+            diffIdx = save.diffIdx;
+
+            // Aktualizace vizuálu
+            diffBtn.textContent = difficulties[diffIdx].icon;
+            diffBtn.title = difficulties[diffIdx].title;
+            langBtn.textContent = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
+            document.getElementById('logHeaderTitle').textContent = txt[currentLang].logHeader;
+            document.getElementById('helpCs').style.display = currentLang === 'cs' ? 'block' : 'none';
+            document.getElementById('helpEn').style.display = currentLang === 'en' ? 'block' : 'none';
+
+            clearSelection();
+            updateStatusBar();
+            renderBoard();
+
+            showToast('📂 Hra načtena');
+            logMessage(currentLang === 'cs' ? '📂 Hra načtena' : '📂 Game loaded', 'system');
+
+            if (checkStartTurnVictory(currentPlayer)) {
+                return;
+            }
+
+            if (currentPlayer === 'AI') {
+                setTimeout(makeAIMove, 300);
+            }
+        }
+
+
+
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            
+            // Pojistka pro odhalení chyby
+            if (!toast) {
+                console.error("Chyba: Element s id 'toast' nebyl v HTML nalezen!");
+                return;
+            }
+
+            // Vložíme text a přidáme třídu "show", která spustí tvé CSS
+            toast.textContent = text;
+            toast.classList.add('show');
+
+            // Vyčistíme předchozí časovač (pokud uživatel kliká rychle za sebou)
+            clearTimeout(toast.timer);
+
+            // Za 2,5 sekundy třídu "show" zase odebereme
+            toast.timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+
+        function logMessage(msg, type) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            if (type === 'html') entry.innerHTML = msg;
+            else entry.textContent = msg;
+            logBox.insertAdjacentElement('afterbegin', entry);
+        }
+
+        document.getElementById('copyLogBtn').addEventListener('click', () => {
+            const logText = Array.from(logBox.children).map(child => child.innerText).join('\n');
+            navigator.clipboard.writeText(logText).then(() => showToast('📋 Zkopírováno')).catch(e => console.error(e));
+        });
+       
+        document.getElementById('restartBtn').addEventListener('click', startNewGame);
+        document.getElementById('saveBtn').addEventListener('click', saveGame);
+        document.getElementById('loadBtn').addEventListener('click', loadGame);
+
+
+ function startNewGame() {
+
+        startingPlayer =
+            startingPlayer === 'Player'
+                ? 'AI'
+                : 'Player';
+
+        setupGame();
+    }
+
+
+
+
+        initDOM();
+        setupGame();
+    </script>
+</body>
+</html>
