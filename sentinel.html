@@ -306,7 +306,7 @@
                 <h2>Pravidla hry</h2>
                 <p><strong>Cíl hry:</strong></p>
                 <ul>
-                    <li>Hráč vyhrává, pokud má na začátku svého tahu pět nebo více vlastních kamenů, které mají přímou viditelnost na střed hrací desky.</li>
+                    <li>Hráč vyhrává, pokud má na začátku svého tahu pět nebo více vlastních kamenů s přímou viditelností na střed hrací plochy.</li>
 
                     <li>Hráč prohrává, pokud přijde o všechny své kameny.</li>
 
@@ -317,7 +317,7 @@
                 </ul>
                 <p><strong>Možnosti tahu:</strong></p>
                 <ul>
-                    <li><strong>Jednoduchý kámen:</strong> Může se pohnout o 1 pole <strong>vpřed nebo do stran</strong> (ortogonálně i diagonálně) směrem k protější straně desky. Kámen může také opustit hrací desku (tím je odstraněn).</li>
+                    <li><strong>Jednoduchý kámen:</strong> Může se pohnout o 1 pole <strong>vpřed</strong> (ortogonálně i diagonálně) směrem k protější straně desky. Kámen může také opustit hrací desku (tím je odstraněn).</li>
                     <li><strong>Rozklad stohu:</strong> Celý stoh (více kamenů) lze "rozložit" (1 kámen na 1 pole) v jakémkoliv ortogonálním nebo diagonálním směru. Před zahájením se do stohu automaticky přidá 1 kámen navíc. Počáteční pole zůstane po rozkladu prázdné. Nelze použít rozklad mimo desku.</li>
                 </ul>
                 <p><strong>Zabírání a skládání:</strong></p>
@@ -336,7 +336,7 @@
 
             <p><strong>Goal:</strong></p>
             <ul>
-                <li>A player wins if, at the start of their turn, five or more of their stones have direct line of sight to the center square.</li>
+                <li>A player wins if, at the beginning of their turn, five or more of their stones have direct line of sight to the center square.</li>
 
                 <li>A player loses if all of their stones are removed.</li>
 
@@ -350,7 +350,7 @@
             <ul>
                 <li>
                     <strong>Single stone:</strong>
-                    A stone may move one square <strong>forward or sideways</strong>
+                    A stone may move one square <strong>forward</strong>
                     (orthogonally or diagonally) toward the opposite side of the board.
                     A stone may also leave the board, removing itself from play.
                 </li>
@@ -470,10 +470,22 @@
         ];
         let diffIdx = 1; 
         const diffBtn = document.getElementById('diffBtn');
+        
         diffBtn.addEventListener('click', () => {
+            // Změna indexu obtížnosti (0 = lehká, 1 = střední, 2 = těžká)
             diffIdx = (diffIdx + 1) % 3;
             diffBtn.textContent = difficulties[diffIdx].icon;
             diffBtn.title = difficulties[diffIdx].title;
+
+            // --- PŘIDÁNO: Zápis změny do logu ---
+            const diffNameCs = ['Lehká', 'Střední', 'Těžká'][diffIdx];
+            const diffNameEn = ['Easy', 'Medium', 'Hard'][diffIdx];
+            const diffMsg = currentLang === 'cs' 
+                ? `⚙️ Změna obtížnosti: ${difficulties[diffIdx].icon} ${diffNameCs}` 
+                : `⚙️ Difficulty changed: ${difficulties[diffIdx].icon} ${diffNameEn}`;
+                
+            logMessage(diffMsg, 'system');
+            // ------------------------------------
         });
 
         const boardEl = document.getElementById('board');
@@ -500,10 +512,15 @@
         function checkStartTurnVictory(player) {
 
         const losCount = countPiecesWithLoS(player);
+		const diffLoS = currentLang === 'cs' 
+                ? `⚙️ ${player} má na začátku tahu LoS = ${losCount}` 
+                : `⚙️ ${player} start turn LoS = ${losCount}`;
+                
+            logMessage(diffLoS, 'system');
 
-        logMessage(
-            `DEBUG: ${player} start turn LoS = ${losCount}`
-        );
+
+
+        
 
         if (losCount >= 5) {
 
@@ -565,9 +582,18 @@
             updateStatusBar();
             renderBoard();
             
+            // --- PŘIDÁNO: Zápis obtížnosti do logu ---
+            const diffNameCs = ['Lehká', 'Střední', 'Těžká'][diffIdx];
+            const diffNameEn = ['Easy', 'Medium', 'Hard'][diffIdx];
+            const diffMsg = currentLang === 'cs' 
+                ? `⚙️ Obtížnost AI: ${difficulties[diffIdx].icon} ${diffNameCs}` 
+                : `⚙️ AI Difficulty: ${difficulties[diffIdx].icon} ${diffNameEn}`;
+            
+            logMessage(diffMsg, 'system');
+            // -----------------------------------------
+
             logMessage(currentPlayer === 'Player' ? txt[currentLang].startPlayer : txt[currentLang].startAI, 'system');
 
-            // Pokud po střídání začíná AI, hraje jako první
             if (currentPlayer === 'AI') {
                 setTimeout(makeAIMove, 500);
             }
@@ -741,8 +767,6 @@
             [forwardDir, -1],
             [forwardDir, 0],
             [forwardDir, 1],
-            [0, -1],
-            [0, 1]
         ];
 
         singleDirs.forEach(([dr, dc]) => {
@@ -927,161 +951,349 @@
             return newState;
         }
 
-        function evaluateState(state) {
 
-        let aiStones = 0, plStones = 0;
-        let aiPieces = 0, plPieces = 0;
-        let aiLoS = 0, plLoS = 0;
-        let aiStacks = 0, plStacks = 0;
 
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
+            // Tabulka hodnoty polí pro boj o střed.
+            // Pole na LoS ose (řádek 4, sloupec 4, obě hlavní diagonály) mohou
+            // vůbec někdy získat výhled na střed (viz hasLineOfSightState) -
+            // proto dostávají bonus oproti "mrtvým" polím ve stejné vzdálenosti,
+            // která LoS nikdy získat nemohou. Počítá se jednou při načtení,
+            // ne při každém volání evaluateState (výkon).
+            const CENTER_TABLE = (function buildCenterTable() {
+                const table = [];
+                for (let r = 0; r < 9; r++) {
+                    const row = [];
+                    for (let c = 0; c < 9; c++) {
+                        if (r === 4 && c === 4) { row.push(0); continue; } // střed - na něj nelze táhnout
+                        const dr = 4 - r, dc = 4 - c;
+                        const onAxis = dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc);
+                        const dist = Math.max(Math.abs(dr), Math.abs(dc)); // Chebyshevova vzdálenost 1-4
+                        const base = Math.max(1, 9 - 2 * dist);
+                        row.push(base + (onAxis ? 3 : 0));
+                    }
+                    table.push(row);
+                }
+                return table;
+            })();
 
-                let p = state[r][c];
+            function evaluateState(state, currentPlayerTurn) {
 
-                if (!p) continue;
+			// Hráč, který PRÁVĚ dokončil tah vedoucí do tohoto stavu
+			// (currentPlayerTurn je hráč, kterého tah v tomto stavu teprve začíná).
+			const mover = currentPlayerTurn === 'AI' ? 'Player' : 'AI';
 
-                if (p.owner === 'AI') {
+			let aiLoS = 0;
+			let plLoS = 0;
 
-                    aiStones += p.count;
-                    aiPieces++;
+			let aiPieces = 0;
+			let plPieces = 0;
 
-                    if (hasLineOfSightState(state, r, c))
-                        aiLoS++;
+			let aiCenterScore = 0;
+			let plCenterScore = 0;
 
-                    if (p.count > 1)
-                        aiStacks++;
+			let aiStacks = 0;
+			let plStacks = 0;
 
-                } else {
+			let aiBigStacks = 0;
+			let plBigStacks = 0;
 
-                    plStones += p.count;
-                    plPieces++;
+			for (let r = 0; r < 9; r++) {
+				for (let c = 0; c < 9; c++) {
 
-                    if (hasLineOfSightState(state, r, c))
-                        plLoS++;
+					const p = state[r][c];
 
-                    if (p.count > 1)
-                        plStacks++;
+					if (!p)
+						continue;
+
+					const posValue =
+						CENTER_TABLE[r][c];
+
+					if (p.owner === 'AI') {
+
+						// počet figurek na desce
+						aiPieces++;
+
+						aiCenterScore +=
+							posValue * p.count;
+
+						if (
+							hasLineOfSightState(
+								state,
+								r,
+								c
+							)
+						) {
+							aiLoS++;
+						}
+
+						if (p.count >= 2)
+							aiStacks++;
+
+						if (p.count >= 3)
+							aiBigStacks++;
+					}
+					else {
+
+						plPieces++;
+
+						plCenterScore +=
+							posValue * p.count;
+
+						if (
+							hasLineOfSightState(
+								state,
+								r,
+								c
+							)
+						) {
+							plLoS++;
+						}
+
+						if (p.count >= 2)
+							plStacks++;
+
+						if (p.count >= 3)
+							plBigStacks++;
+					}
+				}
+			}
+
+			// okamžité konce hry
+			// (musí přesně odpovídat časování v executeMove/checkStartTurnVictory,
+			// jinak minimax vidí falešné "jisté" výhry/prohry uprostřed stromu)
+
+			// 1) vyčerpání kamenů - kontroluje se u OBOU hráčů po každém tahu
+			if (plPieces === 0)
+				return 25000;
+
+			if (aiPieces === 0)
+				return -25000;
+
+			// 2) ztráta výhledu (LoS) - kontroluje se JEN u hráče,
+			//    který svým tahem tento stav vytvořil (mover)
+			if (mover === 'AI' && aiLoS === 0)
+				return -25000;
+
+			if (mover === 'Player' && plLoS === 0)
+				return 25000;
+
+			// 3) 5+ LoS výhra - kontroluje se na ZAČÁTKU tahu hráče,
+			//    který je v tomto stavu na řadě (currentPlayerTurn),
+			//    ne u hráče, který právě dotáhl
+			if (currentPlayerTurn === 'AI' && aiLoS >= 5)
+				return 30000;
+
+			if (currentPlayerTurn === 'Player' && plLoS >= 5)
+				return -30000;
+
+			let score = 0;
+			// útok
+			score += (aiLoS - plLoS) * 1200;
+			// boj o střed 
+			score += (aiCenterScore - plCenterScore) * 80;
+			// stohy
+			score += (aiStacks - plStacks) * 80;
+			// velké stohy	
+			score += (aiBigStacks - plBigStacks) * 100;
+
+			score += (aiPieces - plPieces) * 40;
+
+			// obrana proti hrozící výhře
+			if (plLoS === 4) score -= 2500;
+			if (aiLoS === 4) score += 2500;
+
+			
+
+			return score;
+		}
+
+
+
+
+
+		// Rychlé ohodnocení tahu pro Move Ordering
+		function getMoveHeuristic(state, move, player) {
+
+		let score = 0;
+
+		if (move.type === 'single' && !move.offBoard) {
+
+			const target = state[move.toR][move.toC];
+
+			// braní soupeře
+			if (target && target.owner !== player) {
+				score += 80 + target.count * 40;
+			}
+
+			// vytváření vlastních stohů
+			else if (target && target.owner === player) {
+
+				if (target.count === 1)
+					score += 60;
+
+				else if (target.count === 2)
+					score += 40;
+
+				else if (target.count === 3)
+					score += 10;
+
+				else if (target.count >= 4)
+					score -= 80;
+			}
+
+			// přiblížení ke středu
+			const dist =
+				Math.abs(move.toR - 4) +
+				Math.abs(move.toC - 4);
+
+			score += (8 - dist) * 5;
+		}
+
+		else if (move.type === 'sow') {
+
+			score += 30;
+
+			let friendlyHits = 0;
+			let enemyHits = 0;
+
+			for (const p of move.path) {
+
+				const target = state[p.r][p.c];
+
+				if (!target)
+					continue;
+
+				if (target.owner === player)
+					friendlyHits++;
+
+				else
+					enemyHits++;
+			}
+
+			score += friendlyHits * 25;
+			score += enemyHits * 40;
+
+			const end = move.path[move.path.length - 1];
+
+			const dist =
+				Math.abs(end.r - 4) +
+				Math.abs(end.c - 4);
+
+			score += (8 - dist) * 5;
+		}
+
+		return score;
+	}
+                const TT = new Map();
+        let aiNodeCount = 0; // Globální počítadlo pro odlehčení časovače
+
+        // Rychlý generátor klíče pro TT (vynechává počítadla po 2. tahu, kdy už neplatí balanční pravidlo)
+        function getHashKey(state, currentPlayerTurn, p1MoveCnt, aiMoveCnt) {
+            let key = currentPlayerTurn === 'AI' ? 'A' : 'P';
+            if (p1MoveCnt <= 1 || aiMoveCnt <= 1) key += `|${p1MoveCnt}-${aiMoveCnt}`;
+            
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    let p = state[r][c];
+                    key += p ? p.owner[0] + p.count : '.';
                 }
             }
+            return key;
         }
 
-        // okamžité prohry podle pravidel
-
-        if (aiPieces === 0 || aiLoS === 0)
-            return -10000;
-
-        if (plPieces === 0 || plLoS === 0)
-            return 10000;
-
-        let score = 0;
-
-        score += (aiStones - plStones) * 15;
-        score += (aiLoS - plLoS) * 25;
-        score += (aiStacks - plStacks) * 20;
-
-        // bonus za blízkost vítězství
-
-        if (aiLoS >= 5)
-            score += 300;
-
-        if (plLoS >= 5)
-            score -= 300;
-
-        return score;
-    }
+        // Porovnávač pro Move Ordering
+        function isSameMove(m1, m2) {
+            if (!m1 || !m2 || m1.type !== m2.type || m1.fromR !== m2.fromR || m1.fromC !== m2.fromC) return false;
+            if (m1.type === 'single') return m1.toR === m2.toR && m1.toC === m2.toC;
+            if (m1.type === 'sow') return m1.dr === m2.dr && m1.dc === m2.dc;
+            return false;
+        }
 
 
-        const TT = new Map();
-        
-        function minimax(state, depth, alpha, beta, isMaximizing, currentPlayerTurn, p1MoveCnt, aiMoveCnt) {
-            const key = JSON.stringify(state) + depth + currentPlayerTurn + p1MoveCnt + aiMoveCnt;
-            if(TT.has(key)) return TT.get(key);
-            let score = evaluateState(state);
-            
-            if (score <= -10000) { const result = score - depth; TT.set(key, result); return result; }
-            if (score >= 10000) { const result = score + depth; TT.set(key, result); return result; }
-            if (depth === 0) { TT.set(key, score); return score; }
-
-            let moves = getAllValidMovesState(state,currentPlayerTurn,p1MoveCnt,aiMoveCnt);
-            if (moves.length === 0) {
-                return isMaximizing ? (-10000 - depth) : (10000 + depth);
+                function minimax(state, depth, alpha, beta, isMaximizing, currentPlayerTurn, p1MoveCnt, aiMoveCnt, startTime = null, maxTime = null) {
+            // Bezpečnostní pojistka: Každých 100 operací zkontrolujeme čas
+            if (startTime && (++aiNodeCount % 100 === 0) && (Date.now() - startTime > maxTime)) {
+                return null; // Záměrné probublání timeoutu
             }
+
+            const key = getHashKey(state, currentPlayerTurn, p1MoveCnt, aiMoveCnt);
+            const ttEntry = TT.get(key);
+            let ttBestMove = null;
+
+            // Použít výsledek z paměti POUZE pokud byla prozkoumána stejná nebo vyšší hloubka
+            if (ttEntry && ttEntry.depth >= depth) {
+                if (ttEntry.flag === 'EXACT') return ttEntry.score;
+                if (ttEntry.flag === 'LOWER' && ttEntry.score >= beta) return ttEntry.score;
+                if (ttEntry.flag === 'UPPER' && ttEntry.score <= alpha) return ttEntry.score;
+            }
+            if (ttEntry) ttBestMove = ttEntry.bestMove;
+            
+            let score = evaluateState(state, currentPlayerTurn);
+            if (Math.abs(score) >= 25000) return score;
+            if (depth === 0) return score;
+
+            let moves = getAllValidMovesState(state, currentPlayerTurn, p1MoveCnt, aiMoveCnt);
+            if (moves.length === 0) return isMaximizing ? (-10000 - depth) : (10000 + depth);
+
+            // Brutální zrychlení: Nejdřív otestovat tah, který z TT vyšel jako nejlepší
+            moves.sort((a, b) => {
+                if (ttBestMove && isSameMove(a, ttBestMove)) return -100000;
+                if (ttBestMove && isSameMove(b, ttBestMove)) return 100000;
+                return getMoveHeuristic(state, b, currentPlayerTurn) - getMoveHeuristic(state, a, currentPlayerTurn);
+            });
+
+            let bestMoveHere = moves[0];
+            let originalAlpha = alpha;
+            let originalBeta = beta;
 
             if (isMaximizing) {
                 let maxEval = -Infinity;
                 for (let move of moves) {
+                    let nextState = simulateMove(state, move, currentPlayerTurn);
+                    let nextP1 = currentPlayerTurn === 'Player' ? p1MoveCnt + 1 : p1MoveCnt;
+                    let nextAI = currentPlayerTurn === 'AI' ? aiMoveCnt + 1 : aiMoveCnt;
+                    
+                    let evalScore = minimax(nextState, depth - 1, alpha, beta, false, 'Player', nextP1, nextAI, startTime, maxTime);
+                    if (evalScore === null) return null; 
 
-    let nextState =
-        simulateMove(
-            state,
-            move,
-            currentPlayerTurn
-        );
-
-    let nextP1 = p1MoveCnt;
-    let nextAI = aiMoveCnt;
-
-    if (currentPlayerTurn === 'Player')
-        nextP1++;
-    else
-        nextAI++;
-
-    let evalScore =
-        minimax(
-            nextState,
-            depth - 1,
-            alpha,
-            beta,
-            false,
-            'Player',
-            nextP1,
-            nextAI
-        );
-                    maxEval = Math.max(maxEval, evalScore);
+                    if (evalScore > maxEval) {
+                        maxEval = evalScore;
+                        bestMoveHere = move;
+                    }
                     alpha = Math.max(alpha, evalScore);
                     if (beta <= alpha) break;
                 }
-                TT.set(key, maxEval);
+                
+                let flag = maxEval <= originalAlpha ? 'UPPER' : (maxEval >= beta ? 'LOWER' : 'EXACT');
+                TT.set(key, { depth, score: maxEval, flag, bestMove: bestMoveHere });
                 return maxEval;
             } else {
                 let minEval = Infinity;
                 for (let move of moves) {
+                    let nextState = simulateMove(state, move, currentPlayerTurn);
+                    let nextP1 = currentPlayerTurn === 'Player' ? p1MoveCnt + 1 : p1MoveCnt;
+                    let nextAI = currentPlayerTurn === 'AI' ? aiMoveCnt + 1 : aiMoveCnt;
+                    
+                    let evalScore = minimax(nextState, depth - 1, alpha, beta, true, 'AI', nextP1, nextAI, startTime, maxTime);
+                    if (evalScore === null) return null;
 
-    let nextState =
-        simulateMove(
-            state,
-            move,
-            currentPlayerTurn
-        );
-
-    let nextP1 = p1MoveCnt;
-    let nextAI = aiMoveCnt;
-
-    if (currentPlayerTurn === 'Player')
-        nextP1++;
-    else
-        nextAI++;
-
-    let evalScore =
-        minimax(
-            nextState,
-            depth - 1,
-            alpha,
-            beta,
-            true,
-            'AI',
-            nextP1,
-            nextAI
-        );
-                    minEval = Math.min(minEval, evalScore);
+                    if (evalScore < minEval) {
+                        minEval = evalScore;
+                        bestMoveHere = move;
+                    }
                     beta = Math.min(beta, evalScore);
                     if (beta <= alpha) break;
                 }
-                TT.set(key, minEval);
+                
+                let flag = minEval >= originalBeta ? 'LOWER' : (minEval <= alpha ? 'UPPER' : 'EXACT');
+                TT.set(key, { depth, score: minEval, flag, bestMove: bestMoveHere });
                 return minEval;
             }
         }
+
+
+
+
 
         function countTotalPieces(player) {
             let count = 0;
@@ -1268,20 +1480,7 @@
     }
  
 
-    // hráč, který právě dokončil tah,
-    // musí mít alespoň 1 LoS
-
-    if (countPiecesWithLoS(player) === 0) {
-
-        endGame(
-            player === 'Player'
-                ? txt[currentLang].winAILoS
-                : txt[currentLang].winPlayerLoS
-        );
-
-        return;
-    }
-
+    
     // předání tahu
 
     currentPlayer =
@@ -1313,56 +1512,111 @@
 }
 
 
+		function countPiecesState(state, player) {
+
+			let total = 0;
+
+			for (let r = 0; r < boardSize; r++) {
+				for (let c = 0; c < boardSize; c++) {
+
+					const p = state[r][c];
+
+					if (p && p.owner === player)
+						total += p.count;
+				}
+			}
+
+			return total;
+		}
+
 
         function makeAIMove() {
             if (!gameActive) return;
             TT.clear();
+            aiNodeCount = 0;
             
             let allMoves = getAllValidMovesState(boardState, 'AI', p1MovesCount, aiMovesCount);
-
             if (allMoves.length === 0) {
                 endGame(txt[currentLang].winAIMoves);
                 return;
             }
-
+            
             const difficulty = difficulties[diffIdx].val;
             let chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)];
-
+            
             if (difficulty !== 'easy') {
-                let bestScore = -Infinity;
-                let bestMoves = [];
-                const depth = difficulty === 'medium' ? 3: 5;
+                allMoves.sort((a, b) => getMoveHeuristic(boardState, b, 'AI') - getMoveHeuristic(boardState, a, 'AI'));
 
-                allMoves.sort(() => Math.random() - 0.5);
-                allMoves.sort((a, b) => {
-                    const sa = evaluateState(simulateMove(boardState, a, 'AI'));
-                    const sb = evaluateState(simulateMove(boardState, b, 'AI'));
-                    return sb - sa;
-                });
-                
-                for (let move of allMoves) {
-                    let nextState = simulateMove(boardState, move, 'AI');
-                    let score = minimax(
-    nextState,
-    depth - 1,
-    -Infinity,
-    Infinity,
-    false,
-    'Player',
-    p1MovesCount,
-    aiMovesCount + 1
-);
+                if (difficulty === 'medium') {
+                    // STŘEDNÍ OBTÍŽNOST: Fixní hloubka 4 (Bleskově rychlá, ale chytrá)
+                    let depth = 4;
+                    let bestScore = -Infinity;
+                    let bestMoves = [];
 
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMoves = [move];
-                    } else if (score === bestScore) {
-                        bestMoves.push(move);
+                    for (let move of allMoves) {
+                        let nextState = simulateMove(boardState, move, 'AI');
+                        let score = minimax(nextState, depth - 1, -Infinity, Infinity, false, 'Player', p1MovesCount, aiMovesCount + 1);
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMoves = [move];
+                        } else if (score === bestScore) {
+                            bestMoves.push(move);
+                        }
                     }
-                }
-                if (bestMoves.length > 0) chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-            }
+                    if (bestMoves.length > 0) chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
 
+                } else {
+                    // TĚŽKÁ OBTÍŽNOST (HARD): Iterativní prohlubování (Časový limit 1.5 sekundy)
+                    let maxTime = 3000; 
+                    let startTime = Date.now();
+                    let globalBestMove = allMoves[0];
+                    let searchAborted = false;
+
+                    let topMoves = allMoves.sort((a, b) => getMoveHeuristic(boardState, b, 'AI') - getMoveHeuristic(boardState, a, 'AI')).slice(0, 8);
+
+                for (let depth = 4; depth <= 10; depth++) {
+				
+						let currentDepthBestScore = -Infinity;
+						let currentDepthBestMoves = [];
+						
+                    for (let move of topMoves) {
+                            // Kontrola času na nejvyšší úrovni
+                            if (Date.now() - startTime > maxTime) {
+                                searchAborted = true;
+                                break;
+                            }
+
+                            let nextState = simulateMove(boardState, move, 'AI');
+                            let score = minimax(nextState, depth - 1, -Infinity, Infinity, false, 'Player', p1MovesCount, aiMovesCount + 1, startTime, maxTime);
+
+                            if (score === null) { 
+                                searchAborted = true; // Vypršel čas v hlubší větvi
+                                break;
+                            }
+
+                            if (score > currentDepthBestScore) {
+                                currentDepthBestScore = score;
+                                currentDepthBestMoves = [move];
+                            } else if (score === currentDepthBestScore) {
+                                currentDepthBestMoves.push(move);
+                            }
+                        }
+
+                        if (searchAborted) break; // Neuložíme poslední nedokončenou iteraci
+
+                        if (currentDepthBestMoves.length > 0) {
+                            globalBestMove = currentDepthBestMoves[Math.floor(Math.random() * currentDepthBestMoves.length)];
+                            // Pro další iteraci dáme nejlepší tah na 1. místo, což extrémně zrychlí Minimax
+                            allMoves = [globalBestMove, ...allMoves.filter(m => m !== globalBestMove)];
+                        }
+
+                        // Pokud AI našlo vynucenou výhru v pár tazích, nemusí dál plýtvat časem
+                        if (currentDepthBestScore >= 9000) break;
+                    }
+                    chosenMove = globalBestMove;
+                }
+            }
             executeMove(chosenMove, 'AI');
         }
 
