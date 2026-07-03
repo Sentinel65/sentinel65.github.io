@@ -35,11 +35,30 @@
             box-sizing: border-box;
         }
         h1 { margin-top: 5px; margin-bottom: 10px; font-size: 24px; }
-        .status-bar {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .header-bar h1 {
+            flex: 1;
             text-align: center;
+            margin: 5px 0;
+        }
+        .turn-icon {
+            font-size: 24px;
+            opacity: 0.3;
+            filter: grayscale(70%);
+            transition: all 0.25s ease;
+            cursor: default;
+        }
+        .turn-icon.active {
+            opacity: 1;
+            filter: none;
+            text-shadow: 0 0 8px currentColor;
         }
         
         .controls{
@@ -292,9 +311,12 @@
 </head>
 <body>
 
-    <h1>Sentinel</h1>
+    <div class="header-bar">
+        <span id="turnPlayerIcon" class="turn-icon" title="Na tahu: 🟢 Hráč">🟢</span>
+        <h1>Sentinel</h1>
+        <span id="turnAIIcon" class="turn-icon" title="Na tahu: 🔴 AI">🔴</span>
+    </div>
             <div id="toast"></div>
-    <div class="status-bar" id="statusBar">Tah: 🟢 Zelený (Hráč)</div>
     
     <div class="controls">
         <button id="langBtn" class="icon-btn" title="Změnit jazyk / Change language">🇬🇧</button>
@@ -336,6 +358,7 @@
             <button class="close-btn" id="closeHelpBtn">&times;</button>
             <div id="helpCs">
                 <h2>Pravidla hry</h2>
+				<p><em><strong>Sentinel</strong> je hra typu „vigil“, ve které musí hráči vždy udržovat alespoň jednu přímou viditelnost na střed hrací desky.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
                 <p><strong>Cíl hry:</strong></p>
                 <ul>
                     <li>Hráč vyhrává, pokud má na začátku svého tahu pět nebo více vlastních kamenů s přímou viditelností na střed hrací plochy.</li>
@@ -365,7 +388,7 @@
             </div>
             <div id="helpEn" style="display: none;">
             <h2>Rules</h2>
-
+			<p><em><strong>Sentinel</strong> is a vigil game where players always need to have at least one line-of-sight to the board's center.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
             <p><strong>Goal:</strong></p>
             <ul>
                 <li>A player wins if, at the beginning of their turn, five or more of their stones have direct line of sight to the center square.</li>
@@ -450,7 +473,15 @@
                 winAIMoves: '🔴 (AI) nemá žádné platné tahy. Vyhrává 🟢 (Hráč)!',
                 offBoard: 'mimo desku',
                 logHeader: 'Záznam hry',
-                gameOver: '>>> KONEC HRY: '
+                gameOver: '>>> KONEC HRY: ',
+                turnPlayerTitle: 'Na tahu: 🟢 Hráč',
+                turnAITitle: 'Na tahu: 🔴 AI',
+                replayStart: 'Na začátek partie',
+                replayPrev: 'Předchozí tah',
+                replayPlay: 'Automatické přehrávání (0,6 s)',
+                replayStop: 'Zastavit přehrávání',
+                replayNext: 'Další tah',
+                replayEnd: 'Na konec partie'
             },
             en: {
                 startPlayer: 'Game started. 🟢 (Player) begins.',
@@ -464,7 +495,15 @@
                 winAIMoves: '🔴 (AI) has no valid moves. 🟢 (Player) wins!',
                 offBoard: 'off board',
                 logHeader: 'Game Log',
-                gameOver: '>>> GAME OVER: '
+                gameOver: '>>> GAME OVER: ',
+                turnPlayerTitle: "Player's turn 🟢",
+                turnAITitle: "AI's turn 🔴",
+                replayStart: 'Go to start',
+                replayPrev: 'Previous move',
+                replayPlay: 'Auto-play (0.6s)',
+                replayStop: 'Stop playback',
+                replayNext: 'Next move',
+                replayEnd: 'Go to end'
             }
         };
 
@@ -490,7 +529,8 @@
             document.getElementById('logHeaderTitle').textContent = txt[currentLang].logHeader;
             document.getElementById('helpCs').style.display = currentLang === 'cs' ? 'block' : 'none';
             document.getElementById('helpEn').style.display = currentLang === 'en' ? 'block' : 'none';
-            if (gameActive) updateStatusBar();
+            updateStatusBar();
+            updateReplayTitles();
         });
 
         const helpBtn = document.getElementById('helpBtn');
@@ -526,7 +566,8 @@
         });
 
         const boardEl = document.getElementById('board');
-        const statusBar = document.getElementById('statusBar');
+        const turnPlayerIcon = document.getElementById('turnPlayerIcon');
+        const turnAIIcon = document.getElementById('turnAIIcon');
         const offBoardBtn = document.getElementById('offBoardBtn');
         const logBox = document.getElementById('gameLog');
 
@@ -682,8 +723,10 @@
         }
 
         function updateStatusBar() {
-            statusBar.textContent = currentPlayer === 'Player' ? txt[currentLang].turnPlayer : txt[currentLang].turnAI;
-            statusBar.style.color = currentPlayer === 'Player' ? 'var(--p1-color)' : 'var(--p2-color)';
+            turnPlayerIcon.classList.toggle('active', gameActive && currentPlayer === 'Player');
+            turnAIIcon.classList.toggle('active', gameActive && currentPlayer === 'AI');
+            turnPlayerIcon.title = txt[currentLang].turnPlayerTitle;
+            turnAIIcon.title = txt[currentLang].turnAITitle;
         }
 
         // ---- AI & State Logic ----
@@ -1353,6 +1396,8 @@
             logMessage(txt[currentLang].gameOver + msg, 'system');
             gameActive = false;
             playSound('end');
+            turnPlayerIcon.classList.remove('active');
+            turnAIIcon.classList.remove('active');
             showReplayControls();
         }
 
@@ -1801,12 +1846,21 @@
         function showReplayControls() {
             replayIndex = moveHistory.length - 1;
             replayContainer.style.display = 'flex';
+            updateReplayTitles();
             updateReplayView();
         }
 
         function hideReplay() {
             stopAutoReplay();
             replayContainer.style.display = 'none';
+        }
+
+        function updateReplayTitles() {
+            replayStartBtn.title = txt[currentLang].replayStart;
+            replayPrevBtn.title = txt[currentLang].replayPrev;
+            replayNextBtn.title = txt[currentLang].replayNext;
+            replayEndBtn.title = txt[currentLang].replayEnd;
+            replayPlayBtn.title = replayTimer ? txt[currentLang].replayStop : txt[currentLang].replayPlay;
         }
 
         function updateReplayView() {
@@ -1844,7 +1898,7 @@
                 replayTimer = null;
             }
             replayPlayBtn.textContent = '▶️';
-            replayPlayBtn.title = currentLang === 'cs' ? 'Automatické přehrávání (0.6s)' : 'Auto-play (0.6s)';
+            replayPlayBtn.title = txt[currentLang].replayPlay;
         }
 
         function toggleAutoReplay() {
@@ -1860,7 +1914,7 @@
             }
 
             replayPlayBtn.textContent = '⏸';
-            replayPlayBtn.title = currentLang === 'cs' ? 'Zastavit přehrávání' : 'Stop playback';
+            replayPlayBtn.title = txt[currentLang].replayStop;
 
             replayTimer = setInterval(() => {
                 if (replayIndex >= moveHistory.length - 1) {
@@ -1901,6 +1955,7 @@
 
 
         initDOM();
+        updateReplayTitles();
         setupGame();
     </script>
 </body>
