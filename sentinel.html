@@ -307,6 +307,25 @@
         opacity: 1;
         visibility: visible;
     }
+	
+	.home-marker {
+		position: absolute;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+	}
+
+	.home-marker.player {
+		background: #a6e3a1; 
+	}
+
+	.home-marker.ai {
+		background: #f38ba8;
+	}
     </style>
 </head>
 <body>
@@ -358,7 +377,7 @@
             <button class="close-btn" id="closeHelpBtn">&times;</button>
             <div id="helpCs">
                 <h2>Pravidla hry</h2>
-				<p><em><strong>Sentinel</strong> je hra typu „vigil“, ve které musí hráči vždy udržovat alespoň jednu přímou viditelnost na střed hrací desky.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
+                <p><em><strong>Sentinel</strong> je hra typu „vigil“, ve které musí hráči vždy udržovat alespoň jednu přímou viditelnost na střed hrací desky.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
                 <p><strong>Cíl hry:</strong></p>
                 <ul>
                     <li>Hráč vyhrává, pokud má na začátku svého tahu pět nebo více vlastních kamenů s přímou viditelností na střed hrací plochy.</li>
@@ -373,7 +392,7 @@
                 <p><strong>Možnosti tahu:</strong></p>
                 <ul>
                     <li><strong>Jednoduchý kámen:</strong> Může se pohnout o 1 pole <strong>vpřed</strong> (ortogonálně i diagonálně) směrem k protější straně desky. Kámen může také opustit hrací desku (tím je odstraněn).</li>
-                    <li><strong>Rozklad stohu:</strong> Celý stoh (více kamenů) lze "rozložit" (1 kámen na 1 pole) v jakémkoliv ortogonálním nebo diagonálním směru. Před zahájením se do stohu automaticky přidá 1 kámen navíc. Počáteční pole zůstane po rozkladu prázdné. Nelze použít rozklad mimo desku.</li>
+                    <li><strong>Rozklad stohu:</strong> Celý stoh (více kamenů) lze "rozložit" (1 kámen na 1 pole) v jakémkoliv ortogonálním nebo diagonálním směru. Před zahájením se do stohu automaticky přidá 1 kámen navíc. Počáteční pole zůstane po rozkladu prázdné. Nelze použít rozklad mimo desku, tzn. <strong>nebude povolen tah</strong>, který by zvýšil počet kamenů ve stohu na takový počet, že by tento stoh neměl žádný směr, kde by se uvedený počet kamenů (+ 1) mohl zase rozložit. </li>
                 </ul>
                 <p><strong>Zabírání a skládání:</strong></p>
                 <ul>
@@ -388,7 +407,7 @@
             </div>
             <div id="helpEn" style="display: none;">
             <h2>Rules</h2>
-			<p><em><strong>Sentinel</strong> is a vigil game where players always need to have at least one line-of-sight to the board's center.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
+            <p><em><strong>Sentinel</strong> is a vigil game where players always need to have at least one line-of-sight to the board's center.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
             <p><strong>Goal:</strong></p>
             <ul>
                 <li>A player wins if, at the beginning of their turn, five or more of their stones have direct line of sight to the center square.</li>
@@ -416,7 +435,7 @@
                     one stone on each square in any orthogonal or diagonal direction.
                     Before sowing, one additional stone is automatically added to the stack.
                     The starting square becomes empty after sowing.
-                    Sowing off the board is not allowed.
+                    Sowing off the board is not allowed; that is, a move that would increase the number of stones in a stack to such a number that the stack would have no direction in which that number of stones (+1) could be placed again is <strong>not allowed</strong>. 
                 </li>
             </ul>
 
@@ -450,7 +469,9 @@
         let selectedPiece = null;
         let validMoves = [];
         let offBoardMove = null;
-        let lastMove = null; 
+        let lastMove = null;
+		let moveNumber = 0;
+		let gameLog = [];
 
         // Historie tahů pro přehrávač partie po skončení hry
         let moveHistory = [];
@@ -658,6 +679,7 @@
             logBox.innerHTML = ''; offBoardBtn.disabled = true;
             
             resetHistory();
+			moveNumber = 0;
             updateStatusBar();
             renderBoard();
             
@@ -679,48 +701,149 @@
         }
 
 
+		function isPlayerHome(r, c) {
+			return r === 8 && c >= 2 && c <= 6;
+		}
+
+		function isAIHome(r, c) {
+			return r === 0 && c >= 2 && c <= 6;
+		}
+
 
         function renderBoard() {
-            for (let r = 0; r < boardSize; r++) {
-                for (let c = 0; c < boardSize; c++) {
-                    const cell = boardEl.children[r * boardSize + c];
-                    // Reset stavů tříd pro výběry
-                    cell.className = 'cell';
-                    if (r === 4 && c === 4) cell.classList.add('center');
-                    
-                    // Odstraní pouze kámen, ponechá vnitřní souřadnice
-                    const existingStone = cell.querySelector('.stone');
-                    if (existingStone) existingStone.remove();
+		for (let r = 0; r < boardSize; r++) {
+			for (let c = 0; c < boardSize; c++) {
+				const cell =
+					boardEl.children[
+						r * boardSize + c
+					];
 
-                    const piece = boardState[r][c];
-                    if (piece) {
-                        const stone = document.createElement('div');
-                        stone.className = `stone ${piece.owner === 'Player' ? 'stone-player' : 'stone-ai'}`;
-                        if (piece.count > 1) stone.textContent = piece.count;
-                        cell.appendChild(stone);
-                    }
+				// Reset stavů tříd
+				cell.className = 'cell';
 
-                    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) cell.classList.add('selected');
-                    
-                    const moveHighlight = validMoves.find(m => {
-                        if (m.type === 'single') return m.toR === r && m.toC === c;
-                        if (m.type === 'sow') {
-                            const finalStep = m.path[m.path.length - 1];
-                            return finalStep.r === r && finalStep.c === c;
-                        }
-                        return false;
-                    });
-                    
-                    if (moveHighlight) {
-                        cell.classList.add(moveHighlight.type === 'single' ? 'highlight-move' : 'highlight-sow');
-                    }
-                }
-            }
-            requestAnimationFrame(() => {
-                drawLOSLines();
-                drawLastMoveLine();
-            });  
-        }
+				if (r === 4 && c === 4) {
+					cell.classList.add('center');
+				}
+
+				// Odstranění kamene
+				const existingStone =
+					cell.querySelector('.stone');
+
+				if (existingStone) {
+					existingStone.remove();
+				}
+
+				// Odstranění značky domovského pole
+				const existingMarker =
+					cell.querySelector('.home-marker');
+
+				if (existingMarker) {
+					existingMarker.remove();
+				}
+
+				const piece =
+					boardState[r][c];
+
+				// Pokud je pole prázdné,
+				// zobraz značku výchozího pole
+				if (!piece) {
+
+					if (
+						r === boardSize - 1 &&
+						c >= 2 &&
+						c <= boardSize - 3
+					) {
+						const marker =
+							document.createElement('div');
+
+						marker.className =
+							'home-marker player';
+
+						cell.appendChild(marker);
+					}
+					else if (
+						r === 0 &&
+						c >= 2 &&
+						c <= boardSize - 3
+					) {
+						const marker =
+							document.createElement('div');
+
+						marker.className =
+							'home-marker ai';
+
+						cell.appendChild(marker);
+					}
+				}
+
+				// Vykreslení kamene
+				if (piece) {
+					const stone =
+						document.createElement('div');
+
+					stone.className =
+						`stone ${
+							piece.owner === 'Player'
+								? 'stone-player'
+								: 'stone-ai'
+						}`;
+
+					if (piece.count > 1) {
+						stone.textContent =
+							piece.count;
+					}
+
+					cell.appendChild(stone);
+				}
+
+				if (
+					selectedPiece &&
+					selectedPiece.r === r &&
+					selectedPiece.c === c
+				) {
+					cell.classList.add('selected');
+				}
+
+				const moveHighlight =
+					validMoves.find(m => {
+
+						if (m.type === 'single') {
+							return (
+								m.toR === r &&
+								m.toC === c
+							);
+						}
+
+						if (m.type === 'sow') {
+							const finalStep =
+								m.path[
+									m.path.length - 1
+								];
+
+							return (
+								finalStep.r === r &&
+								finalStep.c === c
+							);
+						}
+
+						return false;
+					});
+
+				if (moveHighlight) {
+					cell.classList.add(
+						moveHighlight.type === 'single'
+							? 'highlight-move'
+							: 'highlight-sow'
+					);
+				}
+			}
+		}
+
+		requestAnimationFrame(() => {
+			drawLOSLines();
+			drawLastMoveLine();
+		});
+	}
 
         function updateStatusBar() {
             turnPlayerIcon.classList.toggle('active', gameActive && currentPlayer === 'Player');
@@ -823,6 +946,43 @@
             }
         }
 
+        // Zjistí, jestli stoh o daném počtu kamenů na pozici (r,c) má
+        // alespoň JEDEN směr, kterým by šel rozsít (dostatek místa na desce,
+        // bez průchodu středem). Je to čistě geometrická vlastnost pozice
+        // a počtu kamenů - nezávisí na tom, co je na jednotlivých polích.
+        function isCountSowable(r, c, count) {
+            const stonesToDrop = count + 1;
+
+            const allDirs = [
+                [-1,0], [-1,1], [0,1], [1,1],
+                [1,0], [1,-1], [0,-1], [-1,-1]
+            ];
+
+            for (const [dr, dc] of allDirs) {
+
+                let dirValid = true;
+
+                for (let step = 1; step <= stonesToDrop; step++) {
+
+                    const stepR = r + step * dr;
+                    const stepC = c + step * dc;
+
+                    if (
+                        stepR < 0 || stepR >= boardSize ||
+                        stepC < 0 || stepC >= boardSize ||
+                        (stepR === 4 && stepC === 4)
+                    ) {
+                        dirValid = false;
+                        break;
+                    }
+                }
+
+                if (dirValid) return true;
+            }
+
+            return false;
+        }
+
         function getValidMovesState(state, r, c, player, p1MoveCnt, aiMoveCnt) {
     const piece = state[r][c];
     if (!piece || piece.owner !== player) return [];
@@ -882,6 +1042,19 @@
                     targetPiece.owner === player
                 ) {
                     canMove = false;
+                }
+
+                // zákaz vytvoření nerozsévatelného (příliš vysokého) stohu
+                if (
+                    canMove &&
+                    targetPiece &&
+                    targetPiece.owner === player
+                ) {
+                    const newCount = targetPiece.count + 1;
+
+                    if (!isCountSowable(tr, tc, newCount)) {
+                        canMove = false;
+                    }
                 }
 
                 if (canMove) {
@@ -964,6 +1137,30 @@
 
                 if (createsStack) return;
             }
+
+            // zákaz vytvoření nerozsévatelného (příliš vysokého) stohu
+            // - kontrolujeme každé pole cesty, kam přibude kámen na
+            //   vlastní již existující kámen (tam vznikne/naroste stoh)
+            let createsUnsowableStack = false;
+
+            for (const p of path) {
+
+                const target = state[p.r][p.c];
+
+                if (
+                    target &&
+                    target.owner === player
+                ) {
+                    const newCount = target.count + 1;
+
+                    if (!isCountSowable(p.r, p.c, newCount)) {
+                        createsUnsowableStack = true;
+                        break;
+                    }
+                }
+            }
+
+            if (createsUnsowableStack) return;
 
             moves.push({
                 type: 'sow',
@@ -1448,154 +1645,169 @@
         }
 
         function executeMove(move, player) {
+	
+		moveNumber++;
+		const moveNo = String(moveNumber).padStart(2, '0');	
 
-    if (player === 'Player')
-        p1MovesCount++;
-    else
-        aiMovesCount++;
+		if (player === 'Player')
+			p1MovesCount++;
+		else
+			aiMovesCount++;
 
-    const fromPos =
-        `${columns[move.fromC]}${boardSize - move.fromR}`;
+		const fromPos =
+			`${columns[move.fromC]}${boardSize - move.fromR}`;
 
-    lastMove = {
-        from: {
-            r: move.fromR,
-            c: move.fromC
-        },
-        to: []
-    };
+		lastMove = {
+			from: {
+				r: move.fromR,
+				c: move.fromC
+			},
+			to: []
+		};
 
-    const icon =
-        player === 'Player'
-            ? '🟢'
-            : '🔴';
+		const icon =
+			player === 'Player'
+				? '🟢'
+				: '🔴';
 
-    let logStr =
-        `${icon}: ${fromPos} -> `;
+		let logStr = `${icon} ${moveNo}. ${fromPos} -> `;
 
-    boardState =
-        simulateMove(
-            boardState,
-            move,
-            player
-        );
+		boardState =
+			simulateMove(
+				boardState,
+				move,
+				player
+			);
 
-    if (move.type === 'single') {
+		if (move.type === 'single') {
 
-        if (move.offBoard) {
+			if (move.offBoard) {
 
-            logStr +=
-                txt[currentLang].offBoard;
+				logStr +=
+					txt[currentLang].offBoard;
 
-        } else {
+			} else {
 
-            lastMove.to.push({
-                r: move.toR,
-                c: move.toC
-            });
+				lastMove.to.push({
+					r: move.toR,
+					c: move.toC
+				});
 
-            logStr +=
-                `${columns[move.toC]}${boardSize - move.toR}`;
-        }
+				const target =
+				boardState[move.toR][move.toC];
 
-    } else if (move.type === 'sow') {
+			let targetText =
+				`${columns[move.toC]}${boardSize - move.toR}`;
 
-        let dests = [];
+			if (
+				target &&
+				target.owner === player &&
+				target.count > 1
+			) {
+				targetText += `[${target.count}]`;
+			}
 
-        for (let p of move.path) {
+			logStr += targetText;
+			}
 
-            lastMove.to.push({
-                r: p.r,
-                c: p.c
-            });
+		} else if (move.type === 'sow') {
 
-            let currentCount =
-                boardState[p.r][p.c].count;
+			let dests = [];
 
-            dests.push(
-                `${columns[p.c]}${boardSize - p.r}${currentCount > 1 ? `[${currentCount}]` : ''}`
-            );
-        }
+			for (let p of move.path) {
 
-        logStr += `{ ${dests.join(', ')} }`;
-    }
+				lastMove.to.push({
+					r: p.r,
+					c: p.c
+				});
 
-    logMessage(logStr, 'html');
+				let currentCount =
+					boardState[p.r][p.c].count;
 
-    pushHistorySnapshot();
+				dests.push(
+					`${columns[p.c]}${boardSize - p.r}${currentCount > 1 ? `[${currentCount}]` : ''}`
+				);
+			}
 
-    playSound(
-        player === 'Player'
-            ? 'player'
-            : 'ai'
-    );
+			logStr += `{ ${dests.join(', ')} }`;
+		}
 
-    selectedPiece = null;
-    validMoves = [];
-    offBoardMove = null;
-    offBoardBtn.disabled = true;
+		logMessage(logStr, 'html');
 
-    renderBoard();
+		pushHistorySnapshot();
 
-        // okamžitá prohra při ztrátě všech kamenů
+		playSound(
+			player === 'Player'
+				? 'player'
+				: 'ai'
+		);
 
-    if (countTotalPieces('Player') === 0) {
-        // Hráč má 0 kamenů -> voláme hlášku, že hráč přišel o kameny
-        endGame(txt[currentLang].winPlayerStones);
-        return;
-    }
+		selectedPiece = null;
+		validMoves = [];
+		offBoardMove = null;
+		offBoardBtn.disabled = true;
 
-    if (countTotalPieces('AI') === 0) {
-        // AI má 0 kamenů -> voláme hlášku, že AI přišlo o kameny
-        endGame(txt[currentLang].winAIStones);
-        return;
-    }
+		renderBoard();
 
-    // hráč, který právě dokončil tah,
-    // musí mít alespoň 1 LoS
+			// okamžitá prohra při ztrátě všech kamenů
 
-    if (countPiecesWithLoS(player) === 0) {
+		if (countTotalPieces('Player') === 0) {
+			// Hráč má 0 kamenů -> voláme hlášku, že hráč přišel o kameny
+			endGame(txt[currentLang].winPlayerStones);
+			return;
+		}
 
-        endGame(
-            player === 'Player'
-                ? txt[currentLang].winPlayerLoS // Hráč ztratil výhled
-                : txt[currentLang].winAILoS     // AI ztratilo výhled
-        );
+		if (countTotalPieces('AI') === 0) {
+			// AI má 0 kamenů -> voláme hlášku, že AI přišlo o kameny
+			endGame(txt[currentLang].winAIStones);
+			return;
+		}
 
-        return;
-    }
- 
+		// hráč, který právě dokončil tah,
+		// musí mít alespoň 1 LoS
 
-    
-    // předání tahu
+		if (countPiecesWithLoS(player) === 0) {
 
-    currentPlayer =
-        player === 'Player'
-            ? 'AI'
-            : 'Player';
+			endGame(
+				player === 'Player'
+					? txt[currentLang].winPlayerLoS // Hráč ztratil výhled
+					: txt[currentLang].winAILoS     // AI ztratilo výhled
+			);
 
-    updateStatusBar();
+			return;
+		}
+	 
 
-    // výhra se kontroluje na začátku tahu
+		
+		// předání tahu
 
-    if (
-        checkStartTurnVictory(
-            currentPlayer
-        )
-    ) {
-        return;
-    }
+		currentPlayer =
+			player === 'Player'
+				? 'AI'
+				: 'Player';
 
-    // spuštění AI
+		updateStatusBar();
 
-    if (currentPlayer === 'AI') {
+		// výhra se kontroluje na začátku tahu
 
-        setTimeout(
-            makeAIMove,
-            100
-        );
-    }
-}
+		if (
+			checkStartTurnVictory(
+				currentPlayer
+			)
+		) {
+			return;
+		}
+
+		// spuštění AI
+
+		if (currentPlayer === 'AI') {
+
+			setTimeout(
+				makeAIMove,
+				100
+			);
+		}
+	}
 
 
 		function countPiecesState(state, player) {
@@ -1621,11 +1833,97 @@
             TT.clear();
             aiNodeCount = 0;
             
-            let allMoves = getAllValidMovesState(boardState, 'AI', p1MovesCount, aiMovesCount);
-            if (allMoves.length === 0) {
-                endGame(txt[currentLang].winAIMoves);
-                return;
-            }
+            let allMoves = getAllValidMovesState(
+				boardState,
+				'AI',
+				p1MovesCount,
+				aiMovesCount
+			);
+
+			// Kolik kamenů AI právě vidí na střed
+			const currentLoS = countPiecesWithLoS('AI');
+
+			if (currentLoS === 0) {
+
+				// AI nemá LoS -> zkus najít tahy,
+				// které LoS obnoví
+				const restoringMoves = allMoves.filter(move => {
+
+					const nextState =
+						simulateMove(
+							boardState,
+							move,
+							'AI'
+						);
+
+					for (let r = 0; r < boardSize; r++) {
+						for (let c = 0; c < boardSize; c++) {
+							const p = nextState[r][c];
+
+							if (
+								p &&
+								p.owner === 'AI' &&
+								hasLineOfSightState(
+									nextState,
+									r,
+									c
+								)
+							) {
+								return true;
+							}
+						}
+					}
+
+					return false;
+				});
+
+				if (restoringMoves.length > 0) {
+					allMoves = restoringMoves;
+				}
+			}
+			else {
+
+				// AI nějaký LoS má ->
+				// nesmí se sama odříznout
+				const safeMoves = allMoves.filter(move => {
+
+					const nextState =
+						simulateMove(
+							boardState,
+							move,
+							'AI'
+						);
+
+					for (let r = 0; r < boardSize; r++) {
+						for (let c = 0; c < boardSize; c++) {
+							const p = nextState[r][c];
+
+							if (
+								p &&
+								p.owner === 'AI' &&
+								hasLineOfSightState(
+									nextState,
+									r,
+									c
+								)
+							) {
+								return true;
+							}
+						}
+					}
+
+					return false;
+				});
+
+				if (safeMoves.length > 0) {
+					allMoves = safeMoves;
+				}
+			}
+
+			if (allMoves.length === 0) {
+				endGame(txt[currentLang].winAIMoves);
+				return;
+			}
             
             const difficulty = difficulties[diffIdx].val;
             let chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)];
@@ -1708,17 +2006,19 @@
 
 
         function saveGame() {
-            const saveData = {
-                boardState,
-                currentPlayer,
-                startingPlayer,
-                p1MovesCount,
-                aiMovesCount,
-                gameActive,
-                lastMove,
-                currentLang,
-                diffIdx
-            };
+			const saveData = {
+				boardState,
+				currentPlayer,
+				startingPlayer,
+				p1MovesCount,
+				aiMovesCount,
+				gameActive,
+				lastMove,
+				currentLang,
+				diffIdx,
+				gameLog,
+				moveNumber
+			};
 
             localStorage.setItem('sentinelSave', JSON.stringify(saveData));
             
@@ -1727,50 +2027,107 @@
         }
 
         function loadGame() {
-            const data = localStorage.getItem('sentinelSave');
+			const data = localStorage.getItem('sentinelSave');
 
-            if (!data) {
-                showToast('⚠️ Uložená hra nebyla nalezena');
-                logMessage(currentLang === 'cs' ? '⚠️ Uložená hra nebyla nalezena' : '⚠️ Saved game not found', 'system');
-                return;
-            }
+			if (!data) {
+				showToast('⚠️ Uložená hra nebyla nalezena');
+				logMessage(
+					currentLang === 'cs'
+						? '⚠️ Uložená hra nebyla nalezena'
+						: '⚠️ Saved game not found',
+					'system'
+				);
+				return;
+			}
 
-            const save = JSON.parse(data);
+			const save = JSON.parse(data);
 
-            boardState = save.boardState;
-            currentPlayer = save.currentPlayer;
-            startingPlayer = save.startingPlayer;
-            p1MovesCount = save.p1MovesCount;
-            aiMovesCount = save.aiMovesCount;
-            gameActive = save.gameActive;
-            lastMove = save.lastMove;
-            currentLang = save.currentLang;
-            diffIdx = save.diffIdx;
+			boardState = save.boardState;
+			currentPlayer = save.currentPlayer;
+			startingPlayer = save.startingPlayer;
+			p1MovesCount = save.p1MovesCount;
+			aiMovesCount = save.aiMovesCount;
+			gameActive = save.gameActive;
+			lastMove = save.lastMove;
+			currentLang = save.currentLang;
+			diffIdx = save.diffIdx;
 
-            // Aktualizace vizuálu
-            diffBtn.textContent = difficulties[diffIdx].icon;
-            diffBtn.title = difficulties[diffIdx].title;
-            langBtn.textContent = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
-            document.getElementById('logHeaderTitle').textContent = txt[currentLang].logHeader;
-            document.getElementById('helpCs').style.display = currentLang === 'cs' ? 'block' : 'none';
-            document.getElementById('helpEn').style.display = currentLang === 'en' ? 'block' : 'none';
+			gameLog = save.gameLog || [];
+			moveNumber = save.moveNumber || 0;
 
-            clearSelection();
-            resetHistory();
-            updateStatusBar();
-            renderBoard();
+			// Aktualizace vizuálu
+			diffBtn.textContent = difficulties[diffIdx].icon;
+			diffBtn.title = difficulties[diffIdx].title;
+			langBtn.textContent =
+				currentLang === 'cs'
+					? '🇬🇧'
+					: '🇨🇿';
 
-            showToast('📂 Hra načtena');
-            logMessage(currentLang === 'cs' ? '📂 Hra načtena' : '📂 Game loaded', 'system');
+			document.getElementById(
+				'logHeaderTitle'
+			).textContent =
+				txt[currentLang].logHeader;
 
-            if (checkStartTurnVictory(currentPlayer)) {
-                return;
-            }
+			document.getElementById(
+				'helpCs'
+			).style.display =
+				currentLang === 'cs'
+					? 'block'
+					: 'none';
 
-            if (currentPlayer === 'AI') {
-                setTimeout(makeAIMove, 300);
-            }
-        }
+			document.getElementById(
+				'helpEn'
+			).style.display =
+				currentLang === 'en'
+					? 'block'
+					: 'none';
+
+			clearSelection();
+			resetHistory();
+
+			// Obnovení logu
+			logBox.innerHTML = '';
+
+			for (
+				let i = gameLog.length - 1;
+				i >= 0;
+				i--
+			) {
+				const item = gameLog[i];
+
+				const entry =
+					document.createElement('div');
+
+				entry.className = 'log-entry';
+
+				if (item.type === 'html') {
+					entry.innerHTML = item.msg;
+				} else {
+					entry.textContent = item.msg;
+				}
+
+				logBox.appendChild(entry);
+			}
+
+			updateStatusBar();
+			renderBoard();
+
+			showToast('📂 Hra načtena');
+			logMessage(
+				currentLang === 'cs'
+					? '📂 Hra načtena'
+					: '📂 Game loaded',
+				'system'
+			);
+
+			if (checkStartTurnVictory(currentPlayer)) {
+				return;
+			}
+
+			if (currentPlayer === 'AI') {
+				setTimeout(makeAIMove, 300);
+			}
+		}
 
 
 
@@ -1799,12 +2156,22 @@
 
 
         function logMessage(msg, type) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            if (type === 'html') entry.innerHTML = msg;
-            else entry.textContent = msg;
-            logBox.insertAdjacentElement('afterbegin', entry);
-        }
+			const entry = document.createElement('div');
+			entry.className = 'log-entry';
+
+			if (type === 'html') {
+				entry.innerHTML = msg;
+			} else {
+				entry.textContent = msg;
+			}
+
+			logBox.insertAdjacentElement('afterbegin', entry);
+
+			gameLog.push({
+				msg,
+				type
+			});
+		}
 
         // ---- Přehrávač partie (replay) ----
 
