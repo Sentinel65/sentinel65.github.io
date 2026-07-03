@@ -204,6 +204,28 @@
             flex-direction: column;
         }
         .log-entry { margin-bottom: 4px; }
+
+        .replay-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            background-color: #313244;
+            border-bottom: 1px solid #585b70;
+        }
+        .replay-controls {
+            display: flex;
+            gap: 6px;
+        }
+        .replay-controls button.icon-btn {
+            font-size: 16px;
+        }
+        .replay-counter {
+            font-size: 12px;
+            opacity: 0.75;
+            font-family: monospace;
+        }
         
         /* Modal pro nápovědu */
         .modal {
@@ -295,6 +317,16 @@
         <div class="log-header">
             <span id="logHeaderTitle">Záznam hry</span>
             <button id="copyLogBtn" title="Kopírovat log hry">📋</button>
+        </div>
+        <div id="replayContainer" class="replay-container">
+            <div class="replay-controls">
+                <button id="replayStartBtn" class="icon-btn" title="Na začátek partie">⏮</button>
+                <button id="replayPrevBtn" class="icon-btn" title="Předchozí tah">◀</button>
+                <button id="replayPlayBtn" class="icon-btn" title="Automatické přehrávání (0.6s)">▶️</button>
+                <button id="replayNextBtn" class="icon-btn" title="Další tah">▶</button>
+                <button id="replayEndBtn" class="icon-btn" title="Na konec partie">⏭</button>
+            </div>
+            <div id="replayCounter" class="replay-counter">Tah 0 / 0</div>
         </div>
         <div id="gameLog" class="log-box"></div>
     </div>
@@ -396,6 +428,11 @@
         let validMoves = [];
         let offBoardMove = null;
         let lastMove = null; 
+
+        // Historie tahů pro přehrávač partie po skončení hry
+        let moveHistory = [];
+        let replayIndex = 0;
+        let replayTimer = null;
         
         let currentLang = 'cs';
 
@@ -579,6 +616,7 @@
             selectedPiece = null; validMoves = []; offBoardMove = null; lastMove = null;
             logBox.innerHTML = ''; offBoardBtn.disabled = true;
             
+            resetHistory();
             updateStatusBar();
             renderBoard();
             
@@ -1315,6 +1353,7 @@
             logMessage(txt[currentLang].gameOver + msg, 'system');
             gameActive = false;
             playSound('end');
+            showReplayControls();
         }
 
         // ---- UI Interakce ----
@@ -1437,6 +1476,8 @@
     }
 
     logMessage(logStr, 'html');
+
+    pushHistorySnapshot();
 
     playSound(
         player === 'Player'
@@ -1670,6 +1711,7 @@
             document.getElementById('helpEn').style.display = currentLang === 'en' ? 'block' : 'none';
 
             clearSelection();
+            resetHistory();
             updateStatusBar();
             renderBoard();
 
@@ -1718,6 +1760,122 @@
             else entry.textContent = msg;
             logBox.insertAdjacentElement('afterbegin', entry);
         }
+
+        // ---- Přehrávač partie (replay) ----
+
+        function cloneBoardState(state) {
+            return state.map(row => row.map(cell => cell ? { owner: cell.owner, count: cell.count } : null));
+        }
+
+        function cloneLastMove(lm) {
+            if (!lm) return null;
+            return {
+                from: { r: lm.from.r, c: lm.from.c },
+                to: lm.to.map(t => ({ r: t.r, c: t.c }))
+            };
+        }
+
+        function pushHistorySnapshot() {
+            moveHistory.push({
+                board: cloneBoardState(boardState),
+                lastMove: cloneLastMove(lastMove)
+            });
+        }
+
+        function resetHistory() {
+            moveHistory = [{
+                board: cloneBoardState(boardState),
+                lastMove: cloneLastMove(lastMove)
+            }];
+            hideReplay();
+        }
+
+        const replayContainer = document.getElementById('replayContainer');
+        const replayCounter = document.getElementById('replayCounter');
+        const replayStartBtn = document.getElementById('replayStartBtn');
+        const replayPrevBtn = document.getElementById('replayPrevBtn');
+        const replayPlayBtn = document.getElementById('replayPlayBtn');
+        const replayNextBtn = document.getElementById('replayNextBtn');
+        const replayEndBtn = document.getElementById('replayEndBtn');
+
+        function showReplayControls() {
+            replayIndex = moveHistory.length - 1;
+            replayContainer.style.display = 'flex';
+            updateReplayView();
+        }
+
+        function hideReplay() {
+            stopAutoReplay();
+            replayContainer.style.display = 'none';
+        }
+
+        function updateReplayView() {
+            const snap = moveHistory[replayIndex];
+            boardState = cloneBoardState(snap.board);
+            lastMove = cloneLastMove(snap.lastMove);
+            selectedPiece = null;
+            validMoves = [];
+            renderBoard();
+
+            const total = moveHistory.length - 1;
+            replayCounter.textContent =
+                currentLang === 'cs'
+                    ? `Tah ${replayIndex} / ${total}`
+                    : `Move ${replayIndex} / ${total}`;
+
+            replayStartBtn.disabled = replayIndex === 0;
+            replayPrevBtn.disabled = replayIndex === 0;
+            replayNextBtn.disabled = replayIndex === total;
+            replayEndBtn.disabled = replayIndex === total;
+        }
+
+        function replayGoto(idx) {
+            replayIndex = Math.max(0, Math.min(moveHistory.length - 1, idx));
+            updateReplayView();
+        }
+
+        function replayStep(delta) {
+            replayGoto(replayIndex + delta);
+        }
+
+        function stopAutoReplay() {
+            if (replayTimer) {
+                clearInterval(replayTimer);
+                replayTimer = null;
+            }
+            replayPlayBtn.textContent = '▶️';
+            replayPlayBtn.title = currentLang === 'cs' ? 'Automatické přehrávání (0.6s)' : 'Auto-play (0.6s)';
+        }
+
+        function toggleAutoReplay() {
+            if (replayTimer) {
+                stopAutoReplay();
+                return;
+            }
+
+            // pokud jsme na konci partie, začneme přehrávat znovu od začátku
+            if (replayIndex >= moveHistory.length - 1) {
+                replayIndex = 0;
+                updateReplayView();
+            }
+
+            replayPlayBtn.textContent = '⏸';
+            replayPlayBtn.title = currentLang === 'cs' ? 'Zastavit přehrávání' : 'Stop playback';
+
+            replayTimer = setInterval(() => {
+                if (replayIndex >= moveHistory.length - 1) {
+                    stopAutoReplay();
+                    return;
+                }
+                replayStep(1);
+            }, 600);
+        }
+
+        replayStartBtn.addEventListener('click', () => { stopAutoReplay(); replayGoto(0); });
+        replayPrevBtn.addEventListener('click', () => { stopAutoReplay(); replayStep(-1); });
+        replayNextBtn.addEventListener('click', () => { stopAutoReplay(); replayStep(1); });
+        replayEndBtn.addEventListener('click', () => { stopAutoReplay(); replayGoto(moveHistory.length - 1); });
+        replayPlayBtn.addEventListener('click', toggleAutoReplay);
 
         document.getElementById('copyLogBtn').addEventListener('click', () => {
             const logText = Array.from(logBox.children).map(child => child.innerText).join('\n');
