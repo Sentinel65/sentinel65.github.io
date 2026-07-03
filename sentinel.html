@@ -677,6 +677,7 @@
             p1MovesCount = 0; aiMovesCount = 0;
             selectedPiece = null; validMoves = []; offBoardMove = null; lastMove = null;
             logBox.innerHTML = ''; offBoardBtn.disabled = true;
+			gameLog = [];
             
             resetHistory();
 			moveNumber = 0;
@@ -2007,35 +2008,33 @@
 
         function saveGame() {
 			const saveData = {
-				boardState,
-				currentPlayer,
-				startingPlayer,
-				p1MovesCount,
-				aiMovesCount,
-				gameActive,
-				lastMove,
-				currentLang,
-				diffIdx,
-				gameLog,
-				moveNumber
-			};
-
+			boardState,
+			currentPlayer,
+			startingPlayer,
+			p1MovesCount,
+			aiMovesCount,
+			gameActive,
+			lastMove,
+			currentLang,
+			diffIdx,
+			gameLog,
+			moveNumber,
+			moveHistory: structuredClone(moveHistory)
+		};
             localStorage.setItem('sentinelSave', JSON.stringify(saveData));
             
             showToast('💾 Hra uložena');
-            logMessage(currentLang === 'cs' ? '💾 Hra uložena' : '💾 Game saved', 'system');
+            
         }
 
         function loadGame() {
 			const data = localStorage.getItem('sentinelSave');
 
 			if (!data) {
-				showToast('⚠️ Uložená hra nebyla nalezena');
-				logMessage(
+				showToast(
 					currentLang === 'cs'
 						? '⚠️ Uložená hra nebyla nalezena'
-						: '⚠️ Saved game not found',
-					'system'
+						: '⚠️ Saved game not found'
 				);
 				return;
 			}
@@ -2052,12 +2051,23 @@
 			currentLang = save.currentLang;
 			diffIdx = save.diffIdx;
 
-			gameLog = save.gameLog || [];
-			moveNumber = save.moveNumber || 0;
+			gameLog = save.gameLog
+				? [...save.gameLog]
+				: [];
 
-			// Aktualizace vizuálu
-			diffBtn.textContent = difficulties[diffIdx].icon;
-			diffBtn.title = difficulties[diffIdx].title;
+			moveNumber = save.moveNumber || 0;
+			moveHistory = save.moveHistory || [{
+			board: cloneBoardState(boardState),
+			lastMove: cloneLastMove(lastMove)
+		}];
+
+			// Aktualizace UI
+			diffBtn.textContent =
+				difficulties[diffIdx].icon;
+
+			diffBtn.title =
+				difficulties[diffIdx].title;
+
 			langBtn.textContent =
 				currentLang === 'cs'
 					? '🇬🇧'
@@ -2083,7 +2093,10 @@
 					: 'none';
 
 			clearSelection();
-			resetHistory();
+			
+
+			updateStatusBar();
+			renderBoard();
 
 			// Obnovení logu
 			logBox.innerHTML = '';
@@ -2109,22 +2122,18 @@
 				logBox.appendChild(entry);
 			}
 
-			updateStatusBar();
-			renderBoard();
-
-			showToast('📂 Hra načtena');
-			logMessage(
+			showToast(
 				currentLang === 'cs'
 					? '📂 Hra načtena'
-					: '📂 Game loaded',
-				'system'
+					: '📂 Game loaded'
 			);
 
-			if (checkStartTurnVictory(currentPlayer)) {
-				return;
-			}
-
-			if (currentPlayer === 'AI') {
+			// Pokud je na tahu AI,
+			// pokračuje ve hře.
+			if (
+				gameActive &&
+				currentPlayer === 'AI'
+			) {
 				setTimeout(makeAIMove, 300);
 			}
 		}
