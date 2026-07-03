@@ -338,7 +338,7 @@
             <div id="toast"></div>
     
     <div class="controls">
-        <button id="langBtn" class="icon-btn" title="Změnit jazyk / Change language">🇬🇧</button>
+        <button id="langBtn" class="icon-btn" title="Změnit jazyk / Change language">🇨🇿</button>
         <button id="helpBtn" class="icon-btn" title="Nápověda / Help">💡</button>
         <button id="diffBtn" class="icon-btn" title="Obtížnost: Střední">🟡</button>
         <button id="saveBtn" class="icon-btn">💾</button>
@@ -407,7 +407,7 @@
             </div>
             <div id="helpEn" style="display: none;">
             <h2>Rules</h2>
-            <p><em><strong>Sentinel</strong> is a vigil game where players always need to have at least one line-of-sight to the board's center.<br>Autor: <strong>João Pedro Neto © 2026</strong></em></p>
+            <p><em><strong>Sentinel</strong> is a vigil game where players always need to have at least one line-of-sight to the board's center.<br>Designer: <strong>João Pedro Neto © 2026</strong></em></p>
             <p><strong>Goal:</strong></p>
             <ul>
                 <li>A player wins if, at the beginning of their turn, five or more of their stones have direct line of sight to the center square.</li>
@@ -479,7 +479,7 @@
         let replayIndex = 0;
         let replayTimer = null;
         
-        let currentLang = 'cs';
+        let currentLang = 'en';
 
         // Slovník textů pro jazyky
         const txt = {
@@ -2017,7 +2017,11 @@
 		};
             localStorage.setItem('sentinelSave', JSON.stringify(saveData));
             
-            showToast('💾 Hra uložena');
+            showToast(
+				currentLang === 'cs'
+					? '💾 Hra uložena'
+					: '💾 Game saved'
+			);
             
         }
 
@@ -2042,7 +2046,6 @@
 			aiMovesCount = save.aiMovesCount;
 			gameActive = save.gameActive;
 			lastMove = save.lastMove;
-			currentLang = save.currentLang;
 			diffIdx = save.diffIdx;
 
 			gameLog = save.gameLog
