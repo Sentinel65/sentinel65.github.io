@@ -472,6 +472,7 @@
         let lastMove = null;
 		let moveNumber = 0;
 		let gameLog = [];
+		let startTurnLoS = 0;
 
         // Historie tahů pro přehrávač partie po skončení hry
         let moveHistory = [];
@@ -611,11 +612,12 @@
         function checkStartTurnVictory(player) {
 
         const losCount = countPiecesWithLoS(player);
+		startTurnLoS = losCount;
 		const diffLoS = currentLang === 'cs' 
                 ? `⚙️ ${player} má na začátku tahu LoS = ${losCount}` 
                 : `⚙️ ${player} start turn LoS = ${losCount}`;
                 
-            logMessage(diffLoS, 'system');
+        //    logMessage(diffLoS, 'system');
 
 
 
@@ -1646,169 +1648,161 @@
         }
 
         function executeMove(move, player) {
-	
-		moveNumber++;
-		const moveNo = String(moveNumber).padStart(2, '0');	
 
-		if (player === 'Player')
-			p1MovesCount++;
-		else
-			aiMovesCount++;
+			moveNumber++;
+			const moveNo = String(moveNumber).padStart(2, '0');
 
-		const fromPos =
-			`${columns[move.fromC]}${boardSize - move.fromR}`;
+			if (player === 'Player')
+				p1MovesCount++;
+			else
+				aiMovesCount++;
 
-		lastMove = {
-			from: {
-				r: move.fromR,
-				c: move.fromC
-			},
-			to: []
-		};
-
-		const icon =
-			player === 'Player'
-				? '🟢'
-				: '🔴';
-
-		let logStr = `${icon} ${moveNo}. ${fromPos} -> `;
-
-		boardState =
-			simulateMove(
-				boardState,
-				move,
-				player
-			);
-
-		if (move.type === 'single') {
-
-			if (move.offBoard) {
-
-				logStr +=
-					txt[currentLang].offBoard;
-
-			} else {
-
-				lastMove.to.push({
-					r: move.toR,
-					c: move.toC
-				});
-
-				const target =
-				boardState[move.toR][move.toC];
-
-			let targetText =
-				`${columns[move.toC]}${boardSize - move.toR}`;
-
-			if (
-				target &&
-				target.owner === player &&
-				target.count > 1
-			) {
-				targetText += `[${target.count}]`;
-			}
-
-			logStr += targetText;
-			}
-
-		} else if (move.type === 'sow') {
-
-			let dests = [];
-
-			for (let p of move.path) {
-
-				lastMove.to.push({
-					r: p.r,
-					c: p.c
-				});
-
-				let currentCount =
-					boardState[p.r][p.c].count;
-
-				dests.push(
-					`${columns[p.c]}${boardSize - p.r}${currentCount > 1 ? `[${currentCount}]` : ''}`
-				);
-			}
-
-			logStr += `{ ${dests.join(', ')} }`;
-		}
-
-		logMessage(logStr, 'html');
-
-		pushHistorySnapshot();
-
-		playSound(
-			player === 'Player'
-				? 'player'
-				: 'ai'
-		);
-
-		selectedPiece = null;
-		validMoves = [];
-		offBoardMove = null;
-		offBoardBtn.disabled = true;
-
-		renderBoard();
-
-			// okamžitá prohra při ztrátě všech kamenů
-
-		if (countTotalPieces('Player') === 0) {
-			// Hráč má 0 kamenů -> voláme hlášku, že hráč přišel o kameny
-			endGame(txt[currentLang].winPlayerStones);
-			return;
-		}
-
-		if (countTotalPieces('AI') === 0) {
-			// AI má 0 kamenů -> voláme hlášku, že AI přišlo o kameny
-			endGame(txt[currentLang].winAIStones);
-			return;
-		}
-
-		// hráč, který právě dokončil tah,
-		// musí mít alespoň 1 LoS
-
-		if (countPiecesWithLoS(player) === 0) {
-
-			endGame(
+			const icon =
 				player === 'Player'
-					? txt[currentLang].winPlayerLoS // Hráč ztratil výhled
-					: txt[currentLang].winAILoS     // AI ztratilo výhled
+					? '🟢'
+					: '🔴';
+
+			// 🔥 LoS jen jednou – na začátku tahu
+			const los = countPiecesWithLoS(player);
+
+			const fromPos =
+				`${columns[move.fromC]}${boardSize - move.fromR}`;
+
+			lastMove = {
+				from: {
+					r: move.fromR,
+					c: move.fromC
+				},
+				to: []
+			};
+
+			// 🧱 HLAVIČKA TAHU (tady je LoS)
+			let logStr =
+				`${icon} ${moveNo}. ⚙️{${los}} ${fromPos} -> `;
+
+			boardState =
+				simulateMove(boardState, move, player);
+
+			// =========================
+			// SINGLE MOVE
+			// =========================
+			if (move.type === 'single') {
+
+				if (move.offBoard) {
+
+					logStr += txt[currentLang].offBoard;
+
+				} else {
+
+					lastMove.to.push({
+						r: move.toR,
+						c: move.toC
+					});
+
+					const target =
+						boardState[move.toR][move.toC];
+
+					let targetText =
+						`${columns[move.toC]}${boardSize - move.toR}`;
+
+					if (
+						target &&
+						target.owner === player &&
+						target.count > 1
+					) {
+						targetText += `[${target.count}]`;
+					}
+
+					logStr += targetText;
+				}
+			}
+
+			// =========================
+			// SOW (rozklad)
+			// =========================
+			else if (move.type === 'sow') {
+
+				let dests = [];
+
+				for (let p of move.path) {
+
+					lastMove.to.push({
+						r: p.r,
+						c: p.c
+					});
+
+					const currentCount =
+						boardState[p.r][p.c].count;
+
+					dests.push(
+						`${columns[p.c]}${boardSize - p.r}${
+							currentCount > 1
+								? `[${currentCount}]`
+								: ''
+						}`
+					);
+				}
+
+				logStr += `{ ${dests.join(', ')} }`;
+			}
+
+			// =========================
+			// LOG
+			// =========================
+			logMessage(logStr, 'html');
+
+			pushHistorySnapshot();
+
+			playSound(
+				player === 'Player'
+					? 'player'
+					: 'ai'
 			);
 
-			return;
+			selectedPiece = null;
+			validMoves = [];
+			offBoardMove = null;
+			offBoardBtn.disabled = true;
+
+			renderBoard();
+
+			// =========================
+			// END GAME CHECKS
+			// =========================
+			if (countTotalPieces('Player') === 0) {
+				endGame(txt[currentLang].winPlayerStones);
+				return;
+			}
+
+			if (countTotalPieces('AI') === 0) {
+				endGame(txt[currentLang].winAIStones);
+				return;
+			}
+
+			if (countPiecesWithLoS(player) === 0) {
+				endGame(
+					player === 'Player'
+						? txt[currentLang].winPlayerLoS
+						: txt[currentLang].winAILoS
+				);
+				return;
+			}
+
+			currentPlayer =
+				player === 'Player'
+					? 'AI'
+					: 'Player';
+
+			updateStatusBar();
+
+			if (checkStartTurnVictory(currentPlayer)) {
+				return;
+			}
+
+			if (currentPlayer === 'AI') {
+				setTimeout(makeAIMove, 100);
+			}
 		}
-	 
-
-		
-		// předání tahu
-
-		currentPlayer =
-			player === 'Player'
-				? 'AI'
-				: 'Player';
-
-		updateStatusBar();
-
-		// výhra se kontroluje na začátku tahu
-
-		if (
-			checkStartTurnVictory(
-				currentPlayer
-			)
-		) {
-			return;
-		}
-
-		// spuštění AI
-
-		if (currentPlayer === 'AI') {
-
-			setTimeout(
-				makeAIMove,
-				100
-			);
-		}
-	}
 
 
 		function countPiecesState(state, player) {
