@@ -479,7 +479,7 @@
         let replayIndex = 0;
         let replayTimer = null;
         
-        let currentLang = 'en';
+        let currentLang = 'cs';
 
         // Slovník textů pro jazyky
         const txt = {
@@ -1294,7 +1294,7 @@
                 return table;
             })();
 
-            function evaluateState(state, currentPlayerTurn) {
+            function evaluateState(state, currentPlayerTurn,p1MoveCnt,aiMoveCnt) {
 
 			// Hráč, který PRÁVĚ dokončil tah vedoucí do tohoto stavu
 			// (currentPlayerTurn je hráč, kterého tah v tomto stavu teprve začíná).
@@ -1329,7 +1329,7 @@
 					if (p.owner === 'AI') {
 
 						// počet figurek na desce
-						aiPieces++;
+						aiPieces += p.count;
 
 						aiCenterScore +=
 							posValue * p.count;
@@ -1352,7 +1352,7 @@
 					}
 					else {
 
-						plPieces++;
+						plPieces += p.count;
 
 						plCenterScore +=
 							posValue * p.count;
@@ -1406,7 +1406,7 @@
 
 			let score = 0;
 			// útok
-			score += (aiLoS - plLoS) * 1200;
+			score += (aiLoS - plLoS) * 800;
 			// boj o střed 
 			score += (aiCenterScore - plCenterScore) * 80;
 			// stohy
@@ -1414,13 +1414,29 @@
 			// velké stohy	
 			score += (aiBigStacks - plBigStacks) * 100;
 
-			score += (aiPieces - plPieces) * 40;
+			score += (aiPieces - plPieces) * 150;
 
 			// obrana proti hrozící výhře
-			if (plLoS === 4) score -= 2500;
-			if (aiLoS === 4) score += 2500;
+			if (plLoS === 4) score -= 7000;
+			if (aiLoS === 4) score += 7000;
 
-			
+			const aiMoves =
+    getAllValidMovesState(
+        state,
+        'AI',
+        p1MovesCount,
+        aiMoveCnt
+    ).length;
+
+const plMoves =
+    getAllValidMovesState(
+        state,
+        'Player',
+        p1MoveCnt,
+        aiMoveCnt
+    ).length;
+
+score += (aiMoves - plMoves) * 15;
 
 			return score;
 		}
@@ -1546,7 +1562,7 @@
             }
             if (ttEntry) ttBestMove = ttEntry.bestMove;
             
-            let score = evaluateState(state, currentPlayerTurn);
+            let score = evaluateState(state, currentPlayerTurn,p1MoveCnt,aiMoveCnt);
             if (Math.abs(score) >= 25000) return score;
             if (depth === 0) return score;
 
