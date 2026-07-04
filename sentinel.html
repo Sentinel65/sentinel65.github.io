@@ -1981,7 +1981,7 @@ score += (aiMoves - plMoves) * 15;
                     let globalBestMove = allMoves[0];
                     let searchAborted = false;
 
-                    let topMoves = allMoves.sort((a, b) => getMoveHeuristic(boardState, b, 'AI') - getMoveHeuristic(boardState, a, 'AI')).slice(0, 8);
+                    let topMoves = allMoves.sort((a, b) => getMoveHeuristic(boardState, b, 'AI') - getMoveHeuristic(boardState, a, 'AI')).slice(0, 20);
 
                 for (let depth = 4; depth <= 10; depth++) {
 				
@@ -2017,6 +2017,10 @@ score += (aiMoves - plMoves) * 15;
                             globalBestMove = currentDepthBestMoves[Math.floor(Math.random() * currentDepthBestMoves.length)];
                             // Pro další iteraci dáme nejlepší tah na 1. místo, což extrémně zrychlí Minimax
                             allMoves = [globalBestMove, ...allMoves.filter(m => m !== globalBestMove)];
+                            topMoves = allMoves.slice(
+    0,
+    Math.min(16, allMoves.length)
+);
                         }
 
                         // Pokud AI našlo vynucenou výhru v pár tazích, nemusí dál plýtvat časem
