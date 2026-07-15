@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>SumOn</title>
+<style>
+  :root{
+    --bg:#161a24;
+    --panel:#1f2534;
+    --panel2:#262d40;
+    --line:#333c54;
+    --gold:#e8b04b;
+    --red:#d5453f;
+    --red-dark:#9c2f2b;
+    --blue:#3465b0;
+    --blue-dark:#264a80;
+    --cell:#232a3c;
+    --cell-alt:#262e42;
+    --text:#eef0f5;
+    --muted:#8b93a8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    overscroll-behavior:none;}
+  #app{max-width:520px;margin:0 auto;padding:10px 10px 24px;min-height:100vh;display:flex;flex-direction:column;gap:10px;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 0;}
+  header h1{font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:1px;margin:0;
+    background:linear-gradient(90deg,var(--gold),#f4d789);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  header .sub{font-size:11px;color:var(--muted);margin-top:-2px;}
+  #langBtn,#helpBtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    padding:6px 10px;font-size:18px;cursor:pointer;line-height:1;}
+  #helpBtn{font-weight:700;color:var(--gold);border-color:var(--gold);}
+  #langBtn:active,#helpBtn:active{background:var(--panel2);}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;}
+
+  #setup .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  #setup label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  .segmented{display:flex;background:var(--panel2);border-radius:10px;overflow:hidden;border:1px solid var(--line);flex:1;min-width:140px;}
+  .segmented button{flex:1;border:none;background:transparent;color:var(--text);padding:8px 4px;font-size:13px;cursor:pointer;line-height:1.3;}
+  .segmented button.active{background:var(--gold);color:#20242f;font-weight:600;}
+  #startBtn{width:100%;padding:10px;border:none;border-radius:10px;background:var(--gold);color:#20242f;
+    font-weight:700;font-size:15px;cursor:pointer;margin-top:2px;line-height:1.3;}
+  #startBtn:active{filter:brightness(0.92);}
+
+  #statusBar{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:8px 12px;}
+  #statusBar .turn-indicator{display:flex;align-items:center;gap:8px;font-weight:600;}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  .dot.red{background:var(--red);} .dot.blue{background:var(--blue);}
+  #scoreRow{display:flex;gap:14px;font-size:12px;color:var(--muted);}
+  #scoreRow b{color:var(--text);}
+
+  #boardWrap{display:flex;justify-content:center;}
+  .board-outer{
+    display:grid;
+    grid-template-columns:18px 1fr;
+    grid-template-rows:1fr 16px;
+    width:min(94vw,460px);
+    gap:4px;
+  }
+  .row-labels{
+    grid-column:1; grid-row:1;
+    display:grid;
+    grid-template-rows:repeat(8,1fr);
+  }
+  .row-labels span{display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--muted);}
+  .col-labels{
+    grid-column:2; grid-row:2;
+    display:grid;
+    grid-template-columns:repeat(9,1fr);
+  }
+  .col-labels span{display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--muted);}
+  .corner{grid-column:1;grid-row:2;}
+  #board{
+    grid-column:2; grid-row:1;
+    display:grid;
+    grid-template-columns:repeat(9,1fr);
+    grid-template-rows:repeat(8,1fr);
+    aspect-ratio:9/8;
+    background:#10131c;
+    border:2px solid var(--line);
+    border-radius:10px;
+    padding:6px;
+    gap:3px;
+  }
+  .cell{
+    background:var(--cell);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    transition:background .15s;
+  }
+  .cell.altrow{background:var(--cell-alt);}
+  .cell.dest::after{
+    content:'';width:32%;height:32%;border-radius:50%;background:var(--gold);opacity:.55;
+  }
+  .cell.axis-glow{box-shadow:inset 0 0 0 2px rgba(232,176,75,.55);}
+  .piece{
+    width:82%;height:82%;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;color:#fff;
+    box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 -3px 6px rgba(0,0,0,.25), inset 0 2px 3px rgba(255,255,255,.25);
+    cursor:pointer;transition:transform .12s;
+    user-select:none;
+  }
+  .piece.red{background:radial-gradient(circle at 35% 30%,#ea6b62,var(--red) 60%,var(--red-dark));}
+  .piece.blue{background:radial-gradient(circle at 35% 30%,#5c8ed6,var(--blue) 60%,var(--blue-dark));}
+  .piece.done{opacity:.55;filter:grayscale(.3);}
+  .piece.selected{transform:scale(1.12);box-shadow:0 0 0 3px var(--gold),0 2px 6px rgba(0,0,0,.5);}
+  .piece.bonus-eligible{box-shadow:0 0 0 3px rgba(232,176,75,.9),0 0 10px rgba(232,176,75,.7);animation:pulse 1.1s infinite;}
+  .piece.not-clickable{cursor:default;}
+  @keyframes pulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.28);}}
+
+  #actions{display:flex;gap:6px;}
+  #actions button{flex:1;padding:8px 4px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-size:17px;font-weight:600;cursor:pointer;line-height:1;}
+  #endTurnBtn{border-color:var(--gold)!important;color:var(--gold)!important;}
+  #actions button:disabled{opacity:.35;}
+  .action-row{display:flex;gap:8px;}
+  .action-row button{flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--muted);font-size:17px;font-weight:600;cursor:pointer;line-height:1;}
+  .action-row button:disabled{opacity:.35;}
+
+  #log{max-height:150px;overflow-y:auto;font-size:12px;line-height:1.5;color:var(--muted);}
+  #log div{border-bottom:1px dashed var(--line);padding:3px 0;white-space:pre-line;font-family:'Courier New',monospace;}
+  #log div:first-child{color:var(--text);}
+  #logTitle{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;}
+
+  #overlay,#helpOverlay{position:fixed;inset:0;background:rgba(10,12,18,.86);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  #overlay.hidden,#helpOverlay.hidden{display:none;}
+  #resultCard{background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:24px;text-align:center;max-width:320px;}
+  #resultCard h2{margin:0 0 10px;color:var(--gold);font-family:Georgia,serif;}
+  #resultCard p{margin:4px 0;font-size:14px;color:var(--text);}
+  #resultCard button{margin-top:14px;padding:10px 18px;border:none;border-radius:10px;background:var(--gold);
+    color:#20242f;font-weight:700;cursor:pointer;font-size:18px;}
+  #helpCard{background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:18px 20px;
+    max-width:440px;max-height:82vh;overflow-y:auto;}
+  #helpContent h3{color:var(--gold);font-size:15px;margin:14px 0 4px;}
+  #helpContent h3:first-child{margin-top:0;}
+  #helpContent p{font-size:13px;line-height:1.55;color:var(--text);margin:4px 0;}
+  #helpContent ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.5;color:var(--text);}
+  #helpContent b{color:var(--gold);}
+  #helpCloseBtn{width:100%;margin-top:14px;padding:10px 18px;border:none;border-radius:10px;background:var(--gold);
+    color:#20242f;font-weight:700;cursor:pointer;font-size:18px;}
+  .hidden{display:none!important;}
+  #thinking{font-size:12px;color:var(--gold);text-align:center;height:16px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div>
+      <h1>SumOn</h1>
+      <div class="sub" id="subtitle">by Markus Hagenauer</div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button id="helpBtn" title="Help">💡</button>
+      <button id="langBtn" title="Language"></button>
+    </div>
+  </header>
+
+  <div id="setup" class="panel">
+    <div class="row">
+      <div class="segmented" id="colorPick">
+        <button data-v="blue" class="active"></button>
+        <button data-v="red"></button>
+      </div>
+      <div class="segmented" id="diffPick">
+        <button data-v="easy"></button>
+        <button data-v="medium" class="active"></button>
+        <button data-v="hard"></button>
+      </div>
+    </div>
+    <button id="startBtn"></button>
+    <button id="continueBtn" class="hidden" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;
+      border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:14px;cursor:pointer;"></button>
+  </div>
+
+  <div id="gameArea" class="hidden" style="display:flex;flex-direction:column;gap:10px;">
+    <div id="statusBar" class="panel">
+      <div class="turn-indicator"><span class="dot" id="turnDot"></span><span id="turnText"></span></div>
+      <div id="scoreRow"></div>
+    </div>
+
+    <div id="boardWrap">
+      <div class="board-outer">
+        <div class="row-labels" id="rowLabels"></div>
+        <div id="board"></div>
+        <div class="corner"></div>
+        <div class="col-labels" id="colLabels"></div>
+      </div>
+    </div>
+    <div id="thinking"></div>
+
+    <div id="actions">
+      <button id="undoBtn" title="Undo" disabled>↩️</button>
+      <button id="endTurnBtn" title="End Turn" disabled>✅</button>
+      <button id="newGameBtn" title="New Game">🔄</button>
+      <button id="saveBtn" title="Save">💾</button>
+      <button id="loadBtn" title="Load">📂</button>
+    </div>
+    <div id="replayBar" class="action-row hidden">
+      <button id="replayStartBtn" title="Start">⏮️</button>
+      <button id="replayBackBtn" title="Back">⏪</button>
+      <button id="replayPlayBtn" title="Play">▶️</button>
+      <button id="replayFwdBtn" title="Forward">⏩</button>
+      <button id="replayEndBtn" title="End">⏭️</button>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div id="logTitle"></div>
+        <button id="copyLogBtn" title="Copy" style="background:none;border:1px solid var(--line);color:var(--muted);
+          border-radius:8px;padding:4px 8px;font-size:15px;cursor:pointer;">📋</button>
+      </div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="overlay" class="hidden">
+  <div id="resultCard">
+    <h2 id="resTitle"></h2>
+    <p id="resDetail"></p>
+    <button id="resCloseBtn" title="Close">✖️</button>
+  </div>
+</div>
+
+<div id="helpOverlay" class="hidden">
+  <div id="helpCard">
+    <div id="helpContent"></div>
+    <button id="helpCloseBtn" title="Close">✖️</button>
+  </div>
+</div>
+
+<script>
+/* ---------------- i18n ---------------- */
+const T = {
+  cs:{
+    subtitle:"od Markuse Hagenauera",
+    colorBlue:"Modrý", colorRed:"Červený",
+    diffEasy:"Lehká", diffMedium:"Střední", diffHard:"Těžká",
+    start:"Nová hra",
+    yourTurn:"Na tahu:", you:"Vy", ai:"AI",
+    red:"Červený", blue:"Modrý",
+    endTurn:"Ukončit tah", newGame:"Nová hra",
+    logTitle:"Historie tahů",
+    thinking:"AI přemýšlí…",
+    moveInit:(c,n,r1,c1,r2,c2)=>`${c} ${n}: ${p(r1,c1)} → ${p(r2,c2)}`,
+    moveBonus:(c,n,r1,c1,r2,c2,sum)=>`${c} ${n} (bonus, součet ${sum}): ${p(r1,c1)} → ${p(r2,c2)}`,
+    endTurnLog:(c)=>`${c} ukončuje tah.`,
+    gameOverStuck:(c)=>`${c} nemůže táhnout — hra končí.`,
+    winner:(c)=>`${c} vyhrává!`,
+    tie:(c)=>`Remíza v součtu — vítězí ${c} (soupeř nemohl táhnout).`,
+    finalScore:(rs,bs)=>`Červený: ${rs} bodů  •  Modrý: ${bs} bodů`,
+    close:"Zavřít",
+    selectPieceHint:"Vyberte figurku a poté cílové pole.",
+    bonusHint:"Můžete táhnout zvýrazněnou figurkou (bonus), nebo ukončit tah.",
+    bonusWord:"bonus",
+    copyLog:"Kopírovat log",
+    copied:"Zkopírováno!",
+    saveGame:"Uložit hru",
+    loadGame:"Načíst hru",
+    saved:"Hra uložena.",
+    loadedOk:"Hra načtena.",
+    loadedFail:"Žádná uložená hra nenalezena.",
+    continueSaved:"Pokračovat v uložené hře",
+    undo:"Tah zpět",
+    replayStart:"Na začátek hry", replayBack:"O tah zpět", replayPlay:"Přehrát", replayPause:"Zastavit",
+    replayForward:"O tah vpřed", replayEnd:"Na konec hry",
+    switchLang:"English",
+  },
+  en:{
+    subtitle:"by Markus Hagenauer",
+    colorBlue:"Play Blue", colorRed:"Play Red",
+    diffEasy:"Easy", diffMedium:"Medium", diffHard:"Hard",
+    start:"New Game",
+    yourTurn:"Turn:", you:"You", ai:"AI",
+    red:"Red", blue:"Blue",
+    endTurn:"End Turn", newGame:"New Game",
+    logTitle:"Move Log",
+    thinking:"AI thinking…",
+    moveInit:(c,n,r1,c1,r2,c2)=>`${c} ${n}: ${p(r1,c1)} → ${p(r2,c2)}`,
+    moveBonus:(c,n,r1,c1,r2,c2,sum)=>`${c} ${n} (bonus, sum ${sum}): ${p(r1,c1)} → ${p(r2,c2)}`,
+    endTurnLog:(c)=>`${c} ends turn.`,
+    gameOverStuck:(c)=>`${c} cannot move — game over.`,
+    winner:(c)=>`${c} wins!`,
+    tie:(c)=>`Tied score — ${c} wins (opponent could not move).`,
+    finalScore:(rs,bs)=>`Red: ${rs} pts  •  Blue: ${bs} pts`,
+    close:"Close",
+    selectPieceHint:"Select a piece, then a highlighted destination.",
+    bonusHint:"You may move a highlighted bonus piece, or end your turn.",
+    bonusWord:"bonus",
+    copyLog:"Copy log",
+    copied:"Copied!",
+    saveGame:"Save game",
+    loadGame:"Load game",
+    saved:"Game saved.",
+    loadedOk:"Game loaded.",
+    loadedFail:"No saved game found.",
+    continueSaved:"Continue saved game",
+    undo:"Undo move",
+    replayStart:"Go to start", replayBack:"Step back", replayPlay:"Play", replayPause:"Pause",
+    replayForward:"Step forward", replayEnd:"Go to end",
+    switchLang:"Čeština",
+  }
+};
+function p(r,c){ return `(${r+1},${c+1})`; }
+let lang = 'cs';
+function t(key){ return T[lang][key]; }
+
+/* ---------------- constants ---------------- */
+const ROWS=8, COLS=9;
+
+/* ---------------- game state ---------------- */
+let board, pieces, currentPlayer, turnPhase, chainLastPos, moveList, gameActive;
+let humanColor='blue', difficulty='medium', aiBusy=false;
+
+function colorName(c){ return c==='red'? t('red'): t('blue'); }
+
+/* ---------------- pure board helpers (board param based, reusable for sim) ---------------- */
+function legalMovesForPiece(bd, piece){
+  const dr = piece.color==='red' ? 1 : -1;
+  const res=[];
+  for(const dc of [-1,0,1]){
+    const nr=piece.row+dr, nc=piece.col+dc;
+    if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && !bd[nr][nc]) res.push({row:nr,col:nc});
+  }
+  return res;
+}
+function hasAnyLegalMove(bd, piecesArr, color){
+  return piecesArr.some(p=>p.color===color && legalMovesForPiece(bd,p).length>0);
+}
+function posNotation(r,c){ return String.fromCharCode(97+c) + (ROWS-r); }
+const AXIS_SYMBOL = {h:'—', d1:'\\', d2:'/', v:'|'};
+function getAxes(bd, r, c){
+  // returns axes (full line of cells) through (r,c) that have >=2 occupied pieces on them
+  // order: horizontal, diag1 (\), diag2 (/), vertical
+  const axes=[];
+  function build(lineCells, type){
+    const occ = lineCells.filter(p=>bd[p.row][p.col]);
+    if(occ.length>=2){
+      const contributors = occ.map(p=>({row:p.row,col:p.col,num:bd[p.row][p.col].num,color:bd[p.row][p.col].color}));
+      const sum = contributors.reduce((s,p)=>s+p.num,0);
+      axes.push({type, sum, cells:lineCells, contributors});
+    }
+  }
+  // horizontal
+  build(Array.from({length:COLS},(_,cc)=>({row:r,col:cc})), 'h');
+  // diag1 r-c = const
+  { const k=r-c; const cells=[];
+    for(let rr=0;rr<ROWS;rr++){ const cc=rr-k; if(cc>=0&&cc<COLS) cells.push({row:rr,col:cc}); }
+    build(cells,'d1'); }
+  // diag2 r+c = const
+  { const k=r+c; const cells=[];
+    for(let rr=0;rr<ROWS;rr++){ const cc=k-rr; if(cc>=0&&cc<COLS) cells.push({row:rr,col:cc}); }
+    build(cells,'d2'); }
+  // vertical
+  build(Array.from({length:ROWS},(_,rr)=>({row:rr,col:c})), 'v');
+  return axes;
+}
+function findPiece(piecesArr,color,num){ return piecesArr.find(p=>p.color===color&&p.num===num); }
+function getBonusOptions(bd, piecesArr, color, r, c){
+  const axes = getAxes(bd,r,c);
+  const map = new Map();
+  const axisCellsUnion=[];
+  for(const ax of axes){
+    const cand = findPiece(piecesArr,color,ax.sum);
+    if(!cand) continue;
+    const moves = legalMovesForPiece(bd,cand);
+    if(moves.length===0) continue;
+    axisCellsUnion.push(ax.cells);
+    if(!map.has(cand)) map.set(cand,{piece:cand,moves});
+  }
+  return {options:[...map.values()], axisCellsUnion, allAxes:axes};
+}
+function applyMove(bd, piecesArr, piece, dest){
+  bd[piece.row][piece.col]=null;
+  piece.row=dest.row; piece.col=dest.col;
+  bd[piece.row][piece.col]=piece;
+}
+function cloneState(bd, piecesArr){
+  const ps = piecesArr.map(p=>({...p}));
+  const b = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  ps.forEach(p=> b[p.row][p.col]=p);
+  return {board:b, pieces:ps};
+}
+
+/* ---------------- init ---------------- */
+let nextStartColor='blue'; // rules: blue starts the very first game; alternates each new game after
+function newGame(){
+  board = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  pieces = [];
+  // top row (row 0, red): column 0 empty, columns 1-8 ascending 1..8 (top-right = 8)
+  for(let c=1;c<=8;c++){
+    const red = {color:'red', num:c, row:0, col:c};
+    board[0][c]=red;
+    pieces.push(red);
+  }
+  // bottom row (row ROWS-1, blue): columns 0-7 descending 8..1 (bottom-left = 8), column 8 empty
+  for(let c=0;c<8;c++){
+    const blue = {color:'blue', num:8-c, row:ROWS-1, col:c};
+    board[ROWS-1][c]=blue;
+    pieces.push(blue);
+  }
+  currentPlayer = nextStartColor;
+  nextStartColor = nextStartColor==='red' ? 'blue' : 'red';
+  turnPhase='initial';
+  chainLastPos=null;
+  moveList=[];
+  gameActive=true;
+  logEntries=[];
+  lastMovedPos=null;
+  currentBonusOptions=[];
+  currentAxisCells=[];
+  selectedPiece=null;
+  destOptions=[];
+  historyStack=[];
+  moveHistory=[];
+  initialSetupSnapshot = pieces.map(p=>({...p}));
+  replayFrames=[];
+  stopReplayPlaying();
+  document.getElementById('replayBar').classList.add('hidden');
+  document.getElementById('log').innerHTML='';
+  document.getElementById('endTurnBtn').disabled=true;
+  updateUndoButtonState();
+  renderBoard();
+  updateStatus();
+  maybeTriggerAI();
+}
+
+/* ---------------- rendering ---------------- */
+let selectedPiece=null, destOptions=[];
+
+function renderBoard(){
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML='';
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell' + ((r+c)%2===1?' altrow':'');
+      cell.dataset.r=r; cell.dataset.c=c;
+      const isDest = destOptions.some(d=>d.row===r&&d.col===c);
+      if(isDest) cell.classList.add('dest');
+      if(turnPhase==='bonus' && currentAxisCells.some(a=>a.row===r&&a.col===c)) cell.classList.add('axis-glow');
+      const piece = board[r][c];
+      if(piece){
+        const pe = document.createElement('div');
+        pe.className='piece '+piece.color;
+        const goalRow = piece.color==='red'? ROWS-1:0;
+        if(piece.row===goalRow) pe.classList.add('done');
+        pe.textContent = piece.num;
+        const clickable = isPieceClickable(piece);
+        if(!clickable) pe.classList.add('not-clickable');
+        if(selectedPiece===piece) pe.classList.add('selected');
+        if(isBonusEligible(piece)) pe.classList.add('bonus-eligible');
+        pe.addEventListener('click', (e)=>{ e.stopPropagation(); onPieceClick(piece); });
+        cell.appendChild(pe);
+      }
+      if(isDest){
+        cell.addEventListener('click', ()=> onDestClick(r,c));
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+let currentBonusOptions=[];
+function isBonusEligible(piece){
+  if(turnPhase!=='bonus') return false;
+  if(piece.color!==currentPlayer) return false;
+  return currentBonusOptions.some(o=>o.piece===piece);
+}
+function isPieceClickable(piece){
+  if(!gameActive || aiBusy) return false;
+  if(piece.color!==currentPlayer) return false;
+  if(currentPlayer!==humanColor) return false;
+  if(turnPhase==='initial') return legalMovesForPiece(board,piece).length>0;
+  if(turnPhase==='bonus') return isBonusEligible(piece);
+  return false;
+}
+
+function onPieceClick(piece){
+  if(!isPieceClickable(piece)) return;
+  selectedPiece = piece;
+  if(turnPhase==='initial'){
+    destOptions = legalMovesForPiece(board,piece);
+  } else {
+    const opt = currentBonusOptions.find(o=>o.piece===piece);
+    destOptions = opt? opt.moves : [];
+  }
+  renderBoard();
+}
+
+function onDestClick(r,c){
+  if(!selectedPiece) return;
+  const piece = selectedPiece;
+  const from = {row:piece.row, col:piece.col};
+  const isBonusMove = turnPhase==='bonus';
+  pushHistorySnapshot();
+  applyMove(board, pieces, piece, {row:r,col:c});
+  recordMove(piece.color, piece.num, from, {row:r,col:c});
+  selectedPiece=null; destOptions=[];
+  lastMovedPos = {row:r,col:c};
+  afterMove(piece, from, {row:r,col:c}, isBonusMove);
+}
+
+let lastMovedPos=null;
+let currentAxisCells=[];
+function afterMove(piece, from, to, isBonusMove){
+  const res = getBonusOptions(board, pieces, currentPlayer, to.row, to.col);
+  addLog(buildMoveLogText(piece, from, to, isBonusMove, res.allAxes));
+  currentBonusOptions = res.options;
+  currentAxisCells = res.axisCellsUnion.flat();
+  updateUndoButtonState();
+  if(currentBonusOptions.length===0){
+    currentAxisCells=[];
+    finishTurn();
+  } else {
+    turnPhase='bonus';
+    document.getElementById('endTurnBtn').disabled=false;
+    renderBoard();
+    updateStatus();
+  }
+}
+
+function endTurnClicked(){
+  if(turnPhase!=='bonus' || currentPlayer!==humanColor) return;
+  finishTurn();
+}
+
+function finishTurn(){
+  addLog(t('endTurnLog')(colorName(currentPlayer)));
+  currentPlayer = currentPlayer==='red'?'blue':'red';
+  turnPhase='initial';
+  selectedPiece=null; destOptions=[]; currentBonusOptions=[]; currentAxisCells=[];
+  document.getElementById('endTurnBtn').disabled=true;
+  updateUndoButtonState();
+  if(!hasAnyLegalMove(board,pieces,currentPlayer)){
+    endGame(currentPlayer);
+    return;
+  }
+  renderBoard();
+  updateStatus();
+  maybeTriggerAI();
+}
+
+function updateStatus(){
+  const dot = document.getElementById('turnDot');
+  dot.className = 'dot '+currentPlayer;
+  const who = currentPlayer===humanColor ? t('you') : t('ai');
+  document.getElementById('turnText').textContent = `${t('yourTurn')} ${colorName(currentPlayer)} (${who})`;
+  const rs = scoreFor('red'), bs = scoreFor('blue');
+  document.getElementById('scoreRow').innerHTML = `<span>${t('red')}: <b>${rs}</b></span><span>${t('blue')}: <b>${bs}</b></span>`;
+}
+function scoreFor(color){
+  const goalRow = color==='red'? ROWS-1:0;
+  return pieces.filter(p=>p.color===color && p.row===goalRow).reduce((s,p)=>s+p.num,0);
+}
+
+/* ---------------- logging ---------------- */
+let logEntries=[];
+function addLog(text){
+  logEntries.push(text);
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.textContent = text;
+  log.insertBefore(div, log.firstChild);
+}
+function buildMoveLogText(piece, from, to, isBonus, axesList){
+  const lines = [`${colorName(piece.color)} [${piece.num}]: ${posNotation(from.row,from.col)}${posNotation(to.row,to.col)}${isBonus?' '+t('bonusWord'):''}`];
+  axesList.forEach(ax=>{
+    const contrib = ax.contributors.map(p=> posNotation(p.row,p.col)+'['+p.num+']').join(' + ');
+    lines.push(`{ ${AXIS_SYMBOL[ax.type]} ${contrib} = ${ax.sum}}`);
+  });
+  return lines.join('\n');
+}
+
+/* ---------------- undo history ---------------- */
+let historyStack=[];
+let moveHistory=[];
+function pushHistorySnapshot(){
+  historyStack.push({
+    piecesData: pieces.map(p=>({...p})),
+    currentPlayer, turnPhase, lastMovedPos,
+    gameActive, logLength: logEntries.length,
+    moveHistoryLength: moveHistory.length
+  });
+}
+function recordMove(color,num,from,to){
+  moveHistory.push({color,num,from:{...from},to:{...to}});
+}
+function updateUndoButtonState(){
+  const btn = document.getElementById('undoBtn');
+  if(!btn) return;
+  btn.disabled = (historyStack.length===0 || aiBusy || !gameActive);
+}
+function undoMove(){
+  if(historyStack.length===0 || aiBusy || !gameActive) return;
+  const snap = historyStack.pop();
+  pieces = snap.piecesData.map(p=>({...p}));
+  board = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  pieces.forEach(p=> board[p.row][p.col]=p);
+  currentPlayer = snap.currentPlayer;
+  turnPhase = snap.turnPhase;
+  lastMovedPos = snap.lastMovedPos;
+  gameActive = snap.gameActive;
+  logEntries = logEntries.slice(0, snap.logLength);
+  moveHistory = moveHistory.slice(0, snap.moveHistoryLength);
+  const logEl = document.getElementById('log');
+  logEl.innerHTML='';
+  logEntries.forEach(txt=>{ const div=document.createElement('div'); div.textContent=txt; logEl.insertBefore(div, logEl.firstChild); });
+  selectedPiece=null; destOptions=[];
+  if(turnPhase==='bonus' && lastMovedPos){
+    const res = getBonusOptions(board, pieces, currentPlayer, lastMovedPos.row, lastMovedPos.col);
+    currentBonusOptions = res.options;
+    currentAxisCells = res.axisCellsUnion.flat();
+    document.getElementById('endTurnBtn').disabled=false;
+  } else {
+    currentBonusOptions=[]; currentAxisCells=[];
+    document.getElementById('endTurnBtn').disabled=true;
+  }
+  updateUndoButtonState();
+  renderBoard();
+  updateStatus();
+}
+
+
+function endGame(stuckColor){
+  gameActive=false;
+  const rs=scoreFor('red'), bs=scoreFor('blue');
+  addLog(t('gameOverStuck')(colorName(stuckColor)));
+  let winner;
+  if(rs===bs) winner=stuckColor;
+  else winner = rs>bs ? 'red':'blue';
+  document.getElementById('resTitle').textContent = (rs===bs)? t('tie')(colorName(winner)) : t('winner')(colorName(winner));
+  document.getElementById('resDetail').textContent = t('finalScore')(rs,bs);
+  document.getElementById('overlay').classList.remove('hidden');
+  updateUndoButtonState();
+  buildReplayFrames();
+  document.getElementById('replayBar').classList.remove('hidden');
+  showReplayFrame(replayFrames.length-1);
+  updateStatus();
+}
+
+/* ---------------- replay ---------------- */
+let initialSetupSnapshot=[];
+let replayFrames=[], replayIndex=0, replayPlaying=false, replayTimer=null;
+function buildReplayFrames(){
+  const frames=[{pieces: initialSetupSnapshot.map(p=>({...p})), axisCells:[], bonusPieces:[]}];
+  let working = initialSetupSnapshot.map(p=>({...p}));
+  moveHistory.forEach(mv=>{
+    const p = working.find(pp=>pp.color===mv.color && pp.num===mv.num);
+    if(p){ p.row=mv.to.row; p.col=mv.to.col; }
+    const grid = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+    working.forEach(pp=> grid[pp.row][pp.col]=pp);
+    const res = getBonusOptions(grid, working, mv.color, mv.to.row, mv.to.col);
+    frames.push({
+      pieces: working.map(pp=>({...pp})),
+      axisCells: res.axisCellsUnion.flat(),
+      bonusPieces: res.options.map(o=>({color:o.piece.color, num:o.piece.num}))
+    });
+  });
+  replayFrames = frames;
+}
+function renderBoardFrom(frame){
+  const piecesSnapshot = frame.pieces;
+  const axisCells = frame.axisCells || [];
+  const bonusPieces = frame.bonusPieces || [];
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML='';
+  const grid = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  piecesSnapshot.forEach(p=> grid[p.row][p.col]=p);
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell=document.createElement('div');
+      cell.className='cell'+((r+c)%2===1?' altrow':'');
+      if(axisCells.some(a=>a.row===r&&a.col===c)) cell.classList.add('axis-glow');
+      const p = grid[r][c];
+      if(p){
+        const pe=document.createElement('div');
+        pe.className='piece '+p.color+' not-clickable';
+        const goalRow = p.color==='red'?ROWS-1:0;
+        if(p.row===goalRow) pe.classList.add('done');
+        if(bonusPieces.some(bp=>bp.color===p.color && bp.num===p.num)) pe.classList.add('bonus-eligible');
+        pe.textContent=p.num;
+        cell.appendChild(pe);
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+}
+function showReplayFrame(idx){
+  if(replayFrames.length===0) return;
+  replayIndex = Math.max(0, Math.min(replayFrames.length-1, idx));
+  renderBoardFrom(replayFrames[replayIndex]);
+}
+function stopReplayPlaying(){
+  replayPlaying=false;
+  if(replayTimer){ clearInterval(replayTimer); replayTimer=null; }
+  const btn = document.getElementById('replayPlayBtn');
+  if(btn) btn.textContent='▶️';
+}
+function startReplayPlaying(){
+  if(replayFrames.length===0) return;
+  if(replayIndex>=replayFrames.length-1) replayIndex=0;
+  replayPlaying=true;
+  document.getElementById('replayPlayBtn').textContent='⏸️';
+  replayTimer=setInterval(()=>{
+    if(replayIndex>=replayFrames.length-1){ stopReplayPlaying(); return; }
+    showReplayFrame(replayIndex+1);
+  },700);
+}
+
+/* ---------------- AI ---------------- */
+function opponentOf(c){ return c==='red'?'blue':'red'; }
+
+function evalBoard(bd, piecesArr, forColor){
+  let score=0;
+  for(const p of piecesArr){
+    const goalRow = p.color==='red'? ROWS-1:0;
+    const traveled = p.color==='red'? p.row : (ROWS-1-p.row);
+    const frac = traveled/(ROWS-1);
+    let val = (p.row===goalRow) ? p.num*1.0 : p.num*frac*0.6;
+    score += (p.color===forColor)? val : -val;
+  }
+  return score;
+}
+
+function enumerateFullTurns(bd, piecesArr, color, beam, maxDepth){
+  const results=[];
+  const myPieces = piecesArr.filter(p=>p.color===color);
+  const initialMoves=[];
+  myPieces.forEach(pc=>{
+    legalMovesForPiece(bd,pc).forEach(dest=> initialMoves.push({piece:pc,dest}));
+  });
+
+  function explore(bC, psC, lastMoved, moves, depth){
+    results.push({moves, board:bC, pieces:psC});
+    if(depth>=maxDepth) return;
+    const opts = getBonusOptions(bC, psC, color, lastMoved.row, lastMoved.col).options;
+    if(opts.length===0) return;
+    const candidates=[];
+    opts.forEach(o=> o.moves.forEach(dest=> candidates.push({piece:o.piece,dest})));
+    candidates.sort((a,b)=> b.piece.num - a.piece.num); // simple heuristic: prefer securing higher value pieces
+    candidates.slice(0,beam).forEach(cand=>{
+      const {board:b2, pieces:ps2} = cloneState(bC, psC);
+      const mv = findPiece(ps2, cand.piece.color, cand.piece.num);
+      const from = {row:mv.row,col:mv.col};
+      applyMove(b2, ps2, mv, cand.dest);
+      explore(b2, ps2, mv, moves.concat([{color:mv.color,num:mv.num,from,to:{...cand.dest}}]), depth+1);
+    });
+  }
+
+  initialMoves.forEach(im=>{
+    const {board:b2, pieces:ps2} = cloneState(bd, piecesArr);
+    const mv = findPiece(ps2, im.piece.color, im.piece.num);
+    const from = {row:mv.row,col:mv.col};
+    applyMove(b2, ps2, mv, im.dest);
+    explore(b2, ps2, mv, [{color:mv.color,num:mv.num,from,to:{...im.dest}}], 1);
+  });
+
+  return results;
+}
+
+function diffParams(d){
+  if(d==='easy') return {beam:1,maxDepth:2};
+  if(d==='hard') return {beam:4,maxDepth:6};
+  return {beam:3,maxDepth:4};
+}
+
+function aiChooseTurn(color, d){
+  const {beam,maxDepth} = diffParams(d);
+  let results = enumerateFullTurns(board, pieces, color, beam, maxDepth);
+  results.forEach(r=> r.score = evalBoard(r.board, r.pieces, color));
+  results.sort((a,b)=> b.score-a.score);
+  if(d==='easy'){
+    const pool = results.slice(0, Math.min(6, results.length));
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  if(d==='hard'){
+    const top = results.slice(0, Math.min(8, results.length));
+    top.forEach(cand=>{
+      const oppResults = enumerateFullTurns(cand.board, cand.pieces, opponentOf(color), 2, 3);
+      let best=-Infinity;
+      oppResults.forEach(orr=>{ const s=evalBoard(orr.board, orr.pieces, opponentOf(color)); if(s>best) best=s; });
+      cand.adj = cand.score - (best===-Infinity?0:best*0.5);
+    });
+    top.sort((a,b)=> b.adj-a.adj);
+    return top[0];
+  }
+  return results[0];
+}
+
+function maybeTriggerAI(){
+  if(!gameActive) return;
+  if(currentPlayer===humanColor) return;
+  aiBusy=true;
+  updateUndoButtonState();
+  document.getElementById('thinking').textContent = t('thinking');
+  renderBoard();
+  setTimeout(runAITurn, 450);
+}
+
+function runAITurn(){
+  const chosen = aiChooseTurn(currentPlayer, difficulty);
+  const steps = chosen.moves;
+  let i=0;
+  function step(){
+    if(i>=steps.length){
+      document.getElementById('thinking').textContent='';
+      aiBusy=false;
+      updateUndoButtonState();
+      // determine if there were bonus options remaining unused; either way finish turn
+      finishTurn();
+      return;
+    }
+    const mv = steps[i];
+    const realPiece = findPiece(pieces, mv.color, mv.num);
+    const isBonusMove = i>0;
+    pushHistorySnapshot();
+    applyMove(board, pieces, realPiece, mv.to);
+    recordMove(realPiece.color, realPiece.num, mv.from, mv.to);
+    const res = getBonusOptions(board, pieces, currentPlayer, mv.to.row, mv.to.col);
+    addLog(buildMoveLogText(realPiece, mv.from, mv.to, isBonusMove, res.allAxes));
+    lastMovedPos = mv.to;
+    if(i < steps.length-1){
+      currentAxisCells = res.axisCellsUnion.flat();
+      turnPhase='bonus';
+    } else {
+      currentAxisCells=[];
+    }
+    renderBoard();
+    updateStatus();
+    i++;
+    setTimeout(step, 480);
+  }
+  step();
+}
+
+/* ---------------- setup UI ---------------- */
+function setupSegmented(containerId, onPick){
+  const el = document.getElementById(containerId);
+  el.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      el.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      onPick(btn.dataset.v);
+    });
+  });
+}
+setupSegmented('colorPick', v=> humanColor=v);
+setupSegmented('diffPick', v=> difficulty=v);
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('gameArea').classList.remove('hidden');
+  newGame();
+});
+document.getElementById('newGameBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('setup').classList.remove('hidden');
+});
+document.getElementById('endTurnBtn').addEventListener('click', endTurnClicked);
+document.getElementById('undoBtn').addEventListener('click', undoMove);
+document.getElementById('resCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.add('hidden');
+});
+document.getElementById('replayStartBtn').addEventListener('click', ()=>{ stopReplayPlaying(); showReplayFrame(0); });
+document.getElementById('replayBackBtn').addEventListener('click', ()=>{ stopReplayPlaying(); showReplayFrame(replayIndex-1); });
+document.getElementById('replayPlayBtn').addEventListener('click', ()=>{
+  if(replayPlaying) stopReplayPlaying(); else startReplayPlaying();
+  document.getElementById('replayPlayBtn').title = replayPlaying ? t('replayPause') : t('replayPlay');
+});
+document.getElementById('replayFwdBtn').addEventListener('click', ()=>{ stopReplayPlaying(); showReplayFrame(replayIndex+1); });
+document.getElementById('replayEndBtn').addEventListener('click', ()=>{ stopReplayPlaying(); showReplayFrame(replayFrames.length-1); });
+
+/* ---------------- save / load ---------------- */
+const SAVE_KEY='sumon_save_v1';
+function serializeState(){
+  return {
+    v:1,
+    piecesData: pieces.map(p=>({color:p.color,num:p.num,row:p.row,col:p.col})),
+    currentPlayer, turnPhase, humanColor, difficulty,
+    lastMovedPos, gameActive, logEntries
+  };
+}
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeState()));
+    flashIcon('saveBtn', '💾');
+  }catch(e){ /* storage unavailable */ }
+}
+function restoreFromState(st){
+  pieces = st.piecesData.map(p=>({...p}));
+  board = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  pieces.forEach(p=> board[p.row][p.col]=p);
+  currentPlayer = st.currentPlayer;
+  turnPhase = st.turnPhase;
+  humanColor = st.humanColor;
+  difficulty = st.difficulty;
+  lastMovedPos = st.lastMovedPos;
+  gameActive = st.gameActive;
+  logEntries = st.logEntries || [];
+  selectedPiece=null; destOptions=[];
+  historyStack=[];
+  moveHistory=[];
+  initialSetupSnapshot = pieces.map(p=>({...p}));
+  replayFrames=[];
+  stopReplayPlaying();
+  document.getElementById('replayBar').classList.add('hidden');
+  updateUndoButtonState();
+  const logEl = document.getElementById('log');
+  logEl.innerHTML='';
+  logEntries.forEach(txt=>{ const div=document.createElement('div'); div.textContent=txt; logEl.insertBefore(div, logEl.firstChild); });
+  if(turnPhase==='bonus' && lastMovedPos){
+    const res = getBonusOptions(board, pieces, currentPlayer, lastMovedPos.row, lastMovedPos.col);
+    currentBonusOptions = res.options;
+    currentAxisCells = res.axisCellsUnion.flat();
+    document.getElementById('endTurnBtn').disabled=false;
+  } else {
+    currentBonusOptions=[]; currentAxisCells=[];
+    document.getElementById('endTurnBtn').disabled=true;
+  }
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('gameArea').classList.remove('hidden');
+  renderBoard();
+  updateStatus();
+  if(gameActive && currentPlayer!==humanColor) maybeTriggerAI();
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){ flashIcon('loadBtn', '📂', '❌'); return; }
+    const st = JSON.parse(raw);
+    restoreFromState(st);
+    flashIcon('loadBtn', '📂');
+  }catch(e){ flashIcon('loadBtn', '📂', '❌'); }
+}
+function flashIcon(id, restoreIcon, flashIconChar){
+  const btn = document.getElementById(id);
+  btn.textContent = flashIconChar || '✅';
+  setTimeout(()=>{ btn.textContent = restoreIcon; }, 1200);
+}
+document.getElementById('saveBtn').addEventListener('click', saveGame);
+document.getElementById('loadBtn').addEventListener('click', loadGame);
+document.getElementById('continueBtn').addEventListener('click', ()=>{
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) restoreFromState(JSON.parse(raw));
+  }catch(e){}
+});
+if(localStorage.getItem(SAVE_KEY)){
+  document.getElementById('continueBtn').classList.remove('hidden');
+}
+
+document.getElementById('copyLogBtn').addEventListener('click', async ()=>{
+  const text = logEntries.join('\n');
+  try{
+    await navigator.clipboard.writeText(text);
+    flashCopyIcon();
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    document.body.removeChild(ta);
+    flashCopyIcon();
+  }
+});
+function flashCopyIcon(){
+  const btn = document.getElementById('copyLogBtn');
+  const orig = btn.textContent;
+  btn.textContent = '✅';
+  setTimeout(()=>{ btn.textContent = orig; }, 1200);
+}
+
+document.getElementById('langBtn').addEventListener('click', ()=>{
+  lang = lang==='cs' ? 'en' : 'cs';
+  applyStaticTexts();
+  if(document.getElementById('gameArea').classList.contains('hidden')===false){
+    updateStatus();
+  }
+});
+
+function applyStaticTexts(){
+  document.getElementById('subtitle').textContent = t('subtitle');
+  document.querySelector('#colorPick button[data-v="blue"]').textContent = t('colorBlue');
+  document.querySelector('#colorPick button[data-v="red"]').textContent = t('colorRed');
+  document.querySelector('#diffPick button[data-v="easy"]').textContent = t('diffEasy');
+  document.querySelector('#diffPick button[data-v="medium"]').textContent = t('diffMedium');
+  document.querySelector('#diffPick button[data-v="hard"]').textContent = t('diffHard');
+  document.getElementById('startBtn').textContent = t('start');
+  document.getElementById('continueBtn').textContent = t('continueSaved');
+  document.getElementById('undoBtn').title = t('undo');
+  document.getElementById('endTurnBtn').title = t('endTurn');
+  document.getElementById('newGameBtn').title = t('newGame');
+  document.getElementById('saveBtn').title = t('saveGame');
+  document.getElementById('loadBtn').title = t('loadGame');
+  document.getElementById('copyLogBtn').title = t('copyLog');
+  document.getElementById('logTitle').textContent = t('logTitle');
+  document.getElementById('resCloseBtn').title = t('close');
+  document.getElementById('helpCloseBtn').title = t('close');
+  document.getElementById('helpBtn').title = 'Help / Nápověda';
+  document.getElementById('langBtn').title = t('switchLang');
+  document.getElementById('langBtn').textContent = lang==='cs' ? '🇬🇧' : '🇨🇿';
+  document.getElementById('replayStartBtn').title = t('replayStart');
+  document.getElementById('replayBackBtn').title = t('replayBack');
+  document.getElementById('replayPlayBtn').title = replayPlaying ? t('replayPause') : t('replayPlay');
+  document.getElementById('replayFwdBtn').title = t('replayForward');
+  document.getElementById('replayEndBtn').title = t('replayEnd');
+}
+
+function populateLabels(){
+  const rl = document.getElementById('rowLabels');
+  rl.innerHTML='';
+  for(let r=0;r<ROWS;r++){
+    const span=document.createElement('span');
+    span.textContent = String(ROWS-r);
+    rl.appendChild(span);
+  }
+  const cl = document.getElementById('colLabels');
+  cl.innerHTML='';
+  for(let c=0;c<COLS;c++){
+    const span=document.createElement('span');
+    span.textContent = String.fromCharCode(97+c);
+    cl.appendChild(span);
+  }
+}
+populateLabels();
+
+/* ---------------- help modal ---------------- */
+const HELP = {
+cs:`
+<h3>Cíl hry</h3>
+<p>Postupuj svými 8 kameny (čísla 1–8) přes desku k protější straně. Na konci hry se sečtou čísla kamenů, které se ti podařilo dostat na soupeřovu stranu — kdo má vyšší součet, vyhrává.</p>
+<h3>Deska a příprava</h3>
+<p>Deska má 9 sloupců (písmena a–i, popsáno dole) a 8 řad (čísla 1–8, popsáno vlevo, 1 dole). Červený sedí u řady <b>8</b> (nahoře) a táhne směrem k řadě <b>1</b>, modrý sedí u řady <b>1</b> (dole) a táhne směrem k řadě <b>8</b>. Kdo hru zahajuje, se každou další hrou střídá.</p>
+<h3>Tah kamenem</h3>
+<p>Na tahu vždy posuneš jeden svůj kámen o jedno pole <b>vpřed</b> — buď rovně, nebo diagonálně vlevo/vpravo vpřed. Nikdy ne do strany ani dozadu, a jen na prázdné pole.</p>
+<h3>Bonusové tahy — jak funguje součet</h3>
+<p>Jakmile kamenem táhneš, zkontroluj všechny osy procházející jeho novým polem: vodorovnou řadu, svislý sloupec a obě úhlopříčky. Pokud na některé ose (spolu s tvým kamenem) leží alespoň jeden další kámen (tvůj nebo soupeřův), sečti čísla <b>všech</b> kamenů na této ose.</p>
+<p>Pokud se ten součet rovná číslu <b>některého z tvých vlastních kamenů</b>, který se ještě může pohnout vpřed, smíš jej zahrát jako bonusový tah. Po bonusovém tahu se celý postup opakuje — hledají se nové osy z nové pozice a řetěz může pokračovat dál.</p>
+<p>Zvýrazněné (pulzující) kameny jsou právě dostupné bonusové tahy; políčka se zlatým orámováním ukazují osu, ze které se součet počítá. Bonusové tahy nejsou povinné — kdykoliv můžeš stisknout <b>Ukončit tah</b>.</p>
+<h3>Konec hry a vítězství</h3>
+<p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, kterému tah nevyšel (ten, kdo hru ukončil).</p>
+<h3>Tip</h3>
+<p>Sleduj, jaké součty vznikají na osách před tvým tahem — ideální kámen k posunutí je ten, který ti pak otevře dlouhý řetěz bonusových tahů.</p>
+`,
+en:`
+<h3>Goal</h3>
+<p>Advance your 8 pieces (numbered 1–8) across the board to the far side. At game end, each player totals the numbers of pieces that reached the opponent's side — the higher total wins.</p>
+<h3>Board and setup</h3>
+<p>The board has 9 columns (letters a–i, labeled along the bottom) and 8 rows (numbers 1–8, labeled on the left, 1 at the bottom). Red sits at row <b>8</b> (top) and moves toward row <b>1</b>; Blue sits at row <b>1</b> (bottom) and moves toward row <b>8</b>. Whoever starts alternates each new game.</p>
+<h3>Moving a piece</h3>
+<p>On your turn, move one piece one step <b>forward</b> — straight ahead, or diagonally forward-left/right. Never sideways or backward, and only onto an empty square.</p>
+<h3>Bonus moves — how the sum works</h3>
+<p>After moving a piece, check every axis running through its new square: the row, the column, and both diagonals. If any axis has at least one other piece (yours or your opponent's) alongside the piece you moved, add up the numbers of <b>all</b> pieces on that axis.</p>
+<p>If that sum matches the number on <b>one of your own pieces</b> that can still move forward, you may play it as a bonus move. After a bonus move, repeat the check from its new position — the chain can continue as long as sums keep matching.</p>
+<p>Pulsing pieces are your available bonus moves right now; cells with a gold outline show the axis the sum was drawn from. Bonus moves are optional — you can press <b>End Turn</b> at any time.</p>
+<h3>End of game and scoring</h3>
+<p>The game ends when the player to move has no legal opening move left (all their pieces have reached the far side or are blocked). Add up the numbers of pieces that reached the far side — higher total wins. On a tie, the player who couldn't move wins.</p>
+<h3>Tip</h3>
+<p>Watch what sums are forming on the axes before you move — the best piece to move first is often the one that opens up a long bonus chain.</p>
+`
+};
+document.getElementById('helpBtn').addEventListener('click', ()=>{
+  document.getElementById('helpContent').innerHTML = HELP[lang];
+  document.getElementById('helpOverlay').classList.remove('hidden');
+});
+document.getElementById('helpCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('helpOverlay').classList.add('hidden');
+});
+
+applyStaticTexts();
+</script>
+</body>
+</html>
