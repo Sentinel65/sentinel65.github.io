@@ -260,7 +260,7 @@ const T = {
     endTurnLog:(c)=>`${c} ukončuje tah.`,
     gameOverStuck:(c)=>`${c} nemůže táhnout — hra končí.`,
     winner:(c)=>`${c} vyhrává!`,
-    tie:(c)=>`Remíza v součtu — vítězí ${c} (soupeř nemohl táhnout).`,
+    tie:(c)=>`Shoda bodů — vítězí ${c} (nemá tah).`,
     finalScore:(rs,bs)=>`Červený: ${rs} bodů  •  Modrý: ${bs} bodů`,
     close:"Zavřít",
     selectPieceHint:"Vyberte figurku a poté cílové pole.",
@@ -1098,7 +1098,7 @@ cs:`
 <p>Pokud se ten součet rovná číslu <b>některého z tvých vlastních kamenů</b>, který se ještě může pohnout vpřed, smíš jej zahrát jako bonusový tah. Po bonusovém tahu se celý postup opakuje — hledají se nové osy z nové pozice a řetěz může pokračovat dál.</p>
 <p>Zvýrazněné (pulzující) kameny jsou právě dostupné bonusové tahy; políčka se zlatým orámováním ukazují osu, ze které se součet počítá. Bonusové tahy nejsou povinné — kdykoliv můžeš stisknout <b>Ukončit tah</b>.</p>
 <h3>Konec hry a vítězství</h3>
-<p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, kterému tah nevyšel (ten, kdo hru ukončil).</p>
+<p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, který je na tahu a nemá platný tah.</p>
 <h3>Tip</h3>
 <p>Sleduj, jaké součty vznikají na osách před tvým tahem — ideální kámen k posunutí je ten, který ti pak otevře dlouhý řetěz bonusových tahů.</p>
 `,
