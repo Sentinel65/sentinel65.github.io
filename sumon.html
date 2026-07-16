@@ -381,7 +381,7 @@ function getBonusOptions(bd, piecesArr, color, r, c){
     axisCellsUnion.push(ax.cells);
     if(!map.has(cand)) map.set(cand,{piece:cand,moves});
   }
-  return {options:[...map.values()], axisCellsUnion, allAxes:axes};
+  return {options:[...map.values()], axisCellsUnion, allAxes:axes.filter(ax=>ax.sum<=8)};
 }
 function applyMove(bd, piecesArr, piece, dest){
   bd[piece.row][piece.col]=null;
