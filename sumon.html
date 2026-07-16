@@ -129,6 +129,8 @@
   #log{max-height:150px;overflow-y:auto;font-size:12px;line-height:1.5;color:var(--muted);}
   #log div{border-bottom:1px dashed var(--line);padding:3px 0;white-space:pre-line;font-family:'Courier New',monospace;}
   #log div:first-child{color:var(--text);}
+  #log div.log-current{background:rgba(232,176,75,.16);border-radius:6px;padding:3px 6px;margin:0 -6px;
+    box-shadow:inset 0 0 0 1px rgba(232,176,75,.5);color:var(--text);}
   #logTitle{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;}
 
   #overlay,#helpOverlay{position:fixed;inset:0;background:rgba(10,12,18,.86);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
@@ -426,6 +428,7 @@ function newGame(){
   moveHistory=[];
   initialSetupSnapshot = pieces.map(p=>({...p}));
   replayFrames=[];
+  lastResult=null;
   stopReplayPlaying();
   document.getElementById('replayBar').classList.add('hidden');
   document.getElementById('log').innerHTML='';
@@ -506,7 +509,6 @@ function onDestClick(r,c){
   const isBonusMove = turnPhase==='bonus';
   pushHistorySnapshot();
   applyMove(board, pieces, piece, {row:r,col:c});
-  recordMove(piece.color, piece.num, from, {row:r,col:c});
   selectedPiece=null; destOptions=[];
   lastMovedPos = {row:r,col:c};
   afterMove(piece, from, {row:r,col:c}, isBonusMove);
@@ -516,7 +518,8 @@ let lastMovedPos=null;
 let currentAxisCells=[];
 function afterMove(piece, from, to, isBonusMove){
   const res = getBonusOptions(board, pieces, currentPlayer, to.row, to.col);
-  addLog(buildMoveLogText(piece, from, to, isBonusMove, res.allAxes));
+  addLogEntry({type:'move', color:piece.color, num:piece.num, from:{...from}, to:{...to}, isBonus:isBonusMove, axesList:res.allAxes});
+  recordMove(piece.color, piece.num, from, to, logEntries.length-1);
   currentBonusOptions = res.options;
   currentAxisCells = res.axisCellsUnion.flat();
   updateUndoButtonState();
@@ -537,7 +540,7 @@ function endTurnClicked(){
 }
 
 function finishTurn(){
-  addLog(t('endTurnLog')(colorName(currentPlayer)));
+  addLogEntry({type:'endTurn', color:currentPlayer});
   currentPlayer = currentPlayer==='red'?'blue':'red';
   turnPhase='initial';
   selectedPiece=null; destOptions=[]; currentBonusOptions=[]; currentAxisCells=[];
@@ -567,20 +570,34 @@ function scoreFor(color){
 
 /* ---------------- logging ---------------- */
 let logEntries=[];
-function addLog(text){
-  logEntries.push(text);
+function formatLogEntry(e){
+  if(e.type==='move'){
+    const lines=[`${colorName(e.color)} [${e.num}]: ${posNotation(e.from.row,e.from.col)}${posNotation(e.to.row,e.to.col)}${e.isBonus?' '+t('bonusWord'):''}`];
+    (e.axesList||[]).forEach(ax=>{
+      const contrib = ax.contributors.map(p=> posNotation(p.row,p.col)+'['+p.num+']').join(' + ');
+      lines.push(`{ ${AXIS_SYMBOL[ax.type]} ${contrib} = ${ax.sum}}`);
+    });
+    return lines.join('\n');
+  }
+  if(e.type==='endTurn') return t('endTurnLog')(colorName(e.color));
+  if(e.type==='gameOver') return t('gameOverStuck')(colorName(e.color));
+  return '';
+}
+function addLogEntry(entry){
+  logEntries.push(entry);
   const log = document.getElementById('log');
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = formatLogEntry(entry);
   log.insertBefore(div, log.firstChild);
 }
-function buildMoveLogText(piece, from, to, isBonus, axesList){
-  const lines = [`${colorName(piece.color)} [${piece.num}]: ${posNotation(from.row,from.col)}${posNotation(to.row,to.col)}${isBonus?' '+t('bonusWord'):''}`];
-  axesList.forEach(ax=>{
-    const contrib = ax.contributors.map(p=> posNotation(p.row,p.col)+'['+p.num+']').join(' + ');
-    lines.push(`{ ${AXIS_SYMBOL[ax.type]} ${contrib} = ${ax.sum}}`);
+function refreshLogDisplay(){
+  const logEl = document.getElementById('log');
+  logEl.innerHTML='';
+  logEntries.forEach(e=>{
+    const div=document.createElement('div');
+    div.textContent = formatLogEntry(e);
+    logEl.insertBefore(div, logEl.firstChild);
   });
-  return lines.join('\n');
 }
 
 /* ---------------- undo history ---------------- */
@@ -594,8 +611,8 @@ function pushHistorySnapshot(){
     moveHistoryLength: moveHistory.length
   });
 }
-function recordMove(color,num,from,to){
-  moveHistory.push({color,num,from:{...from},to:{...to}});
+function recordMove(color,num,from,to,logIndex){
+  moveHistory.push({color,num,from:{...from},to:{...to},logIndex});
 }
 function updateUndoButtonState(){
   const btn = document.getElementById('undoBtn');
@@ -633,15 +650,16 @@ function undoMove(){
 }
 
 
+let lastResult=null;
 function endGame(stuckColor){
   gameActive=false;
   const rs=scoreFor('red'), bs=scoreFor('blue');
-  addLog(t('gameOverStuck')(colorName(stuckColor)));
+  addLogEntry({type:'gameOver', color:stuckColor});
   let winner;
   if(rs===bs) winner=stuckColor;
   else winner = rs>bs ? 'red':'blue';
-  document.getElementById('resTitle').textContent = (rs===bs)? t('tie')(colorName(winner)) : t('winner')(colorName(winner));
-  document.getElementById('resDetail').textContent = t('finalScore')(rs,bs);
+  lastResult = {rs,bs,winner,tie:(rs===bs)};
+  refreshResultText();
   document.getElementById('overlay').classList.remove('hidden');
   updateUndoButtonState();
   buildReplayFrames();
@@ -649,12 +667,18 @@ function endGame(stuckColor){
   showReplayFrame(replayFrames.length-1);
   updateStatus();
 }
+function refreshResultText(){
+  if(!lastResult) return;
+  document.getElementById('resTitle').textContent = lastResult.tie
+    ? t('tie')(colorName(lastResult.winner)) : t('winner')(colorName(lastResult.winner));
+  document.getElementById('resDetail').textContent = t('finalScore')(lastResult.rs,lastResult.bs);
+}
 
 /* ---------------- replay ---------------- */
 let initialSetupSnapshot=[];
 let replayFrames=[], replayIndex=0, replayPlaying=false, replayTimer=null;
 function buildReplayFrames(){
-  const frames=[{pieces: initialSetupSnapshot.map(p=>({...p})), axisCells:[], bonusPieces:[]}];
+  const frames=[{pieces: initialSetupSnapshot.map(p=>({...p})), axisCells:[], bonusPieces:[], logIndex:null}];
   let working = initialSetupSnapshot.map(p=>({...p}));
   moveHistory.forEach(mv=>{
     const p = working.find(pp=>pp.color===mv.color && pp.num===mv.num);
@@ -665,10 +689,19 @@ function buildReplayFrames(){
     frames.push({
       pieces: working.map(pp=>({...pp})),
       axisCells: res.axisCellsUnion.flat(),
-      bonusPieces: res.options.map(o=>({color:o.piece.color, num:o.piece.num}))
+      bonusPieces: res.options.map(o=>({color:o.piece.color, num:o.piece.num})),
+      logIndex: (typeof mv.logIndex==='number') ? mv.logIndex : null
     });
   });
   replayFrames = frames;
+}
+function highlightLogEntry(logIndex){
+  document.querySelectorAll('#log div').forEach(d=>d.classList.remove('log-current'));
+  if(logIndex==null) return;
+  const domPos = logEntries.length-1-logIndex;
+  const nodes = document.querySelectorAll('#log div');
+  const el = nodes[domPos];
+  if(el){ el.classList.add('log-current'); el.scrollIntoView({block:'nearest'}); }
 }
 function renderBoardFrom(frame){
   const piecesSnapshot = frame.pieces;
@@ -700,7 +733,9 @@ function renderBoardFrom(frame){
 function showReplayFrame(idx){
   if(replayFrames.length===0) return;
   replayIndex = Math.max(0, Math.min(replayFrames.length-1, idx));
-  renderBoardFrom(replayFrames[replayIndex]);
+  const frame = replayFrames[replayIndex];
+  renderBoardFrom(frame);
+  highlightLogEntry(frame.logIndex);
 }
 function stopReplayPlaying(){
   replayPlaying=false;
@@ -827,9 +862,9 @@ function runAITurn(){
     const isBonusMove = i>0;
     pushHistorySnapshot();
     applyMove(board, pieces, realPiece, mv.to);
-    recordMove(realPiece.color, realPiece.num, mv.from, mv.to);
     const res = getBonusOptions(board, pieces, currentPlayer, mv.to.row, mv.to.col);
-    addLog(buildMoveLogText(realPiece, mv.from, mv.to, isBonusMove, res.allAxes));
+    addLogEntry({type:'move', color:realPiece.color, num:realPiece.num, from:{...mv.from}, to:{...mv.to}, isBonus:isBonusMove, axesList:res.allAxes});
+    recordMove(realPiece.color, realPiece.num, mv.from, mv.to, logEntries.length-1);
     lastMovedPos = mv.to;
     if(i < steps.length-1){
       currentAxisCells = res.axisCellsUnion.flat();
@@ -887,10 +922,12 @@ document.getElementById('replayEndBtn').addEventListener('click', ()=>{ stopRepl
 const SAVE_KEY='sumon_save_v1';
 function serializeState(){
   return {
-    v:1,
+    v:2,
     piecesData: pieces.map(p=>({color:p.color,num:p.num,row:p.row,col:p.col})),
     currentPlayer, turnPhase, humanColor, difficulty,
-    lastMovedPos, gameActive, logEntries
+    lastMovedPos, gameActive, logEntries,
+    moveHistory: moveHistory.map(m=>({color:m.color,num:m.num,from:{...m.from},to:{...m.to},logIndex:m.logIndex})),
+    initialSetupSnapshot: initialSetupSnapshot.map(p=>({...p}))
   };
 }
 function saveGame(){
@@ -912,15 +949,14 @@ function restoreFromState(st){
   logEntries = st.logEntries || [];
   selectedPiece=null; destOptions=[];
   historyStack=[];
-  moveHistory=[];
-  initialSetupSnapshot = pieces.map(p=>({...p}));
+  moveHistory = (st.moveHistory||[]).map(m=>({color:m.color,num:m.num,from:{...m.from},to:{...m.to},logIndex:(typeof m.logIndex==='number'?m.logIndex:null)}));
+  initialSetupSnapshot = (st.initialSetupSnapshot && st.initialSetupSnapshot.length)
+    ? st.initialSetupSnapshot.map(p=>({...p}))
+    : pieces.map(p=>({...p}));
   replayFrames=[];
   stopReplayPlaying();
-  document.getElementById('replayBar').classList.add('hidden');
   updateUndoButtonState();
-  const logEl = document.getElementById('log');
-  logEl.innerHTML='';
-  logEntries.forEach(txt=>{ const div=document.createElement('div'); div.textContent=txt; logEl.insertBefore(div, logEl.firstChild); });
+  refreshLogDisplay();
   if(turnPhase==='bonus' && lastMovedPos){
     const res = getBonusOptions(board, pieces, currentPlayer, lastMovedPos.row, lastMovedPos.col);
     currentBonusOptions = res.options;
@@ -932,7 +968,14 @@ function restoreFromState(st){
   }
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('gameArea').classList.remove('hidden');
-  renderBoard();
+  if(!gameActive){
+    buildReplayFrames();
+    document.getElementById('replayBar').classList.remove('hidden');
+    showReplayFrame(replayFrames.length-1);
+  } else {
+    document.getElementById('replayBar').classList.add('hidden');
+    renderBoard();
+  }
   updateStatus();
   if(gameActive && currentPlayer!==humanColor) maybeTriggerAI();
 }
@@ -963,7 +1006,7 @@ if(localStorage.getItem(SAVE_KEY)){
 }
 
 document.getElementById('copyLogBtn').addEventListener('click', async ()=>{
-  const text = logEntries.join('\n');
+  const text = logEntries.map(formatLogEntry).join('\n');
   try{
     await navigator.clipboard.writeText(text);
     flashCopyIcon();
@@ -988,6 +1031,11 @@ document.getElementById('langBtn').addEventListener('click', ()=>{
   if(document.getElementById('gameArea').classList.contains('hidden')===false){
     updateStatus();
   }
+  refreshLogDisplay();
+  if(!gameActive && replayFrames.length){
+    highlightLogEntry(replayFrames[replayIndex].logIndex);
+  }
+  refreshResultText();
 });
 
 function applyStaticTexts(){
