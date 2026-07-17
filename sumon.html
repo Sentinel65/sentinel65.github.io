@@ -30,10 +30,11 @@
   header h1{font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:1px;margin:0;
     background:linear-gradient(90deg,var(--gold),#f4d789);-webkit-background-clip:text;background-clip:text;color:transparent;}
   header .sub{font-size:11px;color:var(--muted);margin-top:-2px;}
-  #langBtn,#helpBtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  #langBtn,#helpBtn,#hintBtn,#statsBtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
     padding:6px 10px;font-size:18px;cursor:pointer;line-height:1;}
   #helpBtn{font-weight:700;color:var(--gold);border-color:var(--gold);}
-  #langBtn:active,#helpBtn:active{background:var(--panel2);}
+  #hintBtn.active{color:#4fc3f7;border-color:#4fc3f7;background:rgba(79,195,247,.12);}
+  #langBtn:active,#helpBtn:active,#hintBtn:active,#statsBtn:active{background:var(--panel2);}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;}
 
@@ -113,6 +114,7 @@
   .piece.done{opacity:.55;filter:grayscale(.3);}
   .piece.selected{transform:scale(1.12);box-shadow:0 0 0 3px var(--gold),0 2px 6px rgba(0,0,0,.5);}
   .piece.bonus-eligible{box-shadow:0 0 0 3px rgba(232,176,75,.9),0 0 10px rgba(232,176,75,.7);animation:pulse 1.1s infinite;}
+  .piece.hint-piece{outline:3px solid #4fc3f7;outline-offset:2px;}
   .piece.not-clickable{cursor:default;}
   @keyframes pulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.28);}}
 
@@ -133,22 +135,27 @@
     box-shadow:inset 0 0 0 1px rgba(232,176,75,.5);color:var(--text);}
   #logTitle{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;}
 
-  #overlay,#helpOverlay{position:fixed;inset:0;background:rgba(10,12,18,.86);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
-  #overlay.hidden,#helpOverlay.hidden{display:none;}
+  #overlay,#helpOverlay,#statsOverlay{position:fixed;inset:0;background:rgba(10,12,18,.86);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  #overlay.hidden,#helpOverlay.hidden,#statsOverlay.hidden{display:none;}
   #resultCard{background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:24px;text-align:center;max-width:320px;}
   #resultCard h2{margin:0 0 10px;color:var(--gold);font-family:Georgia,serif;}
   #resultCard p{margin:4px 0;font-size:14px;color:var(--text);}
   #resultCard button{margin-top:14px;padding:10px 18px;border:none;border-radius:10px;background:var(--gold);
     color:#20242f;font-weight:700;cursor:pointer;font-size:18px;}
-  #helpCard{background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:18px 20px;
-    max-width:440px;max-height:82vh;overflow-y:auto;}
-  #helpContent h3{color:var(--gold);font-size:15px;margin:14px 0 4px;}
-  #helpContent h3:first-child{margin-top:0;}
-  #helpContent p{font-size:13px;line-height:1.55;color:var(--text);margin:4px 0;}
-  #helpContent ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.5;color:var(--text);}
-  #helpContent b{color:var(--gold);}
-  #helpCloseBtn{width:100%;margin-top:14px;padding:10px 18px;border:none;border-radius:10px;background:var(--gold);
+  #helpCard,#statsCard{background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:18px 20px;
+    max-width:440px;max-height:82vh;overflow-y:auto;width:100%;}
+  #helpContent h3,#statsContent h3{color:var(--gold);font-size:15px;margin:14px 0 4px;}
+  #helpContent h3:first-child,#statsContent h3:first-child{margin-top:0;}
+  #helpContent p,#statsContent p{font-size:13px;line-height:1.55;color:var(--text);margin:4px 0;}
+  #helpContent ul,#statsContent ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.5;color:var(--text);}
+  #helpContent b,#statsContent b{color:var(--gold);}
+  #helpCloseBtn,#statsCloseBtn{width:100%;margin-top:14px;padding:10px 18px;border:none;border-radius:10px;background:var(--gold);
     color:#20242f;font-weight:700;cursor:pointer;font-size:18px;}
+  .stats-entry{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+  .stats-entry .stats-line{font-size:13px;color:var(--text);margin:2px 0;}
+  .stats-entry .stats-line b{color:var(--gold);}
+  .stats-replay-btn{width:100%;margin-top:8px;padding:9px;border-radius:10px;border:1px solid var(--gold);
+    background:transparent;color:var(--gold);font-size:14px;font-weight:600;cursor:pointer;}
   .hidden{display:none!important;}
   #thinking{font-size:12px;color:var(--gold);text-align:center;height:16px;}
 </style>
@@ -162,6 +169,8 @@
       <div class="sub" id="subtitle">by Markus Hagenauer</div>
     </div>
     <div style="display:flex;gap:6px;">
+      <button id="hintBtn" title="Hint">🎯</button>
+      <button id="statsBtn" title="Stats">🏆</button>
       <button id="helpBtn" title="Help">💡</button>
       <button id="langBtn" title="Language"></button>
     </div>
@@ -242,6 +251,13 @@
   </div>
 </div>
 
+<div id="statsOverlay" class="hidden">
+  <div id="statsCard">
+    <div id="statsContent"></div>
+    <button id="statsCloseBtn" title="Close">✖️</button>
+  </div>
+</div>
+
 <script>
 /* ---------------- i18n ---------------- */
 const T = {
@@ -260,7 +276,7 @@ const T = {
     endTurnLog:(c)=>`${c} ukončuje tah.`,
     gameOverStuck:(c)=>`${c} nemůže táhnout — hra končí.`,
     winner:(c)=>`${c} vyhrává!`,
-    tie:(c)=>`Shoda bodů — vítězí ${c} (nemá tah).`,
+    tie:(c)=>`Remíza v součtu — vítězí ${c} (soupeř nemohl táhnout).`,
     finalScore:(rs,bs)=>`Červený: ${rs} bodů  •  Modrý: ${bs} bodů`,
     close:"Zavřít",
     selectPieceHint:"Vyberte figurku a poté cílové pole.",
@@ -278,6 +294,16 @@ const T = {
     replayStart:"Na začátek hry", replayBack:"O tah zpět", replayPlay:"Přehrát", replayPause:"Zastavit",
     replayForward:"O tah vpřed", replayEnd:"Na konec hry",
     switchLang:"English",
+    hintTitle:"Nápověda tahu (doporučit kámen)",
+    statsTitle:"Statistiky",
+    statsHeading:"Statistiky her",
+    bestGame:"Nejlepší hra",
+    lastGame:"Poslední hra",
+    noGameYet:"Zatím žádná odehraná hra.",
+    playedAs:"Hrál jsi",
+    resultWon:"Výhra",
+    resultLost:"Prohra",
+    replayThis:"▶️ Přehrát tuto hru",
   },
   en:{
     subtitle:"by Markus Hagenauer",
@@ -312,6 +338,16 @@ const T = {
     replayStart:"Go to start", replayBack:"Step back", replayPlay:"Play", replayPause:"Pause",
     replayForward:"Step forward", replayEnd:"Go to end",
     switchLang:"Čeština",
+    hintTitle:"Move hint (suggest a piece)",
+    statsTitle:"Stats",
+    statsHeading:"Game Stats",
+    bestGame:"Best Game",
+    lastGame:"Last Game",
+    noGameYet:"No games played yet.",
+    playedAs:"Played as",
+    resultWon:"Won",
+    resultLost:"Lost",
+    replayThis:"▶️ Replay this game",
   }
 };
 function p(r,c){ return `(${r+1},${c+1})`; }
@@ -324,6 +360,7 @@ const ROWS=8, COLS=9;
 /* ---------------- game state ---------------- */
 let board, pieces, currentPlayer, turnPhase, chainLastPos, moveList, gameActive;
 let humanColor='blue', difficulty='medium', aiBusy=false;
+let hintEnabled=false, currentHint=null;
 
 function colorName(c){ return c==='red'? t('red'): t('blue'); }
 
@@ -436,6 +473,7 @@ function newGame(){
   updateUndoButtonState();
   renderBoard();
   updateStatus();
+  computeHintForCurrentState();
   maybeTriggerAI();
 }
 
@@ -464,6 +502,7 @@ function renderBoard(){
         if(!clickable) pe.classList.add('not-clickable');
         if(selectedPiece===piece) pe.classList.add('selected');
         if(isBonusEligible(piece)) pe.classList.add('bonus-eligible');
+        if(hintEnabled && currentHint && currentHint.piece.color===piece.color && currentHint.piece.num===piece.num) pe.classList.add('hint-piece');
         pe.addEventListener('click', (e)=>{ e.stopPropagation(); onPieceClick(piece); });
         cell.appendChild(pe);
       }
@@ -529,7 +568,7 @@ function afterMove(piece, from, to, isBonusMove){
   } else {
     turnPhase='bonus';
     document.getElementById('endTurnBtn').disabled=false;
-    renderBoard();
+    computeHintForCurrentState();
     updateStatus();
   }
 }
@@ -550,8 +589,8 @@ function finishTurn(){
     endGame(currentPlayer);
     return;
   }
-  renderBoard();
   updateStatus();
+  computeHintForCurrentState();
   maybeTriggerAI();
 }
 
@@ -580,7 +619,10 @@ function formatLogEntry(e){
     return lines.join('\n');
   }
   if(e.type==='endTurn') return t('endTurnLog')(colorName(e.color));
-  if(e.type==='gameOver') return t('gameOverStuck')(colorName(e.color));
+  if(e.type==='gameOver'){
+    const resultLine = (e.tie ? t('tie')(colorName(e.winner)) : t('winner')(colorName(e.winner))) + ` (${e.rs}:${e.bs})`;
+    return t('gameOverStuck')(colorName(e.color)) + '\n' + resultLine;
+  }
   return '';
 }
 function addLogEntry(entry){
@@ -631,9 +673,7 @@ function undoMove(){
   gameActive = snap.gameActive;
   logEntries = logEntries.slice(0, snap.logLength);
   moveHistory = moveHistory.slice(0, snap.moveHistoryLength);
-  const logEl = document.getElementById('log');
-  logEl.innerHTML='';
-  logEntries.forEach(txt=>{ const div=document.createElement('div'); div.textContent=txt; logEl.insertBefore(div, logEl.firstChild); });
+  refreshLogDisplay();
   selectedPiece=null; destOptions=[];
   if(turnPhase==='bonus' && lastMovedPos){
     const res = getBonusOptions(board, pieces, currentPlayer, lastMovedPos.row, lastMovedPos.col);
@@ -645,8 +685,8 @@ function undoMove(){
     document.getElementById('endTurnBtn').disabled=true;
   }
   updateUndoButtonState();
-  renderBoard();
   updateStatus();
+  computeHintForCurrentState();
 }
 
 
@@ -654,11 +694,12 @@ let lastResult=null;
 function endGame(stuckColor){
   gameActive=false;
   const rs=scoreFor('red'), bs=scoreFor('blue');
-  addLogEntry({type:'gameOver', color:stuckColor});
   let winner;
   if(rs===bs) winner=stuckColor;
   else winner = rs>bs ? 'red':'blue';
-  lastResult = {rs,bs,winner,tie:(rs===bs)};
+  const tie = (rs===bs);
+  addLogEntry({type:'gameOver', color:stuckColor, rs, bs, winner, tie});
+  lastResult = {rs,bs,winner,tie};
   refreshResultText();
   document.getElementById('overlay').classList.remove('hidden');
   updateUndoButtonState();
@@ -666,6 +707,7 @@ function endGame(stuckColor){
   document.getElementById('replayBar').classList.remove('hidden');
   showReplayFrame(replayFrames.length-1);
   updateStatus();
+  saveGameStats(winner, tie, rs, bs);
 }
 function refreshResultText(){
   if(!lastResult) return;
@@ -834,6 +876,32 @@ function aiChooseTurn(color, d){
   return results[0];
 }
 
+/* ---------------- move hint (best current move suggestion) ---------------- */
+function computeHintForCurrentState(){
+  currentHint=null;
+  if(!hintEnabled || !gameActive || currentPlayer!==humanColor){ renderBoard(); return; }
+  if(turnPhase==='initial'){
+    const chosen = aiChooseTurn(humanColor, 'hard');
+    if(chosen && chosen.moves && chosen.moves.length){
+      const first = chosen.moves[0];
+      currentHint = {piece:{color:first.color,num:first.num}, dest:{...first.to}};
+    }
+  } else if(turnPhase==='bonus'){
+    let best=null, bestScore=-Infinity;
+    currentBonusOptions.forEach(opt=>{
+      opt.moves.forEach(dest=>{
+        const {board:b2, pieces:ps2} = cloneState(board, pieces);
+        const mv = findPiece(ps2, opt.piece.color, opt.piece.num);
+        applyMove(b2, ps2, mv, dest);
+        const score = evalBoard(b2, ps2, humanColor);
+        if(score>bestScore){ bestScore=score; best={piece:{color:opt.piece.color,num:opt.piece.num}, dest:{...dest}}; }
+      });
+    });
+    currentHint = best;
+  }
+  renderBoard();
+}
+
 function maybeTriggerAI(){
   if(!gameActive) return;
   if(currentPlayer===humanColor) return;
@@ -920,6 +988,8 @@ document.getElementById('replayEndBtn').addEventListener('click', ()=>{ stopRepl
 
 /* ---------------- save / load ---------------- */
 const SAVE_KEY='sumon_save_v1';
+const LAST_GAME_KEY='sumon_last_game_v1';
+const BEST_GAME_KEY='sumon_best_game_v1';
 function serializeState(){
   return {
     v:2,
@@ -929,6 +999,67 @@ function serializeState(){
     moveHistory: moveHistory.map(m=>({color:m.color,num:m.num,from:{...m.from},to:{...m.to},logIndex:m.logIndex})),
     initialSetupSnapshot: initialSetupSnapshot.map(p=>({...p}))
   };
+}
+function saveGameStats(winner, tie, rs, bs){
+  try{
+    const humanScore = humanColor==='red' ? rs : bs;
+    const opponentScore = humanColor==='red' ? bs : rs;
+    const humanWon = (winner===humanColor);
+    const entry = Object.assign(serializeState(), {
+      dateStr: new Date().toLocaleString(lang==='cs'?'cs-CZ':'en-US', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
+      humanColor, difficulty, rs, bs, humanScore, opponentScore, humanWon
+    });
+    localStorage.setItem(LAST_GAME_KEY, JSON.stringify(entry));
+    const rawBest = localStorage.getItem(BEST_GAME_KEY);
+    let shouldReplace = humanWon;
+    if(shouldReplace && rawBest){
+      try{
+        const prevBest = JSON.parse(rawBest);
+        if(prevBest.humanWon && prevBest.humanScore >= humanScore) shouldReplace=false;
+      }catch(e){}
+    }
+    if(shouldReplace) localStorage.setItem(BEST_GAME_KEY, JSON.stringify(entry));
+  }catch(e){ /* storage unavailable */ }
+}
+function statsEntrySummaryHTML(entry){
+  const resultWord = entry.humanWon ? t('resultWon') : t('resultLost');
+  return `
+    <div class="stats-line">${t('playedAs')}: <b>${colorName(entry.humanColor)}</b> — ${resultWord} (${entry.rs}:${entry.bs})</div>
+    <div class="stats-line">${entry.dateStr || ''}</div>
+  `;
+}
+function openStats(){
+  const lastRaw = localStorage.getItem(LAST_GAME_KEY);
+  const bestRaw = localStorage.getItem(BEST_GAME_KEY);
+  let html = `<h3>${t('statsHeading')}</h3>`;
+  html += `<h3 style="margin-top:16px;">🏆 ${t('bestGame')}</h3>`;
+  if(bestRaw){
+    html += `<div class="stats-entry" id="statsBestEntry">${statsEntrySummaryHTML(JSON.parse(bestRaw))}
+      <button class="stats-replay-btn" id="statsBestReplayBtn">${t('replayThis')}</button></div>`;
+  } else {
+    html += `<p>${t('noGameYet')}</p>`;
+  }
+  html += `<h3>🕓 ${t('lastGame')}</h3>`;
+  if(lastRaw){
+    html += `<div class="stats-entry" id="statsLastEntry">${statsEntrySummaryHTML(JSON.parse(lastRaw))}
+      <button class="stats-replay-btn" id="statsLastReplayBtn">${t('replayThis')}</button></div>`;
+  } else {
+    html += `<p>${t('noGameYet')}</p>`;
+  }
+  document.getElementById('statsContent').innerHTML = html;
+  if(bestRaw){
+    document.getElementById('statsBestReplayBtn').addEventListener('click', ()=>{
+      document.getElementById('statsOverlay').classList.add('hidden');
+      restoreFromState(JSON.parse(bestRaw));
+    });
+  }
+  if(lastRaw){
+    document.getElementById('statsLastReplayBtn').addEventListener('click', ()=>{
+      document.getElementById('statsOverlay').classList.add('hidden');
+      restoreFromState(JSON.parse(lastRaw));
+    });
+  }
+  document.getElementById('statsOverlay').classList.remove('hidden');
 }
 function saveGame(){
   try{
@@ -977,7 +1108,10 @@ function restoreFromState(st){
     renderBoard();
   }
   updateStatus();
-  if(gameActive && currentPlayer!==humanColor) maybeTriggerAI();
+  if(gameActive){
+    computeHintForCurrentState();
+    if(currentPlayer!==humanColor) maybeTriggerAI();
+  }
 }
 function loadGame(){
   try{
@@ -1057,6 +1191,8 @@ function applyStaticTexts(){
   document.getElementById('resCloseBtn').title = t('close');
   document.getElementById('helpCloseBtn').title = t('close');
   document.getElementById('helpBtn').title = 'Help / Nápověda';
+  document.getElementById('hintBtn').title = t('hintTitle');
+  document.getElementById('statsBtn').title = t('statsTitle');
   document.getElementById('langBtn').title = t('switchLang');
   document.getElementById('langBtn').textContent = lang==='cs' ? '🇬🇧' : '🇨🇿';
   document.getElementById('replayStartBtn').title = t('replayStart');
@@ -1098,7 +1234,7 @@ cs:`
 <p>Pokud se ten součet rovná číslu <b>některého z tvých vlastních kamenů</b>, který se ještě může pohnout vpřed, smíš jej zahrát jako bonusový tah. Po bonusovém tahu se celý postup opakuje — hledají se nové osy z nové pozice a řetěz může pokračovat dál.</p>
 <p>Zvýrazněné (pulzující) kameny jsou právě dostupné bonusové tahy; políčka se zlatým orámováním ukazují osu, ze které se součet počítá. Bonusové tahy nejsou povinné — kdykoliv můžeš stisknout <b>Ukončit tah</b>.</p>
 <h3>Konec hry a vítězství</h3>
-<p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, který je na tahu a nemá platný tah.</p>
+<p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, kterému tah nevyšel (ten, kdo hru ukončil).</p>
 <h3>Tip</h3>
 <p>Sleduj, jaké součty vznikají na osách před tvým tahem — ideální kámen k posunutí je ten, který ti pak otevře dlouhý řetěz bonusových tahů.</p>
 `,
@@ -1125,6 +1261,15 @@ document.getElementById('helpBtn').addEventListener('click', ()=>{
 });
 document.getElementById('helpCloseBtn').addEventListener('click', ()=>{
   document.getElementById('helpOverlay').classList.add('hidden');
+});
+document.getElementById('hintBtn').addEventListener('click', ()=>{
+  hintEnabled = !hintEnabled;
+  document.getElementById('hintBtn').classList.toggle('active', hintEnabled);
+  computeHintForCurrentState();
+});
+document.getElementById('statsBtn').addEventListener('click', openStats);
+document.getElementById('statsCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('statsOverlay').classList.add('hidden');
 });
 
 applyStaticTexts();
