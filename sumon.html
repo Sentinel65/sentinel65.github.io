@@ -1235,6 +1235,10 @@ cs:`
 <p>Zvýrazněné (pulzující) kameny jsou právě dostupné bonusové tahy; políčka se zlatým orámováním ukazují osu, ze které se součet počítá. Bonusové tahy nejsou povinné — kdykoliv můžeš stisknout <b>Ukončit tah</b>.</p>
 <h3>Konec hry a vítězství</h3>
 <p>Hra končí, když hráč na tahu nemá žádný legální úvodní tah (všechny jeho kameny už došly na soupeřovu stranu, nebo jsou zablokované). Sečtou se čísla kamenů, které došly na protější stranu — vyšší součet vyhrává. Při shodě vyhrává hráč, kterému tah nevyšel (ten, kdo hru ukončil).</p>
+<h3>Nápověda tahu 👁️</h3>
+<p>Tlačítkem 👁️ v hlavičce zapneš/vypneš poradce nejlepšího tahu. Když je zapnutý, kdykoliv jsi na tahu (na začátku tahu i uprostřed bonusového řetězu), modré orámování ukáže kámen, který silná analýza právě vyhodnotila jako nejlepší k zahrání — podobně jako nápověda tahu v šachu. Doporučení se počítá nezávisle na obtížnosti nastavené pro soupeře.</p>
+<h3>Statistiky 🏆</h3>
+<p>Tlačítko 🏆 otevře přehled tvé <b>nejlepší hry</b> (vyhraná hra s nejvyšším dosaženým skóre) a <b>poslední odehrané hry</b>. U obou najdeš datum, barvu, výsledek a tlačítko „Přehrát tuto hru", kterým kdykoliv znovu spustíš přehrávač celého průběhu dané partie — stejně jako po skončení aktuální hry.</p>
 <h3>Tip</h3>
 <p>Sleduj, jaké součty vznikají na osách před tvým tahem — ideální kámen k posunutí je ten, který ti pak otevře dlouhý řetěz bonusových tahů.</p>
 `,
@@ -1251,6 +1255,10 @@ en:`
 <p>Pulsing pieces are your available bonus moves right now; cells with a gold outline show the axis the sum was drawn from. Bonus moves are optional — you can press <b>End Turn</b> at any time.</p>
 <h3>End of game and scoring</h3>
 <p>The game ends when the player to move has no legal opening move left (all their pieces have reached the far side or are blocked). Add up the numbers of pieces that reached the far side — higher total wins. On a tie, the player who couldn't move wins.</p>
+<h3>Move hint 👁️</h3>
+<p>The 👁️ button in the header toggles a best-move advisor on or off. When enabled, any time it's your turn (at the start of a turn or mid bonus-chain), a blue outline marks the piece a strong analysis currently rates as best to play — similar to a move hint in chess. The suggestion is computed independently of the difficulty set for the opponent.</p>
+<h3>Stats 🏆</h3>
+<p>The 🏆 button opens a summary of your <b>best game</b> (a win with the highest score reached) and your <b>most recent game</b>. Each shows the date, color played, and result, plus a "Replay this game" button that instantly re-opens the full move-by-move replay for that game — just like right after a game ends.</p>
 <h3>Tip</h3>
 <p>Watch what sums are forming on the axes before you move — the best piece to move first is often the one that opens up a long bonus chain.</p>
 `
@@ -1261,6 +1269,9 @@ document.getElementById('helpBtn').addEventListener('click', ()=>{
 });
 document.getElementById('helpCloseBtn').addEventListener('click', ()=>{
   document.getElementById('helpOverlay').classList.add('hidden');
+});
+document.getElementById('helpOverlay').addEventListener('click', (e)=>{
+  if(e.target.id==='helpOverlay') document.getElementById('helpOverlay').classList.add('hidden');
 });
 document.getElementById('hintBtn').addEventListener('click', ()=>{
   hintEnabled = !hintEnabled;
