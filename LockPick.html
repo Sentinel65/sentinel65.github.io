@@ -91,6 +91,22 @@ h1{
     background:#1d4020;
 }
 
+.pin-order{
+    font-size:0.65em;
+    color:#999;
+    min-height:1em;
+}
+
+.pin-height{
+    font-size:1.4em;
+    font-weight:bold;
+    color:#f0f0f0;
+}
+
+.pin-height-set{
+    color:#8a8a8a;
+}
+
 .pin-card.current{
     outline:2px solid gold;
 }
@@ -801,12 +817,12 @@ const PIN_DECK = [
 ];
 
 const GRID = [
-    [1,3,2,6,4,5],
+    [1,3,3,6,2,5],
     [4,1,5,2,4,3],
     [4,2,1,3,4,0],
     [5,0,6,1,6,5],
     [3,5,2,4,1,2],
-    [2,6,3,3,6,1]
+    [2,6,4,3,6,1]
 ];
 
 
@@ -898,6 +914,7 @@ const state = {
     lastTensionDice:[1,1,1,1],
 	heldDice:[false,false,false,false],
 	tensionUsed:[0,0,0,0],
+    hasUnderset:false,
     tensionPos:2,
     tensionMarks:{},
     tensionRolls:0,
@@ -1095,6 +1112,13 @@ function getTopmostUnsetPin(){
     return unset.reduce((a, b) => a.id > b.id ? a : b);
 }
 
+// Pravidla: jakmile je PIN nalezen (binding), musí být hned nastaven
+// před tím, než lze kontrolovat další PIN na binding. Tato funkce
+// zjistí, zda existuje nějaký nalezený, ale ještě nenastavený PIN.
+function hasPendingSetPin(){
+    return state.pins.some(p => p.found && !p.set);
+}
+
 function getBottommostUnsetPin(){
     const unset = state.pins.filter(p => !p.found);
     if(unset.length === 0) return null;
@@ -1117,6 +1141,13 @@ function startBindingCheck(){
         return;
     }
     if(state.gameOver) return;
+
+    // Pravidla: nelze zkoušet binding dalšího PINu, dokud není
+    // nastaven ten, který byl právě nalezen.
+    if(hasPendingSetPin()){
+        showToast(t("toastMustSetFirst"), "warning");
+        return;
+    }
 
     // Při dashPending: hráč se rozhodl přeskočit na další pin (místo dalšího hodu)
     if(state.bindingDashPending){
@@ -1317,6 +1348,7 @@ function bindingSuccess() {
 
     pin.found = true;
     state.bindingFound++;
+    pin.bindingOrder = state.bindingFound;
 
     addLog(t("logPinFound", pin.id, pin.bindingOrder));
     let toastText = t("logPinFound", pin.id, pin.bindingOrder);
@@ -1351,6 +1383,7 @@ function autoRevealLastPin(calledFromSuccess = false) {
 
     lastPin.found = true;
     state.bindingFound++;
+    lastPin.bindingOrder = state.bindingFound;
     
     const logMsg = t("logLastPinAutoFull", lastPin.id, lastPin.bindingOrder);
     addLog(logMsg);
@@ -2275,6 +2308,9 @@ function evaluateSetting(){
 
     showToast(t("logTooLow"), "warning");
 
+    // Pravidla: bonus "3 body za žádný overset/underset" se ztrácí i při undersetu
+    state.hasUnderset = true;
+
     // použité průsečíky jsou trvale vyřazeny
     blockUsedIntersections();
 
@@ -2384,13 +2420,14 @@ function calculateScore(){
 
     let details = [];
 
+    // 10 bodů za každý úspěšně nastavený PIN
     const setPinsCount =
         state.pins.filter(
             p => p.set
         ).length;
 
     const setPinsScore =
-        setPinsCount * 8;
+        setPinsCount * 10;
 
     score += setPinsScore;
 
@@ -2398,6 +2435,7 @@ function calculateScore(){
         t("scorePins", setPinsCount, setPinsScore)
     );
 
+    // 1 bod za každé nevyužité (nepopsané) políčko na časové ose
     const timeRemaining =
         Math.max(
             0,
@@ -2410,42 +2448,26 @@ function calculateScore(){
         t("scoreTime", timeRemaining)
     );
 
-    const abilities =
-        Object.values(state.powers)
-        .filter(v => v)
-        .length;
+    // 5 bodů, pokud je nastaven PIN s výškou 2 nebo 3; 10 bodů, pokud jsou nastaveny OBA (2 i 3)
+    const hasHeight2 =
+        state.pins.some(p => p.set && p.height === 2);
+    const hasHeight3 =
+        state.pins.some(p => p.set && p.height === 3);
 
-    const abilityScore =
-        abilities * 5;
-
-    score += abilityScore;
-
-    details.push(
-        t("scoreAbilities", abilities, abilityScore)
-    );
-
-    const lowPinsCount =
-        state.pins.filter(
-            p =>
-                p.set &&
-                (
-                    p.height === 2 ||
-                    p.height === 3
-                )
-        ).length;
-
-    const lowPinsScore =
-        lowPinsCount * 5;
+    let lowPinsScore = 0;
+    if(hasHeight2 || hasHeight3) lowPinsScore = 5;
+    if(hasHeight2 && hasHeight3) lowPinsScore = 10;
 
     score += lowPinsScore;
 
     details.push(
-        t("scoreLowPins", lowPinsCount, lowPinsScore)
+        t("scoreLowPins", lowPinsScore)
     );
 
+    // 5 bodů, pokud hra končí s napětím na hodnotě 1 (střed, cena=1)
     const tensionScore =
         state.tensionPos === 2
-        ? 6
+        ? 5
         : 0;
 
     score += tensionScore;
@@ -2454,15 +2476,26 @@ function calculateScore(){
         t("scoreTension", tensionScore)
     );
 
+    // 3 body, pokud během hry nedošlo k oversetu ANI undersetu
     const resetScore =
-        !state.hasReset
-        ? 4
+        (!state.hasReset && !state.hasUnderset)
+        ? 3
         : 0;
 
     score += resetScore;
 
     details.push(
         t("scoreNoReset", resetScore)
+    );
+
+    // 2 body za každé políčko odškrtnuté v tabulce napětí 4–6
+    const tensionTrackMarks = state.tensionUsed[0] || 0;
+    const tensionTrackScore = tensionTrackMarks * 2;
+
+    score += tensionTrackScore;
+
+    details.push(
+        t("scoreTensionTrack", tensionTrackMarks, tensionTrackScore)
     );
 
     score = Math.min(
@@ -2561,8 +2594,8 @@ function renderDice(){
     else if (state.currentSettingPin && !state.currentSettingPin.set && state.settingDice) {
         diceToShow = state.settingDice;
     }
-    // 3. PO BINDING FÁZI: Čeká se na kliknutí na "Set PIN" pro první nebo další hod -> otazníky
-    else if (state.bindingPhaseFinished) {
+    // 3. PIN je nalezen a čeká na nastavení: čeká se na kliknutí na "Set PIN" -> otazníky
+    else if (hasPendingSetPin()) {
         diceToShow = ["?", "?", "?", "?"]; 
     }
     // 4. BINDING FÁZE: (Na začátku hry)
@@ -2922,6 +2955,7 @@ function newGame(pinCount){
 	state.tensionUsed = [0,0,0,0];
 	state.mustCheckTension = false;
     state.settingTotal = 0;
+    state.hasUnderset = false;
 
     state.log = [];
 
@@ -2939,14 +2973,6 @@ function newGame(pinCount){
 
     shuffle(deck);
 
-    const order = [];
-
-    for(let i=1;i<=pinCount;i++){
-        order.push(i);
-    }
-
-    shuffle(order);
-
     state.pins = [];
 
     for(let i=0;i<pinCount;i++){
@@ -2957,7 +2983,9 @@ function newGame(pinCount){
 
             height:deck[i],
 
-            bindingOrder:order[i],
+            // bindingOrder se přiřazuje až ve chvíli objevení (viz bindingSuccess /
+            // autoRevealLastPin) — odpovídá pořadí, ve kterém byl PIN nalezen.
+            bindingOrder:null,
 
             found:false,
 
@@ -2982,10 +3010,8 @@ function renderBindingTrack(){
     const el = document.getElementById("bindingTrackDisplay");
     if(!el) return;
 
-    // Panel skrýt pokud neprobíhá binding fáze
-    const isBinding = !state.allBindingsFound && !state.currentSettingPin && !state.gameOver;
-    const allFound = state.bindingFound >= state.difficulty - 1;
-    panel.style.display =  state.bindingPhaseFinished ? "none" : "block";
+    // Panel skrýt, pokud se právě nastavuje nalezený PIN (binding fáze pro něj skončila)
+    panel.style.display = (hasPendingSetPin() || state.currentSettingPin) ? "none" : "block";
 
     const pos = state.bindingTrackPos; // aktuální pozice tokenu (0 = start)
 
@@ -3041,7 +3067,7 @@ function render(){
 
     const isCheckingBinding = state.currentCheckPin !== null;
     const isDashPending = state.bindingDashPending === true;
-    const allBindingsFound = state.bindingFound >= state.difficulty - 1;
+    const pendingSet = hasPendingSetPin();
     const isSettingPin = state.currentSettingPin !== null;
     const inTension = state.mustCheckTension;
 
@@ -3083,7 +3109,7 @@ if(inTension){
     const btnCB = document.getElementById("btnCheckBinding");
     const btnBR = document.getElementById("btnBindingRoll");
 
-    btnCB.disabled = state.gameOver || inTension || (isCheckingBinding && !isDashPending) || allBindingsFound;
+    btnCB.disabled = state.gameOver || inTension || (isCheckingBinding && !isDashPending) || pendingSet;
     btnBR.disabled = state.gameOver || inTension || !isCheckingBinding;
 
     // Při dashPending: obě tlačítka zelená + aktualizace labelů
@@ -3102,7 +3128,7 @@ if(inTension){
         btnBR.style.color = "";
         btnBR.textContent = t("bindingRoll");
     }
-    document.getElementById("btnSetPin").disabled       = state.gameOver || inTension || !allBindingsFound || isSettingPin;
+    document.getElementById("btnSetPin").disabled       = state.gameOver || inTension || !pendingSet || isSettingPin;
     // btnFinishTension: aktivní až po 1. hodu tension
     document.getElementById("btnFinishTension").disabled = state.gameOver || !inTension || state.tensionRolls < 1;
     // Přehodit a +-1: dostupné jen během nastavování nebo tension, jinak disabled
@@ -3220,10 +3246,12 @@ function renderPins(){
 
             <br>
 
-            <div>
+            <div class="pin-order">${pin.found ? "#" + pin.bindingOrder : ""}</div>
+
+            <div class="pin-height${pin.set ? " pin-height-set" : ""}">
                 ${
                     pin.found
-                    ? pin.bindingOrder
+                    ? pin.height
                     : "?"
                 }
             </div>
@@ -3410,7 +3438,7 @@ function updateHints() {
 
     // Zjištění aktuálních fází hry
     const isCheckingBinding = state.currentCheckPin !== null;
-    const allBindingsFound = state.bindingFound >= state.difficulty - 1;
+    const pendingSet = hasPendingSetPin();
     const isSettingPin = state.currentSettingPin !== null;
     
     // Zjistíme, zda už hráč přiřadil všechny 4 kostky (souřadnice)
@@ -3419,8 +3447,8 @@ function updateHints() {
     if (isCheckingBinding) {
         // Fáze: Hází se kostkou na binding
         document.getElementById("btnBindingRoll").classList.add("btn-next");
-    } else if (!allBindingsFound) {
-        // Fáze: Hledá se binding
+    } else if (!pendingSet) {
+        // Fáze: Hledá se binding dalšího PINu
         document.getElementById("btnCheckBinding").classList.add("btn-next");
     } else {
         // Fáze: Nastavování pinů
@@ -3723,6 +3751,7 @@ const TRANSLATIONS = {
         logGameOver:       "🏁 Konec hry",
         toastTensionFirst: "⚙ Nejprve proveď Tension Check",
         toastNoBinding:    "Neprobíhá kontrola PIN",
+        toastMustSetFirst: "?? Nejprve nastav nalezený PIN",
         logBindingRoll:    (r, d) => `Binding Roll ${r}/4: 🎲 ${d}`,
         logTimePenalty:    "⏱ Časová penalizace",
         logRollsExhausted: "❌ Vyčerpány 4 hody — přechod na další závěrku",
@@ -3781,12 +3810,12 @@ const TRANSLATIONS = {
         logModifyUsed:     (i, a, b) => `${b > a ? '➕' : '➖'} Upravit použit: kostka ${i}: ${a} → ${b}`,
         toastModified:     (i, v) => `Kostka ${i} upravena na ${v}`,
         logNewSum:         (s) => `🔄 Nový součet po úpravě: ${s}`,
-        scorePins:         (n, p) => `• Závěrky (${n}×8): ${p} b`,
+        scorePins:         (n, p) => `• Nastavené závěrky (${n}×10): ${p} b`,
         scoreTime:         (n) => `• Ušetřený čas (${n}×1): ${n} b`,
-        scoreAbilities:    (n, p) => `• Nepoužité schopnosti (${n}×5): ${p} b`,
-        scoreLowPins:      (n, p) => `• Závěrky výšky 2–3 (${n}×5): ${p} b`,
+        scoreLowPins:      (p) => `• Závěrky výšky 2/3: ${p} b`,
         scoreTension:      (p) => `• Napětí na středu: ${p} b`,
-        scoreNoReset:      (p) => `• Bez resetu závěrek: ${p} b`,
+        scoreNoReset:      (p) => `• Bez oversetu/undersetu: ${p} b`,
+        scoreTensionTrack: (n, p) => `• Políčka v tabulce 4–6 (${n}×2): ${p} b`,
         logFinalScore:     (s) => `🏆 KONEČNÉ SKÓRE: ${s} / 100`,
         logNewGame: (n) => `🔒 Nová hra (${n} PIN)`,
         //Help
@@ -3812,12 +3841,12 @@ const TRANSLATIONS = {
 <p>Závěrky musíš nastavovat ve správném pořadí. Stiskni <b>Check Binding</b> (1×B), poté <b>Binding Roll</b>. Hodí se 1 kostka a token se posune po Binding Tracku o její hodnotu.</p>
 <p>Po každém hodu se vyhodnotí pole, na kterém token skončí:</p>
 <ul>
-<li><b>✓ CHECK</b> — závěrka nalezena. Odhalí se její výška a můžeš přejít na <b>Set PIN</b>.</li>
+<li><b>✓ CHECK</b> — závěrka nalezena. Odhalí se její výška a <b>musíš ji hned nastavit</b> (Set PIN), než budeš moci zkoušet binding další závěrky.</li>
 <li><b>⏱ TIME</b> — získáš časovou penalizaci (1×X) a pokračuješ k další závěrce.</li>
 <li><b>—</b> — můžeš znovu hodit nebo stisknout <b>Další PIN</b> a přejít na další závěrku bez penalizace.</li>
 </ul>
 <p>Na jednu závěrku můžeš provést maximálně <b>4x Binding Roll</b>. Pokud po čtvrtém hodu skončíš na <b>—</b>, přejdeš automaticky na další závěrku bez penalizace.</p>
-<p><b>Poslední nenalezená závěrka</b> se odhalí automaticky.</p>
+<p><b>Poslední nenalezená závěrka</b> se odhalí automaticky a musí být nastavena stejně jako ostatní.</p>
 <p>⚠ Pokud neuspěješ u nejvýše pořadové závěrky, vrátíš se na nejnižší dosud nenastavenou závěrku (1×R).</p>
 
 <h3>⚙ 2. Nastavení napětí (Tension Check)</h3>
@@ -3872,12 +3901,12 @@ Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
 
 <h3>🏆 Bodování</h3>
 <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
-<tr><td style="padding:3px 6px;">Za každou nastavenou závěrku</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 8 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Za každou nastavenou závěrku</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 10 bodů</td></tr>
 <tr><td style="padding:3px 6px;">Za každý zbývající časový krok</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 1 bod</td></tr>
-<tr><td style="padding:3px 6px;">Za každou nepoužitou schopnost</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 bodů</td></tr>
-<tr><td style="padding:3px 6px;">Za každou závěrku výšky 2 nebo 3</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 bodů</td></tr>
-<tr><td style="padding:3px 6px;">Napětí na středu při konci hry</td><td style="text-align:right;color:#e0a800;font-weight:700;">6 bodů</td></tr>
-<tr><td style="padding:3px 6px;">Bez jediného resetu závěrek</td><td style="text-align:right;color:#e0a800;font-weight:700;">4 body</td></tr>
+<tr><td style="padding:3px 6px;">Závěrka výšky 2 nebo 3 (obě = 10 b)</td><td style="text-align:right;color:#e0a800;font-weight:700;">5 / 10 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Napětí na středu (hodnota 1) při konci hry</td><td style="text-align:right;color:#e0a800;font-weight:700;">5 bodů</td></tr>
+<tr><td style="padding:3px 6px;">Bez jediného oversetu nebo undersetu</td><td style="text-align:right;color:#e0a800;font-weight:700;">3 body</td></tr>
+<tr><td style="padding:3px 6px;">Za každé políčko v tabulce napětí 4–6</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 2 body</td></tr>
 <tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#e0a800;font-weight:700;">100 bodů</td></tr>
 </table>`
     },
@@ -3930,6 +3959,7 @@ Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
         logGameOver:       "🏁 Game over",
         toastTensionFirst: "⚙ Perform Tension Check first",
         toastNoBinding:    "No binding check in progress",
+        toastMustSetFirst: "🔒 Set the found PIN first",
         logBindingRoll:    (r, d) => `Binding Roll ${r}/4: 🎲 ${d}`,
         logTimePenalty:    "⏱ Time penalty",
         logRollsExhausted: "❌ 4 rolls exhausted — move to next pin",
@@ -3988,12 +4018,12 @@ Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
         logModifyUsed:     (i, a, b) => `${b > a ? '➕' : '➖'} Modify used: die ${i}: ${a} → ${b}`,
         toastModified:     (i, v) => `Die ${i} modified to ${v}`,
         logNewSum:         (s) => `🔄 New sum after modification: ${s}`,
-        scorePins:         (n, p) => `• Pins set (${n}×8): ${p} pts`,
+        scorePins:         (n, p) => `• Pins set (${n}×10): ${p} pts`,
         scoreTime:         (n) => `• Time remaining (${n}×1): ${n} pts`,
-        scoreAbilities:    (n, p) => `• Unused powers (${n}×5): ${p} pts`,
-        scoreLowPins:      (n, p) => `• Pins height 2–3 (${n}×5): ${p} pts`,
+        scoreLowPins:      (p) => `• Pins height 2/3: ${p} pts`,
         scoreTension:      (p) => `• Tension at center: ${p} pts`,
-        scoreNoReset:      (p) => `• No pin resets: ${p} pts`,
+        scoreNoReset:      (p) => `• No overset/underset: ${p} pts`,
+        scoreTensionTrack: (n, p) => `• 4–6 track marks (${n}×2): ${p} pts`,
         logFinalScore:     (s) => `🏆 FINAL SCORE: ${s} / 100`,
         logNewGame: (n) => `🔒 New game (${n} PINS)`,
         //Help
@@ -4019,12 +4049,12 @@ Získáš 2 bezplatné posuny průsečíků bez časové ztráty.
 <p>Pins must be set in the correct order. Press <b>Check Binding</b> (1×B), then <b>Binding Roll</b>. One die is rolled and the token advances on the Binding Track by that value.</p>
 <p>After each roll, the space reached by the token is resolved:</p>
 <ul>
-<li><b>✓ CHECK</b> — the pin is found. Its height is revealed and you may proceed to <b>Set PIN</b>.</li>
+<li><b>✓ CHECK</b> — the pin is found. Its height is revealed and <b>you must set it right away</b> before you can check the next pin's binding.</li>
 <li><b>⏱ TIME</b> — gain a time penalty (1×X) and move on to the next pin.</li>
 <li><b>—</b> — you may roll again or press <b>Next PIN</b> to continue without penalty.</li>
 </ul>
 <p>You may make up to <b>4 Binding Rolls</b> for a pin. If the fourth roll still lands on <b>—</b>, you automatically move to the next pin without penalty.</p>
-<p>The <b>last remaining unfound pin</b> is revealed automatically.</p>
+<p>The <b>last remaining unfound pin</b> is revealed automatically and must be set just like the others.</p>
 <p>⚠ Failing to find the highest-order pin sends you back to the lowest unset pin (1×R).</p>
 
 <h3>⚙ 2. Tension Check</h3>
@@ -4079,12 +4109,12 @@ Gain 2 free intersection moves with no time cost.
 
 <h3>🏆 Scoring</h3>
 <table style="width:100%;font-size:14px;border-collapse:collapse;margin:6px 0;">
-<tr><td style="padding:3px 6px;">Per pin set</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 8 pts</td></tr>
+<tr><td style="padding:3px 6px;">Per pin set</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 10 pts</td></tr>
 <tr><td style="padding:3px 6px;">Per remaining time step</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 1 pt</td></tr>
-<tr><td style="padding:3px 6px;">Per unused power</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 pts</td></tr>
-<tr><td style="padding:3px 6px;">Per pin of height 2 or 3</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 5 pts</td></tr>
-<tr><td style="padding:3px 6px;">Tension at center at end</td><td style="text-align:right;color:#e0a800;font-weight:700;">6 pts</td></tr>
-<tr><td style="padding:3px 6px;">No pin resets</td><td style="text-align:right;color:#e0a800;font-weight:700;">4 pts</td></tr>
+<tr><td style="padding:3px 6px;">Pin of height 2 or 3 (both = 10 pts)</td><td style="text-align:right;color:#e0a800;font-weight:700;">5 / 10 pts</td></tr>
+<tr><td style="padding:3px 6px;">Tension at center (value 1) at end</td><td style="text-align:right;color:#e0a800;font-weight:700;">5 pts</td></tr>
+<tr><td style="padding:3px 6px;">No overset or underset all game</td><td style="text-align:right;color:#e0a800;font-weight:700;">3 pts</td></tr>
+<tr><td style="padding:3px 6px;">Per space marked in the 4–6 tension track</td><td style="text-align:right;color:#e0a800;font-weight:700;">× 2 pts</td></tr>
 <tr style="border-top:1px solid #555;"><td style="padding:3px 6px;font-weight:700;">Maximum</td><td style="text-align:right;color:#e0a800;font-weight:700;">100 pts</td></tr>
 </table>`
     }
