@@ -1,786 +1,1328 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Slidestone</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #111;
-            color: #eee;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100dvh;
-            overflow: hidden;
-            touch-action: none;
-            align-items: center;
-        }
-        
-        /* Menu s piktogramy (na střed, pozadí jako status-bar) */
-        #top-bar {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            padding: 12px;
-            width: 100%;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
-        }
-        
-        .icon-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 24px;
-            padding: 0;
-            margin: 0;
-            cursor: pointer;
-            filter: grayscale(10%);
-            transition: transform 0.1s ease;
-            user-select: none;
-        }
-        
-        .icon-btn:active {
-            transform: scale(0.85);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Slidestone</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-        /* Sekce nadpisu a linky */
-        .header-container {
-            margin: 20px 0 10px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
+:root{
+  --bg: #0a0b0e;
+  --bg-2: #101319;
+  --panel: #14171d;
+  --panel-2: #191d24;
+  --border: rgba(230,235,245,0.09);
+  --ink: #e9ecf2;
+  --muted: #8b93a3;
+  --muted-2: #5c6472;
+  --grid: rgba(210,218,230,0.28);
+  --grid-strong: rgba(220,227,238,0.55);
+  --amber: #e8b34f;
+  --amber-dim: rgba(232,179,79,0.25);
+  --blue-1: #6fa2ff;
+  --blue-2: #1c3f91;
+  --blue-glow: rgba(90,140,255,0.55);
+  --red-1: #ff8a7a;
+  --red-2: #96201a;
+  --red-glow: rgba(255,90,70,0.5);
+  --radius: 14px;
+  /* Raise this to let the board grow bigger on wide screens. The SVG board scales
+     responsively to whatever width its container gets, so this is the main knob. */
+  --board-max-width: 860px;
+}
 
-        h1 {
-            margin: 0;
-            font-size: 26px;
-            letter-spacing: 6px;
-            color: #fff;
-            font-weight: normal;
-            font-family: "Times New Roman", Times, serif;
-            text-transform: uppercase;
-        }
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse at 20% -10%, #171b24 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 110%, #14181f 0%, transparent 55%),
+    var(--bg);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
 
-        /* Linka pod nadpisem podle předlohy */
-        .line-wrap {
-            display: flex;
-            align-items: center;
-            margin-top: 5px;
-            width: 220px;
-        }
-        .circle-empty {
-            width: 8px;
-            height: 8px;
-            border: 1px solid #fff;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .line {
-            flex-grow: 1;
-            height: 1px;
-            background: #fff;
-        }
-        .circle-full {
-            width: 8px;
-            height: 8px;
-            background: #fff;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        
-        /* Game Canvas */
-        #canvas-wrapper {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            padding: 0 5px;
-            overflow: hidden;
-        }
-        
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+.app{
+  max-width:1440px;
+  margin:0 auto;
+  padding:22px 18px 60px;
+}
 
-        /* Stav tahu (pod deskou) */
-        #status-bar {
-            width: 100%;
-            padding: 15px;
-            background: #1a1a1a;
-            border-top: 1px solid #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+header{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:14px;
+  margin-bottom:22px;
+}
 
-        #status {
-            font-weight: 600;
-            font-size: 18px;
-            color: #4facfe;
-            text-align: center;
-            white-space: nowrap;
-        }
-        
-        /* Modals & Toasts */
-        #helpModal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 200;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-        }
-        
-        .modal-content {
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 100%;
-            width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        
-        .modal-content h3 {
-            margin: 0 0 15px 0;
-            color: #fff;
-        }
-        
-        .modal-content p {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #ccc;
-            margin: 0 0 20px 0;
-        }
-        
-        .close-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-        }
-        
-        #toast {
-            position: fixed;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            border: 1px solid #444;
-        }
-    </style>
+.brand h1{
+  font-family:'Syne',sans-serif;
+  font-weight:800;
+  font-size:clamp(28px,5vw,42px);
+  letter-spacing:0.5px;
+  margin:0;
+  background:linear-gradient(120deg,#f2f5fb 0%,var(--amber) 120%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.header-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:center;
+}
+
+button{
+  font-family:'Inter',sans-serif;
+  cursor:pointer;
+}
+
+.btn{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--ink);
+  padding:9px 14px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  transition:all .15s ease;
+}
+.btn:hover{ border-color:rgba(232,179,79,0.4); background:#1e222a; }
+.btn:active{ transform:translateY(1px); }
+.btn.ghost{ background:transparent; }
+.btn.primary{
+  background:linear-gradient(135deg,var(--amber),#c98f2e);
+  color:#20150a;
+  border:none;
+}
+.btn.primary:hover{ filter:brightness(1.08); }
+.btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.btn.small{ padding:6px 10px; font-size:12px; }
+
+main{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+
+/* --board-max-width controls how large the board is allowed to grow on screen.
+   The SVG itself scales responsively (width:100%) to fill whatever box it is given,
+   so raising this value is the main lever for a visibly bigger board on wide screens. */
+.board-col{
+  flex:1 1 640px;
+  min-width:300px;
+  max-width: var(--board-max-width, 860px);
+}
+
+.board-frame{
+  position:relative;
+  background:
+    radial-gradient(circle at 50% 42%, #171b22 0%, #0d1015 70%);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.5), 0 20px 50px rgba(0,0,0,0.35);
+}
+
+#board{
+  width:100%;
+  height:auto;
+  display:block;
+  touch-action: manipulation;
+}
+
+.point-dot{ fill:var(--grid); }
+.grid-line{ stroke:var(--grid); stroke-width:1.4; }
+
+.center-ring{ fill:none; stroke:var(--amber); }
+.center-core{ fill:var(--amber); }
+
+.dest-marker{ fill:var(--amber-dim); stroke:var(--amber); stroke-width:1.6; cursor:pointer; }
+.dest-marker.hovered{ fill:rgba(232,179,79,0.55); }
+.select-ring{ fill:none; stroke:var(--amber); stroke-width:2.4; }
+
+.stone{ cursor:pointer; transition: filter .15s ease; }
+.stone.disabled{ cursor:default; }
+.stone.can-select.hovered{ filter:brightness(1.15); }
+
+/* Whose turn it is, shown as a soft pulsing glow directly on that player's stones
+   (replaces the old text turn-indicator panel). */
+@keyframes turnPulse{
+  0%,100%{ filter:drop-shadow(0 0 2px currentColor) drop-shadow(0 0 2px currentColor); }
+  50%{ filter:drop-shadow(0 0 7px currentColor) drop-shadow(0 0 7px currentColor); }
+}
+.stone.turn-glow{ animation: turnPulse 1.7s ease-in-out infinite; }
+
+/* Ring around whichever stone slid last, so the previous move stays visible at a glance. */
+.last-move-ring{ fill:none; stroke:var(--amber); stroke-width:2; stroke-dasharray:3 3; opacity:0.9; }
+
+/* Quick-rules chips, now shown inside the help modal */
+.quick-rules{
+  display:flex;
+  gap:8px;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  margin:12px 0;
+}
+.rule-chip{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:0.3px;
+  color:var(--muted);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:5px 11px;
+  background:var(--panel-2);
+}
+.rule-chip b{ color:var(--amber); font-weight:600; }
+
+.sidebar{
+  flex:0 0 300px;
+  min-width:260px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+}
+.panel h3{
+  margin:0 0 10px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  color:var(--muted-2);
+  font-weight:700;
+}
+
+/* Icon-only "AI is thinking" indicator. Fixed position: it floats over the page
+   rather than sitting in the normal document flow, so it can never push the
+   board around, and it's placed in a viewport corner so it never overlaps
+   the board itself either. */
+.ai-thinking-badge{
+  --x:300px;
+  --y:130px;
+
+  position:fixed;
+  left:var(--x);
+  top:var(--y);
+
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:rgba(20,23,29,0.92);
+  border:1px solid var(--amber);
+  color:var(--amber);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 8px 20px rgba(0,0,0,0.35);
+  z-index:70;
+  opacity:0;
+  transform:scale(0.8);
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.ai-thinking-badge.active{ opacity:1; transform:scale(1); }
+.ai-thinking-badge svg{ width:22px; height:22px; animation:aiSpin 0.9s linear infinite; }
+@keyframes aiSpin{ to{ transform:rotate(360deg); } }
+
+.designer-credit{ color:var(--muted-2); font-size:12px; margin:-4px 0 4px; font-style:italic; }
+
+.stats-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12.5px;
+}
+.stats-table th{
+  text-align:center;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  color:var(--muted-2);
+  font-weight:700;
+  padding:0 0 8px;
+}
+.stats-table th:first-child{ text-align:left; }
+.stats-table td{
+  text-align:center;
+  padding:8px 4px;
+  border-top:1px solid var(--border);
+  color:var(--ink);
+}
+.stats-table td:first-child{
+  text-align:left;
+  color:var(--muted);
+  font-weight:600;
+}
+.stats-table td.win-cell{ color:var(--amber); font-weight:700; }
+
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(6,7,10,0.72);
+  display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:20px; backdrop-filter: blur(3px);
+}
+.modal-overlay.hidden{ display:none; }
+.modal{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:26px;
+  max-width:520px;
+  width:100%;
+  max-height:85vh;
+  overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,0.5);
+}
+.modal h2{
+  font-family:'Syne',sans-serif;
+  margin:0 0 12px;
+  font-size:24px;
+  color:var(--amber);
+}
+.modal p, .modal li{ font-size:14px; line-height:1.65; color:var(--ink); }
+.modal ol,.modal ul{ padding-left:20px; margin:10px 0; }
+.modal .tagline{ color:var(--amber); font-weight:600; font-size:15px; }
+.modal .credit-note{ color:var(--muted-2); font-size:11.5px; margin-top:16px; border-top:1px solid var(--border); padding-top:12px; }
+.modal .close-row{ display:flex; justify-content:flex-end; margin-top:18px; gap:8px; }
+
+.win-modal{ text-align:center; }
+.win-modal .big{
+  font-family:'Syne',sans-serif;
+  font-size:30px;
+  font-weight:800;
+  margin:6px 0 4px;
+}
+.win-modal .big.blue{ color:var(--blue-1); }
+.win-modal .big.red{ color:var(--red-1); }
+
+.toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+  background:var(--panel-2); border:1px solid var(--amber); color:var(--ink);
+  padding:12px 20px; border-radius:10px; font-size:13px; z-index:60;
+  display:flex; gap:14px; align-items:center;
+  box-shadow:0 15px 40px rgba(0,0,0,0.4);
+  transition:opacity .25s ease, transform .25s ease;
+}
+.toast.hidden{ opacity:0; pointer-events:none; transform:translateX(-50%) translateY(10px); }
+
+footer.credit{ text-align:center; color:var(--muted-2); font-size:11px; margin-top:30px; }
+
+/* Pictogram icon toolbar */
+.icon-toolbar{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.icon-btn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  min-width:52px;
+  min-height:48px;
+  padding:6px 8px;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--muted);
+  transition:all .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.icon-btn svg{ width:20px; height:20px; display:block; }
+.icon-btn .icon-label{
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:0.3px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.icon-btn:hover{ border-color:rgba(232,179,79,0.45); background:#1e222a; }
+.icon-btn:active{ transform:translateY(1px); }
+.icon-btn.active{ border-color:var(--amber); background:var(--amber-dim); }
+.icon-btn.active .icon-label{ color:var(--amber); }
+.icon-btn .flag{ border-radius:3px; overflow:hidden; display:block; }
+
+@media (max-width:860px){
+  .sidebar{ flex:1 1 100%; }
+}
+@media (max-width:480px){
+  .app{ padding:14px 10px 44px; }
+  .board-frame{ padding:10px; border-radius:14px; }
+  .icon-btn{ min-width:44px; min-height:44px; padding:5px 6px; }
+  .icon-btn .icon-label{ font-size:8px; }
+  header{ gap:10px; }
+  .ai-thinking-badge{ width:36px; height:36px;}
+  .ai-thinking-badge svg{ width:18px; height:18px; }
+}
+</style>
 </head>
 <body>
+<div class="app">
 
-<div id="top-bar">
-    <button class="icon-btn" onclick="resetGame()" title="Nová hra">🔄</button>
-    <button class="icon-btn" onclick="saveGame()" title="Uložit">💾</button>
-    <button class="icon-btn" onclick="loadGame()" title="Načíst">📂</button>
-    <button class="icon-btn" onclick="toggleDifficulty()" id="diffBtn" title="Obtížnost">🟡</button>
-    <button class="icon-btn" onclick="toggleLang()" id="langBtn" title="Jazyk">🇨🇿</button>
-    <button class="icon-btn" onclick="toggleHelp()" title="Nápověda">💡</button>
-</div>
-
-<div class="header-container">
-    <h1>Slidestone</h1>
-    <div class="line-wrap">
-        <div class="circle-empty"></div>
-        <div class="line"></div>
-        <div class="circle-full"></div>
+  <header>
+    <div class="brand">
+      <h1>Slidestone</h1>
     </div>
-</div>
-
-<div id="canvas-wrapper">
-    <canvas id="gameCanvas" width="900" height="900"></canvas> 
-</div>
-
-<div id="status-bar">
-    <div id="status">Tah: Hráč (Modrá)</div>
-</div>
-
-<div id="helpModal">
-    <div class="modal-content">
-        <h3 id="helpTitle">Pravidla hry</h3>
-        <p id="helpText">
-            <strong>Cíl hry:</strong> Jako první dopravte jeden ze svých kamenů přesně na středovou pozici.<br><br>
-            <strong>Jak hrát:</strong><br>
-            Ve svém tahu vyberte kámen a kliknutím určete směr skluzu. Kámen klouže v rovném směru bez zastavení, dokud nenarazí na okraj herní desky nebo na jiný kámen. Nelze jej zastavit úmyslně v půli cesty.
-        </p>
-        <button class="close-btn" id="closeBtn" onclick="toggleHelp()">Zavřít</button>
+    <div class="header-actions">
+      <div class="icon-toolbar">
+        <button class="icon-btn" id="newGameBtn" title="Nová hra" data-i18n-title="newGameBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          <span class="icon-label" data-i18n="newGameBtn">Nová hra</span>
+        </button>
+        <button class="icon-btn" id="saveGameBtn" title="Uložit hru" data-i18n-title="saveGameBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          <span class="icon-label" data-i18n="saveGameBtn">Uložit</span>
+        </button>
+        <button class="icon-btn" id="loadGameBtn" title="Načíst hru" data-i18n-title="loadGameBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/><path d="M12 11v6"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></svg>
+          <span class="icon-label" data-i18n="loadGameBtn">Načíst</span>
+        </button>
+        <button class="icon-btn" id="diffToggleBtn" title="Obtížnost AI">
+          <svg id="diffIcon" viewBox="0 0 24 20" width="20" height="17"></svg>
+          <span class="icon-label" id="diffLabel">Střední</span>
+        </button>
+        <button class="icon-btn" id="langToggleBtn" title="Přepnout jazyk">
+          <svg class="flag" id="langIcon" viewBox="0 0 30 20" width="22" height="15"></svg>
+          <span class="icon-label" id="langLabel">CZ</span>
+        </button>
+        <button class="icon-btn" id="rulesBtn" title="Nápověda" data-i18n-title="rulesBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8a4.65 4.65 0 0 0 1.5 3.5c.76.76 1.23 1.52 1.41 2.5"/></svg>
+          <span class="icon-label" data-i18n="rulesBtn">Nápověda</span>
+        </button>
+      </div>
     </div>
+  </header>
+
+  <main>
+    <div class="board-col">
+      <div class="board-frame">
+        <svg id="board" viewBox="0 0 100 100"></svg>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="panel">
+        <h3 data-i18n="statsLabel">Statistika her</h3>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th data-i18n="diffCol">Obtížnost</th>
+              <th data-i18n="statWins">výhry</th>
+              <th data-i18n="statLosses">prohry</th>
+              <th data-i18n="statGames">her</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-i18n="diffEasy">Snadná</td>
+              <td class="win-cell" id="statEasyWins">0</td>
+              <td id="statEasyLosses">0</td>
+              <td id="statEasyGames">0</td>
+            </tr>
+            <tr>
+              <td data-i18n="diffMedium">Střední</td>
+              <td class="win-cell" id="statMediumWins">0</td>
+              <td id="statMediumLosses">0</td>
+              <td id="statMediumGames">0</td>
+            </tr>
+            <tr>
+              <td data-i18n="diffHard">Těžká</td>
+              <td class="win-cell" id="statHardWins">0</td>
+              <td id="statHardLosses">0</td>
+              <td id="statHardGames">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+  </main>
+
 </div>
 
-<div id="toast"></div>
+<!-- Icon-only "AI is thinking" indicator: fixed position so it never shifts the board layout
+     and never overlaps the board itself. -->
+<div class="ai-thinking-badge" id="thinkingIndicator" title="AI přemýšlí…" data-i18n-title="thinking">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <circle cx="12" cy="12" r="9" opacity="0.25"/>
+    <path d="M21 12a9 9 0 0 0-9-9"/>
+  </svg>
+</div>
+
+<div class="modal-overlay hidden" id="rulesModal">
+  <div class="modal">
+    <h2 data-i18n="rulesTitle">Jak se hraje Slidestone</h2>
+    <p class="designer-credit">Designer: Joshua Snead &amp; Jonathan Snead</p>
+    <p class="tagline" data-i18n="subtitle">Pošli svůj kámen po přímce až na střed desky — první, kdo se tam dostane, vyhrává.</p>
+    <p data-i18n="rulesIntro">Slidestone je jednoduchá abstraktní strategická hra pro dva hráče, hraná na hexagonální desce se sítí bodů (stejná deska jako u hry YINSH) a jedním prázdným středovým bodem.</p>
+    <div class="quick-rules">
+      <div class="rule-chip"><b>1.</b> <span data-i18n="rule1">jeden kámen, jeden směr</span></div>
+      <div class="rule-chip"><b>2.</b> <span data-i18n="rule2">klouže až na okraj / k jinému kameni</span></div>
+      <div class="rule-chip"><b>3.</b> <span data-i18n="rule3">první ve středu vítězí</span></div>
+    </div>
+    <ol id="rulesList">
+      <li data-i18n="rulesL1">Na začátku má každý hráč 6 kamenů rozestavěných na protilehlých stranách desky.</li>
+      <li data-i18n="rulesL2">Hráči se střídají v tazích. V jednom tahu vyberete jeden svůj kámen a pošlete ho po přímé linii jedním ze šesti směrů.</li>
+      <li data-i18n="rulesL3">Kámen klouže dál a dál, dokud nenarazí na okraj desky, nebo dokud se nedostane těsně před jiný kámen (svůj i soupeřův). Nelze zastavit uprostřed cesty ani přeskočit jiný kámen.</li>
+      <li data-i18n="rulesL4">Kameny se neberou — pouze blokují cestu.</li>
+      <li data-i18n="rulesL5">Vítězí hráč, jehož kámen jako první doklouže přesně na středový bod desky.</li>
+      <li data-i18n="rulesL6">Pokud hráč nemá žádný platný tah, jeho tah se přeskočí.</li>
+    </ol>
+    <p class="credit-note" data-i18n="creditNote">Slidestone — fanouškovská implementace v jednom souboru, hraná na desce ve tvaru YINSH.</p>
+    <div class="close-row">
+      <button class="btn primary" id="rulesCloseBtn" data-i18n="closeBtn">Rozumím</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="winModal">
+  <div class="modal win-modal">
+    <div data-i18n="winTitle" style="color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:1px;">Konec hry</div>
+    <div class="big" id="winText">Modrý vyhrává!</div>
+    <p id="winSub" data-i18n="winSub">Kámen dosáhl středu desky.</p>
+    <div class="close-row" style="justify-content:center;">
+      <button class="btn primary" id="winNewGameBtn" data-i18n="newGameBtn">Nová hra</button>
+      <button class="btn" id="winCloseBtn" data-i18n="closeBtn">Zavřít</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="resumeModal">
+  <div class="modal">
+    <h2 data-i18n="resumeTitle">Pokračovat v rozehrané hře?</h2>
+    <p data-i18n="resumeBody">Byla nalezena uložená rozehraná hra Slidestone.</p>
+    <div class="close-row">
+      <button class="btn" id="resumeNewBtn" data-i18n="resumeNew">Začít novou</button>
+      <button class="btn primary" id="resumeContinueBtn" data-i18n="resumeContinue">Pokračovat</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
 
 <script>
-    // --- i18n Lokalizace ---
-    const i18n = {
-        cs: {
-            turnBlue: "Tah: Hráč (Modrá)",
-            turnRed: "Tah: AI (Červená)",
-            winMsg: "Vítěz:",
-            saved: "Hra uložena",
-            loaded: "Hra načtena",
-            noSave: "Žádná uložená hra nenalezena",
-            diff0: "Obtížnost: Lehká",
-            diff1: "Obtížnost: Střední",
-            diff2: "Obtížnost: Těžká",
-            helpTitle: "Pravidla hry",
-            helpText: "<strong>Cíl hry:</strong> Jako první dopravte jeden ze svých kamenů přesně na středovou pozici.<br><br><strong>Jak hrát:</strong><br>Ve svém tahu vyberte kámen a kliknutím určete směr skluzu. Kámen klouže v rovném směru bez zastavení, dokud nenarazí na okraj herní desky nebo na jiný kámen. Nelze jej zastavit úmyslně v půli cesty.",
-            closeBtn: "Zavřít"
-        },
-        en: {
-            turnBlue: "Turn: Player (Blue)",
-            turnRed: "Turn: AI (Red)",
-            winMsg: "Winner:",
-            saved: "Game saved",
-            loaded: "Game loaded",
-            noSave: "No saved game found",
-            diff0: "Difficulty: Easy",
-            diff1: "Difficulty: Medium",
-            diff2: "Difficulty: Hard",
-            helpTitle: "Game Rules",
-            helpText: "<strong>Goal:</strong> Be the first to slide one of your stones exactly onto the center position.<br><br><strong>How to play:</strong><br>On your turn, select a stone and tap a direction. The stone slides in a straight line without stopping until it hits the edge of the board or another stone. You cannot stop it midway intentionally.",
-            closeBtn: "Close"
-        }
-    };
-    let lang = 'cs';
+(function(){
+"use strict";
 
-    function toggleLang() {
-        lang = lang === 'cs' ? 'en' : 'cs';
-        document.getElementById('langBtn').textContent = lang === 'cs' ? '🇨🇿' : '🇬🇧';
-        updateTexts();
+/* ============================= I18N ============================= */
+const I18N = {
+  cs:{
+    subtitle:"Pošli svůj kámen po přímce až na střed desky — první, kdo se tam dostane, vyhrává.",
+    rulesBtn:"Pravidla",
+    rule1:"jeden kámen, jeden směr",
+    rule2:"klouže až na okraj / k jinému kameni",
+    rule3:"první ve středu vítězí",
+    thinking:"AI přemýšlí…",
+    difficultyLabel:"Obtížnost AI",
+    diffEasy:"Snadná", diffMedium:"Střední", diffHard:"Těžká",
+    newGameBtn:"Nová hra",
+    saveGameBtn:"Uložit", loadGameBtn:"Načíst",
+    statsLabel:"Statistika her", diffCol:"Obtížnost", statWins:"výhry", statLosses:"prohry", statGames:"her",
+    rulesTitle:"Jak se hraje Slidestone",
+    rulesIntro:"Slidestone je jednoduchá abstraktní strategická hra pro dva hráče, hraná na hexagonální desce se sítí bodů (stejná deska jako u hry YINSH) a jedním prázdným středovým bodem.",
+    rulesL1:"Na začátku má každý hráč 6 kamenů rozestavěných na protilehlých stranách desky.",
+    rulesL2:"Hráči se střídají v tazích. V jednom tahu vyberete jeden svůj kámen a pošlete ho po přímé linii jedním ze šesti směrů.",
+    rulesL3:"Kámen klouže dál a dál, dokud nenarazí na okraj desky, nebo dokud se nedostane těsně před jiný kámen (svůj i soupeřův). Nelze zastavit uprostřed cesty ani přeskočit jiný kámen.",
+    rulesL4:"Kameny se neberou — pouze blokují cestu.",
+    rulesL5:"Vítězí hráč, jehož kámen jako první doklouže přesně na středový bod desky.",
+    rulesL6:"Pokud hráč nemá žádný platný tah, jeho tah se přeskočí.",
+    creditNote:"Slidestone — fanouškovská implementace v jednom souboru, hraná na desce ve tvaru YINSH.",
+    closeBtn:"Rozumím",
+    winTitle:"Konec hry",
+    winSub:"Kámen dosáhl středu desky.",
+    resumeTitle:"Pokračovat v rozehrané hře?",
+    resumeBody:"Byla nalezena uložená rozehraná hra Slidestone.",
+    resumeNew:"Začít novou", resumeContinue:"Pokračovat",
+    youBlue:"Modrý (vy)", aiRed:"Červený (AI)",
+    blueWins:"Modrý vyhrává!", redWins:"Červený vyhrává!",
+    noMoveToast:"nemá žádný platný tah — tah se přeskakuje.",
+    savedToast:"Hra uložena.",
+    loadedToast:"Hra načtena.",
+    noSaveToast:"Žádná uložená hra nenalezena.",
+    confirmNewGame:"Opravdu chcete začít novou hru? Aktuální průběh bude ztracen.",
+    confirmLoadOverwrite:"Načíst uloženou hru? Aktuální neuložený průběh bude přepsán.",
+    newGameToast:"Nová hra začala.",
+    logMove:"na"
+  },
+  en:{
+    subtitle:"Slide your stone in a straight line all the way to the center — first one there wins.",
+    rulesBtn:"Rules",
+    rule1:"one stone, one direction",
+    rule2:"slides to the edge / to another stone",
+    rule3:"first to the center wins",
+    thinking:"AI is thinking…",
+    difficultyLabel:"AI difficulty",
+    diffEasy:"Easy", diffMedium:"Medium", diffHard:"Hard",
+    newGameBtn:"New game",
+    saveGameBtn:"Save", loadGameBtn:"Load",
+    statsLabel:"Game Statistics", diffCol:"Difficulty", statWins:"wins", statLosses:"losses", statGames:"games",
+    rulesTitle:"How to play Slidestone",
+    rulesIntro:"Slidestone is a simple two-player abstract strategy game played on a hexagonal board of grid points (the same board as YINSH) with one empty center point.",
+    rulesL1:"Each player starts with 6 stones, placed on opposite sides of the board.",
+    rulesL2:"Players alternate turns. On your turn, pick one of your stones and send it sliding in a straight line in one of six directions.",
+    rulesL3:"The stone keeps sliding until it hits the edge of the board, or comes to rest just before another stone (yours or your opponent's). It cannot stop mid-slide or jump over another stone.",
+    rulesL4:"Stones are never captured — they only block the path.",
+    rulesL5:"The first player whose stone slides exactly onto the center point wins.",
+    rulesL6:"If a player has no legal move, their turn is skipped.",
+    creditNote:"Slidestone — fan-made single-file implementation, played on a YINSH-shaped board.",
+    closeBtn:"Got it",
+    winTitle:"Game over",
+    winSub:"A stone reached the center point.",
+    resumeTitle:"Resume your game?",
+    resumeBody:"A saved Slidestone game was found.",
+    resumeNew:"Start new", resumeContinue:"Continue",
+    youBlue:"Blue (you)", aiRed:"Red (AI)",
+    blueWins:"Blue wins!", redWins:"Red wins!",
+    noMoveToast:"has no legal move — turn skipped.",
+    savedToast:"Game saved.",
+    loadedToast:"Game loaded.",
+    noSaveToast:"No saved game found.",
+    confirmNewGame:"Start a new game? Current progress will be lost.",
+    confirmLoadOverwrite:"Load the saved game? Your current unsaved progress will be overwritten.",
+    newGameToast:"New game started.",
+    logMove:"to"
+  }
+};
+let lang = localStorage.getItem('slidestone_lang') || 'cs';
+
+function t(key){ return (I18N[lang] && I18N[lang][key]) || key; }
+
+const FLAG_CZ = `<rect width="30" height="20" fill="#fff"/><rect y="10" width="30" height="10" fill="#d7141a"/><polygon points="0,0 15,10 0,20" fill="#11457e"/>`;
+const FLAG_GB = `<rect width="30" height="20" fill="#0a2a6b"/><line x1="0" y1="0" x2="30" y2="20" stroke="#fff" stroke-width="4"/><line x1="30" y1="0" x2="0" y2="20" stroke="#fff" stroke-width="4"/><line x1="0" y1="0" x2="30" y2="20" stroke="#d7141a" stroke-width="1.6"/><line x1="30" y1="0" x2="0" y2="20" stroke="#d7141a" stroke-width="1.6"/><rect x="12" width="6" height="20" fill="#fff"/><rect y="7" width="30" height="6" fill="#fff"/><rect x="13.2" width="3.6" height="20" fill="#d7141a"/><rect y="8.2" width="30" height="3.6" fill="#d7141a"/>`;
+
+function renderLangToggle(){
+  document.getElementById('langIcon').innerHTML = lang==='cs' ? FLAG_CZ : FLAG_GB;
+  document.getElementById('langLabel').textContent = lang==='cs' ? 'CZ' : 'EN';
+  document.getElementById('langToggleBtn').setAttribute('title', lang==='cs' ? 'Čeština / English' : 'English / Čeština');
+}
+
+function applyI18n(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    const key = el.getAttribute('data-i18n-title');
+    if(I18N[lang][key] !== undefined) el.setAttribute('title', I18N[lang][key]);
+  });
+  renderLangToggle();
+  renderDiffToggle();
+}
+
+document.getElementById('langToggleBtn').addEventListener('click', ()=>{
+  lang = (lang==='cs') ? 'en' : 'cs';
+  localStorage.setItem('slidestone_lang', lang);
+  applyI18n();
+});
+
+/* ============================= BOARD GEOMETRY =============================
+   TUNABLE SIZES — everything below is derived from these few numbers, so they
+   are the variables to change if you want a different look:
+
+   - HEX_SIZE: spacing between adjacent grid points in internal SVG units.
+     It sets the *proportions* on the board (how big stones/dots look relative
+     to the grid), not the on-screen pixel size — the SVG always scales to
+     fill its container. To make the board visually bigger on screen, change
+     --board-max-width in the CSS :root block instead (or just widen the
+     browser window / .board-col).
+   - STONE_RATIO: stone radius as a fraction of HEX_SIZE.
+   - POINT_DOT_RATIO: radius of the small grid-intersection dots.
+   - DEST_MARKER_R: radius of the amber "you can slide here" hint markers.
+   - TOUCH_PAD: extra *invisible* tap radius added around stones/hints so
+     they stay easy to hit on a phone even if drawn small.
+============================================================================ */
+const HEX_SIZE = 30;
+const STONE_RATIO = 0.55;       // big, bold stones
+const POINT_DOT_RATIO = 0.085;  // grid intersection dot size, relative to HEX_SIZE
+const DEST_MARKER_R = 15;       // big destination hint dots
+const SQRT3 = Math.sqrt(3);
+
+function axialToPixel(q,r){
+  return { x: HEX_SIZE*(SQRT3*q + SQRT3/2*r), y: HEX_SIZE*(1.5*r) };
+}
+
+function cubeOf(q,r){ return {q, r, s:-q-r}; }
+
+function isCorner(q,r,s,radius){
+  return (q===0||r===0||s===0);
+}
+
+function boardHas(q,r){
+  const s = -q-r;
+  const radius = Math.max(Math.abs(q),Math.abs(r),Math.abs(s));
+  if(radius > 5) return false;
+  if(radius === 5 && isCorner(q,r,s)) return false;
+  return true;
+}
+
+// All 6 axial neighbor directions, with compass-style labels (based on pixel angle)
+const DIRECTIONS = [
+  {dq:1,  dr:0,  label:{cs:'V',  en:'E'}},
+  {dq:1,  dr:-1, label:{cs:'SV', en:'NE'}},
+  {dq:0,  dr:-1, label:{cs:'SZ', en:'NW'}},
+  {dq:-1, dr:0,  label:{cs:'Z',  en:'W'}},
+  {dq:-1, dr:1,  label:{cs:'JZ', en:'SW'}},
+  {dq:0,  dr:1,  label:{cs:'JV', en:'SE'}}
+];
+// Only 3 "forward" directions needed to draw every edge once
+const FORWARD_DIRS = [DIRECTIONS[0], DIRECTIONS[1], DIRECTIONS[2]];
+
+const BOARD_POINTS = [];
+for(let q=-5;q<=5;q++){
+  for(let r=-5;r<=5;r++){
+    if(boardHas(q,r)) BOARD_POINTS.push({q,r});
+  }
+}
+
+function hexDist(q1,r1,q2,r2){
+  const s1=-q1-r1, s2=-q2-r2;
+  return (Math.abs(q1-q2)+Math.abs(r1-r2)+Math.abs(s1-s2))/2;
+}
+
+/* ============================= GAME STATE ============================= */
+// Rows counted 1-11 top to bottom (row = r+6). Blue = 2nd point from left, Red = 2nd point from right,
+// on rows 3, 4, 5, 7, 8, 9 (the two symmetric wedges above/below the middle row).
+const INITIAL_BLUE = [[-1,-3],[-2,-2],[-3,-1],[-4,1],[-4,2],[-4,3]];
+const INITIAL_RED  = [[4,-3],[4,-2],[4,-1],[3,1],[2,2],[1,3]];
+
+let stones = [];       // {id, color:'blue'|'red', q, r}
+let turn = 'blue';      // whose turn
+let selectedId = null;
+let gameOver = false;
+let aiThinking = false;
+let lastMove = null;    // {stoneId, q, r} of the most recently moved stone, for the on-board highlight
+let gameGen = 0;        // bumped by newGame()/restoreGame() so a stale pending AI move (e.g. from a
+                        // game that was reset while the AI was still "thinking") never applies itself
+let difficulty = localStorage.getItem('slidestone_difficulty') || 'medium';
+const DIFF_ORDER = ['easy','medium','hard'];
+
+function renderDiffToggle(){
+  const idx = DIFF_ORDER.indexOf(difficulty);
+  const label = t('diff' + difficulty[0].toUpperCase() + difficulty.slice(1));
+  document.getElementById('diffLabel').textContent = label;
+  document.getElementById('diffToggleBtn').setAttribute('title', t('difficultyLabel') + ': ' + label);
+  // simple ascending bar-chart icon; bars up to the current level are filled amber, the rest just outlined
+  const bars = [
+    {x:2,  h:7},
+    {x:10, h:12},
+    {x:18, h:17}
+  ];
+  const svg = bars.map((b,i)=>{
+    const y = 19-b.h;
+    const filled = i<=idx;
+    return `<rect x="${b.x}" y="${y}" width="5" height="${b.h}" rx="1.5" fill="${filled?'#e8b34f':'none'}" stroke="${filled?'#e8b34f':'#8b93a3'}" stroke-width="1.3"/>`;
+  }).join('');
+  document.getElementById('diffIcon').innerHTML = svg;
+}
+
+function cycleDifficulty(){
+  const idx = DIFF_ORDER.indexOf(difficulty);
+  difficulty = DIFF_ORDER[(idx+1) % DIFF_ORDER.length];
+  localStorage.setItem('slidestone_difficulty', difficulty);
+  renderDiffToggle();
+}
+
+function freshStones(){
+  let id=0;
+  const arr=[];
+  INITIAL_BLUE.forEach(([q,r])=> arr.push({id:id++, color:'blue', q, r}));
+  INITIAL_RED.forEach(([q,r])=> arr.push({id:id++, color:'red', q, r}));
+  return arr;
+}
+
+function opponent(color){ return color==='blue' ? 'red' : 'blue'; }
+
+function occupantAt(state, q, r, excludeId){
+  for(const s of state){
+    if(s.id===excludeId) continue;
+    if(s.q===q && s.r===r) return s;
+  }
+  return null;
+}
+
+function slideDestination(state, stone, dir){
+  let q = stone.q, r = stone.r;
+  while(true){
+    const nq = q+dir.dq, nr = r+dir.dr;
+    if(!boardHas(nq,nr)) break;
+    if(occupantAt(state, nq, nr, stone.id)) break;
+    q = nq; r = nr;
+  }
+  if(q===stone.q && r===stone.r) return null;
+  return {q,r};
+}
+
+function legalMoves(state, color){
+  const moves = [];
+  for(const s of state){
+    if(s.color !== color) continue;
+    for(const dir of DIRECTIONS){
+      const dest = slideDestination(state, s, dir);
+      if(dest){
+        moves.push({
+          stoneId: s.id,
+          from:{q:s.q,r:s.r},
+          to: dest,
+          dir,
+          steps: hexDist(s.q,s.r,dest.q,dest.r)
+        });
+      }
     }
+  }
+  return moves;
+}
 
-    function updateTexts() {
-        updateStatus();
-        document.getElementById('helpTitle').innerHTML = i18n[lang].helpTitle;
-        document.getElementById('helpText').innerHTML = i18n[lang].helpText;
-        document.getElementById('closeBtn').innerHTML = i18n[lang].closeBtn;
+function applyMove(state, move){
+  return state.map(s => s.id===move.stoneId ? {...s, q:move.to.q, r:move.to.r} : {...s});
+}
+
+function isWinningMove(move){ return move.to.q===0 && move.to.r===0; }
+
+/* ============================= AI =============================
+   evaluate(): a stone can only ever land exactly on the center by sliding
+   along one of the 3 lines that pass through it (q=0, r=0, or s=0 axis).
+   So a stone sitting on one of those lines is a real threat/defender even
+   if it's still a few cells away, while an off-axis stone at the same
+   distance is comparatively harmless. Distance is scored in tiers (very
+   close matters a lot more than "somewhat close") rather than one smooth
+   curve, which sharpens the AI's sense of urgency near the end game. */
+function evaluate(state, aiColor){
+  const opp = opponent(aiColor);
+  let score = 0;
+  for(const s of state){
+    const sc = -s.q-s.r;
+    const dist = hexDist(s.q,s.r,0,0);
+    const mult = (s.color===aiColor) ? 1 : -1;
+    let val;
+    if(dist===1) val = 60;
+    else if(dist===2) val = 20;
+    else val = Math.max(0, 5-dist);
+    if(s.q===0 || s.r===0 || sc===0) val += 15; // on a line through the center
+    score += mult*val;
+  }
+  const myMoves = legalMoves(state, aiColor).length;
+  const oppMoves = legalMoves(state, opp).length;
+  score += 0.3*(myMoves - oppMoves);
+  return score;
+}
+
+function moveOrderScore(move){
+  const distBefore = hexDist(move.from.q,move.from.r,0,0);
+  const distAfter = hexDist(move.to.q,move.to.r,0,0);
+  let s = Math.pow(6-distAfter,2) - Math.pow(6-distBefore,2);
+  const sc = -move.to.q-move.to.r;
+  if(move.to.q===0 || move.to.r===0 || sc===0) s += 25; // lands the mover on a center line — worth exploring first
+  return s;
+}
+
+function orderMoves(state, moves){
+  return moves.slice().sort((a,b)=>{
+    const aWin = isWinningMove(a) ? 1 : 0;
+    const bWin = isWinningMove(b) ? 1 : 0;
+    if(aWin !== bWin) return bWin - aWin;
+    return moveOrderScore(b) - moveOrderScore(a);
+  });
+}
+
+function minimax(state, depth, toMove, aiColor, alpha, beta){
+  const moves = legalMoves(state, toMove);
+  if(moves.length===0){
+    if(depth<=0) return { score: evaluate(state, aiColor) };
+    return minimax(state, depth-1, opponent(toMove), aiColor, alpha, beta);
+  }
+  const ordered = orderMoves(state, moves);
+  const maximizing = (toMove===aiColor);
+  let bestScore = maximizing ? -Infinity : Infinity;
+
+  for(const move of ordered){
+    let score;
+    if(isWinningMove(move)){
+      score = maximizing ? (100000+depth) : (-100000-depth);
+    } else if(depth<=0){
+      score = evaluate(applyMove(state, move), aiColor);
+    } else {
+      const newState = applyMove(state, move);
+      score = minimax(newState, depth-1, opponent(toMove), aiColor, alpha, beta).score;
     }
-
-    function showToast(msgKey) {
-        const t = document.getElementById('toast');
-        t.textContent = i18n[lang][msgKey] || msgKey;
-        t.style.opacity = 1;
-        setTimeout(() => t.style.opacity = 0, 2000);
+    if(maximizing){
+      if(score>bestScore) bestScore=score;
+      alpha = Math.max(alpha, bestScore);
+    } else {
+      if(score<bestScore) bestScore=score;
+      beta = Math.min(beta, bestScore);
     }
+    if(beta<=alpha) break;
+  }
+  return { score: bestScore };
+}
 
-    function toggleHelp() {
-        const modal = document.getElementById('helpModal');
-        modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-    }
+function getAIMove(state, aiColor, diff){
+  const moves = legalMoves(state, aiColor);
+  if(moves.length===0) return null;
+  const winning = moves.find(isWinningMove);
+  if(winning) return winning;
 
-    // --- Obtížnost ---
-    const diffLevels = [
-        { depth: 1, icon: '🟢', key: 'diff0' },
-        { depth: 2, icon: '🟡', key: 'diff1' },
-        { depth: 4, icon: '🔴', key: 'diff2' } 
-    ];
-    
-    let currentDiffIdx = parseInt(localStorage.getItem('slidestoneDifficulty') || '1');
-    document.getElementById('diffBtn').textContent = diffLevels[currentDiffIdx].icon;
+  const depth = diff==='easy' ? 1 : diff==='medium' ? 3 : 5;
+  const ordered = orderMoves(state, moves);
+  const scored = [];
+  let alpha=-Infinity, beta=Infinity;
+  for(const move of ordered){
+    const newState = applyMove(state, move);
+    const res = minimax(newState, depth-1, opponent(aiColor), aiColor, alpha, beta);
+    scored.push({move, score:res.score});
+    alpha = Math.max(alpha, res.score);
+  }
+  scored.sort((a,b)=>b.score-a.score);
 
-    function toggleDifficulty() {
-        currentDiffIdx = (currentDiffIdx + 1) % diffLevels.length;
-        localStorage.setItem('slidestoneDifficulty', currentDiffIdx.toString());
-        document.getElementById('diffBtn').textContent = diffLevels[currentDiffIdx].icon;
-        showToast(diffLevels[currentDiffIdx].key);
-    }
+  if(diff==='easy'){
+    const pool = scored.slice(0, Math.min(3, scored.length));
+    return pool[Math.floor(Math.random()*pool.length)].move;
+  }
+  return scored[0].move;
+}
 
-    // --- Herní konfigurace a stav ---
-    const PIECE_RADIUS = 30; 
-    const HINT_RADIUS = 25; 
-    
-    const SIZE = 53; 
-    const RADIUS = 5;
-    const DIRS = [
-        {q: 1, r: -1, s: 0}, {q: 1, r: 0, s: -1}, {q: 0, r: 1, s: -1},
-        {q: -1, r: 1, s: 0}, {q: -1, r: 0, s: 1}, {q: 0, r: -1, s: 1}
-    ];
-    
-    const INITIAL_PIECES = {
-        "-1,-3,4": "blue", "-2,-2,4": "blue", "-3,-1,4": "blue",
-        "-4,1,3": "blue",  "-4,2,2": "blue",  "-4,3,1": "blue",
-        "4,-3,-1": "red",  "4,-2,-2": "red",  "4,-1,-3": "red",
-        "3,1,-4": "red",   "2,2,-4": "red",   "1,3,-4": "red"
-    };
+/* ============================= RENDERING ============================= */
+const svg = document.getElementById('board');
+const SVGNS = 'http://www.w3.org/2000/svg';
 
-    let grid = [];
-    let cellMap = new Map();
-    let state = { pieces: {} };
-    let turn = 'blue';
-    let nextStarter = 'blue'; 
-    let gameOver = false;
-    let selectedPiece = null;
-    let validMovesForSelected = null;
-    let lastMoveDest = null; 
-    let animating = false;
-    let animFrom, animTo, animPlayer, animPx;
+function el(tag, attrs){
+  const e = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
 
-    function initGrid() {
-        grid = [];
-        cellMap.clear();
-        for (let q = -RADIUS; q <= RADIUS; q++) {
-            for (let r = Math.max(-RADIUS, -q - RADIUS); r <= Math.min(RADIUS, -q + RADIUS); r++) {
-                let s = -q - r;
-                if ((Math.abs(q) === RADIUS && Math.abs(r) === RADIUS) ||
-                    (Math.abs(r) === RADIUS && Math.abs(s) === RADIUS) ||
-                    (Math.abs(s) === RADIUS && Math.abs(q) === RADIUS)) {
-                    continue;
-                }
-                let hex = {q, r, s};
-                grid.push(hex);
-                cellMap.set(`${q},${r},${s}`, hex);
-            }
-        }
-    }
+let VIEWBOX = {minX:0,minY:0,w:100,h:100};
+let gLines, gPoints, gCenter, gStones, gLastMove, gHighlight;
 
-    // --- Geometrie ---
-    function hexToPixel(hex) {
-        let x = SIZE * Math.sqrt(3) * (hex.q + hex.r / 2);
-        let y = SIZE * 3 / 2 * hex.r;
-        return {x, y};
-    }
+function buildStaticBoard(){
+  svg.innerHTML = '';
+  const pixels = BOARD_POINTS.map(p=>({...p, ...axialToPixel(p.q,p.r)}));
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  pixels.forEach(p=>{
+    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+  });
+  const pad = HEX_SIZE*1.3;
+  VIEWBOX = { minX:minX-pad, minY:minY-pad, w:(maxX-minX)+pad*2, h:(maxY-minY)+pad*2 };
+  svg.setAttribute('viewBox', `${VIEWBOX.minX} ${VIEWBOX.minY} ${VIEWBOX.w} ${VIEWBOX.h}`);
 
-    function pixelToHex(x, y) {
-        let q = (Math.sqrt(3)/3 * x - 1/3 * y) / SIZE;
-        let r = (2/3 * y) / SIZE;
-        let s = -q - r;
-        
-        let rq = Math.round(q);
-        let rr = Math.round(r);
-        let rs = Math.round(s);
-        let q_diff = Math.abs(rq - q);
-        let r_diff = Math.abs(rr - r);
-        let s_diff = Math.abs(rs - s);
+  gLines = el('g',{});
+  gPoints = el('g',{});
+  gCenter = el('g',{});
+  gStones = el('g',{});
+  gLastMove = el('g',{});
+  gHighlight = el('g',{});
 
-        if (q_diff > r_diff && q_diff > s_diff) rq = -rr - rs;
-        else if (r_diff > s_diff) rr = -rq - rs;
-        else rs = -rq - rr;
-        return {q: rq, r: rr, s: rs};
-    }
-
-    // --- Ukládání / Načítání ---
-    function saveGame() {
-        if(animating) return;
-        const saveData = { pieces: state.pieces, turn, gameOver, nextStarter, lastMoveDest };
-        localStorage.setItem('slidestoneSave', JSON.stringify(saveData));
-        showToast('saved');
-    }
-
-    function loadGame() {
-        if(animating) return;
-        const saved = localStorage.getItem('slidestoneSave');
-        if (saved) {
-            const data = JSON.parse(saved);
-            state.pieces = data.pieces;
-            turn = data.turn;
-            gameOver = data.gameOver;
-            if (data.nextStarter) nextStarter = data.nextStarter;
-            if (data.lastMoveDest !== undefined) lastMoveDest = data.lastMoveDest;
-            
-            selectedPiece = null;
-            validMovesForSelected = null;
-            updateStatus();
-            draw();
-            showToast('loaded');
-            if (turn === 'red' && !gameOver) setTimeout(aiTurn, 150);
-        } else {
-            showToast('noSave');
-        }
-    }
-
-    // --- Herní mechaniky ---
-    function getValidMoves(gameState, player) {
-        let moves = [];
-        for (let pos in gameState.pieces) {
-            if (gameState.pieces[pos] !== player) continue;
-            let [q, r, s] = pos.split(',').map(Number);
-            
-            for (let dir of DIRS) {
-                let curQ = q, curR = r, curS = s;
-                let steps = 0;
-                while (true) {
-                    let nextQ = curQ + dir.q, nextR = curR + dir.r, nextS = curS + dir.s;
-                    let nextPos = `${nextQ},${nextR},${nextS}`;
-                    
-                    if (!cellMap.has(nextPos)) break;
-                    if (gameState.pieces[nextPos]) break;
-                    
-                    curQ = nextQ; curR = nextR; curS = nextS;
-                    steps++;
-                }
-                if (steps > 0) {
-                    moves.push({
-                        from: {q, r, s},
-                        to: {q: curQ, r: curR, s: curS}
-                    });
-                }
-            }
-        }
-        return moves;
-    }
-
-    function applyMove(gameState, move) {
-        let newPieces = {...gameState.pieces};
-        let p = newPieces[`${move.from.q},${move.from.r},${move.from.s}`];
-        delete newPieces[`${move.from.q},${move.from.r},${move.from.s}`];
-        newPieces[`${move.to.q},${move.to.r},${move.to.s}`] = p;
-        return { pieces: newPieces };
-    }
-
-    function checkWin() {
-        if (state.pieces["0,0,0"]) {
-            gameOver = true;
-            let winner = state.pieces["0,0,0"] === "blue" ? 
-                         (lang === 'cs' ? "Hráč" : "Player") : "AI";
-            const stat = document.getElementById('status');
-            stat.innerText = `${i18n[lang].winMsg} ${winner}`;
-            stat.style.color = "#ffb199";
-            return true;
-        }
-        return false;
-    }
-
-    function updateStatus() {
-        if (gameOver) { checkWin(); return; }
-        const stat = document.getElementById('status');
-        if (turn === 'blue') {
-            stat.textContent = i18n[lang].turnBlue;
-            stat.style.color = "#4facfe";
-        } else {
-            stat.textContent = i18n[lang].turnRed;
-            stat.style.color = "#ff0844";
-        }
-    }
-
-    // --- AI Minimax ---
-    function evaluate(gameState) {
-        if (gameState.pieces["0,0,0"] === "red") return 10000;
-        if (gameState.pieces["0,0,0"] === "blue") return -10000;
-        
-        let score = 0;
-        for (let pos in gameState.pieces) {
-            let p = gameState.pieces[pos];
-            let mult = p === "red" ? 1 : -1;
-            let [q, r, s] = pos.split(',').map(Number);
-            let dist = Math.max(Math.abs(q), Math.abs(r), Math.abs(s));
-            if (dist === 1) score += 60 * mult;
-            else if (dist === 2) score += 20 * mult;
-            if (q === 0 || r === 0 || s === 0) score += 15 * mult;
-        }
-        return score;
-    }
-
-    function minimax(gameState, depth, alpha, beta, maximizingPlayer) {
-        if (gameState.pieces["0,0,0"]) {
-            return gameState.pieces["0,0,0"] === "red" ? 10000 + depth : -10000 - depth;
-        }
-        if (depth === 0) return evaluate(gameState);
-        
-        let player = maximizingPlayer ? "red" : "blue";
-        let moves = getValidMoves(gameState, player);
-        if (moves.length === 0) return evaluate(gameState);
-        
-        if (maximizingPlayer) {
-            let maxEval = -Infinity;
-            for (let m of moves) {
-                let ev = minimax(applyMove(gameState, m), depth - 1, alpha, beta, false);
-                maxEval = Math.max(maxEval, ev);
-                alpha = Math.max(alpha, ev);
-                if (beta <= alpha) break;
-            }
-            return maxEval;
-        } else {
-            let minEval = Infinity;
-            for (let m of moves) {
-                let ev = minimax(applyMove(gameState, m), depth - 1, alpha, beta, true);
-                minEval = Math.min(minEval, ev);
-                beta = Math.min(beta, ev);
-                if (beta <= alpha) break;
-            }
-            return minEval;
-        }
-    }
-
-    function aiTurn() {
-        if (gameOver) return;
-        let moves = getValidMoves(state, "red");
-        if (moves.length === 0) {
-            turn = 'blue';
-            updateStatus();
-            return;
-        }
-        moves.sort(() => Math.random() - 0.5);
-        
-        let bestMove = null;
-        let maxEval = -Infinity;
-        
-        const currentDepth = diffLevels[currentDiffIdx].depth;
-
-        for (let m of moves) {
-            let ev = minimax(applyMove(state, m), currentDepth, -Infinity, Infinity, false);
-            if (ev > maxEval) {
-                maxEval = ev;
-                bestMove = m;
-            }
-        }
-        
-        if (bestMove) {
-            performMove(bestMove, 'red', () => {
-                if (!checkWin()) {
-                    turn = 'blue';
-                    updateStatus();
-                }
-            });
-        }
-    }
-
-    // --- Vykreslování ---
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        
-        // Mřížka
-        ctx.strokeStyle = "#3a3a3a";
-        ctx.lineWidth = 1.5;
-        let drawDirs = [{q:1,r:0,s:-1}, {q:0,r:1,s:-1}, {q:-1,r:1,s:0}];
-        for (let hex of grid) {
-            let p1 = hexToPixel(hex);
-            for (let d of drawDirs) {
-                let neighbor = {q: hex.q+d.q, r: hex.r+d.r, s: hex.s+d.s};
-                if (cellMap.has(`${neighbor.q},${neighbor.r},${neighbor.s}`)) {
-                    let p2 = hexToPixel(neighbor);
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.stroke();
-                }
-            }
-        }
-        
-        // Spojovací body mřížky
-        for (let hex of grid) {
-            let p = hexToPixel(hex);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-            ctx.fillStyle = (hex.q===0 && hex.r===0 && hex.s===0) ? "#FFD700" : "#2a2a2a";
-            ctx.fill();
-        }
-        
-        // Zvýraznění vybraného kamene
-        if (selectedPiece && !animating) {
-            let p = hexToPixel(selectedPiece);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, PIECE_RADIUS + 8, 0, Math.PI*2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-            ctx.fill();
-        }
-        
-        // Zvýraznění nápovědy tahů
-        if (validMovesForSelected && !animating) {
-            for (let m of validMovesForSelected) {
-                let p = hexToPixel(m.to);
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, HINT_RADIUS, 0, Math.PI*2);
-                ctx.fillStyle = "rgba(0, 255, 100, 0.3)";
-                ctx.fill();
-                ctx.strokeStyle = "rgba(0, 255, 100, 0.8)";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        }
-
-        // Zvýraznění posledního tahu (Zelený kroužek kolem kamene)
-        if (lastMoveDest && !animating) {
-            let p = hexToPixel(lastMoveDest);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, PIECE_RADIUS + 5, 0, Math.PI*2);
-            ctx.strokeStyle = "rgba(0, 255, 100, 0.9)";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-        }
-        
-        // Kameny
-        for (let pos in state.pieces) {
-            let [q,r,s] = pos.split(',').map(Number);
-            if (animating && animFrom.q === q && animFrom.r === r) continue;
-            drawPieceAtHex({q,r,s}, state.pieces[pos]);
-        }
-        
-        // Animovaný kámen
-        if (animating) {
-            drawPieceAtPixel(animPx.x, animPx.y, animPlayer);
-        }
-        
-        ctx.restore();
-    }
-
-    function drawPieceAtHex(hex, player) {
-        let p = hexToPixel(hex);
-        drawPieceAtPixel(p.x, p.y, player);
-    }
-
-    function drawPieceAtPixel(x, y, player) {
-        ctx.beginPath();
-        ctx.arc(x, y, PIECE_RADIUS, 0, Math.PI*2);
-        let grad = ctx.createRadialGradient(x - PIECE_RADIUS/3, y - PIECE_RADIUS/3, PIECE_RADIUS/6, x, y, PIECE_RADIUS);
-        if (player === 'blue') {
-            grad.addColorStop(0, "#4facfe");
-            grad.addColorStop(1, "#0062ff");
-        } else {
-            grad.addColorStop(0, "#ff4b2b");
-            grad.addColorStop(1, "#b30000");
-        }
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
-
-    // --- Animace přesunu ---
-    function performMove(move, player, callback) {
-        animating = true;
-        animFrom = move.from;
-        animTo = move.to;
-        animPlayer = player;
-        
-        let pFrom = hexToPixel(animFrom);
-        let pTo = hexToPixel(animTo);
-        delete state.pieces[`${animFrom.q},${animFrom.r},${animFrom.s}`];
-        
-        let startTime = performance.now();
-        function step(time) {
-            let elapsed = time - startTime;
-            let progress = Math.min(elapsed / 200, 1);
-            let ease = 1 - Math.pow(1 - progress, 3);
-            
-            animPx = {
-                x: pFrom.x + (pTo.x - pFrom.x) * ease,
-                y: pFrom.y + (pTo.y - pFrom.y) * ease
-            };
-            draw();
-            
-            if (progress < 1) {
-                requestAnimationFrame(step);
-            } else {
-                animating = false;
-                state.pieces[`${animTo.q},${animTo.r},${animTo.s}`] = player;
-                lastMoveDest = { q: animTo.q, r: animTo.r, s: animTo.s };
-                draw();
-                callback();
-            }
-        }
-        requestAnimationFrame(step);
-    }
-
-    // --- Interakce (s podporou Touch/Mobile) ---
-    canvas.addEventListener('pointerdown', (e) => {
-        if (turn !== 'blue' || animating || gameOver) return;
-        
-        let rect = canvas.getBoundingClientRect();
-        let scaleX = canvas.width / rect.width;
-        let scaleY = canvas.height / rect.height;
-        let cx = (e.clientX - rect.left) * scaleX - canvas.width / 2;
-        let cy = (e.clientY - rect.top) * scaleY - canvas.height / 2;
-        
-        let hex = pixelToHex(cx, cy);
-        let px = hexToPixel(hex);
-        let dist = Math.hypot(px.x - cx, px.y - cy);
-        
-        if (dist > PIECE_RADIUS + 15 || !cellMap.has(`${hex.q},${hex.r},${hex.s}`)) {
-            selectedPiece = null;
-            validMovesForSelected = null;
-            draw();
-            return;
-        }
-        
-        let posStr = `${hex.q},${hex.r},${hex.s}`;
-        
-        if (selectedPiece && validMovesForSelected) {
-            let move = validMovesForSelected.find(m => m.to.q === hex.q && m.to.r === hex.r);
-            if (move) {
-                selectedPiece = null;
-                validMovesForSelected = null;
-                performMove(move, 'blue', () => {
-                    if (!checkWin()) {
-                        turn = 'red';
-                        updateStatus();
-                        setTimeout(aiTurn, 100);
-                    }
-                });
-                return;
-            }
-        }
-        
-        if (state.pieces[posStr] === 'blue') {
-            selectedPiece = hex;
-            validMovesForSelected = getValidMoves(state, 'blue').filter(m => 
-                m.from.q === hex.q && m.from.r === hex.r
-            );
-        } else {
-            selectedPiece = null;
-            validMovesForSelected = null;
-        }
-        draw();
+  // grid lines
+  const pointSet = new Set(BOARD_POINTS.map(p=>p.q+','+p.r));
+  BOARD_POINTS.forEach(p=>{
+    const a = axialToPixel(p.q,p.r);
+    FORWARD_DIRS.forEach(dir=>{
+      const nq=p.q+dir.dq, nr=p.r+dir.dr;
+      if(pointSet.has(nq+','+nr)){
+        const b = axialToPixel(nq,nr);
+        gLines.appendChild(el('line',{class:'grid-line', x1:a.x,y1:a.y,x2:b.x,y2:b.y}));
+      }
     });
+  });
 
-    function resetGame() {
-        if (animating) return;
-        state.pieces = { ...INITIAL_PIECES };
-        
-        turn = nextStarter;
-        nextStarter = (nextStarter === 'blue') ? 'red' : 'blue'; 
-        
-        gameOver = false;
-        selectedPiece = null;
-        validMovesForSelected = null;
-        lastMoveDest = null; 
-        
-        updateTexts();
-        draw();
+  // point dots
+  BOARD_POINTS.forEach(p=>{
+    if(p.q===0 && p.r===0) return;
+    const px = axialToPixel(p.q,p.r);
+    gPoints.appendChild(el('circle',{class:'point-dot', cx:px.x, cy:px.y, r:HEX_SIZE*POINT_DOT_RATIO}));
+  });
 
-        if (turn === 'red') {
-            setTimeout(aiTurn, 500); 
-        }
+  // center target marker
+  const c = axialToPixel(0,0);
+  gCenter.appendChild(el('circle',{class:'center-ring', cx:c.x, cy:c.y, r:18, 'stroke-width':1.4, opacity:0.55}));
+  gCenter.appendChild(el('circle',{class:'center-ring', cx:c.x, cy:c.y, r:11.5, 'stroke-width':1.8, opacity:0.8}));
+  gCenter.appendChild(el('circle',{class:'center-core', cx:c.x, cy:c.y, r:4.8}));
+
+  svg.appendChild(gLines);
+  svg.appendChild(gPoints);
+  svg.appendChild(gCenter);
+  svg.appendChild(gStones);
+  svg.appendChild(gLastMove);
+  svg.appendChild(gHighlight);
+}
+
+function stoneGradientDefs(){
+  const defs = el('defs',{});
+  const gradBlue = el('radialGradient',{id:'gradBlue', cx:'35%', cy:'30%', r:'75%'});
+  gradBlue.appendChild(el('stop',{offset:'0%', 'stop-color':'var(--blue-1)'}));
+  gradBlue.appendChild(el('stop',{offset:'100%', 'stop-color':'var(--blue-2)'}));
+  const gradRed = el('radialGradient',{id:'gradRed', cx:'35%', cy:'30%', r:'75%'});
+  gradRed.appendChild(el('stop',{offset:'0%', 'stop-color':'var(--red-1)'}));
+  gradRed.appendChild(el('stop',{offset:'100%', 'stop-color':'var(--red-2)'}));
+  defs.appendChild(gradBlue);
+  defs.appendChild(gradRed);
+  svg.insertBefore(defs, svg.firstChild);
+}
+
+const STONE_R = HEX_SIZE*STONE_RATIO;
+
+const TOUCH_PAD = HEX_SIZE*0.14; // small extra invisible hit margin (stones/markers are big enough now on their own)
+
+function renderStones(){
+  gStones.innerHTML = '';
+  stones.forEach(s=>{
+    const px = axialToPixel(s.q,s.r);
+    const canSelect = !gameOver && !aiThinking && s.color===turn;
+    const isTurnColor = !gameOver && s.color===turn;
+    const circle = el('circle',{
+      class:'stone' + (canSelect ? ' can-select' : ' disabled') + (isTurnColor ? ' turn-glow' : ''),
+      cx:px.x, cy:px.y, r:STONE_R,
+      fill: s.color==='blue' ? 'url(#gradBlue)' : 'url(#gradRed)',
+      stroke: 'rgba(0,0,0,0.4)', 'stroke-width':1,
+      style: 'color:' + (s.color==='blue' ? 'var(--blue-1)' : 'var(--red-1)') + ';',
+      'data-id': s.id
+    });
+    gStones.appendChild(circle);
+    if(canSelect){
+      const hit = el('circle',{
+        cx:px.x, cy:px.y, r:STONE_R+TOUCH_PAD,
+        fill:'transparent', style:'cursor:pointer; pointer-events:all;'
+      });
+      hit.addEventListener('click', ()=> onStoneClick(s.id));
+      hit.addEventListener('mouseenter', ()=> circle.classList.add('hovered'));
+      hit.addEventListener('mouseleave', ()=> circle.classList.remove('hovered'));
+      gStones.appendChild(hit);
     }
+    if(selectedId===s.id){
+      gHighlight.appendChild(el('circle',{class:'select-ring', cx:px.x, cy:px.y, r:STONE_R+3.5}));
+    }
+  });
+}
 
-    initGrid();
-    resetGame();
+function renderLastMoveMarker(){
+  gLastMove.innerHTML = '';
+  if(!lastMove) return;
+  const stone = stones.find(s=>s.id===lastMove.stoneId);
+  if(!stone) return;
+  const px = axialToPixel(stone.q, stone.r);
+  gLastMove.appendChild(el('circle',{class:'last-move-ring', cx:px.x, cy:px.y, r:STONE_R+5.5}));
+}
+
+function renderHighlight(){
+  gHighlight.innerHTML = '';
+  if(selectedId===null) return;
+  const stone = stones.find(s=>s.id===selectedId);
+  if(!stone) return;
+  const px = axialToPixel(stone.q, stone.r);
+  gHighlight.appendChild(el('circle',{class:'select-ring', cx:px.x, cy:px.y, r:STONE_R+3.5}));
+
+  const moves = legalMoves(stones, stone.color).filter(m=>m.stoneId===stone.id);
+  moves.forEach(m=>{
+    const dp = axialToPixel(m.to.q, m.to.r);
+    const marker = el('circle',{class:'dest-marker', cx:dp.x, cy:dp.y, r:DEST_MARKER_R});
+    const hit = el('circle',{cx:dp.x, cy:dp.y, r:DEST_MARKER_R+TOUCH_PAD, fill:'transparent', style:'cursor:pointer; pointer-events:all;'});
+    marker.addEventListener('click', ()=> onDestinationClick(m));
+    hit.addEventListener('click', ()=> onDestinationClick(m));
+    hit.addEventListener('mouseenter', ()=> marker.classList.add('hovered'));
+    hit.addEventListener('mouseleave', ()=> marker.classList.remove('hovered'));
+    gHighlight.appendChild(marker);
+    gHighlight.appendChild(hit);
+  });
+}
+
+/* ============================= INTERACTION ============================= */
+function onStoneClick(id){
+  if(gameOver || aiThinking) return;
+  const stone = stones.find(s=>s.id===id);
+  if(!stone || stone.color!==turn) return;
+  selectedId = (selectedId===id) ? null : id;
+  renderHighlight();
+}
+
+function onDestinationClick(move){
+  if(gameOver || aiThinking) return;
+  selectedId = null;
+  performMove(move, true);
+}
+
+function performMove(move, isHuman){
+  const stone = stones.find(s=>s.id===move.stoneId);
+  const win = isWinningMove(move);
+  const myGen = gameGen;
+
+  animateStone(stone, move.to, ()=>{
+    if(myGen !== gameGen) return; // the game was reset/reloaded while this move was mid-slide — discard
+    stone.q = move.to.q; stone.r = move.to.r;
+    lastMove = { stoneId: stone.id };
+    renderStones();
+    renderHighlight();
+    renderLastMoveMarker();
+    autosave();
+
+    if(win){
+      endGame(stone.color);
+      return;
+    }
+    turn = opponent(turn);
+    renderStones();
+    autosave();
+
+    if(turn==='red' && !gameOver){
+      triggerAI();
+    } else if(!gameOver){
+      const moves = legalMoves(stones, turn);
+      if(moves.length===0){
+        showToast((turn==='blue'?t('youBlue'):t('aiRed')) + ' ' + t('noMoveToast'));
+        turn = opponent(turn);
+        renderStones();
+        if(turn==='red') triggerAI();
+      }
+    }
+  });
+}
+
+function animateStone(stone, dest, cb){
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const startPx = axialToPixel(stone.q, stone.r);
+  const endPx = axialToPixel(dest.q, dest.r);
+  const dist = Math.hypot(endPx.x-startPx.x, endPx.y-startPx.y);
+  const circle = gStones.querySelector(`circle[data-id="${stone.id}"]`);
+  if(reduce || !circle || dist===0){ cb(); return; }
+  const duration = Math.min(650, Math.max(160, dist*5.5));
+  const start = performance.now();
+  function frame(now){
+    const p = Math.min(1, (now-start)/duration);
+    const ease = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+    circle.setAttribute('cx', startPx.x + (endPx.x-startPx.x)*ease);
+    circle.setAttribute('cy', startPx.y + (endPx.y-startPx.y)*ease);
+    if(p<1) requestAnimationFrame(frame);
+    else cb();
+  }
+  requestAnimationFrame(frame);
+}
+
+function triggerAI(){
+  aiThinking = true;
+  const myGen = gameGen;
+  document.getElementById('thinkingIndicator').classList.add('active');
+  renderStones();
+  setTimeout(()=>{
+    if(myGen !== gameGen) return; // a new/reset game started while this was "thinking" — discard
+    const move = getAIMove(stones, 'red', difficulty);
+    if(myGen !== gameGen) return; // also re-check after the (synchronous but possibly slow) search
+    aiThinking = false;
+    document.getElementById('thinkingIndicator').classList.remove('active');
+    if(!move){
+      showToast(t('aiRed') + ' ' + t('noMoveToast'));
+      turn = 'blue';
+      renderStones();
+      return;
+    }
+    performMove(move, false);
+  }, 350);
+}
+
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.add('hidden'), 2600);
+}
+
+/* ============================= WIN / STATS ============================= */
+function emptyStats(){
+  return {
+    easy:{wins:0, losses:0, games:0},
+    medium:{wins:0, losses:0, games:0},
+    hard:{wins:0, losses:0, games:0}
+  };
+}
+function loadStats(){
+  try{
+    const data = JSON.parse(localStorage.getItem('slidestone_stats'));
+    const fresh = emptyStats();
+    if(!data) return fresh;
+    // merge defensively in case of an older/partial shape
+    DIFF_ORDER.forEach(d=>{
+      if(data[d]){
+        fresh[d].wins = data[d].wins||0;
+        fresh[d].losses = data[d].losses||0;
+        fresh[d].games = data[d].games||0;
+      }
+    });
+    return fresh;
+  }catch(e){ return emptyStats(); }
+}
+function saveStats(stats){ localStorage.setItem('slidestone_stats', JSON.stringify(stats)); }
+function renderStats(){
+  const stats = loadStats();
+  const idMap = { easy:'Easy', medium:'Medium', hard:'Hard' };
+  DIFF_ORDER.forEach(d=>{
+    document.getElementById('stat'+idMap[d]+'Wins').textContent = stats[d].wins;
+    document.getElementById('stat'+idMap[d]+'Losses').textContent = stats[d].losses;
+    document.getElementById('stat'+idMap[d]+'Games').textContent = stats[d].games;
+  });
+}
+
+function endGame(winnerColor){
+  gameOver = true;
+  const stats = loadStats();
+  stats[difficulty].games += 1;
+  if(winnerColor==='blue') stats[difficulty].wins += 1; else stats[difficulty].losses += 1;
+  saveStats(stats);
+  renderStats();
+  clearSave();
+
+  const winModal = document.getElementById('winModal');
+  const winText = document.getElementById('winText');
+  winText.textContent = winnerColor==='blue' ? t('blueWins') : t('redWins');
+  winText.className = 'big ' + winnerColor;
+  winModal.classList.remove('hidden');
+}
+
+/* ============================= PERSISTENCE ============================= */
+function autosave(){
+  const save = {
+    stones: stones.map(s=>({id:s.id,color:s.color,q:s.q,r:s.r})),
+    turn, difficulty, gameOver, lastMove
+  };
+  localStorage.setItem('slidestone_save', JSON.stringify(save));
+}
+function clearSave(){ localStorage.removeItem('slidestone_save'); }
+
+function tryLoadSave(){
+  try{
+    const raw = localStorage.getItem('slidestone_save');
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || !data.stones || data.gameOver) return null;
+    return data;
+  }catch(e){ return null; }
+}
+
+/* ============================= GAME LIFECYCLE ============================= */
+// Who goes first alternates every new game, persisted in localStorage so it
+// survives closing the browser window entirely (not just page reloads).
+function getNextStarter(){
+  const v = localStorage.getItem('slidestone_next_starter');
+  return (v==='blue' || v==='red') ? v : 'blue';
+}
+function setNextStarter(color){
+  localStorage.setItem('slidestone_next_starter', color);
+}
+
+function newGame(showMsg){
+  const starter = getNextStarter();
+  setNextStarter(opponent(starter)); // whoever starts next time flips, right away
+
+  gameGen++;
+  stones = freshStones();
+  turn = starter;
+  selectedId = null;
+  gameOver = false;
+  aiThinking = false;
+  lastMove = null;
+  clearSave();
+  renderStones();
+  renderHighlight();
+  renderLastMoveMarker();
+  document.getElementById('winModal').classList.add('hidden');
+  if(showMsg) showToast(t('newGameToast'));
+  if(starter==='red') triggerAI();
+}
+
+function restoreGame(data){
+  gameGen++;
+  stones = data.stones.map(s=>({...s}));
+  turn = data.turn;
+  lastMove = data.lastMove || null;
+  selectedId = null;
+  gameOver = false;
+  aiThinking = false;
+  renderStones();
+  renderHighlight();
+  renderLastMoveMarker();
+  if(turn==='red') triggerAI();
+}
+
+/* ============================= MANUAL SAVE / LOAD SLOT ============================= */
+function saveGameSlot(){
+  const data = {
+    stones: stones.map(s=>({id:s.id,color:s.color,q:s.q,r:s.r})),
+    turn, difficulty, gameOver, lastMove
+  };
+  localStorage.setItem('slidestone_manual_save', JSON.stringify(data));
+  showToast(t('savedToast'));
+}
+function loadGameSlot(){
+  const raw = localStorage.getItem('slidestone_manual_save');
+  if(!raw){ showToast(t('noSaveToast')); return; }
+  if(lastMove && !gameOver){
+    if(!confirm(t('confirmLoadOverwrite'))) return;
+  }
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ showToast(t('noSaveToast')); return; }
+  clearSave();
+  restoreGame(data);
+  showToast(t('loadedToast'));
+}
+
+/* ============================= WIRING ============================= */
+document.getElementById('rulesBtn').addEventListener('click', ()=> document.getElementById('rulesModal').classList.remove('hidden'));
+document.getElementById('rulesCloseBtn').addEventListener('click', ()=> document.getElementById('rulesModal').classList.add('hidden'));
+document.getElementById('newGameBtn').addEventListener('click', ()=>{
+  if(lastMove && !gameOver && !confirm(t('confirmNewGame'))) return;
+  newGame(true);
+});
+document.getElementById('saveGameBtn').addEventListener('click', saveGameSlot);
+document.getElementById('loadGameBtn').addEventListener('click', loadGameSlot);
+document.getElementById('winNewGameBtn').addEventListener('click', ()=> newGame(true));
+document.getElementById('winCloseBtn').addEventListener('click', ()=> document.getElementById('winModal').classList.add('hidden'));
+
+document.getElementById('diffToggleBtn').addEventListener('click', cycleDifficulty);
+
+document.getElementById('resumeNewBtn').addEventListener('click', ()=>{
+  document.getElementById('resumeModal').classList.add('hidden');
+  newGame(false);
+});
+document.getElementById('resumeContinueBtn').addEventListener('click', ()=>{
+  document.getElementById('resumeModal').classList.add('hidden');
+  const data = tryLoadSave();
+  if(data) restoreGame(data);
+  else newGame(false);
+});
+
+/* ============================= INIT ============================= */
+function init(){
+  buildStaticBoard();
+  stoneGradientDefs();
+  applyI18n();
+  renderStats();
+
+  const saved = tryLoadSave();
+  if(saved){
+    stones = freshStones();
+    document.getElementById('resumeModal').classList.remove('hidden');
+  } else {
+    newGame(false);
+  }
+}
+
+init();
+
+})();
 </script>
-
 </body>
 </html>
