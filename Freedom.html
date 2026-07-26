@@ -690,104 +690,76 @@
 
         // Advanced heuristic for Alpha-Beta MiniMax
         function evaluateBoard(b) {
-
     let s = calculateScores(b);
 
-    // Základní hodnocení podle počtu živých kamenů
+    // Absolutní priorita: reálné body za živé kameny
     let score = (s.s2 - s.s1) * 10000;
 
+    // Vylepšené ohodnocení oken (priorita obrany a silnější váhy)
     function scoreWindow(p1c, p2c) {
-
         if (p2c > 0 && p1c === 0) {
-            if (p2c === 3) return 50;
-            if (p2c === 2) return 10;
-            return 1;
+            if (p2c === 3) return 200; // Velká motivace dokončit vlastní řadu
+            if (p2c === 2) return 20;
+            return 2;
         }
-
         if (p1c > 0 && p2c === 0) {
-            if (p1c === 3) return -50;
-            if (p1c === 2) return -10;
-            return -1;
+            if (p1c === 3) return -250; // Obrana je o něco důležitější (musíme hráče blokovat)
+            if (p1c === 2) return -25;
+            return -2;
         }
-
         return 0;
     }
 
+    const center = boardSize / 2;
+
     for (let r = 0; r < boardSize; r++) {
-
         for (let c = 0; c < boardSize; c++) {
+            
+            // Poziční bonus za střed desky (pomáhá AI v rané fázi hry)
+            if (b[r][c] !== 0) {
+                let dist = Math.abs(r - center) + Math.abs(c - center);
+                let posBonus = (boardSize - dist);
+                if (b[r][c] === 2) score += posBonus;
+                else score -= posBonus;
+            }
 
-            // vodorovně
+            // Vodorovně
             if (c <= boardSize - 4) {
-
-                let p1c = 0;
-                let p2c = 0;
-
+                let p1c = 0, p2c = 0;
                 for (let i = 0; i < 4; i++) {
-
-                    if (b[r][c + i] === 1)
-                        p1c++;
-                    else if (b[r][c + i] === 2)
-                        p2c++;
+                    if (b[r][c + i] === 1) p1c++;
+                    else if (b[r][c + i] === 2) p2c++;
                 }
-
                 score += scoreWindow(p1c, p2c);
             }
 
-            // svisle
+            // Svisle
             if (r <= boardSize - 4) {
-
-                let p1c = 0;
-                let p2c = 0;
-
+                let p1c = 0, p2c = 0;
                 for (let i = 0; i < 4; i++) {
-
-                    if (b[r + i][c] === 1)
-                        p1c++;
-                    else if (b[r + i][c] === 2)
-                        p2c++;
+                    if (b[r + i][c] === 1) p1c++;
+                    else if (b[r + i][c] === 2) p2c++;
                 }
-
                 score += scoreWindow(p1c, p2c);
             }
 
-            // diagonála ↘
-            if (
-                r <= boardSize - 4 &&
-                c <= boardSize - 4
-            ) {
-
-                let p1c = 0;
-                let p2c = 0;
-
+            // Diagonála ↘
+            if (r <= boardSize - 4 && c <= boardSize - 4) {
+                let p1c = 0, p2c = 0;
                 for (let i = 0; i < 4; i++) {
-
-                    if (b[r + i][c + i] === 1)
-                        p1c++;
-                    else if (b[r + i][c + i] === 2)
-                        p2c++;
+                    if (b[r + i][c + i] === 1) p1c++;
+                    else if (b[r + i][c + i] === 2) p2c++;
                 }
-
                 score += scoreWindow(p1c, p2c);
             }
 
-            // diagonála ↙
-            if (
-                r <= boardSize - 4 &&
-                c >= 3
-            ) {
-
-                let p1c = 0;
-                let p2c = 0;
-
+            // Diagonála ↙
+            if (r <= boardSize - 4 && c >= 3) {
+                let p1c = 0, p2c = 0;
                 for (let i = 0; i < 4; i++) {
-
-                    if (b[r + i][c - i] === 1)
-                        p1c++;
-                    else if (b[r + i][c - i] === 2)
-                        p2c++;
+                    if (b[r + i][c - i] === 1) p1c++;
+                    else if (b[r + i][c - i] === 2) p2c++;
                 }
-
                 score += scoreWindow(p1c, p2c);
             }
         }
@@ -796,46 +768,57 @@
     return score;
 }
 
-        function makeAIMove() {
-            if (isGameOver) return;
-            const valid = getValidMoves();
-            if (valid.length === 0) return;
 
-            let move;
-            if (difficulty === 1) { 
-                // Easy: Random
-                move = valid[Math.floor(Math.random() * valid.length)];
-            } else if (difficulty === 2) { 
-                // Medium: Greedy + Heuristic Evaluation
-                let best = -Infinity;
-                let moves = [];
-                for (let v of valid) {
-                    board[v.r][v.c] = 2;
-                    let val = evaluateBoard(board);
-                    board[v.r][v.c] = 0;
-                    if (val > best) { best = val; moves = [v]; }
-                    else if (val === best) { moves.push(v); }
-                }
-                move = moves[Math.floor(Math.random() * moves.length)];
-            } else { 
-                // Hard: Minimax with Alpha-Beta Pruning
-                let best = -Infinity;
-                let bestMoves = [];
-                
-                // Dynamic depth limiting based on branching factor (freedom rule triggers large branching)
-                let depth = valid.length > 20 ? 2 : 3; 
-                
-                for (let v of valid) {
-                    board[v.r][v.c] = 2;
-                    let val = minimax(board, depth - 1, -Infinity, Infinity, false, v.r, v.c);
-                    board[v.r][v.c] = 0;
-                    if (val > best) { best = val; bestMoves = [v]; }
-                    else if (val === best) { bestMoves.push(v); }
-                }
-                move = bestMoves.length > 0 ? bestMoves[Math.floor(Math.random() * bestMoves.length)] : valid[0];
-            }
-            makeMove(move.r, move.c, 2);
+        function makeAIMove() {
+    if (isGameOver) return;
+    const valid = getValidMoves();
+    if (valid.length === 0) return;
+
+    let move;
+    if (difficulty === 1) { 
+        // Náhodný tah
+        move = valid[Math.floor(Math.random() * valid.length)];
+    } else if (difficulty === 2) { 
+        // Hladový algoritmus + vylepšená heuristika
+        let best = -Infinity;
+        let moves = [];
+        for (let v of valid) {
+            board[v.r][v.c] = 2;
+            let val = evaluateBoard(board);
+            board[v.r][v.c] = 0;
+            if (val > best) { best = val; moves = [v]; }
+            else if (val === best) { moves.push(v); }
         }
+        move = moves[Math.floor(Math.random() * moves.length)];
+    } else { 
+        // Minimax s Alpha-Beta prořezáváním a dynamickou hloubkou
+        let best = -Infinity;
+        let bestMoves = [];
+        
+        // Dynamická úprava hloubky podle aktuálního počtu platných tahů
+        let depth;
+        if (valid.length > 25) {
+            depth = 3; // Pravidlo Freedom (celá deska) -> nízká hloubka kvůli výkonu
+        } else if (valid.length > 10) {
+            depth = 4; // Mírně zaplněné okolí
+        } else if (valid.length > 5) {
+            depth = 5; // Standardní sousedství
+        } else {
+            depth = 6; // Velmi omezené možnosti -> můžeme jít hluboko
+        }
+        
+        for (let v of valid) {
+            board[v.r][v.c] = 2;
+            let val = minimax(board, depth - 1, -Infinity, Infinity, false, v.r, v.c);
+            board[v.r][v.c] = 0;
+            if (val > best) { best = val; bestMoves = [v]; }
+            else if (val === best) { bestMoves.push(v); }
+        }
+        move = bestMoves.length > 0 ? bestMoves[Math.floor(Math.random() * bestMoves.length)] : valid[0];
+    }
+    makeMove(move.r, move.c, 2);
+}
+
 
         function minimax(b, depth, alpha, beta, isMax, lastR, lastC) {
             let valid = getValidMovesForSim(b, {r: lastR, c: lastC});
