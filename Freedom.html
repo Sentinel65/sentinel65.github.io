@@ -439,63 +439,93 @@
         }
 
         function updateLogView() {
-            const tbody = document.getElementById('log-tbody');
-            tbody.innerHTML = '';
+    const tbody = document.getElementById('log-tbody');
+    tbody.innerHTML = '';
 
-            if (isGameOver && moveHistory.length > 0) {
-                const summaryTr = document.createElement('tr');
-                summaryTr.className = 'log-summary';
-                summaryTr.innerHTML = `<td colspan="6">${gameOverSummaryText()}</td>`;
-                tbody.appendChild(summaryTr);
-            }
+    if (isGameOver && moveHistory.length > 0) {
+        const summaryTr = document.createElement('tr');
+        summaryTr.className = 'log-summary';
+        summaryTr.innerHTML = `<td colspan="6">${gameOverSummaryText()}</td>`;
+        tbody.appendChild(summaryTr);
+    }
 
-            for (let i = moveHistory.length - 1; i >= 0; i--) {
-                const m = moveHistory[i];
-                const icon = m.player === 1 ? '⚪' : '⚫';
-                const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
-                const tr = document.createElement('tr');
-                tr.className = m.player === 1 ? 'row-p1' : 'row-p2';
-                tr.innerHTML =
-                    `<td class="col-num">${String(i + 1).padStart(3, '0')}</td>` +
-                    `<td class="col-color">${icon}</td>` +
-                    `<td class="col-move">${m.moveName}</td>` +
-                    `<td class="col-diff">${diffIcon}</td>` +
-                    `<td class="col-delta ${deltaClass(m.deltaLines)}">${signed(m.deltaLines)}</td>` +
-                    `<td class="col-delta ${deltaClass(m.deltaPoints)}">${signed(m.deltaPoints)}</td>`;
-                tbody.appendChild(tr);
-            }
+    for (let i = moveHistory.length - 1; i >= 0; i--) {
+        const m = moveHistory[i];
+        const icon = m.player === 1 ? '⚪' : '⚫';
+        const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
+        const tr = document.createElement('tr');
+        tr.className = m.player === 1 ? 'row-p1' : 'row-p2';
+        tr.innerHTML =
+            `<td class="col-num">${String(i + 1).padStart(3, '0')}</td>` +
+            `<td class="col-color">${icon}</td>` +
+            `<td class="col-move">${m.moveName}</td>` +
+            `<td class="col-diff">${diffIcon}</td>` +
+            `<td class="col-delta ${deltaClass(m.deltaLines)}">${signed(m.deltaLines)}</td>` +
+            `<td class="col-delta ${deltaClass(m.deltaPoints)}">${signed(m.deltaPoints)}</td>`;
+        tbody.appendChild(tr);
+    }
 
-            document.getElementById('log-content').scrollTop = 0;
-        }
+    // --- Přidání informací o zahájení hry na úplný spodek tabulky ---
+    const startTr = document.createElement('tr');
+    startTr.className = 'log-summary'; // Tato třída zajistí stejný font, barvu a pozadí jako "Konec hry"
+    const L = I18N[lang];
+    const starterText = startingPlayer === 1 ? L.p1 : L.p2;
+    const diffText = DIFF_ICONS[difficulty - 1];
+    const startMsg = lang === 'cs' 
+        ? `▶ Hru zahajuje ${starterText} - obtížnost: ${diffText}` 
+        : `▶ ${starterText} starts - diff: ${diffText}`;
+    
+    // Zde byl odstraněn inline styl s jinou barvou textu
+    startTr.innerHTML = `<td colspan="6">${startMsg}</td>`;
+    tbody.appendChild(startTr);
+
+    document.getElementById('log-content').scrollTop = 0;
+}
+
+
 
         // Builds a plain, column-aligned text version for the clipboard (chronological order)
         function copyLog() {
-            const L = I18N[lang];
-            const pad = (s, w) => { s = String(s); return s.length >= w ? s : s + ' '.repeat(w - s.length); };
-            const padNum = (s, w) => { s = String(s); return s.length >= w ? s : ' '.repeat(w - s.length) + s; };
+    const L = I18N[lang];
+    const pad = (s, w) => { s = String(s); return s.length >= w ? s : s + ' '.repeat(w - s.length); };
+    const padNum = (s, w) => { s = String(s); return s.length >= w ? s : ' '.repeat(w - s.length) + s; };
 
-            const lines = [
-                `${pad(L.logNum, 4)}${pad(L.logColor, 4)}${pad(L.logMove, 7)}${pad(L.logDiff, 5)}${padNum(L.logLines, 7)}${padNum(L.logPoints, 7)}`
-            ];
-            for (let i = 0; i < moveHistory.length; i++) {
-                const m = moveHistory[i];
-                const icon = m.player === 1 ? '⚪' : '⚫';
-                const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
-                lines.push(
-                    `${pad(String(i + 1).padStart(3, '0'), 4)}${pad(icon, 4)}${pad(m.moveName, 7)}${pad(diffIcon, 5)}${padNum(signed(m.deltaLines), 7)}${padNum(signed(m.deltaPoints), 7)}`
-                );
-            }
-            if (isGameOver && moveHistory.length > 0) {
-                lines.push('');
-                lines.push(gameOverSummaryText());
-            }
+    const lines = [
+        `${pad(L.logNum, 4)}${pad(L.logColor, 4)}${pad(L.logMove, 7)}${pad(L.logDiff, 5)}${padNum(L.logLines, 7)}${padNum(L.logPoints, 7)}`
+    ];
 
-            navigator.clipboard.writeText(lines.join('\n')).then(() => {
-                const btn = document.getElementById('btn-copy-log');
-                btn.innerText = '✅';
-                setTimeout(() => btn.innerText = '📋', 2000);
-            }).catch(() => alert('Kopírování selhalo.'));
-        }
+    // --- NOVÝ KÓD: Zápis informací o zahájení do textového výstupu ---
+    const starterText = startingPlayer === 1 ? L.p1 : L.p2;
+    const diffText = DIFF_ICONS[difficulty - 1];
+    const startMsg = lang === 'cs' 
+        ? `▶ Hru zahajuje ${starterText} - obtížnost: ${diffText}` 
+        : `▶ ${starterText} starts - diff: ${diffText}`;
+    
+    lines.push(startMsg);
+    lines.push(''); // Prázdný řádek pro optické oddělení od prvního tahu
+    // -----------------------------------------------------------------
+
+    for (let i = 0; i < moveHistory.length; i++) {
+        const m = moveHistory[i];
+        const icon = m.player === 1 ? '⚪' : '⚫';
+        const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
+        lines.push(
+            `${pad(String(i + 1).padStart(3, '0'), 4)}${pad(icon, 4)}${pad(m.moveName, 7)}${pad(diffIcon, 5)}${padNum(signed(m.deltaLines), 7)}${padNum(signed(m.deltaPoints), 7)}`
+        );
+    }
+    
+    if (isGameOver && moveHistory.length > 0) {
+        lines.push('');
+        lines.push(gameOverSummaryText());
+    }
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        const btn = document.getElementById('btn-copy-log');
+        btn.innerText = '✅';
+        setTimeout(() => btn.innerText = '📋', 2000);
+    }).catch(() => alert('Kopírování selhalo.'));
+}
+
 
         function updateGameStats(scores) {
             const key = `${difficulty}_${boardSize}`;
