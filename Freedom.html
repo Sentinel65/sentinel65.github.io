@@ -315,12 +315,7 @@
             renderStats();
             document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
 
-            const saved = localStorage.getItem('freedom_save');
-            if (saved) {
-                loadGame();
-            } else {
-                newGame();
-            }
+            newGame();
         }
 
         function createBoard() {
