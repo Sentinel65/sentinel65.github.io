@@ -313,7 +313,7 @@
             createBoard();
             applyTranslations();
             renderStats();
-            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize === 10 ? 8 : 10);
 
             newGame();
         }
@@ -472,8 +472,8 @@
     const starterText = startingPlayer === 1 ? L.p1 : L.p2;
     const diffText = DIFF_ICONS[difficulty - 1];
     const startMsg = lang === 'cs' 
-        ? `▶ Hru zahajuje ${starterText} - obtížnost: ${diffText}` 
-        : `▶ ${starterText} starts - diff: ${diffText}`;
+        ? `▶ Hru zahajuje ${starterText}` 
+        : `▶ ${starterText} starts`;
     
     // Zde byl odstraněn inline styl s jinou barvou textu
     startTr.innerHTML = `<td colspan="6">${startMsg}</td>`;
@@ -498,8 +498,8 @@
     const starterText = startingPlayer === 1 ? L.p1 : L.p2;
     const diffText = DIFF_ICONS[difficulty - 1];
     const startMsg = lang === 'cs' 
-        ? `▶ Hru zahajuje ${starterText} - obtížnost: ${diffText}` 
-        : `▶ ${starterText} starts - diff: ${diffText}`;
+        ? `▶ Hru zahajuje ${starterText}` 
+        : `▶ ${starterText} starts`;
     
     lines.push(startMsg);
     lines.push(''); // Prázdný řádek pro optické oddělení od prvního tahu
@@ -896,7 +896,7 @@
 
         function updateUI() {
             document.getElementById('btn-diff').innerText = DIFF_ICONS[difficulty - 1]; 
-            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize === 10 ? 8 : 10);
 
             const scores = calculateScores();
             drawBoard(scores.liveSet);
@@ -960,7 +960,7 @@ document.getElementById('score-2').innerHTML =
 
     boardSize = boardSize === 10 ? 8 : 10;
 
-    document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+    document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize === 10 ? 8 : 10);
 
     newGame();
 }
@@ -987,7 +987,7 @@ document.getElementById('score-2').innerHTML =
                 startingPlayer = data.startingPlayer || 1;
 
                 createBoard();
-                document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+                document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize === 10 ? 8 : 10);
 
                 updateLogView();
                 updateUI();
