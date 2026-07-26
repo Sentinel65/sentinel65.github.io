@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Freedom Board Game</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --menu-bg: #2d2d2d;
+            --btn-bg: #444;
+            --text-color: #f0f0f0;
+            --board-bg: #c98e57;
+            --cell-bg: #e6b785;
+            --p1-color: #ffffff;
+            --p2-color: #111111;
+            --highlight: rgba(0, 255, 0, 0.4);
+            --last-move: rgba(255, 255, 255, 0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; padding-bottom: 20px; }
+        
+        nav { display: flex; flex-wrap: wrap; gap: 8px; background: var(--menu-bg); padding: 10px; width: 100%; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        button { background: var(--btn-bg); border: none; border-radius: 8px; color: white; font-size: 1.5rem; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; user-select: none; }
+        button:active { transform: scale(0.9); }
+        button:hover { background: #555; }
+        
+        main { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; flex: 1; width: 100%; padding: 15px 10px; }
+        
+        #status-bar { display: flex; justify-content: space-between; width: 100%; max-width: 500px; padding: 10px 20px; background: var(--menu-bg); border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 1.2rem; }
+        .score-p1 { color: #aaaaaa; }
+        .score-p2 { color: #aaaaaa; }
+        .active-turn { color: #ffffff; text-shadow: 0 0 8px #fff; }
+
+        #board-container { width: 100%; max-width: 500px; aspect-ratio: 1; background: var(--board-bg); padding: 5px; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        #board { display: grid; grid-template-columns: `repeat(${boardSize},1fr)`; grid-template-rows: `repeat(${boardSize},1fr)`; gap: 2px; width: 100%; height: 100%; }
+        .cell { background: var(--cell-bg); border-radius: 2px; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .stone { width: 80%; height: 80%; border-radius: 50%; box-shadow: 2px 2px 4px rgba(0,0,0,0.4); position: absolute; }
+        .stone.p1 { background: var(--p1-color); }
+        .stone.p2 { background: var(--p2-color); }
+        
+        .valid { background: #b0c985; box-shadow: inset 0 0 0 2px var(--highlight); }
+        .last { box-shadow: inset 0 0 0 3px var(--last-move); }
+        
+        /* Distinct styles for live stones */
+        .stone.live.p1 { box-shadow: 0 0 12px 4px #00e6ff; border: 2px solid #00e6ff; z-index: 2; }
+        .stone.live.p2 { box-shadow: 0 0 12px 4px #ff1a1a; border: 2px solid #ff1a1a; z-index: 2; }
+
+        /* Game Log Section */
+        #log-container { width: 100%; max-width: 500px; background: var(--menu-bg); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #4a3319; }
+        #log-header { padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: var(--board-bg); color: #2b1a08; border-bottom: 2px solid #7a5230; }
+        #btn-copy-log { width: 36px; height: 36px; font-size: 1.1rem; background: #7a5230; }
+        #btn-copy-log:hover { background: #8d6038; }
+        #log-content { max-height: 170px; overflow-y: auto; }
+        #log-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+        #log-table thead th { position: sticky; top: 0; background: var(--cell-bg); color: #2b1a08; padding: 6px 4px; font-weight: 600; text-align: center; border-bottom: 2px solid var(--board-bg); }
+        #log-table td { padding: 5px 4px; text-align: center; color: #ddd; border-bottom: 1px solid #3a3a3a; }
+        #log-table .col-num { width: 15%; }
+        #log-table .col-color { width: 13%; }
+        #log-table .col-move { width: 20%; text-align: left; }
+        #log-table .col-diff { width: 13%; }
+        #log-table .col-delta { width: 19.5%; }
+        #log-table tbody tr.row-p1 { background: rgba(255,255,255,0.05); }
+        #log-table tbody tr.row-p2 { background: rgba(0,0,0,0.22); }
+        #log-table tbody tr.log-summary td { background: var(--board-bg); color: #2b1a08; font-weight: 700; text-align: center; padding: 8px 4px; border-bottom: 2px solid #7a5230; font-family: inherit; letter-spacing: normal; }
+        #log-table tbody tr:first-child td { border-top: 2px solid var(--board-bg); }
+        .delta-pos { color: #8bc34a; font-weight: 700; }
+        .delta-neg { color: #e57373; font-weight: 700; }
+        .delta-zero { color: #808080; }
+        #log-content::-webkit-scrollbar { width: 6px; }
+        #log-content::-webkit-scrollbar-thumb { background: var(--board-bg); border-radius: 3px; }
+
+        /* Stats Section */
+        #stats-container { width: 100%; max-width: 500px; background: var(--menu-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        #stats-container h3 { text-align: center; margin-bottom: 15px; font-size: 1.1rem; }
+        #stats-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95rem; }
+        #stats-table th, #stats-table td { padding: 8px 4px; border-bottom: 1px solid #444; }
+        #stats-table th { color: #aaaaaa; font-weight: normal; }
+        #stats-table tr:last-child td { border-bottom: none; }
+
+        /* Modal for Help */
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 10; align-items: center; justify-content: center; }
+        #help-modal { background: var(--menu-bg); padding: 25px; border-radius: 12px; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; line-height: 1.5; }
+        #help-modal h2 { margin-bottom: 15px; text-align: center; }
+        #help-modal p, #help-modal ul { margin-bottom: 10px; }
+        #help-modal ul { padding-left: 20px; }
+        .close-btn { display: block; margin: 20px auto 0; background: var(--btn-bg); padding: 10px 20px; border-radius: 8px; color: white; border: none; font-size: 1.1rem; cursor: pointer; }
+
+        @media (max-width: 400px) { 
+            nav { gap: 4px; padding: 5px; } 
+            button { width: 40px; height: 40px; font-size: 1.2rem; } 
+            #stats-table { font-size: 0.85rem; }
+            #log-table { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <button onclick="newGame()" id="btn-new">🔄</button>
+        <button onclick="saveGame()" id="btn-save">💾</button>
+        <button onclick="loadGame()" id="btn-load">📂</button>
+        <button onclick="toggleLang()" id="btn-lang">🇬🇧</button>
+        <button onclick="toggleDiff()" id="btn-diff">🟢</button>
+        <button onclick="toggleBoardSize()" id="btn-size">🔟</button>
+        <button onclick="showHelp()" id="btn-help">💡</button>
+    </nav>
+
+    <main>
+        <div id="status-bar">
+            <div id="score-1" class="score-p1">⚪ 0</div>
+            <div id="status-msg"></div>
+            <div id="score-2" class="score-p2">⚫ 0</div>
+        </div>
+        
+        <div id="board-container">
+            <div id="board"></div>
+        </div>
+
+        <div id="log-container">
+            <div id="log-header">
+                <span data-i18n="logTitle">Záznam hry</span>
+                <button id="btn-copy-log" onclick="copyLog()">📋</button>
+            </div>
+            <div id="log-content">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th class="col-num" data-i18n="logNum">#</th>
+                            <th class="col-color" data-i18n="logColor">K</th>
+                            <th class="col-move" data-i18n="logMove">Tah</th>
+                            <th class="col-diff" data-i18n="logDiff">Obt.</th>
+                            <th class="col-delta" data-i18n="logLines">Linie</th>
+                            <th class="col-delta" data-i18n="logPoints">Body</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="stats-container">
+            <h3 data-i18n="statsTitle">Statistiky her</h3>
+            <table id="stats-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="statDiff">Obtížnost</th>
+                        <th data-i18n="statSize">Deska</th>
+                        <th data-i18n="statWin">Výhry</th>
+                        <th data-i18n="statLoss">Prohry</th>
+                        <th data-i18n="statDraw">Remízy</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="modal-overlay" onclick="closeHelp(event)">
+        <div id="help-modal" onclick="event.stopPropagation()">
+            <h2 id="help-title" data-i18n="helpTitle">Pravidla</h2>
+            <div id="help-content"></div>
+            <button class="close-btn" onclick="closeHelp()">✔</button>
+        </div>
+    </div>
+
+    <script>
+        const I18N = {
+            cs: {
+                flag: '🇨🇿',
+                p1: 'Bílý',
+                p2: 'Černý (AI)',
+                turn: 'Na tahu: ',
+                win1: 'Bílý vyhrál!',
+                win2: 'Černý vyhrál!',
+                draw: 'Remíza!',
+                saved: 'Hra uložena',
+                loaded: 'Hra načtena',
+                noSave: 'Nenalezena uložená hra',
+                logTitle: 'Záznam hry',
+                logNum: '#',
+                logColor: 'K',
+                logMove: 'Tah',
+                logDiff: 'Obt.',
+                logLines: 'Linie',
+                logPoints: 'Body',
+                logGameOver: 'Konec hry',
+                statsTitle: 'Statistiky her',
+                statDiff: 'Obtížnost',
+                statSize: 'Deska',
+                statWin: 'Výhry',
+                statLoss: 'Prohry',
+                statDraw: 'Remízy',
+                helpTitle: 'Pravidla hry Freedom',
+                helpText: `
+                    <p><i>Designer: Veljko Cirovic & Nebojsa Sankovic</i></p>
+                    <p>Cílem hry je mít na konci více <b>"živých"</b> kamenů.</p>
+                    <ul>
+                        <li>Kámen je <b>živý</b>, pokud je součástí řady <b>přesně 4 kamenů</b> stejné barvy (vodorovně, svisle, diagonálně).</li>
+                        <li>Hraje se na 10x10. Bílý vždy začíná jako první a umístí kámen kamkoliv (kdo hraje za bílého se každou hru střídá).</li>
+                        <li>Další tahy musí být umístěny na prázdné pole <b>sousedící</b> s posledním zahraným kamenem soupeře.</li>
+                        <li><b>Pravidlo Freedom:</b> Pokud jsou všechna pole sousedící s posledním kamenem soupeře obsazená, hráč získává svobodu umístit kámen na jakékoliv prázdné pole.</li>
+                    </ul>`
+            },
+            en: {
+                flag: '🇬🇧',
+                p1: 'White',
+                p2: 'Black (AI)',
+                turn: 'Turn: ',
+                win1: 'White wins!',
+                win2: 'Black wins!',
+                draw: 'Draw!',
+                saved: 'Game saved',
+                loaded: 'Game loaded',
+                noSave: 'No save found',
+                logTitle: 'Game Log',
+                logNum: '#',
+                logColor: 'C',
+                logMove: 'Move',
+                logDiff: 'Diff',
+                logLines: 'Lines',
+                logPoints: 'Points',
+                logGameOver: 'Game Over',
+                statsTitle: 'Game Statistics',
+                statDiff: 'Difficulty',
+                statSize: 'Board',
+                statWin: 'Wins',
+                statLoss: 'Losses',
+                statDraw: 'Draws',
+                helpTitle: 'Rules of Freedom',
+                helpText: `
+                    <p><i>Designer: Veljko Cirovic & Nebojsa Sankovic</i></p>
+                    <p>The objective is to have more <b>"live"</b> stones at the end of the game.</p>
+                    <ul>
+                        <li>A stone is <b>live</b> if it is part of a row of <b>exactly 4 stones</b> of the same color (horizontal, vertical, diagonal).</li>
+                        <li>Board is 10x10. The first player plays anywhere (the starting player alternates each game).</li>
+                        <li>Subsequent moves must be on empty cells <b>adjacent</b> to the last opponent's stone.</li>
+                        <li><b>Freedom rule:</b> If all cells adjacent to the last opponent's stone are occupied, the player gets the "freedom" to place their stone on any empty cell.</li>
+                    </ul>`
+            }
+        };
+
+        const DIFF_ICONS = ['🟢', '🟡', '🔴']; 
+
+        // Board-size pictogram: draws a small NxN dot grid so the icon itself
+        // visually communicates board density instead of using a digit/number glyph.
+        function boardSizeIcon(size) {
+            const n = size === 10 ? 5 : 3;
+            const box = 22, pad = 2, gap = 1.5;
+            const cell = (box - pad * 2 - gap * (n - 1)) / n;
+            let dots = '';
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    const x = pad + i * (cell + gap);
+                    const y = pad + j * (cell + gap);
+                    dots += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" rx="0.6" fill="currentColor"/>`;
+                }
+            }
+            return `<svg viewBox="0 0 ${box} ${box}" width="22" height="22" style="vertical-align:middle">${dots}</svg>`;
+        }
+
+        let boardSize = 10;
+        let board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+        let currentPlayer = 1;
+        let lastMove = null;
+        let isGameOver = false;
+        let moveHistory = [];
+
+        // Settings & State
+        let lang = 'cs';
+        let difficulty = 1; 
+        let startingPlayer = parseInt(localStorage.getItem('freedom_startingPlayer')) || 2; 
+        
+        function defaultStats() {
+            const s = {};
+            for (const d of [1, 2, 3]) {
+                for (const sz of [8, 10]) {
+                    s[`${d}_${sz}`] = { w: 0, l: 0, d: 0 };
+                }
+            }
+            return s;
+        }
+
+        function loadStats() {
+            let raw;
+            try { raw = JSON.parse(localStorage.getItem('freedom_stats')); } catch (e) { raw = null; }
+            const result = defaultStats();
+            if (!raw) return result;
+
+            // Old format: { "1": {w,l,d}, "2": {...}, "3": {...} } without board size.
+            // Migrate it under the 10x10 bucket, since 10x10 was the original default board size.
+            const isOldFormat = raw['1'] && typeof raw['1'].w !== 'undefined' && !raw['1_8'] && !raw['1_10'];
+            if (isOldFormat) {
+                for (const d of [1, 2, 3]) {
+                    if (raw[d]) result[`${d}_10`] = { w: raw[d].w || 0, l: raw[d].l || 0, d: raw[d].d || 0 };
+                }
+                return result;
+            }
+
+            for (const key in result) {
+                if (raw[key]) result[key] = raw[key];
+            }
+            return result;
+        }
+
+        let stats = loadStats();
+
+        function init() {
+            createBoard();
+            applyTranslations();
+            renderStats();
+            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+
+            const saved = localStorage.getItem('freedom_save');
+            if (saved) {
+                loadGame();
+            } else {
+                newGame();
+            }
+        }
+
+        function createBoard() {
+
+    const boardDiv = document.getElementById('board');
+
+    boardDiv.innerHTML = '';
+
+    // nastav počet řádků a sloupců podle velikosti desky
+    boardDiv.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
+    boardDiv.style.gridTemplateRows = `repeat(${boardSize}, 1fr)`;
+
+    for (let r = 0; r < boardSize; r++) {
+
+        for (let c = 0; c < boardSize; c++) {
+
+            const cell = document.createElement('div');
+
+            cell.className = 'cell';
+
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+
+            cell.onclick = () => handlePlayerMove(r, c);
+
+            boardDiv.appendChild(cell);
+        }
+    }
+}
+
+        // Simulates valid moves for minimax
+        function getValidMovesForSim(simB, lastM) {
+            const emptyCells = [];
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (simB[r][c] === 0) emptyCells.push({ r, c });
+                }
+            }
+            if (emptyCells.length === 0) return [];
+            if (!lastM) return emptyCells;
+
+            const neighbors = [];
+            const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            for (let d of dirs) {
+                let nr = lastM.r + d[0], nc = lastM.c + d[1];
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && simB[nr][nc] === 0) {
+                    neighbors.push({ r: nr, c: nc });
+                }
+            }
+            return neighbors.length > 0 ? neighbors : emptyCells;
+        }
+
+        function getValidMoves() {
+            return getValidMovesForSim(board, lastMove);
+        }
+
+
+        function handlePlayerMove(r, c) {
+            if (currentPlayer !== 1 || isGameOver) return;
+            const valid = getValidMoves();
+            if (!valid.some(v => v.r === r && v.c === c)) return;
+
+            makeMove(r, c, 1);
+            if (!isGameOver) setTimeout(makeAIMove, 100);
+        }
+
+        function makeMove(r, c, player) {
+            const prevScores = calculateScores();
+
+            board[r][c] = player;
+            lastMove = { r, c };
+          
+            
+            // Log move
+            const cols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const moveName = cols[c] + (r + 1);
+
+            const scores = calculateScores();
+
+            const deltaLines = player === 1
+                ? scores.lines1 - prevScores.lines1
+                : scores.lines2 - prevScores.lines2;
+            const deltaPoints = player === 1
+                ? scores.s1 - prevScores.s1
+                : scores.s2 - prevScores.s2;
+
+            moveHistory.push({ player, moveName, deltaLines, deltaPoints, difficulty });
+            const validNext = getValidMoves();
+
+            if (validNext.length === 0) {
+                isGameOver = true;
+                updateGameStats(scores);
+            } else {
+                currentPlayer = player === 1 ? 2 : 1;
+            }
+
+            updateLogView();
+            drawBoard(scores.liveSet);
+            updateStatus(scores);
+        }
+
+        function signed(n) {
+            n = n || 0;
+            return (n > 0 ? '+' : '') + n;
+        }
+
+        function deltaClass(n) {
+            n = n || 0;
+            return n > 0 ? 'delta-pos' : (n < 0 ? 'delta-neg' : 'delta-zero');
+        }
+
+        // Renders the game log as a real table (newest move on top)
+        function gameOverSummaryText() {
+            const L = I18N[lang];
+            const scores = calculateScores();
+            let resultText;
+            if (scores.s1 > scores.s2) resultText = L.win1;
+            else if (scores.s2 > scores.s1) resultText = L.win2;
+            else resultText = L.draw;
+            return `🏁 ${L.logGameOver} — ${resultText} (${scores.s1}:${scores.s2})`;
+        }
+
+        function updateLogView() {
+            const tbody = document.getElementById('log-tbody');
+            tbody.innerHTML = '';
+
+            if (isGameOver && moveHistory.length > 0) {
+                const summaryTr = document.createElement('tr');
+                summaryTr.className = 'log-summary';
+                summaryTr.innerHTML = `<td colspan="6">${gameOverSummaryText()}</td>`;
+                tbody.appendChild(summaryTr);
+            }
+
+            for (let i = moveHistory.length - 1; i >= 0; i--) {
+                const m = moveHistory[i];
+                const icon = m.player === 1 ? '⚪' : '⚫';
+                const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
+                const tr = document.createElement('tr');
+                tr.className = m.player === 1 ? 'row-p1' : 'row-p2';
+                tr.innerHTML =
+                    `<td class="col-num">${String(i + 1).padStart(3, '0')}</td>` +
+                    `<td class="col-color">${icon}</td>` +
+                    `<td class="col-move">${m.moveName}</td>` +
+                    `<td class="col-diff">${diffIcon}</td>` +
+                    `<td class="col-delta ${deltaClass(m.deltaLines)}">${signed(m.deltaLines)}</td>` +
+                    `<td class="col-delta ${deltaClass(m.deltaPoints)}">${signed(m.deltaPoints)}</td>`;
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('log-content').scrollTop = 0;
+        }
+
+        // Builds a plain, column-aligned text version for the clipboard (chronological order)
+        function copyLog() {
+            const L = I18N[lang];
+            const pad = (s, w) => { s = String(s); return s.length >= w ? s : s + ' '.repeat(w - s.length); };
+            const padNum = (s, w) => { s = String(s); return s.length >= w ? s : ' '.repeat(w - s.length) + s; };
+
+            const lines = [
+                `${pad(L.logNum, 4)}${pad(L.logColor, 4)}${pad(L.logMove, 7)}${pad(L.logDiff, 5)}${padNum(L.logLines, 7)}${padNum(L.logPoints, 7)}`
+            ];
+            for (let i = 0; i < moveHistory.length; i++) {
+                const m = moveHistory[i];
+                const icon = m.player === 1 ? '⚪' : '⚫';
+                const diffIcon = m.difficulty ? DIFF_ICONS[m.difficulty - 1] : '–';
+                lines.push(
+                    `${pad(String(i + 1).padStart(3, '0'), 4)}${pad(icon, 4)}${pad(m.moveName, 7)}${pad(diffIcon, 5)}${padNum(signed(m.deltaLines), 7)}${padNum(signed(m.deltaPoints), 7)}`
+                );
+            }
+            if (isGameOver && moveHistory.length > 0) {
+                lines.push('');
+                lines.push(gameOverSummaryText());
+            }
+
+            navigator.clipboard.writeText(lines.join('\n')).then(() => {
+                const btn = document.getElementById('btn-copy-log');
+                btn.innerText = '✅';
+                setTimeout(() => btn.innerText = '📋', 2000);
+            }).catch(() => alert('Kopírování selhalo.'));
+        }
+
+        function updateGameStats(scores) {
+            const key = `${difficulty}_${boardSize}`;
+            if (!stats[key]) stats[key] = { w: 0, l: 0, d: 0 };
+
+            if (scores.s1 > scores.s2) stats[key].w++;
+            else if (scores.s2 > scores.s1) stats[key].l++;
+            else stats[key].d++;
+
+            localStorage.setItem('freedom_stats', JSON.stringify(stats));
+            renderStats();
+        }
+
+        function renderStats() {
+            const tbody = document.getElementById('stats-tbody');
+            tbody.innerHTML = '';
+            for (const d of [1, 2, 3]) {
+                for (const sz of [8, 10]) {
+                    const key = `${d}_${sz}`;
+                    const s = stats[key] || { w: 0, l: 0, d: 0 };
+                    const tr = document.createElement('tr');
+                    tr.innerHTML =
+                        `<td>${DIFF_ICONS[d - 1]}</td>` +
+                        `<td>${boardSizeIcon(sz)}</td>` +
+                        `<td>${s.w}</td>` +
+                        `<td>${s.l}</td>` +
+                        `<td>${s.d}</td>`;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
+
+        function drawBoard(liveSet) {
+            const valid = isGameOver || currentPlayer === 2 ? [] : getValidMoves();
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                    cell.className = 'cell';
+                    cell.innerHTML = '';
+                    
+                    if (board[r][c] !== 0) {
+                        const p = board[r][c];
+                        const stone = document.createElement('div');
+                        stone.className = `stone p${p}`;
+                        if (liveSet.has(`${r},${c},${p}`)) stone.classList.add('live');
+                        cell.appendChild(stone);
+                    } else if (valid.some(v => v.r === r && v.c === c)) {
+                        cell.classList.add('valid');
+                    }
+                    
+                    if (lastMove && lastMove.r === r && lastMove.c === c) {
+                        cell.classList.add('last');
+                    }
+                }
+            }
+        }
+
+        function calculateScores(simBoard = board) {
+
+    let liveStones = new Set();
+    let lines1 = 0;
+    let lines2 = 0;
+
+    for (let r = 0; r < boardSize; r++) {
+
+        for (let c = 0; c < boardSize; c++) {
+
+            if (simBoard[r][c] === 0) continue;
+
+            const p = simBoard[r][c];
+
+            // vodorovně
+            if (c <= boardSize - 4) {
+
+                let len = 1;
+
+                while (
+                    c + len < boardSize &&
+                    simBoard[r][c + len] === p
+                ) len++;
+
+                if (
+                    len === 4 &&
+                    (c === 0 || simBoard[r][c - 1] !== p)
+                ) {
+                    for (let i = 0; i < 4; i++) {
+                        liveStones.add(`${r},${c + i},${p}`);
+                    }
+                    if (p === 1) lines1++; else lines2++;
+                }
+            }
+
+            // svisle
+            if (r <= boardSize - 4) {
+
+                let len = 1;
+
+                while (
+                    r + len < boardSize &&
+                    simBoard[r + len][c] === p
+                ) len++;
+
+                if (
+                    len === 4 &&
+                    (r === 0 || simBoard[r - 1][c] !== p)
+                ) {
+                    for (let i = 0; i < 4; i++) {
+                        liveStones.add(`${r + i},${c},${p}`);
+                    }
+                    if (p === 1) lines1++; else lines2++;
+                }
+            }
+
+            // diagonála ↘
+            if (
+                r <= boardSize - 4 &&
+                c <= boardSize - 4
+            ) {
+
+                let len = 1;
+
+                while (
+                    r + len < boardSize &&
+                    c + len < boardSize &&
+                    simBoard[r + len][c + len] === p
+                ) len++;
+
+                if (
+                    len === 4 &&
+                    (
+                        r === 0 ||
+                        c === 0 ||
+                        simBoard[r - 1][c - 1] !== p
+                    )
+                ) {
+                    for (let i = 0; i < 4; i++) {
+                        liveStones.add(`${r + i},${c + i},${p}`);
+                    }
+                    if (p === 1) lines1++; else lines2++;
+                }
+            }
+
+            // diagonála ↙
+            if (
+                r <= boardSize - 4 &&
+                c >= 3
+            ) {
+
+                let len = 1;
+
+                while (
+                    r + len < boardSize &&
+                    c - len >= 0 &&
+                    simBoard[r + len][c - len] === p
+                ) len++;
+
+                if (
+                    len === 4 &&
+                    (
+                        r === 0 ||
+                        c === boardSize - 1 ||
+                        simBoard[r - 1][c + 1] !== p
+                    )
+                ) {
+                    for (let i = 0; i < 4; i++) {
+                        liveStones.add(`${r + i},${c - i},${p}`);
+                    }
+                    if (p === 1) lines1++; else lines2++;
+                }
+            }
+        }
+    }
+
+    let s1 = 0;
+    let s2 = 0;
+
+    liveStones.forEach(val => {
+        if (val.endsWith('1'))
+            s1++;
+        else
+            s2++;
+    });
+
+    return {
+        s1,
+        s2,
+        lines1,
+        lines2,
+        liveSet: liveStones
+    };
+}
+
+        // Advanced heuristic for Alpha-Beta MiniMax
+        function evaluateBoard(b) {
+
+    let s = calculateScores(b);
+
+    // Základní hodnocení podle počtu živých kamenů
+    let score = (s.s2 - s.s1) * 10000;
+
+    function scoreWindow(p1c, p2c) {
+
+        if (p2c > 0 && p1c === 0) {
+            if (p2c === 3) return 50;
+            if (p2c === 2) return 10;
+            return 1;
+        }
+
+        if (p1c > 0 && p2c === 0) {
+            if (p1c === 3) return -50;
+            if (p1c === 2) return -10;
+            return -1;
+        }
+
+        return 0;
+    }
+
+    for (let r = 0; r < boardSize; r++) {
+
+        for (let c = 0; c < boardSize; c++) {
+
+            // vodorovně
+            if (c <= boardSize - 4) {
+
+                let p1c = 0;
+                let p2c = 0;
+
+                for (let i = 0; i < 4; i++) {
+
+                    if (b[r][c + i] === 1)
+                        p1c++;
+                    else if (b[r][c + i] === 2)
+                        p2c++;
+                }
+
+                score += scoreWindow(p1c, p2c);
+            }
+
+            // svisle
+            if (r <= boardSize - 4) {
+
+                let p1c = 0;
+                let p2c = 0;
+
+                for (let i = 0; i < 4; i++) {
+
+                    if (b[r + i][c] === 1)
+                        p1c++;
+                    else if (b[r + i][c] === 2)
+                        p2c++;
+                }
+
+                score += scoreWindow(p1c, p2c);
+            }
+
+            // diagonála ↘
+            if (
+                r <= boardSize - 4 &&
+                c <= boardSize - 4
+            ) {
+
+                let p1c = 0;
+                let p2c = 0;
+
+                for (let i = 0; i < 4; i++) {
+
+                    if (b[r + i][c + i] === 1)
+                        p1c++;
+                    else if (b[r + i][c + i] === 2)
+                        p2c++;
+                }
+
+                score += scoreWindow(p1c, p2c);
+            }
+
+            // diagonála ↙
+            if (
+                r <= boardSize - 4 &&
+                c >= 3
+            ) {
+
+                let p1c = 0;
+                let p2c = 0;
+
+                for (let i = 0; i < 4; i++) {
+
+                    if (b[r + i][c - i] === 1)
+                        p1c++;
+                    else if (b[r + i][c - i] === 2)
+                        p2c++;
+                }
+
+                score += scoreWindow(p1c, p2c);
+            }
+        }
+    }
+
+    return score;
+}
+
+        function makeAIMove() {
+            if (isGameOver) return;
+            const valid = getValidMoves();
+            if (valid.length === 0) return;
+
+            let move;
+            if (difficulty === 1) { 
+                // Easy: Random
+                move = valid[Math.floor(Math.random() * valid.length)];
+            } else if (difficulty === 2) { 
+                // Medium: Greedy + Heuristic Evaluation
+                let best = -Infinity;
+                let moves = [];
+                for (let v of valid) {
+                    board[v.r][v.c] = 2;
+                    let val = evaluateBoard(board);
+                    board[v.r][v.c] = 0;
+                    if (val > best) { best = val; moves = [v]; }
+                    else if (val === best) { moves.push(v); }
+                }
+                move = moves[Math.floor(Math.random() * moves.length)];
+            } else { 
+                // Hard: Minimax with Alpha-Beta Pruning
+                let best = -Infinity;
+                let bestMoves = [];
+                
+                // Dynamic depth limiting based on branching factor (freedom rule triggers large branching)
+                let depth = valid.length > 20 ? 2 : 3; 
+                
+                for (let v of valid) {
+                    board[v.r][v.c] = 2;
+                    let val = minimax(board, depth - 1, -Infinity, Infinity, false, v.r, v.c);
+                    board[v.r][v.c] = 0;
+                    if (val > best) { best = val; bestMoves = [v]; }
+                    else if (val === best) { bestMoves.push(v); }
+                }
+                move = bestMoves.length > 0 ? bestMoves[Math.floor(Math.random() * bestMoves.length)] : valid[0];
+            }
+            makeMove(move.r, move.c, 2);
+        }
+
+        function minimax(b, depth, alpha, beta, isMax, lastR, lastC) {
+            let valid = getValidMovesForSim(b, {r: lastR, c: lastC});
+            
+            if (depth === 0 || valid.length === 0) {
+                return evaluateBoard(b);
+            }
+
+            if (isMax) {
+                let maxE = -Infinity;
+                for (let m of valid) {
+                    b[m.r][m.c] = 2;
+                    let eval = minimax(b, depth-1, alpha, beta, false, m.r, m.c);
+                    b[m.r][m.c] = 0;
+                    maxE = Math.max(maxE, eval);
+                    alpha = Math.max(alpha, eval);
+                    if (beta <= alpha) break; // Alpha-beta prune
+                }
+                return maxE;
+            } else {
+                let minE = Infinity;
+                for (let m of valid) {
+                    b[m.r][m.c] = 1;
+                    let eval = minimax(b, depth-1, alpha, beta, true, m.r, m.c);
+                    b[m.r][m.c] = 0;
+                    minE = Math.min(minE, eval);
+                    beta = Math.min(beta, eval);
+                    if (beta <= alpha) break; // Alpha-beta prune
+                }
+                return minE;
+            }
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (I18N[lang][key]) {
+                    el.innerHTML = I18N[lang][key];
+                }
+            });
+            document.getElementById('help-content').innerHTML = I18N[lang].helpText;
+            const otherLang = lang === 'cs' ? 'en' : 'cs';
+            document.getElementById('btn-lang').innerText = I18N[otherLang].flag;
+        }
+
+        function updateUI() {
+            document.getElementById('btn-diff').innerText = DIFF_ICONS[difficulty - 1]; 
+            document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+
+            const scores = calculateScores();
+            drawBoard(scores.liveSet);
+            updateStatus(scores);
+        }
+
+        function updateStatus(scores) {
+            document.getElementById('score-1').classList.toggle('active-turn', currentPlayer === 1 && !isGameOver);
+            document.getElementById('score-2').classList.toggle('active-turn', currentPlayer === 2 && !isGameOver);
+
+            document.getElementById('score-1').innerHTML =
+    `<span>⚪</span>&nbsp;<span>${scores.s1}</span>`;
+
+document.getElementById('score-2').innerHTML =
+    `<span>${scores.s2}</span>&nbsp;<span>⚫</span>`;
+            
+            const msg = document.getElementById('status-msg');
+            if (isGameOver) {
+                if (scores.s1 > scores.s2) msg.innerText = I18N[lang].win1;
+                else if (scores.s2 > scores.s1) msg.innerText = I18N[lang].win2;
+                else msg.innerText = I18N[lang].draw;
+            } else {
+                msg.innerText = I18N[lang].turn + (currentPlayer === 1 ? I18N[lang].p1 : I18N[lang].p2);
+            }
+        }
+
+        function newGame() {
+            // Toggle starting player logic
+            startingPlayer = startingPlayer === 1 ? 2 : 1;
+            localStorage.setItem('freedom_startingPlayer', startingPlayer);
+
+            board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+            createBoard();
+            currentPlayer = startingPlayer;
+            lastMove = null;
+            isGameOver = false;
+            moveHistory = [];
+            
+            updateLogView();
+            updateUI();
+
+            // Trigger AI if it starts
+            if (currentPlayer === 2) {
+                setTimeout(makeAIMove, 400);
+            }
+        }
+
+        function toggleLang() {
+            lang = lang === 'cs' ? 'en' : 'cs';
+            applyTranslations();
+            updateStatus(calculateScores());
+            updateLogView();
+        }
+
+        function toggleDiff() {
+            difficulty = difficulty === 3 ? 1 : difficulty + 1;
+            updateUI();
+        }
+        
+        function toggleBoardSize() {
+
+    boardSize = boardSize === 10 ? 8 : 10;
+
+    document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+
+    newGame();
+}
+        
+        function saveGame() {
+            const data = { board, boardSize, currentPlayer, lastMove, isGameOver, difficulty, moveHistory, startingPlayer };
+            localStorage.setItem('freedom_save', JSON.stringify(data));
+            const msg = document.getElementById('status-msg');
+            msg.innerText = I18N[lang].saved;
+            setTimeout(() => updateStatus(calculateScores()), 2000);
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('freedom_save');
+            if (saved) {
+                const data = JSON.parse(saved);
+                boardSize = data.boardSize || 10;
+                board = data.board;
+                currentPlayer = data.currentPlayer;
+                lastMove = data.lastMove;
+                isGameOver = data.isGameOver;
+                difficulty = data.difficulty || 1;
+                moveHistory = data.moveHistory || [];
+                startingPlayer = data.startingPlayer || 1;
+
+                createBoard();
+                document.getElementById("btn-size").innerHTML = boardSizeIcon(boardSize);
+
+                updateLogView();
+                updateUI();
+                const msg = document.getElementById('status-msg');
+                msg.innerText = I18N[lang].loaded;
+                setTimeout(() => updateStatus(calculateScores()), 2000);
+            } else {
+                document.getElementById('status-msg').innerText = I18N[lang].noSave;
+                setTimeout(() => updateStatus(calculateScores()), 2000);
+            }
+        }
+
+        function showHelp() {
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeHelp(e) {
+            if (!e || e.target.id === 'modal-overlay' || e.target.classList.contains('close-btn')) {
+                document.getElementById('modal-overlay').style.display = 'none';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
