@@ -85,6 +85,7 @@
         #help-modal h2 { margin-bottom: 15px; text-align: center; }
         #help-modal p, #help-modal ul { margin-bottom: 10px; }
         #help-modal ul { padding-left: 20px; }
+        #help-modal .help-icon { display: inline-block; vertical-align: middle; margin: 0 2px; color: #ddd; }
         .close-btn { display: block; margin: 20px auto 0; background: var(--btn-bg); padding: 10px 20px; border-radius: 8px; color: white; border: none; font-size: 1.1rem; cursor: pointer; }
 
         @media (max-width: 400px) { 
@@ -198,8 +199,9 @@
                     <p>Cílem hry je mít na konci více <b>"živých"</b> kamenů.</p>
                     <ul>
                         <li>Kámen je <b>živý</b>, pokud je součástí řady <b>přesně 4 kamenů</b> stejné barvy (vodorovně, svisle, diagonálně).</li>
-                        <li>Hraje se na 10x10. Bílý vždy začíná jako první a umístí kámen kamkoliv (kdo hraje za bílého se každou hru střídá).</li>
-                        <li>Další tahy musí být umístěny na prázdné pole <b>sousedící</b> s posledním zahraným kamenem soupeře.</li>
+                        <li>Velikost desky lze přepnout ikonou v menu <span class="help-icon">${boardSizeIcon(10)}</span> pro desku <b>10×10</b>, nebo <span class="help-icon">${boardSizeIcon(8)}</span> pro menší desku <b>8×8</b>.</li>
+                        <li>Vy hrajete vždy za Bílého ⚪, AI za Černého ⚫. Kdo z vás umístí <b>první kámen</b> hry, se ale s <b>každou novou hrou střídá</b>.</li>
+                        <li>Další tahy musí být umístěny na prázdné pole <b>sousedící</b> s <b>posledním zahraným kamenem</b> soupeře.</li>
                         <li><b>Pravidlo Freedom:</b> Pokud jsou všechna pole sousedící s posledním kamenem soupeře obsazená, hráč získává svobodu umístit kámen na jakékoliv prázdné pole.</li>
                     </ul>`
             },
@@ -234,8 +236,9 @@
                     <p>The objective is to have more <b>"live"</b> stones at the end of the game.</p>
                     <ul>
                         <li>A stone is <b>live</b> if it is part of a row of <b>exactly 4 stones</b> of the same color (horizontal, vertical, diagonal).</li>
-                        <li>Board is 10x10. The first player plays anywhere (the starting player alternates each game).</li>
-                        <li>Subsequent moves must be on empty cells <b>adjacent</b> to the last opponent's stone.</li>
+                        <li>Board size can be switched with the menu icon <span class="help-icon">${boardSizeIcon(10)}</span> for a <b>10×10</b> board, or <span class="help-icon">${boardSizeIcon(8)}</span> for a smaller <b>8×8</b> board.</li>
+                        <li>You always play White ⚪, the AI plays Black ⚫. Who places the <b>first stone</b> of the game, however, <b>alternates every new game</b>.</li>
+                        <li>Subsequent moves must be on an empty cell <b>adjacent</b> to the <b>last stone the opponent played</b>.</li>
                         <li><b>Freedom rule:</b> If all cells adjacent to the last opponent's stone are occupied, the player gets the "freedom" to place their stone on any empty cell.</li>
                     </ul>`
             }
