@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Passo Game - Advanced</title>
+    <style>
+        :root {
+            --bg: #1a1a1a;
+            --surface: #2d2d2d;
+            --text: #ffffff;
+            --tile: #e8dcc7;
+            --red-disc: #d0021b;
+            --black-disc: #111111;
+            --accent: #4a90e2;
+            --board-size: min(95vw, 650px);
+            --tile-size: calc(var(--board-size) / 5 - 8px);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            background-color: var(--surface);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .menu-icons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: clamp(6px, 2vw, 20px);
+            font-size: clamp(26px, 4vw, 28px);
+        }
+
+        .menu-icons span {
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .menu-icons span:hover {
+            transform: scale(1.2);
+        }
+
+        .status {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            min-height: 28px;
+        }
+
+        .powers-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            min-height: 40px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Výběr žetonů - Mřížka 2x3 */
+        #token-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .power-token {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .power-token.active {
+            border-color: #4ade80;
+            background: #2d5a2d;
+            box-shadow: 0 0 10px #4ade80;
+            transform: scale(1.1);
+        }
+        .power-token.used {
+            opacity: 0.2;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+        .power-token.ai-token {
+            cursor: default;
+        }
+
+        /* Nápovědné bubliny v modálním okně */
+        .token-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .token-wrapper .tooltiptext {
+            visibility: hidden;
+            width: max-content;
+            min-width: 190px;
+            max-width: 220px;
+            background-color: var(--accent);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+            position: absolute;
+            z-index: 2000;
+            bottom: 140%; 
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+            font-weight: normal;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            line-height: 1.3;
+        }
+        .token-wrapper .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--accent) transparent transparent transparent;
+        }
+        .token-wrapper.show-tooltip .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Globální Tooltip (ve hře) */
+        #global-tooltip {
+            position: fixed;
+            background-color: var(--accent);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 3000;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            transform: translate(-50%, -100%);
+            margin-top: -12px;
+            width: max-content;
+            min-width: 190px;
+            max-width: 220px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: none;
+            line-height: 1.3;
+        }
+        #global-tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: var(--tip-arrow-left, 50%);
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: var(--accent) transparent transparent transparent;
+        }
+
+        .board-container {
+            position: relative;
+            width: var(--board-size);
+            padding: 10px 0;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .tile-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .off-board {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: var(--tile-size);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            pointer-events: none;
+        }
+        .off-board.top { top: calc(var(--tile-size) * -1); }
+        .off-board.bottom { bottom: calc(var(--tile-size) * -1); }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            background-color: var(--tile);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            pointer-events: auto;
+        }
+
+        .coord {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            font-size: 0.75rem;
+            color: #888;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .tile.hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .tile.valid-move {
+            background-color: #a8d5ba;
+            box-shadow: 0 0 10px #4ade80 inset;
+        }
+
+        .tile.valid-move::after {
+            content: '';
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            background: rgba(0, 150, 0, 0.6);
+            border-radius: 50%;
+        }
+
+        .disc {
+            width: 75%;
+            height: 75%;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 4px 4px rgba(0,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: none;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        .disc-count{
+            display:block;
+            line-height:1;
+        }
+
+        .disc-power{
+            display:block;
+            line-height:1;
+            font-size:.78em;
+            margin-top:-2px;
+        }
+
+        .disc.red { background-color: var(--red-disc); border: 2px solid #a00010; }
+        .disc.black { background-color: var(--black-disc); border: 2px solid #000; }
+        
+        .disc.selected {
+            transform: scale(1.1) translateY(-5px) !important;
+            box-shadow: 0 8px 12px rgba(255, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .highlight-win {
+            box-shadow: 0 0 25px 8px gold, inset 0 -3px 5px rgba(0,0,0,0.2) !important;
+            border: 3px solid #ffdf00 !important;
+            z-index: 100 !important;
+        }
+        .highlight-blocked {
+            filter: grayscale(100%) opacity(0.5);
+        }
+
+        .log-section {
+            width: var(--board-size);
+            margin-top: 20px;
+            background: #d0d0d0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #b0b0b0;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #999;
+        }
+
+        .log-copy-btn {
+            cursor: pointer;
+            font-size: 20px;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .log-copy-btn:hover { transform: scale(1.2); }
+
+        .log-content {
+            height: 140px;
+            overflow-y: auto;
+            padding: 10px 15px;
+            font-family: monospace;
+            background: #e8e8e8;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.05rem;
+        }
+
+        .log-end-msg {
+            font-weight: bold;
+            color: #8b0000;
+            margin-top: 8px;
+            border-top: 1px dashed #999;
+            padding-top: 8px;
+        }
+
+        .mini-disc {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid #000;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .mini-disc.red { background-color: var(--red-disc); }
+        .mini-disc.black { background-color: var(--black-disc); }
+
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--accent);
+            border-left: 5px solid var(--accent);
+            padding: 12px 20px;
+            border-radius: 5px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            font-weight: bold;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 90%;
+            width: 550px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        #token-modal .modal-content {
+            overflow: visible; 
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        
+        h3 { color: var(--accent); margin-top: 1.5rem; }
+
+        .btn-confirm {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        .btn-confirm:hover { background: #357abd; }
+        
+        #btn-adv.disabled { filter: grayscale(100%) opacity(0.4); }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="menu-icons">
+        <span onclick="startGame(true)" id="btn-swap">🔄</span>
+        <span onclick="saveGame()" id="btn-save">💾</span>
+        <span onclick="loadGame()" id="btn-load">📂</span>
+        <span onclick="toggleAdvanced()" id="btn-adv">⚡</span>
+        <span onclick="toggleDifficulty()" id="btn-diff">🟡</span>
+        <span onclick="toggleLang()" id="btn-lang">🇬🇧</span>
+        <span onclick="toggleHelp()" id="btn-help">💡</span>
+    </div>
+</header>
+
+<div class="status" id="status-text"></div>
+
+<div class="powers-container" id="ai-powers"></div>
+
+<div class="board-container">
+    <div class="off-board top" id="off-board-top"></div>
+    <div class="board" id="board"></div>
+    <div class="off-board bottom" id="off-board-bottom"></div>
+</div>
+
+<div class="powers-container" id="player-powers"></div>
+
+<div class="log-section">
+    <div class="log-header">
+        <span id="log-title">Log hry</span>
+        <span class="log-copy-btn" onclick="copyLog()">📋</span>
+    </div>
+    <div class="log-content" id="log-text"></div>
+</div>
+
+<div id="toast-container"></div>
+<div id="global-tooltip"></div>
+
+<!-- Nápověda -->
+<div class="modal-overlay" id="help-modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="toggleHelp()">×</span>
+        <h2 id="help-title">Nápověda</h2>
+        <div id="help-text"></div>
+    </div>
+</div>
+
+<!-- Výběr žetonů -->
+<div class="modal-overlay" id="token-modal">
+    <div class="modal-content">
+        <h2 id="token-title" style="text-align: center; margin-top: 0;">Vyberte si 3 žetony</h2>
+        <p id="token-desc" style="text-align: center; color: #ccc;">Zbylé 3 automaticky získá soupeř (AI).</p>
+        <div id="token-selection"></div>
+        <button id="btn-confirm-tokens" class="btn-confirm" style="display:none;" onclick="confirmTokens()">Potvrdit výběr</button>
+    </div>
+</div>
+
+<script>
+    if(localStorage.getItem('soundEnabled') === null) {
+        localStorage.setItem('soundEnabled', 'false');
+    }
+
+    const powerTypes = {
+        'stack': { icon: '⏫', desc_cs: 'Kámen může na stoh<br>se 3 kameny (budou 4).', desc_en: 'Can move onto<br>a stack of 3.' },
+        'double': { icon: '⏩', desc_cs: 'Tento kámen se může<br>pohnout dvakrát po sobě.', desc_en: 'Move twice<br>in a row.' },
+        'carry': { icon: '🗃️', desc_cs: 'Přesune celý stoh<br>kamenů najednou.', desc_en: 'Move full<br>stack at once.' },
+        'jump': { icon: '🦘', desc_cs: 'Přeskočí jednu chybějící<br>dlaždici v daném směru.', desc_en: 'Jump over 1<br>missing tile.' },
+        'keep': { icon: '🛡️', desc_cs: 'Výchozí dlaždice nezmizí<br>po odchodu kamene.', desc_en: 'Do not remove<br>start tile.' },
+        'restore': { icon: '🧱', desc_cs: 'Obnoví zmizelou dlaždici<br>a hned na ni skočí.', desc_en: 'Restore removed tile<br>and move onto it.' }
+    };
+
+    // Ikony pro poznámky v logu, které nejsou volitelnými žetony (nesmí se
+    // objevit ve výběru žetonů), ale využívají stejný systém nápovědy.
+    const otherIcons = {
+        'isolation': { icon: '🕳️', desc_cs: 'Dlaždice s kamenem zůstala<br>po tahu osamocená a zmizela i s ním.', desc_en: 'A tile with a piece was left<br>isolated after the move and vanished.' }
+    };
+
+    const translations = {
+        cs: {
+            diff_3: "🟢 Obtížnost: Lehká", diff_4: "🟡 Obtížnost: Střední", diff_5: "?? Obtížnost: Těžká",
+            turn_human: "Tah: Červená (Hráč)", turn_ai: "Tah: Černá (AI)", ai_thinking: "AI přemýšlí...",
+            win_human: "Vyhrál jsi!", win_ai: "AI vyhrála!", draw: "Remíza!", log_title: "Log hry",
+            log_copied: "Log byl zkopírován.", no_log: "Log je prázdný.",
+            saved: "Hra uložena.", loaded: "Hra načtena.", no_save: "Uložená hra nenalezena.",
+            player: "Hráč (Červená)", ai: "AI (Černá)",
+            reason_pass: "Prošel za poslední kámen soupeře", reason_blocked: "Soupeř nemá platný tah",
+            game_over_prefix: "Konec hry. Vítězí", game_over_draw: "Konec hry. Remíza - Opakování tahu",
+            titles: { save: "Uložit hru", load: "Načíst hru", swap: "Restart hry (Změna začínajícího)", adv: "Rozšíření - Žetony (Zap/Vyp)", help: "Nápověda" },
+            token_title: "Vyberte si 3 žetony", token_desc: "Zbylé 3 automaticky získá soupeř (AI).", btn_confirm: "Potvrdit výběr",
+            help_title: "Pravidla hry Passo",
+            help_content: `
+                <p>Passo je strategická hra pro 2 hráče. Vy (Červená) vždy začínáte dole, AI (Černá) nahoře.</p>
+                <h3>Jak poznám cíl hry? (Vysvětlení)</h3>
+                <p>Abyste vyhráli "průchodem", musíte se dostat <strong>blíže k soupeřově startovní čáře, než je jeho nejzadnější kámen</strong>. 
+                <br><br>
+                <em>Příklad:</em> Pokud hrajete za Červenou (začínáte na řádku 1) a postupujete nahoru (k řádku 5), podíváte se na všechny černé kameny soupeře. Zjistíte, který z jeho černých kamenů je nejblíže k jeho vlastnímu startu (tedy nejblíže k řádku 5). Pokud je jeho nejzadnější černý kámen například na řádku 4, vaším cílem je dostat jakýkoliv červený kámen na řádek 5 (nebo až "mimo desku" nad řádek 5). Jakmile se tam dostanete, hra končí a vyhráváte.</p>
+                <p>Další způsob výhry je <strong>zablokovat soupeře</strong> tak, že nemá k dispozici žádný platný tah. Hra také končí remízou, pokud dojde ke trojímu opakování stejné situace na hrací desce.</p>
+                <h3>Mizející dlaždice</h3>
+                <p>Pokud se dlaždice (i s kamenem, který na ní stojí) ocitne bez jediné sousední existující dlaždice (i diagonálně), je <strong>osamocená a zmizí i s kamenem</strong>. V logu tahů je taková ztráta označena piktogramem 🕳️.</p>
+                <h3>Rozšířená pravidla (Blesk ⚡)</h3>
+                <p>Pokud rozšíření zapnete a hru začínáte vy (Červená), na začátku hry si vyberete 3 z 6 žetonů - zbylé 3 automaticky obdrží soupeř (AI). Pokud jako první táhne AI, žetony se mezi vás rozdělí náhodně.</p>
+                <p>Ve svém tahu můžete kliknutím na svůj žeton nad hrací deskou aktivovat jeho schopnost a poté zahrát tah. Kámen bude vizuálně označen. Po tahu ikona zůstane na cílovém kameni do dalšího kola. Každý žeton lze za hru použít jen jednou. Význam žetonů zjistíte najetím nebo kliknutím na jejich piktogram.</p>
+                <h3>Log tahů</h3>
+                <p>Zápis tahu má tvar <strong>Odkud:Kam</strong> (např. B5:A5). Pokud kámen dosedl na dlaždici, kde už nějaký kámen byl, je za zápisem v hranaté závorce uveden výsledný počet kamenů ve stohu, např. [2]. Piktogram u tahu (⚡ žeton nebo 🕳️ izolace) zobrazí nápovědu po najetí myší nebo klepnutí.</p>`
+        },
+        en: {
+            diff_3: "🟢 Difficulty: Easy", diff_4: "🟡 Difficulty: Medium", diff_5: "🔴 Difficulty: Hard",
+            turn_human: "Turn: Red (Human)", turn_ai: "Turn: Black (AI)", ai_thinking: "AI is thinking...",
+            win_human: "You won!", win_ai: "AI won!", draw: "Draw!", log_title: "Game Log",
+            log_copied: "Log copied.", no_log: "Log is empty.",
+            saved: "Game saved.", loaded: "Game loaded.", no_save: "No saved game found.",
+            player: "Player (Red)", ai: "AI (Black)",
+            reason_pass: "Moved past the furthest opponent's disc", reason_blocked: "Opponent has no valid moves",
+            game_over_prefix: "Game Over. Winner:", game_over_draw: "Game Over. Draw (Repetition)",
+            titles: { save: "Save Game", load: "Load Game", swap: "Restart Game (Swap starter)", adv: "Advanced Rules - Tokens (On/Off)", help: "Help" },
+            token_title: "Choose 3 Power Tokens", token_desc: "The remaining 3 will be given to the AI.", btn_confirm: "Confirm Selection",
+            help_title: "Passo Game Rules",
+            help_content: `
+                <p>Passo is a strategy game. You (Red) start at the bottom, AI (Black) at the top.</p>
+                <h3>Winning Goal Explained</h3>
+                <p>To win by "passing", you must get <strong>closer to your opponent's start line than their furthest piece</strong>.
+                <br><br>
+                <em>Example:</em> You are Red moving UP. Look at all Black pieces. Find the Black piece that is highest up (closest to the top start line). If that piece is on row 4, you must move a Red piece to row 5 or beyond. As soon as you do this, you win.</p>
+                <p>The other way to win is to <strong>block your opponent</strong> so they have no valid moves left. A draw occurs if the board state repeats three times.</p>
+                <h3>Disappearing Tiles</h3>
+                <p>If a tile (along with any piece standing on it) ends up with no neighboring tile left (including diagonals), it becomes <strong>isolated and disappears, taking the piece with it</strong>. Such a loss is marked in the move log with the 🕳️ icon.</p>
+                <h3>Advanced Rules (Lightning ⚡)</h3>
+                <p>If you turn advanced rules on and you (Red) are starting the game, you'll choose 3 of the 6 tokens at the start - the AI automatically gets the remaining 3. If the AI starts instead, tokens are split randomly between you.</p>
+                <p>On your turn, click your token above the board to activate its ability, then play a move. The disc will be visually marked. After the move, the icon stays on the destination disc until the next round. Each token can only be used once per game. Hover or tap a token's icon to see its exact effect.</p>
+                <h3>Move Log</h3>
+                <p>Moves are written as <strong>From:To</strong> (e.g. B5:A5). If the piece landed on a tile that already had a piece on it, the resulting stack size is shown in brackets, e.g. [2]. Icons next to a move (⚡ token or 🕳️ isolation) show a tooltip on hover or tap.</p>`
+        }
+    };
+
+    let currentLang = 'cs';
+    let difficultyLevels = [3, 4, 5]; 
+    let diffIcons = ['🟢', '🟡', '🔴'];
+    let diffIndex = 1;
+    let advancedMode = false;
+    let tempSelectedTokens = [];
+    let previewedToken = null; 
+
+    let gameState = {
+        board: [], turn: 'red', starter: 'red', log: [], gameOver: false, history: [],
+        winner: null, winReason: null, winPos: null,
+        redPowers: [], blackPowers: [], usedPowers: { red: [], black: [] },
+        activePower: null, bonusTurnPos: null, lastPowerUsed: null
+    };
+    
+    let selectedCell = null;
+    let validMovesCache = [];
+
+    const gTooltip = document.getElementById('global-tooltip');
+    let tooltipTimeout;
+
+    function showTooltip(e) {
+        const target = e.target.closest('[data-power]');
+        if (!target) {
+            hideTooltip();
+            return;
+        }
+        const power = target.getAttribute('data-power');
+        const info = powerTypes[power] || otherIcons[power];
+        if (!info) return;
+        
+        gTooltip.innerHTML = currentLang === 'cs' ? info.desc_cs : info.desc_en;
+        gTooltip.style.display = 'block';
+        
+        const rect = target.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const margin = 8;
+        const tooltipWidth = gTooltip.offsetWidth;
+        const minLeft = tooltipWidth / 2 + margin;
+        const maxLeft = window.innerWidth - tooltipWidth / 2 - margin;
+        
+        let left = centerX;
+        if (left < minLeft) left = minLeft;
+        if (left > maxLeft) left = maxLeft;
+        
+        gTooltip.style.left = left + 'px';
+        gTooltip.style.top = (rect.top - 12) + 'px';
+        gTooltip.style.setProperty('--tip-arrow-left', (tooltipWidth / 2 + (centerX - left)) + 'px');
+        
+        requestAnimationFrame(() => {
+            gTooltip.style.opacity = '1';
+        });
+    }
+
+    function hideTooltip() {
+        gTooltip.style.opacity = '0';
+        setTimeout(() => {
+            if(gTooltip.style.opacity === '0') gTooltip.style.display = 'none';
+        }, 200);
+    }
+
+    document.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('#token-selection')) return;
+        
+        const target = e.target.closest('[data-power]');
+        if (target) {
+            showTooltip(e);
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = setTimeout(hideTooltip, 2500); 
+        } else {
+            hideTooltip();
+        }
+    }, {passive: true});
+
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.closest('#token-selection')) return;
+        if (e.pointerType === 'mouse') {
+            const target = e.target.closest('[data-power]');
+            if (target) showTooltip(e);
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        if (e.target.closest('#token-selection')) return;
+        if (e.pointerType === 'mouse' && !e.relatedTarget?.closest('[data-power]')) hideTooltip();
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        if (overlay.id === 'token-modal') return; // výběr žetonů je povinný krok, nelze ho zahodit kliknutím mimo
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    });
+
+    function showToast(message) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = message;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function renderTokenList() {
+        const title = currentLang === 'cs' ? 'Přehled všech žetonů' : 'Overview of All Tokens';
+        let html = `<h3>${title}</h3><ul style="padding-left: 20px; line-height: 1.6; list-style: none;">`;
+        Object.keys(powerTypes).forEach(p => {
+            const info = powerTypes[p];
+            const desc = (currentLang === 'cs' ? info.desc_cs : info.desc_en).replace(/<br>/g, ' ');
+            html += `<li style="margin-bottom: 6px;"><span style="font-size: 1.2rem; margin-right: 8px;">${info.icon}</span>${desc}</li>`;
+        });
+        html += '</ul>';
+        return html;
+    }
+
+    function updateUI() {
+        document.getElementById('btn-lang').innerText = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
+        document.getElementById('btn-diff').innerText = diffIcons[diffIndex];
+        document.getElementById('btn-diff').title = translations[currentLang][`diff_${difficultyLevels[diffIndex]}`];
+        document.getElementById('btn-save').title = translations[currentLang].titles.save;
+        document.getElementById('btn-load').title = translations[currentLang].titles.load;
+        document.getElementById('btn-swap').title = translations[currentLang].titles.swap;
+        document.getElementById('btn-adv').title = translations[currentLang].titles.adv;
+        document.getElementById('btn-help').title = translations[currentLang].titles.help;
+
+        if (advancedMode) document.getElementById('btn-adv').classList.remove('disabled');
+        else document.getElementById('btn-adv').classList.add('disabled');
+
+        document.getElementById('help-title').innerText = translations[currentLang].help_title;
+        document.getElementById('help-text').innerHTML = translations[currentLang].help_content + renderTokenList();
+        document.getElementById('log-title').innerText = translations[currentLang].log_title;
+
+        document.getElementById('token-title').innerText = translations[currentLang].token_title;
+        document.getElementById('token-desc').innerText = translations[currentLang].token_desc;
+        document.getElementById('btn-confirm-tokens').innerText = translations[currentLang].btn_confirm;
+
+        renderPowers();
+        renderLog();
+        updateStatus();
+    }
+
+    function renderPowers() {
+        const pCont = document.getElementById('player-powers');
+        const aCont = document.getElementById('ai-powers');
+        pCont.innerHTML = ''; aCont.innerHTML = '';
+
+        if (!advancedMode) return;
+
+        gameState.redPowers.forEach(p => {
+            const btn = document.createElement('div');
+            btn.className = 'power-token' + (gameState.usedPowers.red.includes(p) ? ' used' : '') + (gameState.activePower === p ? ' active' : '');
+            btn.innerText = powerTypes[p].icon;
+            btn.setAttribute('data-power', p);
+            if(!gameState.usedPowers.red.includes(p) && gameState.turn === 'red' && !gameState.gameOver && !gameState.bonusTurnPos) {
+                btn.onclick = () => {
+                    gameState.activePower = gameState.activePower === p ? null : p;
+                    selectedCell = null; validMovesCache = [];
+                    render(); updateUI();
+                };
+            }
+            pCont.appendChild(btn);
+        });
+
+        gameState.blackPowers.forEach(p => {
+            const btn = document.createElement('div');
+            btn.className = 'power-token ai-token' + (gameState.usedPowers.black.includes(p) ? ' used' : '') + (gameState.activePower === p ? ' active' : '');
+            btn.innerText = powerTypes[p].icon;
+            btn.setAttribute('data-power', p);
+            aCont.appendChild(btn);
+        });
+    }
+
+    function renderLog() {
+        const logContent = document.getElementById('log-text');
+        logContent.innerHTML = '';
+        
+        // Log se vypisuje reverzně, nejnovější nahoře
+        const reversedLog = [...gameState.log].reverse();
+        
+        reversedLog.forEach(entry => {
+            const row = document.createElement('div');
+            if (entry.isEnd) {
+                row.className = 'log-entry log-end-msg';
+                row.innerText = entry.text;
+            } else {
+                row.className = 'log-entry';
+                
+                // Číslo tahu
+                const numSpan = document.createElement('span');
+                numSpan.innerText = entry.turnNumber;
+                numSpan.style.marginRight = '6px';
+                numSpan.style.color = '#555';
+                numSpan.style.fontWeight = 'bold';
+                numSpan.style.fontFamily = 'monospace';
+                row.appendChild(numSpan);
+                
+                // Piktogram obtížnosti
+                const diffSpan = document.createElement('span');
+                diffSpan.innerText = diffIcons[entry.difficulty !== undefined ? entry.difficulty : diffIndex];
+                diffSpan.style.fontSize = '0.9rem';
+                diffSpan.style.marginRight = '4px';
+                row.appendChild(diffSpan);
+
+                const disc = document.createElement('div');
+                disc.className = `mini-disc ${entry.actorColor}`;
+                
+                const text = document.createElement('span');
+                text.innerText = entry.text;
+                
+                if (entry.power) {
+                    const powerSpan = document.createElement('span');
+                    powerSpan.style.cursor = 'help';
+                    powerSpan.setAttribute('data-power', entry.power);
+                    powerSpan.innerText = ` [${powerTypes[entry.power].icon}]`;
+                    text.appendChild(powerSpan);
+                }
+                
+                if (entry.isolationLoss) {
+                    const isoSpan = document.createElement('span');
+                    isoSpan.style.cursor = 'help';
+                    isoSpan.setAttribute('data-power', 'isolation');
+                    isoSpan.innerText = ` [${otherIcons.isolation.icon}]`;
+                    text.appendChild(isoSpan);
+                }
+                
+                row.appendChild(disc);
+                row.appendChild(text);
+            }
+            logContent.appendChild(row);
+        });
+        
+        logContent.scrollTop = 0; // Udržení na začátku (nahoře)
+    }
+
+    function toggleLang() { currentLang = currentLang === 'cs' ? 'en' : 'cs'; updateUI(); }
+    function toggleDifficulty() { diffIndex = (diffIndex + 1) % 3; updateUI(); }
+    function toggleAdvanced() { advancedMode = !advancedMode; startGame(false); }
+    function toggleHelp() { document.getElementById('help-modal').classList.toggle('active'); }
+
+    function showTokenSelection() {
+        tempSelectedTokens = [];
+        previewedToken = null;
+        const cont = document.getElementById('token-selection');
+        cont.innerHTML = '';
+        
+        Object.keys(powerTypes).forEach(p => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'token-wrapper';
+            wrapper.id = 'wrapper-' + p;
+
+            const btn = document.createElement('div');
+            btn.className = 'power-token';
+            btn.innerText = powerTypes[p].icon;
+            btn.setAttribute('data-power', p);
+
+            const tooltip = document.createElement('span');
+            tooltip.className = 'tooltiptext';
+            tooltip.innerHTML = currentLang === 'cs' ? powerTypes[p].desc_cs : powerTypes[p].desc_en;
+
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                
+                if (previewedToken !== p) {
+                    if (previewedToken) {
+                        const oldWrapper = document.getElementById('wrapper-' + previewedToken);
+                        if(oldWrapper) oldWrapper.classList.remove('show-tooltip');
+                    }
+                    previewedToken = p;
+                    wrapper.classList.add('show-tooltip');
+                } else {
+                    if (tempSelectedTokens.includes(p)) {
+                        tempSelectedTokens = tempSelectedTokens.filter(x => x !== p);
+                        btn.classList.remove('active');
+                        wrapper.classList.remove('show-tooltip');
+                        previewedToken = null;
+                    } else if (tempSelectedTokens.length < 3) {
+                        tempSelectedTokens.push(p);
+                        btn.classList.add('active');
+                    }
+                }
+                
+                document.getElementById('btn-confirm-tokens').style.display = tempSelectedTokens.length === 3 ? 'block' : 'none';
+            };
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(tooltip);
+            cont.appendChild(wrapper);
+        });
+        
+        document.getElementById('btn-confirm-tokens').style.display = 'none';
+        document.getElementById('token-modal').classList.add('active');
+    }
+
+    function confirmTokens() {
+        document.getElementById('token-modal').classList.remove('active');
+        gameState.redPowers = tempSelectedTokens;
+        gameState.blackPowers = Object.keys(powerTypes).filter(p => !tempSelectedTokens.includes(p));
+        render(); updateUI();
+    }
+
+    function initBoard() {
+        let b = [];
+        for (let r = 0; r < 5; r++) {
+            let row = [];
+            for (let c = 0; c < 5; c++) {
+                let stack = [];
+                if (r === 0) stack.push('black'); 
+                if (r === 4) stack.push('red');   
+                row.push({ exists: true, stack: stack });
+            }
+            b.push(row);
+        }
+        return b;
+    }
+
+    function getBoardStateString(state) {
+        let str = state.turn + '|';
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                const cell = state.board[r][c];
+                str += cell.exists ? cell.stack.join('') : '-';
+                str += ',';
+            }
+        }
+        return str;
+    }
+
+    function startGame(swapSides = false) {
+        let newStarter = swapSides ? (gameState.starter === 'red' ? 'black' : 'red') : (gameState.starter || 'red');
+        gameState = {
+            board: initBoard(), turn: newStarter, starter: newStarter,
+            log: [], gameOver: false, history: [], winner: null, winReason: null, winPos: null,
+            redPowers: [], blackPowers: [], usedPowers: { red: [], black: [] },
+            activePower: null, bonusTurnPos: null, lastPowerUsed: null
+        };
+        selectedCell = null; validMovesCache = [];
+        
+        if (advancedMode) {
+            if (newStarter === 'red') {
+                updateUI(); render(); 
+                showTokenSelection();
+            } else {
+                const allPowers = Object.keys(powerTypes);
+                allPowers.sort(() => 0.5 - Math.random());
+                gameState.blackPowers = allPowers.slice(0, 3);
+                gameState.redPowers = allPowers.slice(3, 6);
+                render(); updateUI();
+                setTimeout(aiMove, 600);
+            }
+        } else {
+            render(); updateUI();
+            if (gameState.turn === 'black') setTimeout(aiMove, 600);
+        }
+    }
+
+    function saveGame() {
+        localStorage.setItem('passo_save', JSON.stringify({ game: gameState, diff: diffIndex, adv: advancedMode }));
+        showToast(translations[currentLang].saved);
+    }
+
+    function loadGame() {
+        const savedStr = localStorage.getItem('passo_save');
+        if (savedStr) {
+            const parsed = JSON.parse(savedStr);
+            gameState = parsed.game;
+            diffIndex = parsed.diff !== undefined ? parsed.diff : 1;
+            advancedMode = parsed.adv !== undefined ? parsed.adv : false;
+            selectedCell = null; validMovesCache = [];
+            render(); updateUI();
+            if (!gameState.gameOver && gameState.turn === 'black') setTimeout(aiMove, 600);
+            showToast(translations[currentLang].loaded);
+        } else {
+            showToast(translations[currentLang].no_save);
+        }
+    }
+
+    function copyLog() {
+        if (gameState.log.length === 0) {
+            showToast(translations[currentLang].no_log); return;
+        }
+        
+        const reversedLog = [...gameState.log].reverse();
+        
+        const textToCopy = reversedLog.map(entry => {
+            if (entry.isEnd) return entry.text;
+            const diffIcon = diffIcons[entry.difficulty !== undefined ? entry.difficulty : diffIndex];
+            return entry.turnNumber + ' ' + diffIcon + ' ' + (entry.actorColor === 'red' ? '🔴' : '⚫') + ' ' + entry.text + (entry.power ? ` [Power: ${powerTypes[entry.power].icon}]` : '') + (entry.isolationLoss ? ` [${otherIcons.isolation.icon}]` : '');
+        }).join('\n');
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast(translations[currentLang].log_copied);
+        });
+    }
+
+    function updateStatus(msgOverride = null) {
+        const statusEl = document.getElementById('status-text');
+        if (gameState.gameOver) {
+            if (gameState.winner === 'draw') {
+                statusEl.innerText = translations[currentLang].draw;
+            } else {
+                statusEl.innerText = gameState.winner === 'red' ? translations[currentLang].win_human : translations[currentLang].win_ai;
+            }
+            return;
+        }
+        if (msgOverride) { statusEl.innerText = msgOverride; return; }
+        statusEl.innerText = gameState.turn === 'red' ? translations[currentLang].turn_human : translations[currentLang].turn_ai;
+    }
+
+    // OPRAVA LOGIKY: Zahrnuje jakékoliv kameny dané barvy, ne pouze ty vrchní ve stohu
+    function getWinningTargetRow(playerColor, state) {
+        const opponentColor = playerColor === 'red' ? 'black' : 'red';
+        let targetRow = playerColor === 'red' ? 0 : 4; 
+        
+        let found = false;
+        if (playerColor === 'red') {
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = state.board[r][c];
+                    // Změna: Zkoumá, zda je ve stohu JAKÝKOLIV kámen dané barvy
+                    if (cell.exists && cell.stack.includes(opponentColor)) {
+                        targetRow = r - 1; found = true; break;
+                    }
+                }
+                if(found) break;
+            }
+        } else {
+            for (let r = 4; r >= 0; r--) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = state.board[r][c];
+                    if (cell.exists && cell.stack.includes(opponentColor)) {
+                        targetRow = r + 1; found = true; break;
+                    }
+                }
+                if(found) break;
+            }
+        }
+        return targetRow;
+    }
+
+    function getValidMovesForCell(r, c, state, activePower) {
+        const moves = [];
+        const cell = state.board[r][c];
+        if (!cell.exists || cell.stack.length === 0) return moves;
+        
+        const topColor = cell.stack[cell.stack.length - 1];
+        if (topColor !== state.turn) return moves;
+        
+        if (state.bonusTurnPos && (state.bonusTurnPos.r !== r || state.bonusTurnPos.c !== c)) return moves;
+
+        const targetRow = getWinningTargetRow(state.turn, state);
+        const isRed = state.turn === 'red';
+        const dirs = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+
+        for (const [dr, dc] of dirs) {
+            const nr = r + dr, nc = c + dc;
+            let isWin = false;
+            
+            if (isRed && nr <= targetRow) isWin = true;
+            if (!isRed && nr >= targetRow) isWin = true;
+
+            const outOfBounds = nr < 0 || nr > 4 || nc < 0 || nc > 4;
+
+            if (isWin && (nr < 0 || nr > 4) && nc >= 0 && nc < 5) {
+                 moves.push({r, c, tr: nr, tc: nc, win: true, power: activePower});
+                 continue;
+            }
+
+            if (!outOfBounds) {
+                const tCell = state.board[nr][nc];
+                const maxStack = activePower === 'stack' ? 4 : 3;
+                
+                if (tCell.exists && tCell.stack.length < maxStack) {
+                    moves.push({r, c, tr: nr, tc: nc, win: false, power: activePower});
+                } else if (!tCell.exists) {
+                    if (activePower === 'restore') {
+                        moves.push({r, c, tr: nr, tc: nc, win: false, power: activePower, isRestore: true});
+                    } else if (activePower === 'jump') {
+                        const jnr = nr + dr, jnc = nc + dc;
+                        let jWin = false;
+                        if (isRed && jnr <= targetRow) jWin = true;
+                        if (!isRed && jnr >= targetRow) jWin = true;
+
+                        if (jWin && (jnr < 0 || jnr > 4) && jnc >= 0 && jnc < 5) {
+                            moves.push({r, c, tr: jnr, tc: jnc, win: true, power: activePower});
+                        } else if (jnr >= 0 && jnr < 5 && jnc >= 0 && jnc < 5) {
+                            if (state.board[jnr][jnc].exists && state.board[jnr][jnc].stack.length < 3) {
+                                moves.push({r, c, tr: jnr, tc: jnc, win: false, power: activePower});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return moves;
+    }
+
+    function getAllValidMoves(state) {
+        let moves = [];
+        let powersToTest = [null];
+        
+        if (advancedMode && !state.bonusTurnPos) {
+            const availablePowers = state.turn === 'red' ? state.redPowers : state.blackPowers;
+            const usedList = state.turn === 'red' ? state.usedPowers.red : state.usedPowers.black;
+            availablePowers.forEach(p => {
+                if (!usedList.includes(p)) powersToTest.push(p);
+            });
+        }
+
+        for (let power of powersToTest) {
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    moves = moves.concat(getValidMovesForCell(r, c, state, power));
+                }
+            }
+        }
+        return moves;
+    }
+
+    function isIsolated(r, c, board) {
+        const dirs = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+        for (const [dr, dc] of dirs) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+                if (board[nr][nc].exists) return false;
+            }
+        }
+        return true;
+    }
+
+    function applyMove(state, move) {
+        const newState = JSON.parse(JSON.stringify(state)); 
+        const {r, c, tr, tc, win, power, isRestore} = move;
+        const movingPlayer = state.turn;
+        
+        if (power) {
+            if (movingPlayer === 'red') newState.usedPowers.red.push(power);
+            else newState.usedPowers.black.push(power);
+            newState.lastPowerUsed = { r: tr, c: tc, power: power }; 
+        } else {
+            newState.lastPowerUsed = null;
+        }
+        
+        newState.activePower = null;
+
+        let movedStack = [];
+        if (power === 'carry') {
+            movedStack = newState.board[r][c].stack.slice();
+            newState.board[r][c].stack = [];
+        } else {
+            movedStack = [newState.board[r][c].stack.pop()];
+        }
+        
+        if (isRestore && tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
+            newState.board[tr][tc].exists = true;
+        }
+
+        if (tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
+            newState.board[tr][tc].stack.push(...movedStack);
+        }
+
+        if (newState.board[r][c].stack.length === 0 && power !== 'keep') {
+            newState.board[r][c].exists = false;
+        }
+
+        let isolationOccurred = true;
+        let pieceLostToIsolation = false;
+        while(isolationOccurred) {
+            isolationOccurred = false;
+            let toRemove = [];
+            for (let ir = 0; ir < 5; ir++) {
+                for (let ic = 0; ic < 5; ic++) {
+                    if (newState.board[ir][ic].exists && isIsolated(ir, ic, newState.board)) {
+                        toRemove.push({ir, ic});
+                    }
+                }
+            }
+            if (toRemove.length > 0) {
+                for(const rm of toRemove) {
+                    if (newState.board[rm.ir][rm.ic].stack.length > 0) pieceLostToIsolation = true;
+                    newState.board[rm.ir][rm.ic].exists = false;
+                    newState.board[rm.ir][rm.ic].stack = [];
+                }
+                isolationOccurred = true;
+            }
+        }
+
+        const cols = ['A','B','C','D','E'];
+        const fromStr = `${cols[c]}${5-r}`;
+        const isExit = win && (tr < 0 || tr > 4);
+        const toStr = isExit ? 'Exit' : `${cols[tc]}${5-tr}`;
+        let moveText = `${fromStr}:${toStr}`;
+        if (!isExit) {
+            const destStackSize = newState.board[tr][tc].stack.length;
+            if (destStackSize > 1) moveText += ` [${destStackSize}]`;
+        }
+        
+        const turnNumberStr = String(state.log.filter(e => !e.isEnd).length + 1).padStart(3, '0') + '.';
+        
+        newState.log.push({
+            actorColor: movingPlayer,
+            text: moveText,
+            power: power,
+            isolationLoss: pieceLostToIsolation,
+            difficulty: diffIndex,
+            turnNumber: turnNumberStr
+        });
+
+        if (power === 'double' && !win) {
+            newState.bonusTurnPos = {r: tr, c: tc};
+        } else {
+            newState.bonusTurnPos = null;
+            newState.turn = movingPlayer === 'red' ? 'black' : 'red';
+        }
+
+        let nextMoves = getAllValidMoves(newState);
+
+        if (newState.bonusTurnPos !== null && nextMoves.length === 0) {
+            newState.bonusTurnPos = null;
+            newState.turn = movingPlayer === 'red' ? 'black' : 'red';
+            nextMoves = getAllValidMoves(newState); 
+        }
+
+        const stateStr = getBoardStateString(newState);
+        newState.history = [...(state.history || []), stateStr];
+        const stateCount = newState.history.filter(s => s === stateStr).length;
+
+        let winReason = null;
+        if (win) winReason = 'pass';
+        else if (nextMoves.length === 0) winReason = 'blocked';
+        else if (stateCount >= 3) winReason = 'draw';
+
+        if (winReason) {
+            newState.gameOver = true;
+            if (winReason === 'draw') {
+                newState.winner = 'draw';
+                newState.log.push({
+                    isEnd: true,
+                    text: translations[currentLang].game_over_draw
+                });
+            } else {
+                newState.winner = movingPlayer; 
+                newState.winReason = winReason;
+                newState.winPos = {r: tr, c: tc};
+                
+                const winnerStr = movingPlayer === 'red' ? translations[currentLang].player : translations[currentLang].ai;
+                const reasonStr = winReason === 'pass' ? translations[currentLang].reason_pass : translations[currentLang].reason_blocked;
+                
+                newState.log.push({
+                    isEnd: true,
+                    text: `${translations[currentLang].game_over_prefix} ${winnerStr} - ${reasonStr}`
+                });
+            }
+        }
+
+        return newState;
+    }
+
+    function tileClick(r, c) {
+        if (gameState.gameOver || gameState.turn !== 'red') return;
+
+        if (r < 0 || r > 4) {
+            const mv = validMovesCache.find(m => m.tr === r && m.tc === c);
+            if (mv) executePlayerMove(mv);
+            return;
+        }
+
+        const cell = gameState.board[r][c];
+        
+        if (selectedCell && validMovesCache.some(m => m.tr === r && m.tc === c)) {
+            const move = validMovesCache.find(m => m.tr === r && m.tc === c);
+            executePlayerMove(move);
+            return;
+        }
+
+        if (cell.exists && cell.stack.length > 0 && cell.stack[cell.stack.length - 1] === gameState.turn) {
+            if (gameState.bonusTurnPos && (gameState.bonusTurnPos.r !== r || gameState.bonusTurnPos.c !== c)) return;
+            
+            if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                selectedCell = null; validMovesCache = [];
+            } else {
+                selectedCell = {r, c};
+                validMovesCache = getValidMovesForCell(r, c, gameState, gameState.activePower);
+            }
+            render();
+        } else if (!cell.exists && gameState.activePower === 'restore' && selectedCell) {
+            const mv = validMovesCache.find(m => m.tr === r && m.tc === c && m.isRestore);
+            if (mv) executePlayerMove(mv);
+        }
+    }
+
+    function executePlayerMove(move) {
+        gameState = applyMove(gameState, move);
+        selectedCell = null;
+        validMovesCache = [];
+        render(); updateUI();
+        if(!gameState.gameOver && gameState.turn === 'black') setTimeout(aiMove, 100);
+    }
+
+    function render() {
+        const boardEl = document.getElementById('board');
+        const offTop = document.getElementById('off-board-top');
+        const offBottom = document.getElementById('off-board-bottom');
+        boardEl.innerHTML = ''; offTop.innerHTML = ''; offBottom.innerHTML = '';
+
+        for(let i=0; i<5; i++) {
+            offTop.appendChild(createVirtualTile(-1, i));
+            offBottom.appendChild(createVirtualTile(5, i));
+        }
+
+        const cols = ['A','B','C','D','E'];
+
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                const cell = gameState.board[r][c];
+                const wrapper = document.createElement('div');
+                wrapper.className = 'tile-wrapper';
+
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile' + (!cell.exists ? ' hidden' : '');
+                
+                if (validMovesCache.some(m => m.tr === r && m.tc === c)) {
+                    tileEl.classList.add('valid-move');
+                    if(!cell.exists && gameState.activePower === 'restore') {
+                        tileEl.classList.remove('hidden');
+                        tileEl.style.opacity = '0.5';
+                    }
+                }
+
+                tileEl.onclick = () => tileClick(r, c);
+                
+                let powerToDisplay = null;
+
+                if (cell.exists) {
+                    const coordEl = document.createElement('div');
+                    coordEl.className = 'coord';
+                    coordEl.innerText = `${cols[c]}${5-r}`;
+                    tileEl.appendChild(coordEl);
+                }
+
+                cell.stack.forEach((discColor, idx) => {
+                    const discEl = document.createElement('div');
+                    discEl.className = `disc ${discColor}`;
+                    discEl.style.transform = `translate(${idx * 4}px, ${idx * -4}px)`;
+                    discEl.style.zIndex = idx + 1;
+                    
+                    let innerContent = "";
+                    
+                    if (idx === cell.stack.length - 1) {
+                        if (cell.stack.length > 1) {
+                            innerContent += cell.stack.length;
+                        }
+                        if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                            discEl.classList.add('selected');
+                            if (gameState.activePower) {
+                                innerContent += (innerContent ? " " : "") + powerTypes[gameState.activePower].icon;
+                                powerToDisplay = gameState.activePower;
+                            }
+                        } else if (gameState.lastPowerUsed && gameState.lastPowerUsed.r === r && gameState.lastPowerUsed.c === c) {
+                            innerContent += (innerContent ? " " : "") + powerTypes[gameState.lastPowerUsed.power].icon;
+                            powerToDisplay = gameState.lastPowerUsed.power;
+                        }
+                    }
+                    
+                    discEl.innerHTML = innerContent
+			    .replace(/^(\d+)/, '<span class="disc-count">$1</span>')
+			    .replace(/([^\d\s].*)$/, '<span class="disc-power">$1</span>');
+                    
+                    if (gameState.gameOver) {
+                        if (gameState.winner !== 'draw') {
+                            if (gameState.winReason === 'pass' && r === gameState.winPos.r && c === gameState.winPos.c && idx === cell.stack.length - 1) {
+                                discEl.classList.add('highlight-win');
+                            }
+                            if (gameState.winReason === 'blocked' && discColor !== gameState.winner) {
+                                discEl.classList.add('highlight-blocked');
+                            }
+                        }
+                    }
+                    tileEl.appendChild(discEl);
+                });
+
+                if (powerToDisplay) {
+                    tileEl.setAttribute('data-power', powerToDisplay);
+                }
+
+                wrapper.appendChild(tileEl);
+                boardEl.appendChild(wrapper);
+            }
+        }
+    }
+
+    function createVirtualTile(r, c) {
+        const div = document.createElement('div');
+        div.className = 'tile hidden';
+        if (validMovesCache.some(m => m.tr === r && m.tc === c)) {
+            div.className = 'tile valid-move';
+            div.style.pointerEvents = 'auto';
+            div.onclick = () => tileClick(r, c);
+        }
+        if (gameState.gameOver && gameState.winner !== 'draw' && gameState.winReason === 'pass' && gameState.winPos && gameState.winPos.r === r && gameState.winPos.c === c) {
+            div.className = 'tile'; 
+            div.style.background = 'transparent'; div.style.boxShadow = 'none';
+            const discEl = document.createElement('div');
+            discEl.className = `disc ${gameState.winner} highlight-win`;
+            
+            if(gameState.lastPowerUsed && gameState.lastPowerUsed.r === r && gameState.lastPowerUsed.c === c) {
+                discEl.innerText = powerTypes[gameState.lastPowerUsed.power].icon;
+                div.setAttribute('data-power', gameState.lastPowerUsed.power);
+            }
+            div.appendChild(discEl);
+        }
+        return div;
+    }
+
+    function evaluateBoard(state, aiColor) {
+        if (state.gameOver) {
+            if (state.winner === 'draw') return -1000;
+            return state.winner === aiColor ? 10000 : -10000;
+        }
+
+        let score = 0;
+        let aiTop = 0, oppTop = 0;
+        let aiPieces = 0, oppPieces = 0;
+        let aiAdvance = 0, oppAdvance = 0;
+
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                const cell = state.board[r][c];
+                if (cell.exists && cell.stack.length > 0) {
+                    const topColor = cell.stack[cell.stack.length - 1];
+                    const advancement = topColor === 'black' ? r : (4 - r);
+                    
+                    if (topColor === aiColor) {
+                        aiTop++;
+                        aiAdvance = Math.max(aiAdvance, advancement);
+                    } else {
+                        oppTop++;
+                        oppAdvance = Math.max(oppAdvance, advancement);
+                    }
+
+                    for (let p of cell.stack) {
+                        if (p === aiColor) aiPieces++;
+                        else oppPieces++;
+                    }
+                }
+            }
+        }
+
+        score += (aiTop * 150) - (oppTop * 150);
+        score += (aiPieces * 20) - (oppPieces * 20);
+        score += (aiAdvance * 40) - (oppAdvance * 40);
+
+        return score;
+    }
+
+    function minimax(state, depth, alpha, beta, aiColor) {
+        if (depth === 0 || state.gameOver) return evaluateBoard(state, aiColor);
+
+        const moves = getAllValidMoves(state);
+        const isMax = state.turn === aiColor;
+        
+        if (isMax) {
+            let maxEval = -Infinity;
+            for (let move of moves) {
+                const ev = minimax(applyMove(state, move), depth - 1, alpha, beta, aiColor);
+                maxEval = Math.max(maxEval, ev);
+                alpha = Math.max(alpha, ev);
+                if (beta <= alpha) break;
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            for (let move of moves) {
+                const ev = minimax(applyMove(state, move), depth - 1, alpha, beta, aiColor);
+                minEval = Math.min(minEval, ev);
+                beta = Math.min(beta, ev);
+                if (beta <= alpha) break;
+            }
+            return minEval;
+        }
+    }
+
+    function countExistingTiles(state) {
+        let count = 0;
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                if (state.board[r][c].exists) count++;
+            }
+        }
+        return count;
+    }
+
+    // Na začátku hry (plná/skoro plná deska) je větvící faktor obrovský,
+    // zvlášť v rozšířeném režimu se žetony (každý tah se testuje i s každou
+    // ještě nepoužitou schopností). Proto hloubku hledání snížíme, dokud
+    // je na desce hodně dlaždic, a necháme ji růst, jak se deska zmenšuje
+    // (dlaždice mizí izolací), kdy je prohledávání levnější.
+    function getAdaptiveDepth(state, baseDepth) {
+        const tiles = countExistingTiles(state);
+        const powersActive = advancedMode && !state.bonusTurnPos;
+        const bigBranching = powersActive ? 14 : 18;
+        const midBranching = powersActive ? 10 : 14;
+
+        if (tiles >= bigBranching) return Math.max(2, baseDepth - 2);
+        if (tiles >= midBranching) return Math.max(2, baseDepth - 1);
+        return baseDepth;
+    }
+
+    function aiMove() {
+        if (gameState.gameOver || gameState.turn !== 'black') return;
+        updateStatus(translations[currentLang].ai_thinking);
+        
+        setTimeout(() => {
+            const baseDepth = difficultyLevels[diffIndex];
+            const depth = getAdaptiveDepth(gameState, baseDepth);
+            const moves = getAllValidMoves(gameState);
+            if (moves.length === 0) return;
+
+            let bestMove = null;
+            let bestValue = -Infinity;
+
+            for (let move of moves) {
+                const nextState = applyMove(gameState, move);
+                const moveValue = minimax(nextState, depth - 1, -Infinity, Infinity, 'black');
+                
+                if (moveValue > bestValue || (moveValue === bestValue && Math.random() > 0.5)) {
+                    bestValue = moveValue;
+                    bestMove = move;
+                }
+            }
+
+            if (bestMove) {
+                gameState = applyMove(gameState, bestMove);
+                render(); updateUI();
+                if (!gameState.gameOver && gameState.turn === 'black') {
+                     setTimeout(aiMove, 400);
+                }
+            }
+        }, 100);
+    }
+
+    updateUI();
+    startGame();
+</script>
+</body>
+</html>
