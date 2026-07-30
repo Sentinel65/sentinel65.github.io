@@ -157,6 +157,12 @@ body{
   cursor:pointer;
 }
 
+.cell.origin {
+  background: rgba(64, 224, 208, 0.14);
+  border: 2px dashed #40e0d0; /* Tyrkysová barva */
+  pointer-events: none; /* Nesmí blokovat klikání myší na desku */
+}
+
 @keyframes pulse{
   0%,100%{opacity:.55}
   50%{opacity:1}
@@ -190,13 +196,9 @@ body{
 }
 
 /* ---------- Vybraná dlaždice ---------- */
-.tile.selected::after{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid var(--accent);
-  pointer-events:none;
+.tile.selected svg > rect:first-of-type {
+  fill: #fff59d !important; /* Světle žluté pozadí dlaždice */
+  transition: fill 0.2s ease;
 }
 
 /* ---------- Animace položení ---------- */
@@ -363,22 +365,6 @@ body{
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
 
-/* ---------- Floating action bar ---------- */
-.fab{
-  position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom,0)); transform:translateX(-50%);
-  display:none; gap:8px; background:var(--ink); padding:8px; border-radius:16px;
-  box-shadow:var(--shadow); z-index:25; align-items:center;
-}
-.fab.show{ display:flex; }
-.fab.above-tray{ bottom:calc(98px + env(safe-area-inset-bottom,0)); }
-.fab button{
-  width:42px; height:42px; border-radius:11px; border:none; background:#ffffff14; color:var(--paper);
-  display:flex; align-items:center; justify-content:center; cursor:pointer;
-}
-.fab button:active{ background:#ffffff2a; }
-.fab button svg{ width:20px; height:20px; }
-.fab .preview{ width:42px; height:42px; }
-
 /* ---------- Modals ---------- */
 .overlay{
   position:fixed; inset:0; background:rgba(30,22,12,.5);
@@ -498,10 +484,6 @@ body{
 
   <div class="boardscroll" id="boardscroll">
     <div class="board" id="board"></div>
-    <div class="fab" id="fab">
-      <div class="preview" id="fabPreview"></div>
-      <button id="fabCancel"></button>
-    </div>
   </div>
 
   <div class="tray-wrap" id="trayWrap">
@@ -823,7 +805,7 @@ cs:{
     <p>Omezení pro pohyb: Přesouvaná dlaždice musí mít před pohybem volnou alespoň jednu stranu a jejím odebráním nesmí dojít k rozdělení hrací plochy na dvě samostatné, nespojené části.</p>
     
     <h3>Grafická nápověda</h3>
-    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována světle modře.</p>
+    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována světle modře. Poslední položená dlaždice je označena modrým kolečkem uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale tyrkysovou barvou. Vybraná dlaždice pro přesun na jiné pole je znázorněna světle žlutým pozadím dlaždice.</p>
 
     <h3>Režim: Turnaj (bez přesunů)</h3>
     <p>Hraje se zcela bez fáze pohybu (kameny se po položení nikdy nepřesouvají). Hráči střídavě pokládají své dlaždice na hrací desku do vyčerpání. Hra končí přesně ve chvíli, kdy oba hráči umístí všech svých 20 dlaždic (celkem 40 dlaždic na hrací desce). Poté se spočítají body: za každou svoji dlaždici, jejíž vítězný vzor byl úspěšně dokončen, získá hráč 1 bod. Vítězí hráč s více body, v případě shody končí hra remízou.</p>
@@ -889,7 +871,7 @@ en:{
     <p>Movement restrictions: The moved tile must have at least one free edge before moving, and removing it must not split the board into two separate, disconnected parts.</p>
     
     <h3>Graphical aid</h3>
-    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in light blue.</p>
+    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in light blue. The last placed tile is marked with a blue circle in the center of the tile, the square from which the last move was made is marked like a hint square but in turquoise color. The selected tile to be moved to another square is indicated by a light yellow background of the tile.</p>
 
     <h3>Mode: Tournament (no move)</h3>
     <p>Played entirely without the movement phase (tiles are never moved after placement). Players take turns placing their tiles until exhausted. The game ends exactly when both players have placed all 20 of their tiles (40 tiles on the board). Then, points are counted: for each of their tiles whose winning pattern is successfully completed, the player scores 1 point. The player with the most points wins; in case of a tie, the game ends in a draw.</p>
@@ -1042,6 +1024,7 @@ function newGame(){
     winner: null, winningTileKey: null, winPatternKeys: null,
     pointsW: 0, pointsB: 0,
     lastMove: null,
+    lastMoveOrigin: null,
     log: [],
     turnCounter: 0,
     ended:false,
@@ -1096,7 +1079,7 @@ function serializeState(){
     board: [...ST.board.entries()], pool: { w:[...ST.pool.w], b:[...ST.pool.b] },
     phase: ST.phase, turn: ST.turn, humanColor: ST.humanColor, aiColor: ST.aiColor,
     winner: ST.winner, winningTileKey: ST.winningTileKey, winPatternKeys: ST.winPatternKeys, log: ST.log,
-    pointsW: ST.pointsW, pointsB: ST.pointsB, lastMove: ST.lastMove,
+    pointsW: ST.pointsW, pointsB: ST.pointsB, lastMove: ST.lastMove, lastMoveOrigin: ST.lastMoveOrigin,
     turnCounter: ST.turnCounter, ended: ST.ended,
     difficulty: DIFFICULTY, lang: LANG, mode: GAME_MODE, zoom: UI.zoom,
   });
@@ -1107,7 +1090,7 @@ function deserializeState(json){
     board: new Map(d.board), pool: { w:new Set(d.pool.w), b:new Set(d.pool.b) },
     phase: d.phase, turn: d.turn, humanColor: d.humanColor, aiColor: d.aiColor,
     winner: d.winner, winningTileKey: d.winningTileKey, winPatternKeys: d.winPatternKeys||null, log: d.log||[],
-    pointsW: d.pointsW||0, pointsB: d.pointsB||0, lastMove: d.lastMove||null,
+    pointsW: d.pointsW||0, pointsB: d.pointsB||0, lastMove: d.lastMove||null, lastMoveOrigin: d.lastMoveOrigin||null,
     turnCounter: d.turnCounter||0, ended: !!d.ended,
   };
   UI.selection = null; UI.movementPlies = 0;
@@ -1136,12 +1119,14 @@ function performAction(color, action){
     ST.board.set(key(action.x,action.y), {color, pattern:action.pattern, rot:action.rot});
     ST.pool[color].delete(action.pattern);
     ST.lastMove = {x:action.x, y:action.y};
+    ST.lastMoveOrigin = null;
     addLog({type:'place', color, pattern:action.pattern, rot:action.rot, x:action.x, y:action.y});
   } else {
     const k = key(action.fromX, action.fromY); const tile = ST.board.get(k);
     ST.board.delete(k);
     ST.board.set(key(action.toX,action.toY), {color, pattern:tile.pattern, rot:action.rot});
     ST.lastMove = {x:action.toX, y:action.toY};
+    ST.lastMoveOrigin = {x:action.fromX, y:action.fromY};
     addLog({type:'move', color, pattern:tile.pattern, rot:action.rot, fromX:action.fromX, fromY:action.fromY, toX:action.toX, toY:action.toY});
   }
   ST.phase = computePhase(ST.pool);
@@ -1340,6 +1325,19 @@ function render(center = false){
     }
   }
 
+  if (GAME_MODE === 'classic' && ST.phase === 'movement' && ST.lastMoveOrigin) {
+    const ox = ST.lastMoveOrigin.x;
+    const oy = ST.lastMoveOrigin.y;
+    const d = document.createElement('div');
+    d.className = 'cell origin';
+    d.style.left = (padX + (ox - minX) * cell) + 'px';
+    d.style.top = (padY + (oy - minY) * cell) + 'px';
+    d.style.margin = '3px'; 
+    d.style.width = (cell - 6) + 'px'; 
+    d.style.height = (cell - 6) + 'px';
+    boardEl.appendChild(d);
+  }
+
   const discs = (GAME_MODE === 'classic' || GAME_MODE === 'tournament')
   ? computeRedDiscs(ST.board)
   : new Set();
@@ -1468,16 +1466,6 @@ function render(center = false){
       div.addEventListener('click', ()=>onTrayTap(pat));
       tray.appendChild(div);
     }
-    
-  }
-
-  // Fab
-  const fab = document.getElementById('fab');
-  if(!UI.selection || UI.selection.mode!=='move') fab.classList.remove('show');
-  else {
-    fab.classList.add('show'); fab.classList.toggle('above-tray', showTray);
-    const tile = ST.board.get(key(UI.selection.fromX,UI.selection.fromY));
-    document.getElementById('fabPreview').innerHTML = tileFaceSVG(tile.pattern, UI.selection.rot, ST.humanColor, 42);
   }
   
   // Vycentruje zobrazení podle aktivního cíle pouze když je to vyžádáno (center=true)
@@ -1511,7 +1499,6 @@ function onDestinationTap(x,y){
   if(UI.selection.mode==='place') performAction(ST.humanColor, {type:'place', pattern:UI.selection.pattern, rot:UI.selection.rot, x, y});
   else performAction(ST.humanColor, {type:'move', fromX:UI.selection.fromX, fromY:UI.selection.fromY, rot:UI.selection.rot, toX:x, toY:y});
 }
-document.getElementById('fabCancel').addEventListener('click', ()=>{ UI.selection = null; safeRender(false); });
 
 function setZoom(z){ UI.zoom = Math.max(0.55, Math.min(2.0, z)); safeRender(false); }
 document.getElementById('btnZoomIn').addEventListener('click', ()=>setZoom(UI.zoom+0.15));
@@ -1682,7 +1669,6 @@ function setupIcons() {
   document.getElementById('btnHelp').innerHTML = icon('help');
   document.getElementById('btnZoomIn').innerHTML = icon('zoomin');
   document.getElementById('btnZoomOut').innerHTML = icon('zoomout');
-  document.getElementById('fabCancel').innerHTML = icon('close');
   document.querySelectorAll('.closebtn[data-close]').forEach(b=>{ if(!b.innerHTML) b.innerHTML = icon('close'); });
   document.getElementById('btnCopyLog').innerHTML = icon('copy');
 }
