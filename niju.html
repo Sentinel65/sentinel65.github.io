@@ -179,13 +179,13 @@ body{
   cursor:pointer;
 }
 
-.tile.movable::after{
+/* ---------- Nepohyblivá dlaždice (rozděluje desku) ---------- */
+.tile.unmovable-split::after{
   content:'';
   position:absolute;
   inset:2px;
   border-radius:0;
-  border:2px solid var(--accent-soft);
-  opacity:.7;
+  border:3px solid lightblue;
   pointer-events:none;
 }
 
@@ -583,7 +583,7 @@ function rotateOffset(o, steps){
   for(let i=0;i<n;i++){ const ndx=-dy, ndy=dx; dx=ndx; dy=ndy; }
   return {dx,dy};
 }
-function key(x,y){ return x+','+y; }
+function key(x,y){ return x + ',' + y; }
 function parseKey(k){ const i=k.indexOf(','); return {x:+k.slice(0,i), y:+k.slice(i+1)}; }
 function neighbors4(x,y){ return [{x:x-1,y:y},{x:x+1,y:y},{x:x,y:y-1},{x:x,y:y+1}]; }
 function other(c){ return c==='w'?'b':'w'; }
@@ -822,14 +822,36 @@ cs:{
     <p>Ve svém tahu hráč přesune jednu svoji již umístěnou dlaždici z hrací plochy na jiné platné místo (tak, aby opět sousedila s jinou dlaždicí).</p>
     <p>Omezení pro pohyb: Přesouvaná dlaždice musí mít před pohybem volnou alespoň jednu stranu a jejím odebráním nesmí dojít k rozdělení hrací plochy na dvě samostatné, nespojené části.</p>
     
-    <h3>Pomůcka — červený okraj</h3>
-    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže zvítězit — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune).</p>
+    <h3>Grafická nápověda</h3>
+    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována světle modře.</p>
 
     <h3>Režim: Turnaj (bez přesunů)</h3>
-    <p>Hraje se zcela bez fáze pohybu (kameny se po položení nikdy nepřesouvají). Hráči střídavě pokládají své dílky na stůl do vyčerpání. Hra končí přesně ve chvíli, kdy oba hráči umístí všech svých 20 dílků (40 dílků na stole). Poté se spočítají body: za každý svůj dílek, jehož vítězný vzor byl úspěšně dokončen, získá hráč 1 bod. Vítězí hráč s více body, v případě shody končí hra remízou.</p>
+    <p>Hraje se zcela bez fáze pohybu (kameny se po položení nikdy nepřesouvají). Hráči střídavě pokládají své dlaždice na hrací desku do vyčerpání. Hra končí přesně ve chvíli, kdy oba hráči umístí všech svých 20 dlaždic (celkem 40 dlaždic na hrací desce). Poté se spočítají body: za každou svoji dlaždici, jejíž vítězný vzor byl úspěšně dokončen, získá hráč 1 bod. Vítězí hráč s více body, v případě shody končí hra remízou.</p>
 
     <h3>Režim: Sólo</h3>
     <p>Hráč hraje pouze se svými bílými dlaždicemi a snaží se je postupně všechny uspořádat tak, aby počet úspěšně dokončených vzorů (získaných bodů) byl na konci hry co nejvyšší.</p>
+
+    <h3>🗺️ Strategie zahájení hry (Opening)</h3>
+    <p>Cílem úvodní fáze je připravit si flexibilní strukturu pro střední část hry.</p>
+    <ul>
+      <li><b>Flexibilní umístění prvních dílků:</b> Na začátku nepokládejte dlaždice, které mají příliš specifické nebo rigidní požadavky na sousedství. Volte ty s univerzálnějšími možnostmi napojení.</li>
+      <li><b>Tvorba otevřeného prostoru:</b> První dlaždice pokládejte tak, abyste si kolem nich nechali dostatek volného místa na doplňování vzorů. Pokud se hned na začátku necháte zahnat k okraji nebo do sevření soupeře, ztratíte taktickou svobodu.</li>
+      <li><b>Analýza soupeřových dlaždic:</b> Pozorně sledujte, jaké dlaždice si soupeř v úvodu připravuje. Pokud odhalíte jeho rodící se záměr, můžete hned od prvních tahů přizpůsobit své pokládání tak, aby mu stálo v cestě.</li>
+    </ul>
+
+    <h3>⚔️ Taktické tipy pro průběh hry (Midgame)</h3>
+    <p>Ve střední fázi hry se rozhoduje o vítězi. Zde musíte skloubit útok s obranou.</p>
+    <ul>
+      <li><b>Strategie dvojí hrozby (Forking):</b> Nejefektivnější taktika. Snažte se pokládat dílky tak, aby jeden váš tah posunul k dokončení hned dva různé vzory. Soupeř obvykle dokáže zablokovat pouze jedno místo, čímž vám druhé zůstane volné.</li>
+      <li><b>Aktivní obrana a blokování:</b> Jakmile uvidíte, že soupeři chybí k dokončení jeho vzoru (obklíčení konkrétní dlaždice) poslední jeden či dva dílky, musíte okamžitě zasáhnout. Obsaďte kritické pole vlastní dlaždicí, která se soupeři nehodí do konceptu.</li>
+      <li><b>Využívání rotace dílků:</b> Jelikož hra Ni-Ju obsahuje desítky různých kombinací i díky rotacím dílků, vždy před položením zkontrolujte všechny orientace dlaždice. Správné otočení může odemknout nečekanou pozici, která pasuje do vašeho schématu.</li>
+      <li><b>Vynucování tahů (Tempo):</b> Pokládejte dílky tak, aby na ně soupeř musel reagovat defenzivně. Tím mu seberete iniciativu a donutíte ho plýtvat tahy na hašení vašich hrozeb namísto stavby jeho vlastního vítězného vzoru.</li>
+    </ul>
+
+    <h3>🏁 Koncovka hry (Endgame)</h3>
+    <ul>
+      <li><b>Počítání zbývajících zdrojů:</b> V závěru hry mějte přesný přehled o tom, jaké dlaždice vám i soupeři zbývají. Pokud víte, že soupeř již vyčerpal konkrétní typ vzoru, nemusíte se daného směru obávat a můžete se plně soustředit na svůj finální útok.</li>
+    </ul>
   `
 },
 en:{
@@ -866,14 +888,36 @@ en:{
     <p>On their turn, a player moves one of their already placed tiles from the board to another valid location (so that it again borders another tile).</p>
     <p>Movement restrictions: The moved tile must have at least one free edge before moving, and removing it must not split the board into two separate, disconnected parts.</p>
     
-    <h3>Player aid — red edge</h3>
-    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot win — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away).</p>
+    <h3>Graphical aid</h3>
+    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in light blue.</p>
 
     <h3>Mode: Tournament (no move)</h3>
     <p>Played entirely without the movement phase (tiles are never moved after placement). Players take turns placing their tiles until exhausted. The game ends exactly when both players have placed all 20 of their tiles (40 tiles on the board). Then, points are counted: for each of their tiles whose winning pattern is successfully completed, the player scores 1 point. The player with the most points wins; in case of a tie, the game ends in a draw.</p>
 
     <h3>Mode: Solo</h3>
     <p>The player plays only with their white tiles and tries to arrange them all so that the number of successfully completed patterns (scored points) at the end of the game is as high as possible.</p>
+
+    <h3>🗺️ Opening Strategy</h3>
+    <p>The goal of the opening phase is to prepare a flexible structure for the midgame.</p>
+    <ul>
+      <li><b>Flexible placement of first tiles:</b> At the beginning, avoid placing tiles that have overly specific or rigid neighborhood requirements. Choose those with more universal connection options.</li>
+      <li><b>Creating open space:</b> Place your first tiles to leave enough free space around them to complete patterns. If you let yourself be pushed to the edge or trapped by your opponent early on, you will lose tactical freedom.</li>
+      <li><b>Analyzing opponent's tiles:</b> Carefully observe which tiles your opponent is preparing in the opening. If you uncover their emerging intent, you can adapt your placement from the very first turns to stand in their way.</li>
+    </ul>
+
+    <h3>⚔️ Midgame Tactical Tips</h3>
+    <p>The midgame is where the winner is decided. Here you must combine attack with defense.</p>
+    <ul>
+      <li><b>Forking strategy:</b> The most effective tactic. Try to place tiles so that one move advances the completion of two different patterns at once. The opponent can usually only block one spot, leaving the other free for you.</li>
+      <li><b>Active defense and blocking:</b> As soon as you see your opponent is only one or two tiles away from completing their pattern (surrounding a specific tile), you must intervene immediately. Occupy the critical space with a tile of your own that disrupts the opponent's concept.</li>
+      <li><b>Utilizing tile rotation:</b> Since Ni-Ju contains dozens of different combinations thanks to tile rotations, always check all tile orientations before placing. The correct rotation can unlock an unexpected position that fits into your scheme.</li>
+      <li><b>Forcing moves (Tempo):</b> Place tiles so your opponent has to react defensively. This takes away their initiative and forces them to waste turns putting out your fires instead of building their own winning pattern.</li>
+    </ul>
+
+    <h3>🏁 Endgame</h3>
+    <ul>
+      <li><b>Counting remaining resources:</b> In the endgame, keep track of exactly what tiles you and your opponent have left. If you know the opponent has exhausted a specific type of pattern, you no longer need to worry about that direction and can fully focus on your final attack.</li>
+    </ul>
   `
 }
 };
@@ -1003,8 +1047,11 @@ function newGame(){
     ended:false,
   };
   
-  let startText = GAME_MODE === 'solo' ? t('log_sys_start_solo') : (t('log_sys_start') + `<span style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-top:-2px;">${icon(DIFF_ICON[DIFFICULTY])}</span>`);
-  addLog({type: 'system', text: startText});
+  if (GAME_MODE === 'solo') {
+    addLog({type: 'system', msgKey: 'log_sys_start_solo'});
+  } else {
+    addLog({type: 'system', msgKey: 'log_sys_start', hasDiff: true, diff: DIFFICULTY});
+  }
 
   UI.selection = null;
   UI.movementPlies = 0;
@@ -1106,11 +1153,11 @@ function performAction(color, action){
       const wTile = ST.board.get(winKey); const {x:wx,y:wy} = parseKey(winKey);
       const patternKeys = getRequiredCells(wTile,wx,wy).map(c=>key(c.x,c.y));
       ST.winner = color; ST.winningTileKey = winKey; ST.winPatternKeys = patternKeys; ST.ended = true; ST.phase='ended';
-      addLog({type:'system', text: color === ST.humanColor ? t('log_sys_win_you') : t('log_sys_win_ai')});
+      addLog({type:'system', msgKey: color === ST.humanColor ? 'log_sys_win_you' : 'log_sys_win_ai'});
       saveStats('classic', DIFFICULTY, ST.humanColor===color?'win':'loss', 1);
     } else if(ST.phase==='movement' && UI.movementPlies > 500){
       ST.winner = 'draw'; ST.ended = true; ST.phase='ended';
-      addLog({type:'system', text: t('log_sys_draw')});
+      addLog({type:'system', msgKey: 'log_sys_draw'});
       saveStats('classic', DIFFICULTY, 'draw', 0);
     }
   } else if (GAME_MODE === 'tournament') {
@@ -1121,7 +1168,7 @@ function performAction(color, action){
       else if (ST.pointsB > ST.pointsW) ST.winner = 'b';
       else ST.winner = 'draw';
       ST.ended = true; ST.phase='ended';
-      addLog({type:'system', text: t('log_sys_end_tour', {ai: ST.pointsB, you: ST.pointsW})});
+      addLog({type:'system', msgKey: 'log_sys_end_tour', vars: {ai: ST.pointsB, you: ST.pointsW}});
       const r = ST.winner==='draw'
   ? 'draw'
   : (ST.winner===ST.humanColor ? 'win' : 'loss');
@@ -1134,7 +1181,7 @@ function performAction(color, action){
       ST.pointsW = calculatePoints(ST.board, 'w');
       ST.winner = 'w';
       ST.ended = true; ST.phase='ended';
-      addLog({type:'system', text: t('log_sys_end_solo', {you: ST.pointsW})});
+      addLog({type:'system', msgKey: 'log_sys_end_solo', vars: {you: ST.pointsW}});
       saveStats('solo', 'none', 'win', ST.pointsW);
     }
   }
@@ -1390,6 +1437,12 @@ function render(center = false){
         if (isSingleWin) div.classList.add('static');
     }
 
+    if (ST.phase === 'movement' && GAME_MODE === 'classic') {
+      if (!isConnectedWithout(ST.board, k)) {
+        div.classList.add('unmovable-split');
+      }
+    }
+
     if(UI.selection && UI.selection.mode==='move' && key(UI.selection.fromX,UI.selection.fromY)===k){
       div.classList.add('selected'); div.addEventListener('click', ()=>onOwnTileTap(x,y));
     } else if(humanCanAct && ST.phase==='movement' && tile.color===ST.humanColor && isMovable(ST.board,x,y)){
@@ -1485,7 +1538,14 @@ document.getElementById('btnHelp').addEventListener('click', ()=>{
 function padTurn(n){ return String(n).padStart(3,'0'); }
 function logLineHTML(entry){
   if(entry.type === 'system') {
-    return `<div class="logline system">⚙️ ${entry.text}</div>`;
+    let text = entry.text;
+    if (entry.msgKey) {
+      text = t(entry.msgKey, entry.vars);
+      if (entry.hasDiff) {
+        text += `<span style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-top:-2px;">${icon(DIFF_ICON[entry.diff])}</span>`;
+      }
+    }
+    return `<div class="logline system">⚙️ ${text}</div>`;
   }
   
   const num = padTurn(entry.n);
@@ -1522,8 +1582,13 @@ document.getElementById('btnCopyLog').addEventListener('click', () => {
   if (!ST.log.length) return;
   const textLines = ST.log.slice().reverse().map(entry => {
     if (entry.type === 'system') {
+      let text = entry.text;
+      if (entry.msgKey) {
+        text = t(entry.msgKey, entry.vars);
+        if (entry.hasDiff) text += ' [' + t('diff_' + entry.diff) + ']';
+      }
       const tmp = document.createElement('div');
-      tmp.innerHTML = entry.text;
+      tmp.innerHTML = text;
       return `⚙️ ${tmp.textContent}`;
     }
     const num = padTurn(entry.n);
@@ -1634,7 +1699,7 @@ document.getElementById('btnDiffToggle').addEventListener('click', ()=>{
   const s = loadSettings(); s.difficulty = DIFFICULTY; saveSettings(s);
   syncControlsFromState();
   if(ST && !ST.ended && GAME_MODE !== 'solo') {
-     addLog({type: 'system', text: t('log_sys_diff') + `<span style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-top:-2px;">${icon(DIFF_ICON[DIFFICULTY])}</span>`});
+     addLog({type: 'system', msgKey: 'log_sys_diff', hasDiff: true, diff: DIFFICULTY});
   }
 });
 
