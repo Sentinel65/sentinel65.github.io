@@ -412,15 +412,13 @@ body{
 }
 .logline{
   padding:6px 0; border-bottom:1px dashed var(--line); font-size:.86rem;
-  display:grid; grid-template-columns:32px 15px 92px 32px 1fr;
-  align-items:center; column-gap:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.logline.system{
+  color: var(--ink); font-weight: 600;
 }
 .logline:last-child{ border-bottom:none; }
 .logline b{ font-variant-numeric:tabular-nums; color:var(--ink-soft); }
-.logdot{ width:13px; height:13px; border:1px solid var(--line); }
-.logdot.w{ background:var(--tile-w-bg); border-color:var(--tile-w-border); }
-.logdot.b{ background:var(--tile-b-bg); border-color:var(--tile-b-border); }
-.logdot.none{ background:transparent; border-color:transparent; }
 .logcoords{ font-variant-numeric:tabular-nums; color:var(--ink-soft); white-space:nowrap; }
 .logtile{ width:30px; height:30px; line-height:0; }
 .lognote{ color:var(--accent); font-style:italic; font-size:.82rem; }
@@ -795,7 +793,9 @@ cs:{
   win_you:'Vyhráli jste!', win_ai:'Vyhrála AI.', draw:'Remíza.',
   win_sub_tile:'Dlaždice #{p} v ({x}, {y}) naplnila svůj vzor.',
   win_sub_pts: 'Skóre: {you} - {ai}', win_sub_pts_solo: 'Dosažené skóre: {you}',
-  log_end_tournament: 'Konec turnaje. Skóre: {w} - {b}', log_end_solo: 'Konec hry. Dosažené skóre: {w}',
+  log_sys_start: 'Hra zahájena. Obtížnost ', log_sys_start_solo: 'Hra zahájena.', log_sys_diff: 'Změna obtížnosti: ',
+  log_sys_win_you: 'Vyhrál Hráč', log_sys_win_ai: 'Vyhrála AI', log_sys_draw: 'Remíza',
+  log_sys_end_tour: 'Konec. Skóre: AI [{ai}] - Hráč [{you}]', log_sys_end_solo: 'Konec. Dosažené skóre: {you}',
   new_game:'Nová hra', close:'Zavřít', view_board:'Zpět na desku',
   saved:'Hra uložena.', loaded:'Hra načtena.', no_save:'Nenalezena žádná uložená hra.', copied:'Zkopírováno do schránky.',
   help_title:'Pravidla hry Ni-Ju', log_title:'Průběh hry', stats_title: 'Statistiky',
@@ -837,7 +837,9 @@ en:{
   win_you:'You win!', win_ai:'AI wins.', draw:'Draw.',
   win_sub_tile:'Tile #{p} at ({x}, {y}) completed its pattern.',
   win_sub_pts: 'Score: {you} - {ai}', win_sub_pts_solo: 'Score reached: {you}',
-  log_end_tournament: 'Tournament ended. Score: {w} - {b}', log_end_solo: 'Game ended. Score reached: {w}',
+  log_sys_start: 'Game started. Difficulty ', log_sys_start_solo: 'Game started.', log_sys_diff: 'Difficulty changed: ',
+  log_sys_win_you: 'Player wins', log_sys_win_ai: 'AI wins', log_sys_draw: 'Draw',
+  log_sys_end_tour: 'End. Score: AI [{ai}] - Player [{you}]', log_sys_end_solo: 'End. Score reached: {you}',
   new_game:'New game', close:'Close', view_board:'Back to board',
   saved:'Game saved.', loaded:'Game loaded.', no_save:'No saved game found.', copied:'Copied to clipboard.',
   help_title:'Ni-Ju — Rules', log_title:'Game log', stats_title: 'Statistics',
@@ -947,6 +949,7 @@ let DIFFICULTY = 'medium';
 let GAME_MODE = 'classic';
 let MODES_ORDER = ['classic', 'tournament', 'solo'];
 let lastRenderedKeys = new Set(); 
+let DEBUG_COORDS = false;
 
 let soloEndAnimationIndex = 0;
 let soloEndPatterns = [];
@@ -999,6 +1002,10 @@ function newGame(){
     turnCounter: 0,
     ended:false,
   };
+  
+  let startText = GAME_MODE === 'solo' ? t('log_sys_start_solo') : (t('log_sys_start') + `<span style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-top:-2px;">${icon(DIFF_ICON[DIFFICULTY])}</span>`);
+  addLog({type: 'system', text: startText});
+
   UI.selection = null;
   UI.movementPlies = 0;
   if(GAME_MODE !== 'solo') settings.nextStartColor = other(startColor);
@@ -1099,11 +1106,11 @@ function performAction(color, action){
       const wTile = ST.board.get(winKey); const {x:wx,y:wy} = parseKey(winKey);
       const patternKeys = getRequiredCells(wTile,wx,wy).map(c=>key(c.x,c.y));
       ST.winner = color; ST.winningTileKey = winKey; ST.winPatternKeys = patternKeys; ST.ended = true; ST.phase='ended';
-      addLog({type:'win', color, winKey, pattern:wTile.pattern, rot:wTile.rot, x:wx, y:wy});
+      addLog({type:'system', text: color === ST.humanColor ? t('log_sys_win_you') : t('log_sys_win_ai')});
       saveStats('classic', DIFFICULTY, ST.humanColor===color?'win':'loss', 1);
     } else if(ST.phase==='movement' && UI.movementPlies > 500){
       ST.winner = 'draw'; ST.ended = true; ST.phase='ended';
-      addLog({type:'draw'});
+      addLog({type:'system', text: t('log_sys_draw')});
       saveStats('classic', DIFFICULTY, 'draw', 0);
     }
   } else if (GAME_MODE === 'tournament') {
@@ -1114,7 +1121,7 @@ function performAction(color, action){
       else if (ST.pointsB > ST.pointsW) ST.winner = 'b';
       else ST.winner = 'draw';
       ST.ended = true; ST.phase='ended';
-      addLog({type:'end_tour', w: ST.pointsW, b: ST.pointsB});
+      addLog({type:'system', text: t('log_sys_end_tour', {ai: ST.pointsB, you: ST.pointsW})});
       const r = ST.winner==='draw'
   ? 'draw'
   : (ST.winner===ST.humanColor ? 'win' : 'loss');
@@ -1127,7 +1134,7 @@ function performAction(color, action){
       ST.pointsW = calculatePoints(ST.board, 'w');
       ST.winner = 'w';
       ST.ended = true; ST.phase='ended';
-      addLog({type:'end_solo', w: ST.pointsW});
+      addLog({type:'system', text: t('log_sys_end_solo', {you: ST.pointsW})});
       saveStats('solo', 'none', 'win', ST.pointsW);
     }
   }
@@ -1155,7 +1162,13 @@ function performAction(color, action){
   if(ST.ended) showWinner();
 }
 
-function addLog(entry){ ST.turnCounter++; entry.n = ST.turnCounter; ST.log.push(entry); }
+function addLog(entry){ 
+  if(entry.type !== 'system' && entry.type !== 'start') {
+    ST.turnCounter++; 
+    entry.n = ST.turnCounter; 
+  }
+  ST.log.push(entry); 
+}
 function safeRender(center = false){ try{ render(center); }catch(e){} }
 
 function maybeTriggerAI(){
@@ -1202,12 +1215,12 @@ function legalDestinationSet(){
   return set;
 }
 
-function centerBoardOnTarget(target, minX, minY, cell){
+function centerBoardOnTarget(target, minX, minY, cell, padX, padY){
   if(!target) return;
 
   const scroll = document.getElementById('boardscroll');
-  const cx = (target.x - minX) * cell + cell / 2;
-  const cy = (target.y - minY) * cell + cell / 2;
+  const cx = padX + (target.x - minX) * cell + cell / 2;
+  const cy = padY + (target.y - minY) * cell + cell / 2;
 
   const left = Math.max(0, cx - scroll.clientWidth / 2);
   const top  = Math.max(0, cy - scroll.clientHeight / 2);
@@ -1235,9 +1248,22 @@ function render(center = false){
   }
 
   const boardEl = document.getElementById('board');
+  const scrollEl = document.getElementById('boardscroll');
+  
   const {minX,maxX,minY,maxY} = boardBounds();
   const cell = getCellSize();
-  boardEl.style.width = ((maxX-minX+1)*cell)+'px'; boardEl.style.height = ((maxY-minY+1)*cell)+'px';
+  
+  const calcW = (maxX-minX+1)*cell;
+  const calcH = (maxY-minY+1)*cell;
+  
+  const scrollW = scrollEl.clientWidth;
+  const scrollH = scrollEl.clientHeight;
+  
+  const padX = calcW < scrollW ? (scrollW - calcW) / 2 : 0;
+  const padY = calcH < scrollH ? (scrollH - calcH) / 2 : 0;
+  
+  boardEl.style.width = Math.max(calcW, scrollW)+'px'; 
+  boardEl.style.height = Math.max(calcH, scrollH)+'px';
   boardEl.innerHTML = '';
 
   const legalSet = legalDestinationSet();
@@ -1245,10 +1271,24 @@ function render(center = false){
     for(const k of legalSet){
       const {x,y} = parseKey(k); const d = document.createElement('div');
       d.className='cell legal';
-      d.style.left = ((x-minX)*cell)+'px'; d.style.top = ((y-minY)*cell)+'px';
+      d.style.left = (padX + (x-minX)*cell)+'px'; d.style.top = (padY + (y-minY)*cell)+'px';
       d.style.width = cell+'px'; d.style.height = cell+'px';
       d.style.margin='3px'; d.style.width=(cell-6)+'px'; d.style.height=(cell-6)+'px';
       d.addEventListener('click', ()=>onDestinationTap(x,y));
+      
+      if (DEBUG_COORDS) {
+        const c = document.createElement('div');
+        c.textContent = `${x},${y}`;
+        c.style.position = 'absolute';
+        c.style.inset = '0';
+        c.style.display = 'flex';
+        c.style.alignItems = 'center';
+        c.style.justifyContent = 'center';
+        c.style.fontSize = '11px';
+        c.style.color = '#8a8a8a';
+        c.style.pointerEvents = 'none';
+        d.appendChild(c);
+      }
       boardEl.appendChild(d);
     }
   }
@@ -1309,7 +1349,7 @@ function render(center = false){
     newKeys.add(k);
     const div = document.createElement('div');
     div.className='tile' + (lastRenderedKeys.has(k) ? '' : ' appear');
-    div.style.left = ((x-minX)*cell)+'px'; div.style.top = ((y-minY)*cell)+'px';
+    div.style.left = (padX + (x-minX)*cell)+'px'; div.style.top = (padY + (y-minY)*cell)+'px';
     div.style.width = cell+'px'; div.style.height = cell+'px';
     div.style.padding='3px';
     const inner = document.createElement('div');
@@ -1321,6 +1361,23 @@ function render(center = false){
       const marker = document.createElement('div');
       marker.className = 'last-placed-marker';
       inner.appendChild(marker);
+    }
+
+    if (DEBUG_COORDS) {
+      const c = document.createElement('div');
+      c.textContent = `${x},${y}`;
+      c.style.position = 'absolute';
+      c.style.top = '2px';
+      c.style.left = '2px';
+      c.style.background = 'rgba(255,255,255,0.8)';
+      c.style.color = '#d32f2f';
+      c.style.fontSize = '10px';
+      c.style.fontWeight = 'bold';
+      c.style.padding = '1px 3px';
+      c.style.borderRadius = '3px';
+      c.style.pointerEvents = 'none';
+      c.style.zIndex = '15';
+      inner.appendChild(c);
     }
 
     if(discs.has(k)) div.classList.add('blocked');
@@ -1372,7 +1429,7 @@ function render(center = false){
   
   // Vycentruje zobrazení podle aktivního cíle pouze když je to vyžádáno (center=true)
   if (center) {
-      centerBoardOnTarget(centerTarget, minX, minY, cell);
+      centerBoardOnTarget(centerTarget, minX, minY, cell, padX, padY);
   }
 }
 
@@ -1407,6 +1464,11 @@ function setZoom(z){ UI.zoom = Math.max(0.55, Math.min(2.0, z)); safeRender(fals
 document.getElementById('btnZoomIn').addEventListener('click', ()=>setZoom(UI.zoom+0.15));
 document.getElementById('btnZoomOut').addEventListener('click', ()=>setZoom(UI.zoom-0.15));
 
+document.querySelector('.brand').addEventListener('click', () => {
+  DEBUG_COORDS = !DEBUG_COORDS;
+  safeRender(false);
+});
+
 /* =========================================================================
    MODALS / TOAST
    ========================================================================= */
@@ -1422,22 +1484,63 @@ document.getElementById('btnHelp').addEventListener('click', ()=>{
 
 function padTurn(n){ return String(n).padStart(3,'0'); }
 function logLineHTML(entry){
+  if(entry.type === 'system') {
+    return `<div class="logline system">⚙️ ${entry.text}</div>`;
+  }
+  
   const num = padTurn(entry.n);
-  const dotClass = entry.color ? ('logdot '+entry.color) : 'logdot none';
   let coords = '', tileSvg = '', note = '';
-  if(entry.type==='place'){ coords = `[${entry.x}, ${entry.y}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); }
-  else if(entry.type==='move'){ coords = `[${entry.fromX}, ${entry.fromY}] → [${entry.toX}, ${entry.toY}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); }
-  else if(entry.type==='win') { coords = `[${entry.x}, ${entry.y}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); note = entry.color==='w' ? t('win_you') : t('win_ai'); }
-  else if(entry.type==='end_tour') { coords = '—'; note = t('log_end_tournament', {w: entry.w, b: entry.b}); }
-  else if(entry.type==='end_solo') { coords = '—'; note = t('log_end_solo', {w: entry.w}); }
-  else if(entry.type==='draw') { coords = '—'; note = t('draw'); }
-  return `<div class="logline"><b>${num}.</b><span class="${dotClass}"></span><span class="logcoords">${coords}</span><span class="logtile">${tileSvg}</span>${note ? `<span class="lognote">${note}</span>` : ''}</div>`;
+  
+  if(entry.type==='place'){ 
+    coords = `[${entry.x}, ${entry.y}]`; 
+    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); 
+  }
+  else if(entry.type==='move'){ 
+    coords = `[${entry.fromX}, ${entry.fromY}]:[${entry.toX}, ${entry.toY}]`; 
+    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); 
+  }
+  else if(entry.type==='pass') { 
+    coords = '—'; 
+    note = t('no_move_pass'); 
+  }
+  
+  let html = `<div class="logline"><b>${num}.</b><span class="logcoords">${coords}</span>`;
+  if (note) html += `<span class="lognote">${note}</span>`;
+  if (tileSvg) html += `<span style="margin-left:auto" class="logtile">${tileSvg}</span>`;
+  html += `</div>`;
+  
+  return html;
 }
 
 document.getElementById('btnLog').addEventListener('click', ()=>{ 
   document.getElementById('logTitle').textContent = t('log_title');
   document.getElementById('logBody').innerHTML = ST.log.length ? ST.log.slice().reverse().map(logLineHTML).join('') : '<p style="opacity:.6">—</p>';
   openOverlay('logOverlay'); 
+});
+
+document.getElementById('btnCopyLog').addEventListener('click', () => {
+  if (!ST.log.length) return;
+  const textLines = ST.log.slice().reverse().map(entry => {
+    if (entry.type === 'system') {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = entry.text;
+      return `⚙️ ${tmp.textContent}`;
+    }
+    const num = padTurn(entry.n);
+    let coords = '';
+    if (entry.type === 'place' || entry.type === 'win') {
+      coords = `[${entry.x}, ${entry.y}]`;
+    } else if (entry.type === 'move') {
+      coords = `[${entry.fromX}, ${entry.fromY}]:[${entry.toX}, ${entry.toY}]`;
+    } else if (entry.type === 'pass' || entry.type === 'draw') {
+      coords = '—';
+    }
+    return `${num}.${coords}`;
+  });
+  
+  navigator.clipboard.writeText(textLines.join('\n'))
+    .then(() => toast(t('copied')))
+    .catch(() => toast('Chyba při kopírování'));
 });
 
 document.getElementById('btnStats').addEventListener('click', ()=>{
@@ -1460,7 +1563,7 @@ document.getElementById('btnStats').addEventListener('click', ()=>{
     ['easy','medium','hard', 'none'].forEach(d => {
       if(s[m][d]) {
         const x = s[m][d];
-        const dn = d === 'none' ? '-' : t('diff_'+d).substring(0,1);
+        const dn = d === 'none' ? '-' : `<span style="width:18px;height:18px;display:inline-block;vertical-align:middle;">${icon(DIFF_ICON[d])}</span>`;
         const lossStr = m === 'solo' ? '-' : x.loss;
         const drawStr = m === 'solo' ? '-' : x.draw;
         html += `<tr><td>${dn}</td><td>${x.played}</td><td>${x.win}</td><td>${lossStr}</td><td>${drawStr}</td><td>${x.pts}</td></tr>`;
@@ -1530,6 +1633,9 @@ document.getElementById('btnDiffToggle').addEventListener('click', ()=>{
   DIFFICULTY = DIFF_ORDER[(DIFF_ORDER.indexOf(DIFFICULTY)+1)%DIFF_ORDER.length];
   const s = loadSettings(); s.difficulty = DIFFICULTY; saveSettings(s);
   syncControlsFromState();
+  if(ST && !ST.ended && GAME_MODE !== 'solo') {
+     addLog({type: 'system', text: t('log_sys_diff') + `<span style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-top:-2px;">${icon(DIFF_ICON[DIFFICULTY])}</span>`});
+  }
 });
 
 document.getElementById('btnModeToggle').addEventListener('click', ()=>{
