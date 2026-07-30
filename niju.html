@@ -64,6 +64,7 @@ body{
 .brand{
   display:flex; align-items:baseline; justify-content:center; gap:5px;
   user-select:none;
+  flex: 1 1 0;
 }
 .brand .latin{
   font-family:'Noto Serif JP',serif; font-weight:700;
@@ -96,7 +97,7 @@ body{
   display:flex;
   align-items:center;
   gap:8px;
-  flex:1 1 auto;
+  flex: 1 1 0;
   min-width:0;
 }
 
@@ -105,7 +106,7 @@ body{
   align-items:center;
   gap:8px;
   justify-content:flex-end;
-  flex:1 1 auto;
+  flex: 1 1 0;
   min-width:0;
 }
 
@@ -235,6 +236,11 @@ body{
   animation:winGlow 1.1s ease-in-out infinite;
 }
 
+/* Zastavení pulzování pokud je jen 1 vzor */
+.tile.winning.static::before {
+  animation: none !important;
+}
+
 /* ---------- Dlaždice tvořící vítězný vzor ---------- */
 .tile.winpart{
   z-index:6;
@@ -253,6 +259,11 @@ body{
     0 0 8px rgba(224,180,0,.55),
     0 0 18px rgba(224,180,0,.38);
   animation:partGlow 1.4s ease-in-out infinite;
+}
+
+/* Zastavení pulzování pokud je jen 1 vzor */
+.tile.winpart.static:not(.winning)::after {
+  animation: none !important;
 }
 
 /* ---------- Pulzace zeleného středu ---------- */
@@ -329,11 +340,6 @@ body{
   opacity:.85;
   pointer-events:none;
   z-index:10;
-}
-
-.last-placed-marker {
-  position: absolute; top: 38%; left: 38%; width: 24%; height: 24%;
-  background-color: lightblue; border-radius: 50%; opacity: 0.85; pointer-events: none; z-index: 10;
 }
 
 /* ---------- Tray ---------- */
@@ -789,6 +795,7 @@ cs:{
   win_you:'Vyhráli jste!', win_ai:'Vyhrála AI.', draw:'Remíza.',
   win_sub_tile:'Dlaždice #{p} v ({x}, {y}) naplnila svůj vzor.',
   win_sub_pts: 'Skóre: {you} - {ai}', win_sub_pts_solo: 'Dosažené skóre: {you}',
+  log_end_tournament: 'Konec turnaje. Skóre: {w} - {b}', log_end_solo: 'Konec hry. Dosažené skóre: {w}',
   new_game:'Nová hra', close:'Zavřít', view_board:'Zpět na desku',
   saved:'Hra uložena.', loaded:'Hra načtena.', no_save:'Nenalezena žádná uložená hra.', copied:'Zkopírováno do schránky.',
   help_title:'Pravidla hry Ni-Ju', log_title:'Průběh hry', stats_title: 'Statistiky',
@@ -830,6 +837,7 @@ en:{
   win_you:'You win!', win_ai:'AI wins.', draw:'Draw.',
   win_sub_tile:'Tile #{p} at ({x}, {y}) completed its pattern.',
   win_sub_pts: 'Score: {you} - {ai}', win_sub_pts_solo: 'Score reached: {you}',
+  log_end_tournament: 'Tournament ended. Score: {w} - {b}', log_end_solo: 'Game ended. Score reached: {w}',
   new_game:'New game', close:'Close', view_board:'Back to board',
   saved:'Game saved.', loaded:'Game loaded.', no_save:'No saved game found.', copied:'Copied to clipboard.',
   help_title:'Ni-Ju — Rules', log_title:'Game log', stats_title: 'Statistics',
@@ -962,10 +970,11 @@ function checkEndAnimations() {
         });
         if (isComplete) soloEndPatterns.push({ center: k, parts: req });
     }
-    if (soloEndPatterns.length > 0) {
+    // Pouze pokud je více než 1 vzor, zahájíme rotaci animací
+    if (soloEndPatterns.length > 1) {
         soloEndInterval = setInterval(() => {
             soloEndAnimationIndex = (soloEndAnimationIndex + 1) % soloEndPatterns.length;
-            safeRender();
+            safeRender(true);
         }, 1800);
     }
   }
@@ -997,7 +1006,7 @@ function newGame(){
   closeOverlay('winOverlay');
   lastRenderedKeys.clear();
   resetEndAnimation();
-  safeRender();
+  safeRender(true);
   maybeTriggerAI();
 }
 
@@ -1062,7 +1071,7 @@ function doLoad(){
   syncControlsFromState(); closeOverlay('winOverlay'); 
   lastRenderedKeys.clear();
   checkEndAnimations();
-  safeRender(); maybeTriggerAI(); toast(t('loaded'));
+  safeRender(true); maybeTriggerAI(); toast(t('loaded'));
 }
 
 /* =========================================================================
@@ -1105,21 +1114,20 @@ function performAction(color, action){
       else if (ST.pointsB > ST.pointsW) ST.winner = 'b';
       else ST.winner = 'draw';
       ST.ended = true; ST.phase='ended';
+      addLog({type:'end_tour', w: ST.pointsW, b: ST.pointsB});
       const r = ST.winner==='draw'
   ? 'draw'
   : (ST.winner===ST.humanColor ? 'win' : 'loss');
 
-// Uložit nejvyšší dosažený počet bodů kterékoliv strany
-const bestPts = Math.max(ST.pointsW, ST.pointsB);
-
-saveStats('tournament', DIFFICULTY, r, bestPts);
-      saveStats('tournament', DIFFICULTY, r, ST.pointsW);
+      const bestPts = Math.max(ST.pointsW, ST.pointsB);
+      saveStats('tournament', DIFFICULTY, r, bestPts);
     }
   } else if (GAME_MODE === 'solo') {
     if(ST.pool.w.size===0) {
       ST.pointsW = calculatePoints(ST.board, 'w');
       ST.winner = 'w';
       ST.ended = true; ST.phase='ended';
+      addLog({type:'end_solo', w: ST.pointsW});
       saveStats('solo', 'none', 'win', ST.pointsW);
     }
   }
@@ -1142,13 +1150,13 @@ saveStats('tournament', DIFFICULTY, r, bestPts);
   
   UI.selection = null;
   if(ST.ended) checkEndAnimations();
-  safeRender();
+  safeRender(true);
   if(!ST.ended) maybeTriggerAI();
   if(ST.ended) showWinner();
 }
 
 function addLog(entry){ ST.turnCounter++; entry.n = ST.turnCounter; ST.log.push(entry); }
-function safeRender(){ try{ render(); }catch(e){} }
+function safeRender(center = false){ try{ render(center); }catch(e){} }
 
 function maybeTriggerAI(){
   if(ST.ended || ST.turn !== ST.aiColor || ST.aiColor === null) return;
@@ -1194,16 +1202,13 @@ function legalDestinationSet(){
   return set;
 }
 
-function centerBoardOnLastMove(minX, minY, cell){
-  if(!ST.lastMove) return;
+function centerBoardOnTarget(target, minX, minY, cell){
+  if(!target) return;
 
   const scroll = document.getElementById('boardscroll');
+  const cx = (target.x - minX) * cell + cell / 2;
+  const cy = (target.y - minY) * cell + cell / 2;
 
-  // pozice středu poslední dlaždice v souřadnicích boardu
-  const cx = (ST.lastMove.x - minX) * cell + cell / 2;
-  const cy = (ST.lastMove.y - minY) * cell + cell / 2;
-
-  // cílový scroll tak, aby byl střed dlaždice uprostřed viewportu
   const left = Math.max(0, cx - scroll.clientWidth / 2);
   const top  = Math.max(0, cy - scroll.clientHeight / 2);
 
@@ -1214,7 +1219,7 @@ function centerBoardOnLastMove(minX, minY, cell){
   });
 }
 
-function render(){
+function render(center = false){
   document.getElementById('turnDot').className = 'dot '+ (ST.ended ? (ST.winner==='draw' ? ST.turn : ST.winner) : ST.turn);
   document.getElementById('turnCount').textContent = '';
   
@@ -1255,45 +1260,47 @@ function render(){
   
   const activeCenters = new Set();
   const activeWinParts = new Set();
+  let centerTarget = ST.lastMove; // Výchozí cíl zaměření kamery
+  let isSingleWin = false; // Příznak statického vítězství (jen 1 vzor)
   
   if (ST.ended && (GAME_MODE === 'solo' || GAME_MODE === 'tournament') && soloEndPatterns.length > 0) {
       const p = soloEndPatterns[soloEndAnimationIndex];
       activeCenters.add(p.center);
       p.parts.forEach(rk => activeWinParts.add(rk));
+      
+      centerTarget = parseKey(p.center); // Zaměření na aktuálně přehrávaný vzor
+      if (soloEndPatterns.length === 1) isSingleWin = true;
+
   } else if (ST.ended && GAME_MODE === 'classic') {
       activeCenters.add(ST.winningTileKey);
       if (ST.winPatternKeys) ST.winPatternKeys.forEach(k => activeWinParts.add(k));
-  } else if (!ST.ended && (GAME_MODE === 'solo' || GAME_MODE === 'tournament') && ST.lastMove) {
+      centerTarget = parseKey(ST.winningTileKey);
+      isSingleWin = true;
 
+  } else if (!ST.ended && (GAME_MODE === 'solo' || GAME_MODE === 'tournament') && ST.lastMove) {
     const lx = ST.lastMove.x;
     const ly = ST.lastMove.y;
     const lk = key(lx, ly);
 
-    // zvýrazňujeme jen vzory, kterých se poslední tah skutečně týká
     for(const [k,tile] of ST.board){
-
         const req = getRequiredCells(
             tile,
             parseKey(k).x,
             parseKey(k).y
         ).map(c => key(c.x,c.y));
 
-        // Vzor je dokončen pouze pokud všechny potřebné
-        // dlaždice existují a mají stejnou barvu jako střed.
         const isComplete = req.every(rk => {
             const t = ST.board.get(rk);
             return t && t.color === tile.color;
         });
 
         if (!isComplete) continue;
-
-        // poslední tah musí být střed nebo jedna z částí vzoru
         if (k !== lk && !req.includes(lk)) continue;
 
         activeCenters.add(k);
         req.forEach(rk => activeWinParts.add(rk));
     }
-}
+  }
 
   const newKeys = new Set();
 
@@ -1317,8 +1324,14 @@ function render(){
     }
 
     if(discs.has(k)) div.classList.add('blocked');
-    if(activeCenters.has(k)) div.classList.add('winning');
-    if(activeWinParts.has(k)) div.classList.add('winpart');
+    if(activeCenters.has(k)) {
+        div.classList.add('winning');
+        if (isSingleWin) div.classList.add('static');
+    }
+    if(activeWinParts.has(k)) {
+        div.classList.add('winpart');
+        if (isSingleWin) div.classList.add('static');
+    }
 
     if(UI.selection && UI.selection.mode==='move' && key(UI.selection.fromX,UI.selection.fromY)===k){
       div.classList.add('selected'); div.addEventListener('click', ()=>onOwnTileTap(x,y));
@@ -1356,8 +1369,11 @@ function render(){
     const tile = ST.board.get(key(UI.selection.fromX,UI.selection.fromY));
     document.getElementById('fabPreview').innerHTML = tileFaceSVG(tile.pattern, UI.selection.rot, ST.humanColor, 42);
   }
-    // Vycentrovat pohled na poslední položenou/přesunutou dlaždici
-  centerBoardOnLastMove(minX, minY, cell);
+  
+  // Vycentruje zobrazení podle aktivního cíle pouze když je to vyžádáno (center=true)
+  if (center) {
+      centerBoardOnTarget(centerTarget, minX, minY, cell);
+  }
 }
 
 /* =========================================================================
@@ -1365,14 +1381,12 @@ function render(){
    ========================================================================= */
 function onTrayTap(pattern){
   if(ST.ended || ST.turn!==ST.humanColor || ST.phase!=='placing') return;
-  // V sólo i turnajovém režimu po dokončení vzoru zrušíme poslední tah,
-// aby při výběru další dlaždice už neblikalo zelené zvýraznění.
-if (GAME_MODE === 'solo' || GAME_MODE === 'tournament') {
-  ST.lastMove = null;
-}
+  if (GAME_MODE === 'solo' || GAME_MODE === 'tournament') {
+    ST.lastMove = null;
+  }
   if(UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pattern) UI.selection.rot = (UI.selection.rot+1)%4;
   else UI.selection = { mode:'place', pattern, rot:0 };
-  safeRender();
+  safeRender(false); // Při klikání do tray centrujeme NE
 }
 function onOwnTileTap(x,y){
   if(ST.ended || ST.turn!==ST.humanColor || ST.phase!=='movement') return;
@@ -1380,16 +1394,16 @@ function onOwnTileTap(x,y){
   if(!tile || tile.color!==ST.humanColor || !isMovable(ST.board,x,y)) return;
   if(UI.selection && UI.selection.mode==='move' && UI.selection.fromX===x && UI.selection.fromY===y) UI.selection = null;
   else UI.selection = { mode:'move', fromX:x, fromY:y, rot:tile.rot };
-  safeRender();
+  safeRender(false); // Při výběru vlastního kamene centrujeme NE
 }
 function onDestinationTap(x,y){
   if(!UI.selection) return;
   if(UI.selection.mode==='place') performAction(ST.humanColor, {type:'place', pattern:UI.selection.pattern, rot:UI.selection.rot, x, y});
   else performAction(ST.humanColor, {type:'move', fromX:UI.selection.fromX, fromY:UI.selection.fromY, rot:UI.selection.rot, toX:x, toY:y});
 }
-document.getElementById('fabCancel').addEventListener('click', ()=>{ UI.selection = null; safeRender(); });
+document.getElementById('fabCancel').addEventListener('click', ()=>{ UI.selection = null; safeRender(false); });
 
-function setZoom(z){ UI.zoom = Math.max(0.55, Math.min(2.0, z)); safeRender(); }
+function setZoom(z){ UI.zoom = Math.max(0.55, Math.min(2.0, z)); safeRender(false); }
 document.getElementById('btnZoomIn').addEventListener('click', ()=>setZoom(UI.zoom+0.15));
 document.getElementById('btnZoomOut').addEventListener('click', ()=>setZoom(UI.zoom-0.15));
 
@@ -1414,6 +1428,9 @@ function logLineHTML(entry){
   if(entry.type==='place'){ coords = `[${entry.x}, ${entry.y}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); }
   else if(entry.type==='move'){ coords = `[${entry.fromX}, ${entry.fromY}] → [${entry.toX}, ${entry.toY}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); }
   else if(entry.type==='win') { coords = `[${entry.x}, ${entry.y}]`; tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); note = entry.color==='w' ? t('win_you') : t('win_ai'); }
+  else if(entry.type==='end_tour') { coords = '—'; note = t('log_end_tournament', {w: entry.w, b: entry.b}); }
+  else if(entry.type==='end_solo') { coords = '—'; note = t('log_end_solo', {w: entry.w}); }
+  else if(entry.type==='draw') { coords = '—'; note = t('draw'); }
   return `<div class="logline"><b>${num}.</b><span class="${dotClass}"></span><span class="logcoords">${coords}</span><span class="logtile">${tileSvg}</span>${note ? `<span class="lognote">${note}</span>` : ''}</div>`;
 }
 
@@ -1444,7 +1461,9 @@ document.getElementById('btnStats').addEventListener('click', ()=>{
       if(s[m][d]) {
         const x = s[m][d];
         const dn = d === 'none' ? '-' : t('diff_'+d).substring(0,1);
-        html += `<tr><td>${dn}</td><td>${x.played}</td><td>${x.win}</td><td>${x.loss}</td><td>${x.draw}</td><td>${x.pts}</td></tr>`;
+        const lossStr = m === 'solo' ? '-' : x.loss;
+        const drawStr = m === 'solo' ? '-' : x.draw;
+        html += `<tr><td>${dn}</td><td>${x.played}</td><td>${x.win}</td><td>${lossStr}</td><td>${drawStr}</td><td>${x.pts}</td></tr>`;
       }
     });
     html += '</table>';
@@ -1526,8 +1545,8 @@ document.getElementById('btnLangToggle').addEventListener('click', ()=>{
   const s = loadSettings(); s.lang = LANG; saveSettings(s);
   document.documentElement.lang = LANG;
   syncControlsFromState(); 
-  // Necháme zachovanou minulou pozici dlaždic, jen se překreslí texty
-  safeRender();
+  // Necháme zachovanou minulou pozici dlaždic, jen se překreslí texty, proto necentrujeme.
+  safeRender(false);
 });
 
 function syncControlsFromState(){
