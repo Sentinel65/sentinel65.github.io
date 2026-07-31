@@ -249,7 +249,9 @@ body{
 }
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
-.traytile.disabled{ opacity:0.35; pointer-events:none; }
+/* Změna chování pro dotyk v disabled stavu (odstraněno pointer-events:none, aby fungoval dlouhý stisk) */
+.traytile.disabled{ opacity:0.35; cursor:default; }
+.traytile.disabled:active{ transform:none; }
 
 /* ---------- Modals ---------- */
 .overlay{
@@ -300,6 +302,7 @@ body{
   position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
   background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:11px;
   font-size:.86rem; opacity:0; pointer-events:none; transition:all .25s ease; z-index:80;
+  text-align: center; max-width: 90%;
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -428,11 +431,26 @@ const PATTERNS = PATTERN_DIRS.map(a=>a.map(d=>DIR_VEC[d]));
 const NPATTERNS = PATTERNS.length;
 
 const PROVERBS = [
-  "一意専心", "一石二鳥", "以心伝心", "不言実行",
-  "弱肉強食", "一期一会", "七転八起", "十人十色",
-  "四面楚歌", "臨機応変", "自業自得", "切磋琢磨",
-  "油断大敵", "風林火山", "臥薪嘗胆", "三日坊主",
-  "試行錯誤", "正々堂々", "適者生存", "温故知新"
+  { jp: "一意専心", cs: "Zaměřit se celým srdcem na jediný cíl", en: "Focus whole-heartedly on a single goal" },
+  { jp: "一石二鳥", cs: "Zabít dvě mouchy jednou ranou", en: "Kill two birds with one stone" },
+  { jp: "以心伝心", cs: "Porozumění beze slov", en: "Heart-to-heart communication" },
+  { jp: "不言実行", cs: "Činy mluví hlasitěji než slova", en: "Actions speak louder than words" },
+  { jp: "弱肉強食", cs: "Zákon džungle", en: "Law of the jungle" },
+  { jp: "一期一会", cs: "Neopakovatelný okamžik", en: "Once-in-a-lifetime encounter" },
+  { jp: "七転八起", cs: "Sedmkrát padni, osmkrát vstaň", en: "Fall seven times, stand up eight" },
+  { jp: "十人十色", cs: "Deset lidí, deset chutí", en: "Ten people, ten colors" },
+  { jp: "四面楚歌", cs: "Být obklíčen nepřáteli", en: "Surrounded by enemies on all sides" },
+  { jp: "臨機応変", cs: "Schopnost přizpůsobit se situaci", en: "Adapting to circumstances" },
+  { jp: "自業自得", cs: "Sklízet to, co člověk sám zaseje", en: "You reap what you sow" },
+  { jp: "切磋琢磨", cs: "Navzájem se zdokonalovat", en: "Cultivating one's character by friendly competition" },
+  { jp: "油断大敵", cs: "Nepozornost je největší nepřítel", en: "Carelessness is the greatest enemy" },
+  { jp: "風林火山", cs: "Rychlý jako vítr, tichý jako les, dravý jako oheň, nehybný jako hora", en: "Fast as wind, quiet as forest, daring as fire, immovable as mountain" },
+  { jp: "臥薪嘗胆", cs: "Snášet útrapy pro budoucí úspěch", en: "Enduring hardship for future success" },
+  { jp: "三日坊主", cs: "Ten, kdo u ničeho nevydrží", en: "A quitter (monk for three days)" },
+  { jp: "試行錯誤", cs: "Metoda pokusu a omylu", en: "Trial and error" },
+  { jp: "正々堂々", cs: "Bojovat čestně", en: "Fair and square" },
+  { jp: "適者生存", cs: "Přežití nejschopnějších", en: "Survival of the fittest" },
+  { jp: "温故知新", cs: "Hledat poučení v minulosti", en: "Learn from the past to understand new things" }
 ];
 
 function rotateOffset(o, steps){
@@ -689,19 +707,20 @@ cs:{
     <p>Hráč vyhrává, pokud je na konci jeho tahu alespoň jedna z jeho dlaždic obklopena — přesně podle vzoru na ní vyznačeného — čtyřmi dlaždicemi jeho barvy. Kontroluje se to po každém tahu, u všech dlaždic na desce, nejen u té právě položené či přesunuté.</p>
     
     <h3>Fáze kladení</h3>
-    <p>Hráči se střídají v jednotlivých tazích. Ve svém tahu si hráč vezme jednu libovolnou dlaždici své barvy ze své zásoby, opakovaným klikáním zvolí směr rotace a poté ji kliknutím na šedé pole nápovědy položí na hrací desku.</p>
-    <p>Pravidlo pro přiložení: Nová dlaždice musí sousedit alespoň s jednou celou stranou s jakoukoliv dlaždicí (bílou nebo černou), které už na hrací desce jsou položené. (První hráč v prvním tahu položí svoji dlaždici kamkoliv na prázdnou hrací desku).</p>
+    <p>Hráči se střídají v jednotlivých tazích. Ve svém tahu si hráč vezme jednu libovolnou dlaždici své barvy ze své zásoby, <b>opakovaným klikáním zvolí směr rotace</b> a poté ji kliknutím na šedé pole nápovědy položí na hrací desku.</p>
+    <p>Pravidlo pro přiložení: Nová dlaždice <b>musí sousedit alespoň s jednou celou stranou s jakoukoliv dlaždicí</b> (bílou nebo černou), které už na hrací desce jsou položené. (První hráč v prvním tahu položí svoji dlaždici kamkoliv na prázdnou hrací desku).</p>
     
     <h3>Fáze pohybu</h3>
     <p>Pokud hráčům dojdou dlaždice v zásobě a nikdo zatím nesplnil vítěznou podmínku, hra pokračuje fází pohybu.</p>
     <p>Ve svém tahu hráč přesune jednu svoji již umístěnou dlaždici z hrací plochy na jiné platné místo (tak, aby opět sousedila s jinou dlaždicí).</p>
-    <p>Omezení pro pohyb: Přesouvaná dlaždice musí mít před pohybem volnou alespoň jednu stranu a jejím odebráním nesmí dojít k rozdělení hrací plochy na dvě samostatné, nespojené části.</p>
+    <p>Omezení pro pohyb: Přesouvaná dlaždice <b>musí mít před pohybem volnou alespoň jednu stranu</b> a jejím odebráním nesmí dojít k rozdělení hrací plochy na dvě samostatné, nespojené části.</p>
     
     <h3>Grafická nápověda</h3>
-    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována světle modře. Poslední položená dlaždice je označena modrým kolečkem uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale tyrkysovou barvou. Vybraná dlaždice pro přesun na jiné pole je znázorněna světle žlutým pozadím dlaždice.</p>
+    <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">červeným okrajem</span>. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle modře</span>. Poslední položená dlaždice je označena <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">modrým kolečkem</span> uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">tyrkysovou barvou</span>. Vybraná dlaždice pro přesun na jiné pole je znázorněna <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle žlutým pozadím</span> dlaždice.</p>
+    <p>V módu <b>Klasická hra naslepo</b> si můžete kdykoliv zobrazit překlad japonského přísloví na rubu dlaždice – na počítači stačí na danou dlaždici ukázat myší, na mobilním zařízení na ní dlouze podržte prst a překlad se na chvíli zobrazí jako systémová zpráva.</p>
 
     <h3>Režim: Klasická hra naslepo</h3>
-    <p>Pravidla jsou stejná jako u Klasické hry, ale všechny vaše dlaždice v zásobě jsou skryté (otočené rubem nahoru, kde jsou zapsána japonská přísloví). Ve svém tahu si musíte jednu dlaždici vybrat naslepo. Jakmile ji odkryjete, musíte ji zahrát na hrací desku (můžete s ní libovolně otáčet, ale nelze ji vrátit a vzít si jinou). AI soupeř hraje podle stejných pravidel a tahá si dlaždice také naslepo.</p>
+    <p>Pravidla jsou stejná jako u Klasické hry, ale všechny vaše dlaždice v zásobě jsou skryté (otočené rubem nahoru, kde jsou zapsána japonská přísloví). Ve svém tahu si musíte jednu dlaždici vybrat naslepo. Jakmile ji odkryjete, musíte ji zahrát na hrací desku (<b>můžete s ní libovolně otáčet</b>, ale nelze ji vrátit a vzít si jinou). AI soupeř hraje podle stejných pravidel a tahá si dlaždice také naslepo.</p>
 
     <h3>Režim: Turnaj (bez přesunů)</h3>
     <p>Hraje se zcela bez fáze pohybu (kameny se po položení nikdy nepřesouvají). Hráči střídavě pokládají své dlaždice na hrací desku do vyčerpání. Hra končí přesně ve chvíli, kdy oba hráči umístí všech svých 20 dlaždic (celkem 40 dlaždic na hrací desce). Poté se spočítají body: za každou svoji dlaždici, jejíž vítězný vzor byl úspěšně dokončen, získá hráč 1 bod. Vítězí hráč s více body, v případě shody končí hra remízou.</p>
@@ -722,7 +741,7 @@ cs:{
     <ul>
       <li><b>Strategie dvojí hrozby (Forking):</b> Nejefektivnější taktika. Snažte se pokládat dílky tak, aby jeden váš tah posunul k dokončení hned dva různé vzory. Soupeř obvykle dokáže zablokovat pouze jedno místo, čímž vám druhé zůstane volné.</li>
       <li><b>Aktivní obrana a blokování:</b> Jakmile uvidíte, že soupeři chybí k dokončení jeho vzoru (obklíčení konkrétní dlaždice) poslední jeden či dva dílky, musíte okamžitě zasáhnout. Obsaďte kritické pole vlastní dlaždicí, která se soupeři nehodí do konceptu.</li>
-      <li><b>Využívání rotace dílků:</b> Jelikož hra Ni-Ju obsahuje desítky různých kombinací i díky rotacím dílků, vždy před položením zkontrolujte všechny orientace dlaždice. Správné otočení může odemknout nečekanou pozici, která pasuje do vašeho schématu.</li>
+      <li><b>Využívání rotace dílků:</b> Jelikož hra Ni-Ju obsahuje desítky různých kombinací i díky rotacím dílků, <b>vždy před položením zkontrolujte všechny orientace dlaždice</b>. Správné otočení může odemknout nečekanou pozici, která pasuje do vašeho schématu.</li>
       <li><b>Vynucování tahů (Tempo):</b> Pokládejte dílky tak, aby na ně soupeř musel reagovat defenzivně. Tím mu seberete iniciativu a donutíte ho plýtvat tahy na hašení vašich hrozeb namísto stavby jeho vlastního vítězného vzoru.</li>
     </ul>
 
@@ -758,19 +777,20 @@ en:{
     <p>A player wins if, at the end of their turn, at least one of their tiles is surrounded — exactly according to the pattern marked on it — by four tiles of their color. This is checked after each turn, for all tiles on the board, not just the one just placed or moved.</p>
     
     <h3>Placing phase</h3>
-    <p>Players take turns. On their turn, a player takes any tile of their color from their supply, chooses the direction of rotation by clicking it repeatedly, and then places it on the board by clicking on a gray hint square.</p>
-    <p>Placement rule: The new tile must share at least one full edge with any tile (white or black) already placed on the board. (The first player on the first turn places their tile anywhere on the empty board).</p>
+    <p>Players take turns. On their turn, a player takes any tile of their color from their supply, <b>chooses the direction of rotation by clicking it repeatedly</b>, and then places it on the board by clicking on a gray hint square.</p>
+    <p>Placement rule: The new tile <b>must share at least one full edge with any tile</b> (white or black) already placed on the board. (The first player on the first turn places their tile anywhere on the empty board).</p>
     
     <h3>Movement phase</h3>
     <p>If players run out of tiles in their supply and no one has met the winning condition yet, the game continues with the movement phase.</p>
     <p>On their turn, a player moves one of their already placed tiles from the board to another valid location (so that it again borders another tile).</p>
-    <p>Movement restrictions: The moved tile must have at least one free edge before moving, and removing it must not split the board into two separate, disconnected parts.</p>
+    <p>Movement restrictions: The moved tile <b>must have at least one free edge before moving</b>, and removing it must not split the board into two separate, disconnected parts.</p>
     
     <h3>Graphical aid</h3>
-    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in light blue. The last placed tile is marked with a blue circle in the center of the tile, the square from which the last move was made is marked like a hint square but in turquoise color. The selected tile to be moved to another square is indicated by a light yellow background of the tile.</p>
+    <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">red edge</span>. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">light blue</span>. The last placed tile is marked with a <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">blue circle</span> in the center of the tile, the square from which the last move was made is marked like a hint square but in <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">turquoise color</span>. The selected tile to be moved to another square is indicated by a <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">light yellow background</span> of the tile.</p>
+    <p>In the <b>Classic - Blind Draw</b> mode, you can always view the translation of the Japanese proverb on the back of the tile — on PC, simply hover your mouse over the tile; on a mobile device, long-press the tile and the translation will briefly appear as a system message.</p>
 
     <h3>Mode: Classic - Blind Draw</h3>
-    <p>The rules are the same as Classic mode, but all tiles in your supply are hidden face down (showing Japanese proverbs on the back). On your turn, you must select a tile blindly. Once revealed, you must play it (you can rotate it freely, but you cannot return it to pick another). The AI opponent follows the same rules and also draws tiles blindly.</p>
+    <p>The rules are the same as Classic mode, but all tiles in your supply are hidden face down (showing Japanese proverbs on the back). On your turn, you must select a tile blindly. Once revealed, you must play it (<b>you can rotate it freely</b>, but you cannot return it to pick another). The AI opponent follows the same rules and also draws tiles blindly.</p>
 
     <h3>Mode: Tournament (no move)</h3>
     <p>Played entirely without the movement phase (tiles are never moved after placement). Players take turns placing their tiles until exhausted. The game ends exactly when both players have placed all 20 of their tiles (40 tiles on the board). Then, points are counted: for each of their tiles whose winning pattern is successfully completed, the player scores 1 point. The player with the most points wins; in case of a tie, the game ends in a draw.</p>
@@ -791,7 +811,7 @@ en:{
     <ul>
       <li><b>Forking strategy:</b> The most effective tactic. Try to place tiles so that one move advances the completion of two different patterns at once. The opponent can usually only block one spot, leaving the other free for you.</li>
       <li><b>Active defense and blocking:</b> As soon as you see your opponent is only one or two tiles away from completing their pattern (surrounding a specific tile), you must intervene immediately. Occupy the critical space with a tile of your own that disrupts the opponent's concept.</li>
-      <li><b>Utilizing tile rotation:</b> Since Ni-Ju contains dozens of different combinations thanks to tile rotations, always check all tile orientations before placing. The correct rotation can unlock an unexpected position that fits into your scheme.</li>
+      <li><b>Utilizing tile rotation:</b> Since Ni-Ju contains dozens of different combinations thanks to tile rotations, <b>always check all tile orientations before placing</b>. The correct rotation can unlock an unexpected position that fits into your scheme.</li>
       <li><b>Forcing moves (Tempo):</b> Place tiles so your opponent has to react defensively. This takes away their initiative and forces them to waste turns putting out your fires instead of building their own winning pattern.</li>
     </ul>
 
@@ -849,7 +869,7 @@ function tileFaceSVG(patternIdx, rot, color, size, isFaceDown = false){
   const ink = color==='w' ? 'var(--tile-w-ink)' : 'var(--tile-b-ink)';
 
   if (isFaceDown) {
-    const chars = PROVERBS[patternIdx];
+    const chars = PROVERBS[patternIdx].jp;
     const fs = size * 0.32;
     const cx1 = size * 0.30;
     const cx2 = size * 0.70;
@@ -1397,8 +1417,44 @@ function render(center = false){
       const div = document.createElement('div');
       div.className='traytile' + (isSel ? ' sel':'') + (isDisabled ? ' disabled':'');
       div.innerHTML = tileFaceSVG(pat, rot, ST.humanColor, 56, isFaceDown);
+      
+      let longPressed = false;
+      
+      if (isFaceDown) {
+        const trans = PROVERBS[pat][LANG];
+        // Klasický tooltip pro zobrazení při najetí myší na PC
+        div.setAttribute('title', trans);
+        
+        // Logika pro detekci dlouhého podržení na dotykovém zařízení
+        let pressTimer;
+        div.addEventListener('touchstart', (e) => {
+            longPressed = false;
+            pressTimer = setTimeout(() => {
+                longPressed = true;
+                toast(trans);
+                if (navigator.vibrate) navigator.vibrate(30);
+            }, 500);
+        }, {passive: true});
+        
+        div.addEventListener('touchend', () => clearTimeout(pressTimer), {passive: true});
+        div.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive: true});
+        
+        // Zabrání zobrazení nativního kontextového menu po podržení na mobilech
+        div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+      }
+
       if (!isDisabled) {
-        div.addEventListener('click', ()=>onTrayTap(pat));
+        div.addEventListener('click', (e) => {
+            // Zabraňuje výběru dlaždice, pokud na ní uživatel jen dlouze podržel prst pro tooltip
+            if (longPressed) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            onTrayTap(pat);
+        });
       }
       tray.appendChild(div);
     }
@@ -1676,7 +1732,6 @@ function syncControlsFromState(){
   const settings = loadSettings();
   LANG = settings.lang; DIFFICULTY = settings.difficulty; GAME_MODE = settings.mode || 'classic';
   
-  // Bezpečnostní pojistka v případě načtení staršího neplatného stavu módu
   if(!MODES_ORDER.includes(GAME_MODE)) GAME_MODE = 'classic';
   
   document.documentElement.lang = LANG;
