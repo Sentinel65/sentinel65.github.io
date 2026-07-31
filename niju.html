@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -179,233 +179,104 @@ body{
   height:100%;
 }
 
-/* ---------- Pohyblivá dlaždice ---------- */
-.tile.movable{
-  cursor:pointer;
-}
+.tile.movable{ cursor:pointer; }
+.tile.selected svg > rect:first-of-type { fill: #fff59d !important; transition: fill 0.2s ease; }
 
-/* ---------- Vybraná dlaždice ---------- */
-.tile.selected svg > rect:first-of-type {
-  fill: #fff59d !important;
-  transition: fill 0.2s ease;
-}
-
-/* ---------- Animace položení ---------- */
 @keyframes stamp{
-  0%{
-    transform:scale(1.5) rotate(-8deg);
-    opacity:0;
-  }
-  60%{
-    transform:scale(.95) rotate(2deg);
-    opacity:1;
-  }
-  100%{
-    transform:scale(1) rotate(0);
-  }
+  0%{ transform:scale(1.5) rotate(-8deg); opacity:0; }
+  60%{ transform:scale(.95) rotate(2deg); opacity:1; }
+  100%{ transform:scale(1) rotate(0); }
 }
 
-/* ---------- Vítězná centrální dlaždice ---------- */
-.tile.winning{
-  z-index:7;
-  animation:stamp .6s ease;
-  filter:drop-shadow(0 0 8px rgba(46,158,79,.45));
-}
-
+.tile.winning{ z-index:7; animation:stamp .6s ease; filter:drop-shadow(0 0 8px rgba(46,158,79,.45)); }
 .tile.winning::before{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid #2e9e4f;
-  pointer-events:none;
-  box-shadow:
-    0 0 0 2px rgba(46,158,79,.22),
-    0 0 10px rgba(46,158,79,.65),
-    0 0 24px rgba(46,158,79,.45);
+  content:''; position:absolute; inset:2px; border-radius:0; border:3px solid #2e9e4f; pointer-events:none;
+  box-shadow: 0 0 0 2px rgba(46,158,79,.22), 0 0 10px rgba(46,158,79,.65), 0 0 24px rgba(46,158,79,.45);
   animation:winGlow 1.1s ease-in-out infinite;
 }
+.tile.winning.static::before { animation: none !important; }
 
-.tile.winning.static::before {
-  animation: none !important;
-}
-
-/* ---------- Dlaždice tvořící vítězný vzor ---------- */
-.tile.winpart{
-  z-index:6;
-}
-
+.tile.winpart{ z-index:6; }
 .tile.winpart:not(.winning)::after{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid #e0b400;
-  pointer-events:none;
-  box-shadow:
-    0 0 0 2px rgba(224,180,0,.18),
-    0 0 8px rgba(224,180,0,.55),
-    0 0 18px rgba(224,180,0,.38);
-  animation:partGlow 1.4s ease-in-out infinite;
-  z-index:6;
+  content:''; position:absolute; inset:2px; border-radius:0; border:3px solid #e0b400; pointer-events:none;
+  box-shadow: 0 0 0 2px rgba(224,180,0,.18), 0 0 8px rgba(224,180,0,.55), 0 0 18px rgba(224,180,0,.38);
+  animation:partGlow 1.4s ease-in-out infinite; z-index:6;
 }
+.tile.winpart.static:not(.winning)::after { animation: none !important; }
 
-.tile.winpart.static:not(.winning)::after {
-  animation: none !important;
-}
-
-/* ---------- Pulzace zeleného středu ---------- */
 @keyframes winGlow{
-  0%,100%{
-    transform:scale(1);
-    box-shadow:
-      0 0 0 2px rgba(46,158,79,.18),
-      0 0 8px rgba(46,158,79,.45),
-      0 0 18px rgba(46,158,79,.28);
-  }
-  50%{
-    transform:scale(1.05);
-    box-shadow:
-      0 0 0 3px rgba(46,158,79,.34),
-      0 0 18px rgba(46,158,79,.85),
-      0 0 36px rgba(46,158,79,.60);
-  }
+  0%,100%{ transform:scale(1); box-shadow: 0 0 0 2px rgba(46,158,79,.18), 0 0 8px rgba(46,158,79,.45), 0 0 18px rgba(46,158,79,.28); }
+  50%{ transform:scale(1.05); box-shadow: 0 0 0 3px rgba(46,158,79,.34), 0 0 18px rgba(46,158,79,.85), 0 0 36px rgba(46,158,79,.60); }
 }
 
-/* ---------- Jemnější pulzace žlutých dílků ---------- */
 @keyframes partGlow{
-  0%,100%{
-    transform:scale(1);
-    box-shadow:
-      0 0 0 2px rgba(224,180,0,.16),
-      0 0 6px rgba(224,180,0,.34),
-      0 0 14px rgba(224,180,0,.22);
-  }
-  50%{
-    transform:scale(1.02);
-    box-shadow:
-      0 0 0 3px rgba(224,180,0,.28),
-      0 0 14px rgba(224,180,0,.72),
-      0 0 28px rgba(224,180,0,.48);
-  }
+  0%,100%{ transform:scale(1); box-shadow: 0 0 0 2px rgba(224,180,0,.16), 0 0 6px rgba(224,180,0,.34), 0 0 14px rgba(224,180,0,.22); }
+  50%{ transform:scale(1.02); box-shadow: 0 0 0 3px rgba(224,180,0,.28), 0 0 14px rgba(224,180,0,.72), 0 0 28px rgba(224,180,0,.48); }
 }
 
-/* ---------- Blokovaná dlaždice ---------- */
 .tile.blocked::after{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid var(--accent);
-  pointer-events:none;
+  content:''; position:absolute; inset:2px; border-radius:0; border:3px solid var(--accent); pointer-events:none;
 }
 
-/* ---------- Nepohyblivá dlaždice (rozděluje desku) ---------- */
 .tile.unmovable-split::after{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid lightblue;
-  pointer-events:none;
-  z-index: 5;
+  content:''; position:absolute; inset:2px; border-radius:0; border:3px solid lightblue; pointer-events:none; z-index: 5;
 }
-
-/* Kombinace obou stavů (světle modrý rámeček s červenou linkou uvnitř) */
 .tile.unmovable-split.blocked::after {
-  border: 3px solid lightblue;
-  box-shadow: inset 0 0 0 3px var(--accent);
+  border: 3px solid lightblue; box-shadow: inset 0 0 0 3px var(--accent);
 }
 
-/* ---------- Nově položená dlaždice ---------- */
-.tile.appear{
-  animation:appear .22s ease;
-}
+.tile.appear{ animation:appear .22s ease; }
+@keyframes appear{ from{ transform:scale(.4); opacity:0; } to{ transform:scale(1); opacity:1; } }
 
-@keyframes appear{
-  from{
-    transform:scale(.4);
-    opacity:0;
-  }
-  to{
-    transform:scale(1);
-    opacity:1;
-  }
-}
-
-/* ---------- Značka posledního tahu ---------- */
 .last-placed-marker{
-  position:absolute;
-  top:38%;
-  left:38%;
-  width:24%;
-  height:24%;
-  background-color:lightblue;
-  border-radius:50%;
-  opacity:.85;
-  pointer-events:none;
-  z-index:10;
+  position:absolute; top:38%; left:38%; width:24%; height:24%; background-color:lightblue; border-radius:50%; opacity:.85; pointer-events:none; z-index:10;
 }
 
 /* ---------- Tray ---------- */
 .tray-wrap{
   border-top:1px solid var(--line); background:var(--panel);
-  padding:8px 8px calc(8px + env(safe-area-inset-bottom,0)) 8px;
-  display:none;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom,0)) 8px; display:none;
 }
 .tray-wrap.show{ display:block; }
 .tray{
-  display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px 2px;
-  scroll-snap-type:x proximity;
+  display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px 2px; scroll-snap-type:x proximity;
 }
 .tray::-webkit-scrollbar{ height:5px; }
 .tray::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
 .traytile{
   flex:none; width:56px; height:56px; cursor:pointer; border-radius:0;
-  scroll-snap-align:start; transition:transform .12s ease;
-  border:2px solid transparent;
+  scroll-snap-align:start; transition:transform .12s ease; border:2px solid transparent;
 }
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
+.traytile.disabled{ opacity:0.35; pointer-events:none; }
 
 /* ---------- Modals ---------- */
 .overlay{
-  position:fixed; inset:0; background:rgba(30,22,12,.5);
-  display:none; align-items:center; justify-content:center; z-index:50; padding:18px;
-  backdrop-filter:blur(2px);
+  position:fixed; inset:0; background:rgba(30,22,12,.5); display:none; align-items:center; justify-content:center; z-index:50; padding:18px; backdrop-filter:blur(2px);
 }
 .overlay.show{ display:flex; animation:fadein .18s ease; }
 @keyframes fadein{ from{opacity:0} to{opacity:1} }
 .modal{
-  background:var(--panel); border-radius:18px; box-shadow:var(--shadow);
-  max-width:560px; width:100%; max-height:86vh; display:flex; flex-direction:column;
-  border:1px solid var(--panel-border);
+  background:var(--panel); border-radius:18px; box-shadow:var(--shadow); max-width:560px; width:100%; max-height:86vh; display:flex; flex-direction:column; border:1px solid var(--panel-border);
 }
 .modal-head{
-  display:flex; align-items:center; gap:10px; padding:16px 18px 8px 18px;
-  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:10px; padding:16px 18px 8px 18px; border-bottom:1px solid var(--line);
 }
-.modal-head h2{
-  font-family:'Noto Serif JP',serif; font-size:1.25rem; margin:0; flex:1; color:var(--ink);
-}
+.modal-head h2{ font-family:'Noto Serif JP',serif; font-size:1.25rem; margin:0; flex:1; color:var(--ink); }
 .modal-body{ padding:14px 18px 20px 18px; overflow-y:auto; line-height:1.55; font-size:.94rem; }
 .modal-body h3{ font-size:1.05rem; margin:20px 0 6px; color: #d32f2f; font-weight: 700; }
 .modal-body p{ margin:6px 0; }
 .copyright-line{
-  font-style:italic; color:var(--ink-soft); font-size:.82rem; margin:2px 0 14px 0;
-  border-left:3px solid var(--accent-soft); padding-left:10px;
+  font-style:italic; color:var(--ink-soft); font-size:.82rem; margin:2px 0 14px 0; border-left:3px solid var(--accent-soft); padding-left:10px;
 }
 .modal .closebtn{
-  width:34px; height:34px; border-radius:9px; border:none; background:var(--paper-deep);
-  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:9px; border:none; background:var(--paper-deep); cursor:pointer; display:flex; align-items:center; justify-content:center;
 }
 .logline{
-  padding:6px 0; border-bottom:1px dashed var(--line); font-size:.86rem;
-  display:flex; align-items:center; gap:8px;
+  padding:6px 0; border-bottom:1px dashed var(--line); font-size:.86rem; display:flex; align-items:center; gap:8px;
 }
-.logline.system{
-  color: var(--ink); font-weight: 600;
-}
+.logline.system{ color: var(--ink); font-weight: 600; }
 .logline:last-child{ border-bottom:none; }
 .logline b{ font-variant-numeric:tabular-nums; color:var(--ink-soft); }
 .logcoords{ font-variant-numeric:tabular-nums; color:var(--ink-soft); white-space:nowrap; }
@@ -413,21 +284,15 @@ body{
 .lognote{ color:var(--accent); font-style:italic; font-size:.82rem; }
 
 /* winner banner */
-.winbanner{
-  text-align:center;
-}
-.winbanner .big{
-  font-family:'Noto Serif JP',serif; font-size:1.7rem; margin:10px 0 4px;
-}
+.winbanner{ text-align:center; }
+.winbanner .big{ font-family:'Noto Serif JP',serif; font-size:1.7rem; margin:10px 0 4px; }
 .winbanner .sub{ color:var(--ink-soft); margin-bottom:16px; font-weight:bold; }
 .winbanner .actions{ display:flex; gap:10px; justify-content:center; }
 .btnprimary{
-  background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:11px;
-  font-weight:600; cursor:pointer; font-size:.92rem;
+  background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:11px; font-weight:600; cursor:pointer; font-size:.92rem;
 }
 .btnghost{
-  background:transparent; color:var(--ink); border:1px solid var(--panel-border); padding:11px 20px;
-  border-radius:11px; cursor:pointer; font-size:.92rem;
+  background:transparent; color:var(--ink); border:1px solid var(--panel-border); padding:11px 20px; border-radius:11px; cursor:pointer; font-size:.92rem;
 }
 
 /* toast */
@@ -562,6 +427,14 @@ const PATTERN_DIRS = [
 const PATTERNS = PATTERN_DIRS.map(a=>a.map(d=>DIR_VEC[d]));
 const NPATTERNS = PATTERNS.length;
 
+const PROVERBS = [
+  "一意専心", "一石二鳥", "以心伝心", "不言実行",
+  "弱肉強食", "一期一会", "七転八起", "十人十色",
+  "四面楚歌", "臨機応変", "自業自得", "切磋琢磨",
+  "油断大敵", "風林火山", "臥薪嘗胆", "三日坊主",
+  "試行錯誤", "正々堂々", "適者生存", "温故知新"
+];
+
 function rotateOffset(o, steps){
   let dx=o.dx, dy=o.dy;
   const n=((steps%4)+4)%4;
@@ -572,6 +445,14 @@ function key(x,y){ return x + ',' + y; }
 function parseKey(k){ const i=k.indexOf(','); return {x:+k.slice(0,i), y:+k.slice(i+1)}; }
 function neighbors4(x,y){ return [{x:x-1,y:y},{x:x+1,y:y},{x:x,y:y-1},{x:x,y:y+1}]; }
 function other(c){ return c==='w'?'b':'w'; }
+function shuffleArray(arr) {
+  const array = [...arr];
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
 function getRequiredCells(tile,x,y){
   return PATTERNS[tile.pattern].map(o=>{ const r=rotateOffset(o,tile.rot); return {x:x+r.dx,y:y+r.dy}; });
@@ -604,7 +485,7 @@ function isConnectedWithout(board,removeKey){
   return visited.size===keys.length;
 }
 function isMovable(board,x,y){
-  if (GAME_MODE !== 'classic') return false; 
+  if (GAME_MODE !== 'classic' && GAME_MODE !== 'blind') return false; 
   const k=key(x,y); const tile=board.get(k); if(!tile) return false;
   const hasFreeSide = neighbors4(x,y).some(n=>!board.has(key(n.x,n.y)));
   if(!hasFreeSide) return false;
@@ -648,7 +529,7 @@ function computeRedDiscs(board){
   return discs;
 }
 function computePhase(pool){ 
-  if (GAME_MODE !== 'classic') return 'placing';
+  if (GAME_MODE !== 'classic' && GAME_MODE !== 'blind') return 'placing';
   return (pool.w.size===0 && pool.b.size===0) ? 'movement' : 'placing'; 
 }
 
@@ -712,10 +593,19 @@ function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 function chooseAIAction(board,pool,phase,color,difficulty){
   const opp = other(color);
-  const actions = genActions(board,pool,phase,color);
+  
+  let rootPool = pool;
+  if (GAME_MODE === 'blind' && phase === 'placing') {
+     const availablePatterns = [...pool[color]];
+     const chosenPattern = pickRandom(availablePatterns);
+     rootPool = { w: new Set(pool.w), b: new Set(pool.b) };
+     rootPool[color] = new Set([chosenPattern]);
+  }
+
+  const actions = genActions(board,rootPool,phase,color);
   if(actions.length===0) return null;
 
-  if (GAME_MODE === 'classic') {
+  if (GAME_MODE === 'classic' || GAME_MODE === 'blind') {
     const winners = actions.filter(a=>{
       const sim = applyActionSim(board,pool,color,a);
       return checkWinClassic(sim.board,color)!==null;
@@ -730,7 +620,7 @@ function chooseAIAction(board,pool,phase,color,difficulty){
     const simPhase = computePhase(sim.pool);
     const oppActions = genActions(sim.board, sim.pool, simPhase, opp);
     let danger=0;
-    if (GAME_MODE === 'classic') {
+    if (GAME_MODE === 'classic' || GAME_MODE === 'blind') {
       for(const oa of oppActions){
         const oppSim = applyActionSim(sim.board, sim.pool, opp, oa);
         if(checkWinClassic(oppSim.board,opp)){ danger=-100000; break; }
@@ -754,7 +644,7 @@ function chooseAIAction(board,pool,phase,color,difficulty){
     if(oppActions.length===0){ if(cand.val>bestWorst){bestWorst=cand.val; bestAction=cand.a;} continue; }
     let oppScored = oppActions.map(oa=>{
       const oppSim = applyActionSim(cand.sim.board, cand.sim.pool, opp, oa);
-      const win = GAME_MODE==='classic' ? checkWinClassic(oppSim.board,opp) : false;
+      const win = (GAME_MODE==='classic' || GAME_MODE==='blind') ? checkWinClassic(oppSim.board,opp) : false;
       return { oppSim, val: win?1e6:evaluateState(oppSim.board,opp), win };
     });
     oppScored.sort((x,y)=>y.val-x.val);
@@ -785,7 +675,7 @@ cs:{
   saved:'Hra uložena.', loaded:'Hra načtena.', no_save:'Nenalezena žádná uložená hra.', copied:'Zkopírováno do schránky.',
   help_title:'Pravidla hry Ni-Ju', log_title:'Průběh hry', stats_title: 'Statistiky',
   white:'Bílý', black:'Černý',
-  mode_classic: 'Klasická hra', mode_tournament: 'Turnaj (bez pohybu)', mode_solo: 'Sólo',
+  mode_classic: 'Klasická hra', mode_blind: 'Klasická hra naslepo', mode_tournament: 'Turnaj (bez pohybu)', mode_solo: 'Sólo',
   no_move_pass:'Žádný legální tah — kolo se přeskakuje.',
   diff_easy: 'Lehká', diff_medium: 'Střední', diff_hard: 'Těžká',
   stats_played: 'Her', stats_won: 'Výhry', stats_lost: 'Prohry', stats_draws: 'Remízy', stats_pts: 'Max. skóre', stats_diff: 'Obtížnost',
@@ -809,6 +699,9 @@ cs:{
     
     <h3>Grafická nápověda</h3>
     <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní červeným okrajem. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována světle modře. Poslední položená dlaždice je označena modrým kolečkem uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale tyrkysovou barvou. Vybraná dlaždice pro přesun na jiné pole je znázorněna světle žlutým pozadím dlaždice.</p>
+
+    <h3>Režim: Klasická hra naslepo</h3>
+    <p>Pravidla jsou stejná jako u Klasické hry, ale všechny vaše dlaždice v zásobě jsou skryté (otočené rubem nahoru, kde jsou zapsána japonská přísloví). Ve svém tahu si musíte jednu dlaždici vybrat naslepo. Jakmile ji odkryjete, musíte ji zahrát na hrací desku (můžete s ní libovolně otáčet, ale nelze ji vrátit a vzít si jinou). AI soupeř hraje podle stejných pravidel a tahá si dlaždice také naslepo.</p>
 
     <h3>Režim: Turnaj (bez přesunů)</h3>
     <p>Hraje se zcela bez fáze pohybu (kameny se po položení nikdy nepřesouvají). Hráči střídavě pokládají své dlaždice na hrací desku do vyčerpání. Hra končí přesně ve chvíli, kdy oba hráči umístí všech svých 20 dlaždic (celkem 40 dlaždic na hrací desce). Poté se spočítají body: za každou svoji dlaždici, jejíž vítězný vzor byl úspěšně dokončen, získá hráč 1 bod. Vítězí hráč s více body, v případě shody končí hra remízou.</p>
@@ -851,7 +744,7 @@ en:{
   saved:'Game saved.', loaded:'Game loaded.', no_save:'No saved game found.', copied:'Copied to clipboard.',
   help_title:'Ni-Ju — Rules', log_title:'Game log', stats_title: 'Statistics',
   white:'White', black:'Black',
-  mode_classic: 'Classic mode', mode_tournament: 'Tournament (no move)', mode_solo: 'Solo puzzle',
+  mode_classic: 'Classic mode', mode_blind: 'Classic mode - Blind Draw', mode_tournament: 'Tournament (no move)', mode_solo: 'Solo puzzle',
   no_move_pass:'No legal move — turn skipped.',
   diff_easy: 'Easy', diff_medium: 'Medium', diff_hard: 'Hard',
   stats_played: 'Played', stats_won: 'Won', stats_lost: 'Lost', stats_draws: 'Draws', stats_pts: 'High Score', stats_diff: 'Diff',
@@ -875,6 +768,9 @@ en:{
     
     <h3>Graphical aid</h3>
     <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a red edge. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in light blue. The last placed tile is marked with a blue circle in the center of the tile, the square from which the last move was made is marked like a hint square but in turquoise color. The selected tile to be moved to another square is indicated by a light yellow background of the tile.</p>
+
+    <h3>Mode: Classic - Blind Draw</h3>
+    <p>The rules are the same as Classic mode, but all tiles in your supply are hidden face down (showing Japanese proverbs on the back). On your turn, you must select a tile blindly. Once revealed, you must play it (you can rotate it freely, but you cannot return it to pick another). The AI opponent follows the same rules and also draws tiles blindly.</p>
 
     <h3>Mode: Tournament (no move)</h3>
     <p>Played entirely without the movement phase (tiles are never moved after placement). Players take turns placing their tiles until exhausted. The game ends exactly when both players have placed all 20 of their tiles (40 tiles on the board). Then, points are counted: for each of their tiles whose winning pattern is successfully completed, the player scores 1 point. The player with the most points wins; in case of a tie, the game ends in a draw.</p>
@@ -932,6 +828,7 @@ const ICONS = {
   flagCs:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect width="30" height="10" y="10" fill="#d7141a"/><path d="M0 0 L15 10 L0 20 Z" fill="#11457e"/></svg>',
   flagEn:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#012169"/><path d="M0 0 30 20 M30 0 0 20" stroke="#fff" stroke-width="4"/><path d="M0 0 30 20 M30 0 0 20" stroke="#c8102e" stroke-width="2"/><path d="M15 0 V20 M0 10 H30" stroke="#fff" stroke-width="6"/><path d="M15 0 V20 M0 10 H30" stroke="#c8102e" stroke-width="3.2"/></svg>',
   mode_classic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 12h3v8h14v-8h3L12 2z"/></svg>',
+  mode_blind: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 12h3v8h14v-8h3L12 2z"/></svg>',
   mode_tournament: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M8 3.13a4 4 0 0 0 0 7.75"/></svg>',
   mode_solo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
   stats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-4"/></svg>',
@@ -946,12 +843,29 @@ function icon(name){ return ICONS[name]||''; }
 /* =========================================================================
    TILE VISUALS
    ========================================================================= */
-function tileFaceSVG(patternIdx, rot, color, size){
-  const offsets = PATTERNS[patternIdx].map(o=>rotateOffset(o,rot));
-  const cell = size/3;
+function tileFaceSVG(patternIdx, rot, color, size, isFaceDown = false){
   const bg = color==='w' ? 'var(--tile-w-bg)' : 'var(--tile-b-bg)';
   const border = color==='w' ? 'var(--tile-w-border)' : 'var(--tile-b-border)';
   const ink = color==='w' ? 'var(--tile-w-ink)' : 'var(--tile-b-ink)';
+
+  if (isFaceDown) {
+    const chars = PROVERBS[patternIdx];
+    const fs = size * 0.32;
+    const cx1 = size * 0.30;
+    const cx2 = size * 0.70;
+    const cy1 = size * 0.30;
+    const cy2 = size * 0.70;
+    return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1.2" y="1.2" width="${size-2.4}" height="${size-2.4}" fill="${bg}" stroke="${border}" stroke-width="1.6"/>
+      <text x="${cx1}" y="${cy1}" font-size="${fs}" font-family="'Noto Serif JP',serif" fill="${ink}" text-anchor="middle" dominant-baseline="central">${chars[0]}</text>
+      <text x="${cx2}" y="${cy1}" font-size="${fs}" font-family="'Noto Serif JP',serif" fill="${ink}" text-anchor="middle" dominant-baseline="central">${chars[1]}</text>
+      <text x="${cx1}" y="${cy2}" font-size="${fs}" font-family="'Noto Serif JP',serif" fill="${ink}" text-anchor="middle" dominant-baseline="central">${chars[2]}</text>
+      <text x="${cx2}" y="${cy2}" font-size="${fs}" font-family="'Noto Serif JP',serif" fill="${ink}" text-anchor="middle" dominant-baseline="central">${chars[3]}</text>
+    </svg>`;
+  }
+
+  const offsets = PATTERNS[patternIdx].map(o=>rotateOffset(o,rot));
+  const cell = size/3;
   let sq='';
   for(const o of offsets){
     const col=o.dx+1, row=o.dy+1;
@@ -976,7 +890,7 @@ let ST = null;
 let UI = { selection:null, zoom:1, movementPlies:0 };
 let DIFFICULTY = 'medium';
 let GAME_MODE = 'classic';
-let MODES_ORDER = ['classic', 'tournament', 'solo'];
+let MODES_ORDER = ['classic', 'blind', 'tournament', 'solo'];
 let lastRenderedKeys = new Set(); 
 let DEBUG_COORDS = false;
 
@@ -1002,7 +916,6 @@ function checkEndAnimations() {
         });
         if (isComplete) soloEndPatterns.push({ center: k, parts: req });
     }
-    // Pouze pokud je více než 1 vzor, zahájíme rotaci animací
     if (soloEndPatterns.length > 1) {
         soloEndInterval = setInterval(() => {
             soloEndAnimationIndex = (soloEndAnimationIndex + 1) % soloEndPatterns.length;
@@ -1017,9 +930,13 @@ function freshPool(){ const s=new Set(); for(let i=0;i<NPATTERNS;i++) s.add(i); 
 function newGame(){
   const settings = loadSettings();
   const startColor = settings.nextStartColor || 'w';
+  const poolW = freshPool();
+  const poolB = GAME_MODE==='solo' ? new Set() : freshPool();
+  
   ST = {
     board: new Map(),
-    pool: { w: freshPool(), b: GAME_MODE==='solo' ? new Set() : freshPool() },
+    pool: { w: poolW, b: poolB },
+    blindOrder: { w: shuffleArray(Array.from(poolW)), b: shuffleArray(Array.from(poolB)) },
     phase: 'placing',
     turn: GAME_MODE==='solo' ? 'w' : startColor,
     humanColor: 'w',
@@ -1080,6 +997,7 @@ function saveStats(mode, diff, result, pts) {
 function serializeState(){
   return JSON.stringify({
     board: [...ST.board.entries()], pool: { w:[...ST.pool.w], b:[...ST.pool.b] },
+    blindOrder: ST.blindOrder,
     phase: ST.phase, turn: ST.turn, humanColor: ST.humanColor, aiColor: ST.aiColor,
     winner: ST.winner, winningTileKey: ST.winningTileKey, winPatternKeys: ST.winPatternKeys, log: ST.log,
     pointsW: ST.pointsW, pointsB: ST.pointsB, lastMove: ST.lastMove, lastMoveOrigin: ST.lastMoveOrigin,
@@ -1091,6 +1009,7 @@ function deserializeState(json){
   const d = JSON.parse(json);
   ST = {
     board: new Map(d.board), pool: { w:new Set(d.pool.w), b:new Set(d.pool.b) },
+    blindOrder: d.blindOrder || { w: [...d.pool.w], b: [...d.pool.b] },
     phase: d.phase, turn: d.turn, humanColor: d.humanColor, aiColor: d.aiColor,
     winner: d.winner, winningTileKey: d.winningTileKey, winPatternKeys: d.winPatternKeys||null, log: d.log||[],
     pointsW: d.pointsW||0, pointsB: d.pointsB||0, lastMove: d.lastMove||null, lastMoveOrigin: d.lastMoveOrigin||null,
@@ -1135,18 +1054,18 @@ function performAction(color, action){
   ST.phase = computePhase(ST.pool);
   if(ST.phase==='movement') UI.movementPlies++;
 
-  if (GAME_MODE === 'classic') {
+  if (GAME_MODE === 'classic' || GAME_MODE === 'blind') {
     const winKey = checkWinClassic(ST.board, color);
     if(winKey){
       const wTile = ST.board.get(winKey); const {x:wx,y:wy} = parseKey(winKey);
       const patternKeys = getRequiredCells(wTile,wx,wy).map(c=>key(c.x,c.y));
       ST.winner = color; ST.winningTileKey = winKey; ST.winPatternKeys = patternKeys; ST.ended = true; ST.phase='ended';
       addLog({type:'system', msgKey: color === ST.humanColor ? 'log_sys_win_you' : 'log_sys_win_ai'});
-      saveStats('classic', DIFFICULTY, ST.humanColor===color?'win':'loss', 1);
+      saveStats(GAME_MODE, DIFFICULTY, ST.humanColor===color?'win':'loss', 1);
     } else if(ST.phase==='movement' && UI.movementPlies > 500){
       ST.winner = 'draw'; ST.ended = true; ST.phase='ended';
       addLog({type:'system', msgKey: 'log_sys_draw'});
-      saveStats('classic', DIFFICULTY, 'draw', 0);
+      saveStats(GAME_MODE, DIFFICULTY, 'draw', 0);
     }
   } else if (GAME_MODE === 'tournament') {
     if(ST.pool.w.size===0 && ST.pool.b.size===0) {
@@ -1157,10 +1076,7 @@ function performAction(color, action){
       else ST.winner = 'draw';
       ST.ended = true; ST.phase='ended';
       addLog({type:'system', msgKey: 'log_sys_end_tour', vars: {ai: ST.pointsB, you: ST.pointsW}});
-      const r = ST.winner==='draw'
-  ? 'draw'
-  : (ST.winner===ST.humanColor ? 'win' : 'loss');
-
+      const r = ST.winner==='draw' ? 'draw' : (ST.winner===ST.humanColor ? 'win' : 'loss');
       const bestPts = Math.max(ST.pointsW, ST.pointsB);
       saveStats('tournament', DIFFICULTY, r, bestPts);
     }
@@ -1252,19 +1168,12 @@ function legalDestinationSet(){
 
 function centerBoardOnTarget(target, minX, minY, cell, padX, padY){
   if(!target) return;
-
   const scroll = document.getElementById('boardscroll');
   const cx = padX + (target.x - minX) * cell + cell / 2;
   const cy = padY + (target.y - minY) * cell + cell / 2;
-
   const left = Math.max(0, cx - scroll.clientWidth / 2);
   const top  = Math.max(0, cy - scroll.clientHeight / 2);
-
-  scroll.scrollTo({
-    left,
-    top,
-    behavior: 'smooth'
-  });
+  scroll.scrollTo({ left, top, behavior: 'smooth' });
 }
 
 function render(center = false){
@@ -1328,7 +1237,7 @@ function render(center = false){
     }
   }
 
-  if (GAME_MODE === 'classic' && ST.phase === 'movement' && ST.lastMoveOrigin) {
+  if ((GAME_MODE === 'classic' || GAME_MODE === 'blind') && ST.phase === 'movement' && ST.lastMoveOrigin) {
     const ox = ST.lastMoveOrigin.x;
     const oy = ST.lastMoveOrigin.y;
     const d = document.createElement('div');
@@ -1341,7 +1250,7 @@ function render(center = false){
     boardEl.appendChild(d);
   }
 
-  const discs = (GAME_MODE === 'classic' || GAME_MODE === 'tournament')
+  const discs = (GAME_MODE === 'classic' || GAME_MODE === 'blind' || GAME_MODE === 'tournament')
   ? computeRedDiscs(ST.board)
   : new Set();
   const humanCanAct = !ST.ended && ST.turn===ST.humanColor;
@@ -1359,7 +1268,7 @@ function render(center = false){
       centerTarget = parseKey(p.center);
       if (soloEndPatterns.length === 1) isSingleWin = true;
 
-  } else if (ST.ended && GAME_MODE === 'classic') {
+  } else if (ST.ended && (GAME_MODE === 'classic' || GAME_MODE === 'blind')) {
       activeCenters.add(ST.winningTileKey);
       if (ST.winPatternKeys) ST.winPatternKeys.forEach(k => activeWinParts.add(k));
       centerTarget = parseKey(ST.winningTileKey);
@@ -1402,7 +1311,7 @@ function render(center = false){
     div.style.padding='3px';
     const inner = document.createElement('div');
     inner.style.width='100%'; inner.style.height='100%'; inner.style.position='relative';
-    inner.innerHTML = tileFaceSVG(tile.pattern, tile.rot, tile.color, cell-6);
+    inner.innerHTML = tileFaceSVG(tile.pattern, tile.rot, tile.color, cell-6, false);
     div.appendChild(inner);
 
     if(ST.lastMove && ST.lastMove.x===x && ST.lastMove.y===y) {
@@ -1438,7 +1347,7 @@ function render(center = false){
         if (isSingleWin) div.classList.add('static');
     }
 
-    if (ST.phase === 'movement' && GAME_MODE === 'classic') {
+    if (ST.phase === 'movement' && (GAME_MODE === 'classic' || GAME_MODE === 'blind')) {
       if (!isConnectedWithout(ST.board, k)) {
         div.classList.add('unmovable-split');
       }
@@ -1460,18 +1369,41 @@ function render(center = false){
   trayWrap.classList.toggle('show', showTray);
   tray.innerHTML='';
   if(showTray){
-    const pool = [...ST.pool[ST.humanColor]].sort((a,b)=>a-b);
-    for(const pat of pool){
-      const rot = (UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pat) ? UI.selection.rot : 0;
+    let poolArray;
+    if (GAME_MODE === 'blind') {
+      poolArray = ST.blindOrder[ST.humanColor].filter(p => ST.pool[ST.humanColor].has(p));
+    } else {
+      poolArray = [...ST.pool[ST.humanColor]].sort((a,b)=>a-b);
+    }
+
+    for(const pat of poolArray){
+      const isSel = (UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pat);
+      const rot = isSel ? UI.selection.rot : 0;
+      
+      let isFaceDown = false;
+      let isDisabled = false;
+      
+      if (GAME_MODE === 'blind') {
+        if (UI.selection && UI.selection.mode === 'place') {
+          if (!isSel) {
+            isFaceDown = true;
+            isDisabled = true;
+          }
+        } else {
+          isFaceDown = true;
+        }
+      }
+
       const div = document.createElement('div');
-      div.className='traytile' + ((UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pat) ? ' sel':'');
-      div.innerHTML = tileFaceSVG(pat, rot, ST.humanColor, 56);
-      div.addEventListener('click', ()=>onTrayTap(pat));
+      div.className='traytile' + (isSel ? ' sel':'') + (isDisabled ? ' disabled':'');
+      div.innerHTML = tileFaceSVG(pat, rot, ST.humanColor, 56, isFaceDown);
+      if (!isDisabled) {
+        div.addEventListener('click', ()=>onTrayTap(pat));
+      }
       tray.appendChild(div);
     }
   }
   
-  // Vycentruje zobrazení podle aktivního cíle pouze když je to vyžádáno (center=true)
   if (center) {
       centerBoardOnTarget(centerTarget, minX, minY, cell, padX, padY);
   }
@@ -1485,6 +1417,21 @@ function onTrayTap(pattern){
   if (GAME_MODE === 'solo' || GAME_MODE === 'tournament') {
     ST.lastMove = null;
   }
+  
+  if (GAME_MODE === 'blind') {
+    if (UI.selection && UI.selection.mode === 'place') {
+        if (UI.selection.pattern === pattern) {
+            UI.selection.rot = (UI.selection.rot + 1) % 4;
+            safeRender(false);
+        }
+        return; 
+    } else {
+        UI.selection = { mode: 'place', pattern, rot: 0 };
+        safeRender(false);
+        return;
+    }
+  }
+
   if(UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pattern) UI.selection.rot = (UI.selection.rot+1)%4;
   else UI.selection = { mode:'place', pattern, rot:0 };
   safeRender(false);
@@ -1543,11 +1490,11 @@ function logLineHTML(entry){
   
   if(entry.type==='place'){ 
     coords = `[${entry.x}, ${entry.y}]`; 
-    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); 
+    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30, false); 
   }
   else if(entry.type==='move'){ 
     coords = `[${entry.fromX}, ${entry.fromY}]:[${entry.toX}, ${entry.toY}]`; 
-    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30); 
+    tileSvg = tileFaceSVG(entry.pattern, entry.rot, entry.color, 30, false); 
   }
   else if(entry.type==='pass') { 
     coords = '—'; 
@@ -1646,7 +1593,7 @@ function showWinner(){
   if(ST.winner==='draw'){ big.textContent = t('draw'); sub.textContent=''; }
   else {
     big.textContent = ST.winner===ST.humanColor ? t('win_you') : (ST.winner==='w' ? t('win_you') : t('win_ai'));
-    if (GAME_MODE === 'classic') {
+    if (GAME_MODE === 'classic' || GAME_MODE === 'blind') {
       const {x,y} = parseKey(ST.winningTileKey); const tile = ST.board.get(ST.winningTileKey);
       sub.textContent = t('win_sub_tile', {p:tile.pattern+1, x, y});
     } else if (GAME_MODE === 'tournament') {
@@ -1728,6 +1675,10 @@ function syncControlsFromState(){
 (function init(){
   const settings = loadSettings();
   LANG = settings.lang; DIFFICULTY = settings.difficulty; GAME_MODE = settings.mode || 'classic';
+  
+  // Bezpečnostní pojistka v případě načtení staršího neplatného stavu módu
+  if(!MODES_ORDER.includes(GAME_MODE)) GAME_MODE = 'classic';
+  
   document.documentElement.lang = LANG;
   syncControlsFromState();
   newGame();
