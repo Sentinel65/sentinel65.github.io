@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rozcestník her</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: -webkit-linear-gradient(45deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: 500px;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            background-color: #0b1120;
+            color: var(--text-color);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-bar:focus {
+            border-color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            opacity: 0;
+            animation: fadeIn 1s ease-out forwards;
+            animation-delay: 0.3s;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            border-color: #475569;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 160px;
+            background-color: #2a3b52;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .card-img .fallback-text {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+        }
+
+        .card-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            display: inline-block;
+            padding: 0.6rem;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-play {
+            background-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-play:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-bgg {
+            background-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn-bgg:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Fallback přechody */
+        .gradient-1 { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .gradient-2 { background: linear-gradient(135deg, #10b981, #059669); }
+        .gradient-3 { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+        .gradient-4 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .gradient-5 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+        .gradient-6 { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Herní Rozcestník</h1>
+            <input type="text" id="searchInput" class="search-bar" placeholder="Hledat hru podle názvu...">
+        </header>
+
+        <div class="grid" id="gamesContainer">
+            <!-- Karty her se vygenerují přes JavaScript -->
+        </div>
+        <div id="emptyState" class="empty-state">
+            Žádná hra neodpovídá hledání.
+        </div>
+    </div>
+
+    <script>
+        // Cesta ke složce s obrázky
+        const IMG_DIR = 'images/';
+
+        const games = [
+            { id: 'niju', title: 'NiJu', url: 'https://sentinel65.github.io/niju.html', desc: 'Klasická abstraktní desková hra.', img: 'niju.jpg', fallback: 'gradient-1' },
+            { id: 'passo', title: 'Passo', url: 'https://sentinel65.github.io/passo.html', desc: 'Strategická logická hra.', img: 'passo.jpg', fallback: 'gradient-2' },
+            { id: 'freedom', title: 'Freedom', url: 'https://sentinel65.github.io/Freedom.html', desc: 'Získejte svobodu ve své strategii na hracím plánu.', img: 'freedom.jpg', fallback: 'gradient-3' },
+            { id: 'slidestone', title: 'Slidestone', url: 'https://sentinel65.github.io/Slidestone.html', desc: 'Posouvejte kameny po desce a vytvořte vítěznou formaci.', img: 'slidestone.jpg', fallback: 'gradient-4' },
+            { id: 'sumon', title: 'Sumon', url: 'https://sentinel65.github.io/sumon.html', desc: 'Taktická hra pro bystré mozky.', img: 'sumon.jpg', fallback: 'gradient-5' },
+            { id: 'sentinel', title: 'Sentinel', url: 'https://sentinel65.github.io/sentinel.html', desc: 'Rozsévejte své hrací kameny. K akci s žetony potřebujete základní věž o velikosti alespoň 2 kamenů.', img: 'sentinel.jpg', fallback: 'gradient-6' },
+            { id: 'lockpick', title: 'LockPick', url: 'https://sentinel65.github.io/LockPick.html', desc: 'Kombinační logická výzva.', img: 'lockpick.jpg', fallback: 'gradient-1' },
+            { id: 'cabo', title: 'Cabo', url: 'https://sentinel65.github.io/Cabo.html', desc: 'Zbavte se svých karet a udržujte si nízké skóre v této napínavé karetní hře.', img: 'cabo.jpg', fallback: 'gradient-2' },
+            { id: 'zatre', title: 'Zatre', url: 'https://sentinel65.github.io/zatre.html', desc: 'Matematická abstraktní hra se skládáním čísel.', img: 'zatre.jpg', fallback: 'gradient-3' },
+            { id: 'tessella', title: 'Tessella', url: 'https://sentinel65.github.io/Tessella.html', desc: 'Vytvářejte vzory a mozaiky k vítězství.', img: 'tessella.jpg', fallback: 'gradient-4' },
+            { id: 'baju', title: 'Baju', url: 'https://sentinel65.github.io/Baju.html', desc: 'Abstraktní logická hra pro dva hráče.', img: 'baju.jpg', fallback: 'gradient-5' },
+            { id: 'folky', title: 'Folky', url: 'https://sentinel65.github.io/folky.html', desc: 'Tradiční principy v moderním webovém kabátě.', img: 'folky.jpg', fallback: 'gradient-6' },
+            { id: 'nodelinks', title: 'NodeLinks', url: 'https://sentinel65.github.io/NodeLinks.html', desc: 'Spojujte uzly a blokujte cestu svým oponentům.', img: 'nodelinks.jpg', fallback: 'gradient-1' },
+            { id: 'migoyugo', title: 'MigoYugo', url: 'https://sentinel65.github.io/MigoYugo.html', desc: 'Bystrá strategická hra MigoYugo, implementovaná s AI.', img: 'migoyugo.jpg', fallback: 'gradient-2' },
+            { id: 'ordo', title: 'Ordo', url: 'https://sentinel65.github.io/Ordo.html', desc: 'Udržte své kameny spojené ve skupině napříč herním plánem.', img: 'ordo.jpg', fallback: 'gradient-3' },
+            { id: 'hex6', title: 'Hex6', url: 'https://sentinel65.github.io/Hex6_CB.html', desc: 'Rozšířená varianta na klasickou deskovou hru Hex.', img: 'hex6.jpg', fallback: 'gradient-4' },
+            { id: 'rook', title: 'Rook', url: 'https://sentinel65.github.io/rook.html', desc: 'Taktická partie inspirovaná šachovou věží.', img: 'rook.jpg', fallback: 'gradient-5' },
+            { id: 'collapsi', title: 'Collapsi', url: 'https://sentinel65.github.io/Collapsi_AI_BASE64_en.html', desc: 'Nenechte herní plochu zkolabovat.', img: 'collapsi.jpg', fallback: 'gradient-6' },
+            { id: 'six', title: 'Six', url: 'https://sentinel65.github.io/six.html', desc: 'Pokládejte a přesouvejte kameny do tvaru, chytře navigujte napříč fázemi hry.', img: 'six.jpg', fallback: 'gradient-1' },
+            { id: 'nte_gemini', title: 'Nine Tiles Extreme', url: 'https://sentinel65.github.io/NTE_Gemini.html', desc: 'Adrenalinová vizuální hříčka, skládejte obrazce s přesností a rychlostí.', img: 'ninetiles.jpg', fallback: 'gradient-2' }
+        ];
+
+        const container = document.getElementById('gamesContainer');
+        const searchInput = document.getElementById('searchInput');
+        const emptyState = document.getElementById('emptyState');
+
+        // Handler pro chybu načtení obrázku (např. když ještě není stažený)
+        window.handleImageError = function(imgElement, fallbackClass, title) {
+            const parent = imgElement.parentElement;
+            parent.classList.add(fallbackClass);
+            parent.innerHTML = `<span class="fallback-text">${title.substring(0, 3).toUpperCase()}</span>`;
+        };
+
+        function renderGames(gamesList) {
+            container.innerHTML = '';
+            
+            if (gamesList.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+
+            gamesList.forEach(game => {
+                const bggLink = `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(game.title)}`;
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-img">
+                        <img src="${IMG_DIR}${game.img}" alt="${game.title}" 
+                             onerror="handleImageError(this, '${game.fallback}', '${game.title.replace(/'/g, "\'")}')">
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">${game.title}</h3>
+                        <p class="card-text">${game.desc}</p>
+                        <div class="card-actions">
+                            <a href="${game.url}" class="btn btn-play" target="_blank" rel="noopener noreferrer">Hrát Hru</a>
+                            <a href="${bggLink}" class="btn btn-bgg" target="_blank" rel="noopener noreferrer">Info BGG</a>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Inicializace
+        renderGames(games);
+
+        // Vyhledávání
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredGames = games.filter(game => 
+                game.title.toLowerCase().includes(searchTerm) || 
+                game.desc.toLowerCase().includes(searchTerm)
+            );
+            renderGames(filteredGames);
+        });
+    </script>
+</body>
+</html>
