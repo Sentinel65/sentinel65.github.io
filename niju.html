@@ -1055,8 +1055,8 @@ function loadSettings(){
     const raw = localStorage.getItem(SETTINGS_KEY);
     if(!raw) return { lang:'en', difficulty:'medium', nextStartColor:'w', mode:'classic' };
     const s = JSON.parse(raw);
-    return { lang:s.lang||'cs', difficulty:s.difficulty||'medium', nextStartColor:s.nextStartColor||'w', mode:s.mode||'classic' };
-  }catch(e){ return { lang:'cs', difficulty:'medium', nextStartColor:'w', mode:'classic' }; }
+    return { lang:s.lang||'en', difficulty:s.difficulty||'medium', nextStartColor:s.nextStartColor||'w', mode:s.mode||'classic' };
+  }catch(e){ return { lang:'en', difficulty:'medium', nextStartColor:'w', mode:'classic' }; }
 }
 function saveSettings(s){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }catch(e){} }
 
