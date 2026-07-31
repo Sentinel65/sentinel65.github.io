@@ -121,7 +121,6 @@ body{
 .dot.w{ background:var(--tile-w-bg); border-color:var(--tile-w-border); }
 .dot.b{ background:var(--tile-b-bg); border-color:var(--tile-b-border); }
 
-/* Počet tahů už nezobrazujeme */
 .statusbar .turncount{
   display:none;
 }
@@ -159,8 +158,8 @@ body{
 
 .cell.origin {
   background: rgba(64, 224, 208, 0.14);
-  border: 2px dashed #40e0d0; /* Tyrkysová barva */
-  pointer-events: none; /* Nesmí blokovat klikání myší na desku */
+  border: 2px dashed #40e0d0;
+  pointer-events: none;
 }
 
 @keyframes pulse{
@@ -185,19 +184,9 @@ body{
   cursor:pointer;
 }
 
-/* ---------- Nepohyblivá dlaždice (rozděluje desku) ---------- */
-.tile.unmovable-split::after{
-  content:'';
-  position:absolute;
-  inset:2px;
-  border-radius:0;
-  border:3px solid lightblue;
-  pointer-events:none;
-}
-
 /* ---------- Vybraná dlaždice ---------- */
 .tile.selected svg > rect:first-of-type {
-  fill: #fff59d !important; /* Světle žluté pozadí dlaždice */
+  fill: #fff59d !important;
   transition: fill 0.2s ease;
 }
 
@@ -223,7 +212,6 @@ body{
   filter:drop-shadow(0 0 8px rgba(46,158,79,.45));
 }
 
-/* ZELENÝ efekt je na ::before, takže ho nic nepřepíše */
 .tile.winning::before{
   content:'';
   position:absolute;
@@ -238,7 +226,6 @@ body{
   animation:winGlow 1.1s ease-in-out infinite;
 }
 
-/* Zastavení pulzování pokud je jen 1 vzor */
 .tile.winning.static::before {
   animation: none !important;
 }
@@ -248,7 +235,6 @@ body{
   z-index:6;
 }
 
-/* Žlutý efekt pouze na okolní dílky, ne na střed */
 .tile.winpart:not(.winning)::after{
   content:'';
   position:absolute;
@@ -261,9 +247,9 @@ body{
     0 0 8px rgba(224,180,0,.55),
     0 0 18px rgba(224,180,0,.38);
   animation:partGlow 1.4s ease-in-out infinite;
+  z-index:6;
 }
 
-/* Zastavení pulzování pokud je jen 1 vzor */
 .tile.winpart.static:not(.winning)::after {
   animation: none !important;
 }
@@ -312,6 +298,23 @@ body{
   border-radius:0;
   border:3px solid var(--accent);
   pointer-events:none;
+}
+
+/* ---------- Nepohyblivá dlaždice (rozděluje desku) ---------- */
+.tile.unmovable-split::after{
+  content:'';
+  position:absolute;
+  inset:2px;
+  border-radius:0;
+  border:3px solid lightblue;
+  pointer-events:none;
+  z-index: 5;
+}
+
+/* Kombinace obou stavů (světle modrý rámeček s červenou linkou uvnitř) */
+.tile.unmovable-split.blocked::after {
+  border: 3px solid lightblue;
+  box-shadow: inset 0 0 0 3px var(--accent);
 }
 
 /* ---------- Nově položená dlaždice ---------- */
@@ -903,7 +906,7 @@ en:{
   `
 }
 };
-let LANG = 'cs';
+let LANG = 'en';
 function t(key, vars){
   let s = STR[LANG][key] || key;
   if(vars) for(const k in vars) s = s.replace('{'+k+'}', vars[k]);
@@ -1345,15 +1348,15 @@ function render(center = false){
   
   const activeCenters = new Set();
   const activeWinParts = new Set();
-  let centerTarget = ST.lastMove; // Výchozí cíl zaměření kamery
-  let isSingleWin = false; // Příznak statického vítězství (jen 1 vzor)
+  let centerTarget = ST.lastMove; 
+  let isSingleWin = false; 
   
   if (ST.ended && (GAME_MODE === 'solo' || GAME_MODE === 'tournament') && soloEndPatterns.length > 0) {
       const p = soloEndPatterns[soloEndAnimationIndex];
       activeCenters.add(p.center);
       p.parts.forEach(rk => activeWinParts.add(rk));
       
-      centerTarget = parseKey(p.center); // Zaměření na aktuálně přehrávaný vzor
+      centerTarget = parseKey(p.center);
       if (soloEndPatterns.length === 1) isSingleWin = true;
 
   } else if (ST.ended && GAME_MODE === 'classic') {
@@ -1484,7 +1487,7 @@ function onTrayTap(pattern){
   }
   if(UI.selection && UI.selection.mode==='place' && UI.selection.pattern===pattern) UI.selection.rot = (UI.selection.rot+1)%4;
   else UI.selection = { mode:'place', pattern, rot:0 };
-  safeRender(false); // Při klikání do tray centrujeme NE
+  safeRender(false);
 }
 function onOwnTileTap(x,y){
   if(ST.ended || ST.turn!==ST.humanColor || ST.phase!=='movement') return;
@@ -1492,7 +1495,7 @@ function onOwnTileTap(x,y){
   if(!tile || tile.color!==ST.humanColor || !isMovable(ST.board,x,y)) return;
   if(UI.selection && UI.selection.mode==='move' && UI.selection.fromX===x && UI.selection.fromY===y) UI.selection = null;
   else UI.selection = { mode:'move', fromX:x, fromY:y, rot:tile.rot };
-  safeRender(false); // Při výběru vlastního kamene centrujeme NE
+  safeRender(false);
 }
 function onDestinationTap(x,y){
   if(!UI.selection) return;
@@ -1702,7 +1705,6 @@ document.getElementById('btnLangToggle').addEventListener('click', ()=>{
   const s = loadSettings(); s.lang = LANG; saveSettings(s);
   document.documentElement.lang = LANG;
   syncControlsFromState(); 
-  // Necháme zachovanou minulou pozici dlaždic, jen se překreslí texty, proto necentrujeme.
   safeRender(false);
 });
 
