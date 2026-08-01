@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katarenga</title>
+  <style>
+    :root {
+      --cell-size: 11.5vw;
+      --board-size: calc(var(--cell-size) * 8);
+      --bg-color: #1e272e;
+      --text-color: #ecf0f1;
+      
+      --bg-R: #ffb8b8;
+      --bg-Y: #fff3cd;
+      --bg-G: #d1f2eb;
+      --bg-B: #d6eaf8;
+    }
+    @media (min-width: 600px) {
+      :root { --cell-size: 55px; --board-size: 440px; }
+    }
+    
+    body {
+      margin: 0; padding: 0; background: var(--bg-color); color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+      user-select: none;
+    }
+    
+    /* Menu */
+    .header {
+      display: flex; gap: 8px; margin: 15px 5px 15px 5px; flex-wrap: nowrap; 
+      justify-content: center; width: 100%; max-width: 600px;
+    }
+    button {
+      background: #34495e; border: none; color: white; padding: 8px 12px; 
+      border-radius: 8px; font-size: 1.2rem; cursor: pointer; transition: 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-weight: bold;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+    button:active { transform: translateY(0); }
+
+    /* Panely nad deskou */
+    .panels-row {
+      display: flex; flex-direction: row; justify-content: space-between; gap: 10px;
+      width: 100%; max-width: var(--board-size); margin-bottom: 15px; flex-wrap: nowrap;
+      box-sizing: border-box; padding: 0 5px;
+    }
+    .panel {
+      background: #2c3e50; padding: 6px 12px; border-radius: 12px; border: 2px solid transparent;
+      display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;
+      transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.5); flex: 1; white-space: nowrap;
+    }
+    .panel.active { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.6); background: #34495e; transform: scale(1.02); }
+    .panel.disabled { opacity: 0.5; filter: grayscale(100%); border-color: transparent !important; box-shadow: none !important; }
+    
+    .stat-item { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+    .stat-item .icon, .stat-item .num { font-size: 1.2rem; line-height: 1; display: flex; align-items: center; }
+
+    /* Kolečká (tábor) */
+    .camp-dots { display: flex; gap: 5px; align-items: center; }
+    .camp-dot { width: 1.1rem; height: 1.1rem; border: 2px solid #bdc3c7; border-radius: 50%; box-sizing: border-box; }
+    .camp-dot.p1-fill { background-color: #ecf0f1; border-color: #ecf0f1; }
+    .camp-dot.p2-fill { background-color: #1a252f; border-color: #000; }
+
+    @media (max-width: 420px) {
+      .header { gap: 4px; margin: 10px 2px; padding: 0 2px; }
+      button { padding: 6px 8px; font-size: 1.1rem; border-radius: 6px; }
+      .panels-row { gap: 6px; }
+      .panel { padding: 5px 8px; gap: 8px; border-radius: 8px; }
+      .stat-item .icon, .stat-item .num { font-size: 1.1rem; }
+      .camp-dot { width: 1rem; height: 1rem; }
+    }
+
+    /* Deska se symetrickým odsazením */
+    #board-outer { position: relative; margin: 5px 15px 25px 25px; }
+    .coords { position: absolute; display: flex; font-weight: bold; font-size: 0.9rem; color: #bdc3c7; }
+    .h-coords { width: 100%; left: 0; justify-content: space-around; height: 20px; align-items: center; }
+    .h-coords.bottom { bottom: -25px; }
+    .v-coords { height: 100%; top: 0; flex-direction: column; justify-content: space-around; width: 20px; align-items: center; }
+    .v-coords.left { left: -15px; }
+
+    /* Vrstvy pro naprosto přesné centrování */
+    #board-wrapper { 
+      position: relative; 
+      width: var(--board-size); 
+      height: var(--board-size); 
+      border: 4px solid #1a252f; 
+      border-radius: 4px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6); 
+      background: #1a252f;
+      box-sizing: content-box;
+    }
+    #board-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+      width: 100%; height: 100%; 
+    }
+    
+    /* Nezávislé vrstvy pro figurky a tahy */
+    #pieces-container, #moves-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;
+    }
+
+    .cell { width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden; }
+    .cell.border-r { border-right: 3px solid #1a252f; }
+    .cell.border-b { border-bottom: 3px solid #1a252f; }
+
+    .bg-R { background-color: var(--bg-R); }
+    .bg-Y { background-color: var(--bg-Y); }
+    .bg-G { background-color: var(--bg-G); }
+    .bg-B { background-color: var(--bg-B); }
+
+    .cell::before {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: calc(var(--cell-size) * 0.85); opacity: 0.25; pointer-events: none;
+    }
+    .bg-R::before { content: '♜'; color: #c0392b; }
+    .bg-Y::before { content: '♝'; color: #b38b00; }
+    .bg-G::before { content: '♞'; color: #16a085; }
+    .bg-B::before { content: '♚'; color: #2980b9; }
+
+    /* Kameny a zobrazení tahu - bez výchozího stínu */
+    .piece, .valid-move {
+      position: absolute; width: 12.5%; height: 12.5%;
+      display: flex; justify-content: center; align-items: center;
+      transition: top 0.3s ease-in-out, left 0.3s ease-in-out; 
+      pointer-events: auto;
+    }
+    .piece-inner { width: 70%; height: 70%; border-radius: 50%; cursor: pointer; box-shadow: none; }
+    .piece.p1 .piece-inner { background: #ecf0f1; border: 2px solid #7f8c8d; }
+    .piece.p2 .piece-inner { background: #1a252f; border: 2px solid #000; }
+    
+    /* Záře označeného kamene */
+    .piece.selected .piece-inner { box-shadow: 0 0 15px 6px #f39c12 !important; border-color: #f39c12; animation: none !important; }
+
+    /* Animace blikání ZÁŘE (box-shadow) na soupeřově základně - samotná barva nebliká */
+    @keyframes baselineGlowBlink {
+      0%, 100% { box-shadow: 0 0 4px 2px #f1c40f; }
+      50% { box-shadow: 0 0 18px 8px #f1c40f; }
+    }
+    .piece.baseline-blink .piece-inner {
+      animation: baselineGlowBlink 1.4s infinite ease-in-out;
+    }
+
+    .valid-move { z-index: 15; }
+    .valid-move-inner { width: 35%; height: 35%; background: rgba(0,0,0,0.6); border-radius: 50%; cursor: pointer; }
+    .valid-move.capture .valid-move-inner { background: rgba(231, 76, 60, 0.9); width: 45%; height: 45%; border: 2px solid #fff; }
+    
+    .valid-move.off-board { z-index: 20; }
+    .valid-move.off-board .valid-move-inner {
+      width: 100%; height: 100%; border-radius: 0; background: rgba(241, 196, 15, 0.4); 
+      border: 4px solid #f1c40f; box-sizing: border-box; box-shadow: inset 0 0 15px rgba(241, 196, 15, 0.8);
+    }
+
+    /* Log */
+    #log-container {
+      width: 90%; max-width: 500px; margin-bottom: 30px; background: #2c3e50; border-radius: 10px; padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box;
+    }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem;
+      border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-bottom: 10px;
+    }
+    #log-content { max-height: 140px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #bdc3c7; }
+
+    /* Modal Pravidla */
+    .modal {
+      display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+    }
+    .modal-content {
+      background: #34495e; margin: 5vh auto; padding: 25px; border-radius: 8px;
+      width: 85%; max-width: 550px; color: #ecf0f1; line-height: 1.6; box-sizing: border-box;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .close { color: #bdc3c7; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+
+    /* Toasty */
+    #toast-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000;
+      display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 400px;
+    }
+    .toast {
+      background: #34495e; color: #ecf0f1; padding: 12px 24px; border-radius: 6px; font-weight: bold;
+      border-left: 5px solid #f1c40f; box-shadow: 0 5px 15px rgba(0,0,0,0.6); font-size: 1rem;
+      text-align: center; pointer-events: auto;
+    }
+    .toast.auto-fade { animation: fadeinout 3.5s forwards; }
+    .toast.interactive { animation: fadein 0.3s forwards; }
+    
+    .toast-btns { display: flex; gap: 15px; justify-content: center; margin-top: 10px; }
+    .toast-btns button { padding: 6px 18px; font-size: 0.95rem; box-shadow: none; border-radius: 4px; }
+    .btn-yes { background: #2ecc71 !important; }
+    .btn-no { background: #e74c3c !important; }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="header">
+    <button onclick="confirmReset()" title="Nová hra">🔄</button>
+    <button id="btn-mode" onclick="toggleMode()" title="Změnit režim">👤</button>
+    <button onclick="saveGame()" title="Uložit">💾</button>
+    <button onclick="loadGame()" title="Načíst">📂</button>
+    <button onclick="toggleRules()" title="Pravidla">💡</button>
+    <button id="btn-lang" onclick="toggleLang()" title="Přepnout jazyk">🇬🇧</button>
+    <button id="btn-sound" onclick="toggleSound()" title="Zvuk">🔊</button>
+  </div>
+
+  <div class="panels-row">
+    <div class="panel p2-panel" id="panel-2">
+      <div class="stat-item">
+        <span class="icon" id="p2-icon">👤</span>
+        <span class="num" id="rem-2">8</span>
+      </div>
+      <div class="camp-dots" id="camp-dots-2"></div>
+    </div>
+    <div class="panel p1-panel" id="panel-1">
+      <div class="stat-item">
+        <span class="icon"  id="p1-icon">👤</span>
+        <span class="num" id="rem-1">8</span>
+      </div>
+      <div class="camp-dots" id="camp-dots-1"></div>
+    </div>
+  </div>
+
+  <div id="board-outer">
+    <div class="coords h-coords bottom"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span></div>
+    <div class="coords v-coords left"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+    
+    <div id="board-wrapper">
+      <div id="board-grid"></div>
+      <div id="pieces-container"></div>
+      <div id="moves-container"></div>
+    </div>
+  </div>
+
+  <div id="log-container">
+    <div class="log-header">
+      <span id="log-title">Log tahů</span>
+      <button onclick="copyLog()" title="Kopírovat log" style="padding:5px 10px; font-size:0.9rem;">📋</button>
+    </div>
+    <div id="log-content"></div>
+  </div>
+
+  <div id="rules-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="toggleRules()">&times;</span>
+      <h1 style="text-align: center; margin: 0; color: #f1c40f; font-size: 2.3rem; font-weight: bold; letter-spacing: 1px;">KATARENGA</h1>
+      <h3 id="rules-sub-title" style="text-align: center; margin: 5px 0 20px 0; font-weight: normal; color: #bdc3c7; font-size: 1.1rem;">Pravidla hry</h3>
+      <div id="rules-text"></div>
+    </div>
+  </div>
+
+<script>
+  const i18n = {
+    cs: {
+      logTitle: "Log tahů", copied: "Log zkopírován!", rules: "Pravidla", boardType: "ID desky: ",
+      winP1: "🎉 Hráč 1 VÍTĚZÍ! 🎉", winP2: "🎉 Hráč 2 VÍTĚZÍ! 🎉",
+      gameOver: "Konec hry - vítěz", reasonCamp: "2 kameny v táboře", reasonCapture: "soupeři zbyl 1 kámen ve hře",
+      subTitle: "Pravidla hry",
+      rulesText: `
+        <b>Herní deska</b><br>
+        Hrací deska o rozměrech 8×8 polí ve čtyřech barvách. Skládá se ze 4 kvadrantů (4×4 polí), každý kvadrant lze libovolně otočit a lze použít obě jeho strany (líc i rub) – vznikají tak tisíce různých uspořádání hrací desky.<br><br>
+        <b>ID desky (např. 0A-3C-4B-7D):</b><br>
+        Každý pár (např. <b>0A</b>) značí:<br> 
+        Kvadrant (0 = líc, 1 = rub)<br> 
+        Rotace (A=0°, B=90°, C=180°, D=270°).<br><br>TL = Vlevo nahoře<br>TR = Vpravo nahoře<br>BL = Vlevo dole<br>BR = Vpravo dole<br>        <div style="overflow-x:auto; margin: 10px 0;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem; color:#ecf0f1; text-align:left;">
+          <tr style="background:#2c3e50;">
+            <th style="padding:4px; border:1px solid #444;">Poz.</th>
+            <th style="padding:4px; border:1px solid #444;">ID</th>
+            <th style="padding:4px; border:1px solid #444;">Typ [Rotace]</th>
+          </tr>
+          <tr><td style="padding:4px; border:1px solid #444;">TL</td><td style="padding:4px; border:1px solid #444;">0A</td><td style="padding:4px; border:1px solid #444;">Typ 0 [0°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">TR</td><td style="padding:4px; border:1px solid #444;">3C</td><td style="padding:4px; border:1px solid #444;">Typ 3 [180°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">BL</td><td style="padding:4px; border:1px solid #444;">7D</td><td style="padding:4px; border:1px solid #444;">Typ 7 [270°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">BR</td><td style="padding:4px; border:1px solid #444;">4B</td><td style="padding:4px; border:1px solid #444;">Typ 4 [90°]</td></tr>
+        </table>
+        </div>
+        <b>Pohyb figurek — barva pole určuje způsob pohybu</b><br>
+        <span style='color:#ff4d4d; font-weight:bold'>Červená → věž.</span> Libovolně daleko v řadě nebo sloupci, ale ne za další červené pole v dané linii.<br>
+        <span style='color:#ffca28; font-weight:bold'>Žlutá → střelec.</span> Libovolně daleko diagonálně, ale ne za další žluté pole v dané diagonále.<br>
+        <span style='color:#2ecc71; font-weight:bold'>Zelená → jezdec.</span> Skok ve tvaru L (jako šachový jezdec).<br>
+        <span style='color:#29b6f6; font-weight:bold'>Modrá → král.</span> Jedno pole libovolným směrem.<br><br>
+        
+        <b>Průběh hry</b><br>
+        • <i>První tah:</i> Nelze brát soupeřovy figurky stojící na jeho výchozí řadě.<br>
+        • <i>Vstup do tábora:</i> Kámen na soupeřově základně začne blikat (jeho vnější zlatá záře). Klikněte na něj a potvrďte vstup do tábora. V logu hry se tento odchod značí symbolem <code>✠</code>, v počítadle hráče se poté vybarví táborové kolečko.<br><br>        
+        <b>Vítěz</b><br>
+        Hráč vyhraje když: (1) dostane 2 figurky do obou nepřátelských táborů, NEBO (2) zajme 7 nebo více soupeřových figurek.
+      `,
+      noSave: "Žádná uložená hra.", resetMsg: "Opravdu začít novou hru?", saved: "Hra uložena!", yes: "Ano", no: "Ne"
+    },
+    en: {
+      logTitle: "Move Log", copied: "Log copied!", rules: "Rules", boardType: "Board ID: ",
+      winP1: "🎉 Player 1 WINS! 🎉", winP2: "🎉 Player 2 WINS! 🎉",
+      gameOver: "Game over - winner", reasonCamp: "has 2 pieces in camp", reasonCapture: "only 1 piece left in play",
+      subTitle: "Rules of the game",
+      rulesText: `
+        <b>The Board</b><br>
+        An 8×8 game board in four colors. It consists of 4 quadrants (4×4 squares); each quadrant can be rotated freely, and both sides (front and back) can be used—resulting in thousands of different board configurations.<br><br>
+        <b>Board ID (e.g., 0A-3C-4B-7D):</b><br>
+        Each pair (e.g. <b>0A</b>) denotes:<br>
+        Quadrant (0 = front, 1 = back)<br>
+        Rotation (A=0°, B=90°, C=180°, D=270°).<br>
+        <div style="overflow-x:auto; margin: 10px 0;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem; color:#ecf0f1; text-align:left;">
+          <tr style="background:#2c3e50;">
+            <th style="padding:4px; border:1px solid #444;">Pos.</th>
+            <th style="padding:4px; border:1px solid #444;">ID</th>
+            <th style="padding:4px; border:1px solid #444;">Desc.</th>
+          </tr>
+          <tr><td style="padding:4px; border:1px solid #444;">TL</td><td style="padding:4px; border:1px solid #444;">0A</td><td style="padding:4px; border:1px solid #444;">Front 0 [0°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">TR</td><td style="padding:4px; border:1px solid #444;">3C</td><td style="padding:4px; border:1px solid #444;">Back 3 [180°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">BL</td><td style="padding:4px; border:1px solid #444;">4B</td><td style="padding:4px; border:1px solid #444;">Front 4 [90°]</td></tr>
+          <tr><td style="padding:4px; border:1px solid #444;">BR</td><td style="padding:4px; border:1px solid #444;">7D</td><td style="padding:4px; border:1px solid #444;">Back 7 [270°]</td></tr>
+        </table>
+        </div>
+        <b>Movement — the square colour dictates how each pawn moves</b><br>
+        <span style='color:#ff4d4d; font-weight:bold'>Red → rook.</span> Any distance along a rank or file, but not beyond the next red square in that line.<br>
+        <span style='color:#ffca28; font-weight:bold'>Yellow → bishop.</span> Any distance diagonally, but not beyond the next yellow square in that diagonal.<br>
+        <span style='color:#2ecc71; font-weight:bold'>Green → knight.</span> L-shaped jump (like a chess knight).<br>
+        <span style='color:#29b6f6; font-weight:bold'>Blue → king.</span> One square in any direction.<br><br>
+        
+        <b>Play</b><br>
+        • <i>First move:</i> You may not capture a pawn on the opponent's home rank on your very first move.<br>
+        • <i>Entering camp:</i> A piece reaching the opponent's baseline starts flashing. Click it to confirm moving into the camp. Logged as <code>✠</code>, and the player's camp indicator fills up.<br><br>
+        
+        <b>Winning</b><br>
+        Win by: (1) Getting 2 pawns into both enemy camps, OR (2) Capturing 7 or more opposing pawns.
+      `,
+      noSave: "No saved game.", resetMsg: "Start a new game?", saved: "Game saved!", yes: "Yes", no: "No"
+    }
+  };
+
+  const COLS = ['A','B','C','D','E','F','G','H'];
+  const ROWS = ['8','7','6','5','4','3','2','1'];
+  
+  const AI_MODES = ['pvp', 'ai-1', 'ai-2', 'ai-3'];
+  const MODE_ICONS = { 'pvp': '👤', 'ai-1': '🖥️', 'ai-2': '🖥️', 'ai-3': '🖥️' };
+  const MODE_COLORS = { 'pvp': '', 'ai-1': '#caffbf', 'ai-2': '#fdffb6', 'ai-3': '#ffadad' };
+  const COLOR_EMOJI = { 'R': '🟥', 'Y': '🟨', 'G': '🟩', 'B': '🟦' };
+
+  let lang = 'cs', soundEnabled = true, gameMode = 'ai-3';
+  let board = [], boardId = "", pieces = [], currentPlayer = 1, globalStartingPlayer = 1;
+  let homeCounts = {1:0, 2:0}, turnCounts = {1:0, 2:0};
+  let selectedPiece = null, validMoves = [], moveLog = [], isGameOver = false, audioCtx = null;
+
+  const baseQuadrants = [
+    [['R','Y','G','B'], ['B','R','Y','G'], ['G','B','R','Y'], ['Y','G','B','R']],
+    [['Y','B','R','G'], ['G','Y','B','R'], ['R','G','Y','B'], ['B','R','G','Y']],
+    [['G','R','B','Y'], ['Y','B','R','G'], ['R','Y','G','B'], ['B','G','Y','R']],
+    [['B','Y','G','R'], ['R','G','B','Y'], ['Y','R','G','B'], ['G','B','Y','R']],
+    [['R','B','Y','G'], ['Y','G','B','R'], ['B','R','G','Y'], ['G','Y','R','B']],
+    [['Y','R','G','B'], ['G','B','R','Y'], ['R','Y','B','G'], ['B','G','Y','R']],
+    [['B','G','R','Y'], ['Y','R','B','G'], ['G','Y','R','B'], ['R','B','G','Y']],
+    [['G','B','Y','R'], ['R','Y','G','B'], ['B','R','Y','G'], ['Y','G','B','R']]
+  ];
+
+  function rotate4x4(mat, times) {
+    let res = JSON.parse(JSON.stringify(mat));
+    for (let t=0; t<times; t++) {
+      let tmp = [[],[],[],[]];
+      for (let r=0; r<4; r++) for (let c=0; c<4; c++) tmp[c][3-r] = res[r][c];
+      res = tmp;
+    }
+    return res;
+  }
+
+  function generateBoard() {
+    let qList = [Math.random()<.5?0:1, Math.random()<.5?2:3, Math.random()<.5?4:5, Math.random()<.5?6:7].sort(()=>Math.random()-0.5);
+    let rots = [Math.floor(Math.random()*4), Math.floor(Math.random()*4), Math.floor(Math.random()*4), Math.floor(Math.random()*4)];
+    
+    boardId = qList.map((q, i) => `${q}${['A','B','C','D'][rots[i]]}`).join('-');
+    
+    let [qTL, qTR, qBL, qBR] = qList.map((idx, i) => rotate4x4(baseQuadrants[idx], rots[i]));
+    let newBoard = [];
+    for(let r=0; r<8; r++) {
+      newBoard.push([]);
+      for(let c=0; c<8; c++) {
+        if(r<4 && c<4) newBoard[r][c] = qTL[r][c];
+        else if(r<4 && c>=4) newBoard[r][c] = qTR[r][c-4];
+        else if(r>=4 && c<4) newBoard[r][c] = qBL[r-4][c];
+        else newBoard[r][c] = qBR[r-4][c-4];
+      }
+    }
+    return newBoard;
+  }
+
+  function init() {
+    if(localStorage.getItem('soundEnabled')) soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+    startNewGame(false);
+  }
+
+  function showToast(msg) {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast auto-fade'; t.innerText = msg;
+    container.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  function showConfirmToast(msg, onConfirm) {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast interactive';
+    t.innerHTML = `
+      <div>${msg}</div>
+      <div class="toast-btns">
+        <button class="btn-yes">${i18n[lang].yes}</button>
+        <button class="btn-no">${i18n[lang].no}</button>
+      </div>
+    `;
+    container.appendChild(t);
+    t.querySelector('.btn-yes').onclick = () => { t.remove(); onConfirm(); };
+    t.querySelector('.btn-no').onclick = () => t.remove();
+  }
+
+  function startNewGame(isReset = true) {
+    board = generateBoard();
+    pieces = []; let id = 0;
+    for(let c=0; c<8; c++) {
+      pieces.push({id: id++, player: 2, r: 0, c: c});
+      pieces.push({id: id++, player: 1, r: 7, c: c});
+    }
+    if (isReset) globalStartingPlayer = globalStartingPlayer === 1 ? 2 : 1;
+    currentPlayer = globalStartingPlayer;
+    homeCounts = {1:0, 2:0}; turnCounts = {1:0, 2:0};
+    
+    moveLog = [`${i18n[lang].boardType} <b>${boardId}</b>`]; 
+    selectedPiece = null; validMoves = []; isGameOver = false;
+    
+    renderBoardGrid(); renderPieces(); renderMoves(); renderLog(); updateUI();
+    triggerAI();
+  }
+
+  function getLogPrefix(player, withSpace = true) {
+    let space = withSpace ? " " : "";
+    if (gameMode === 'pvp') return (player === 1 ? "⚪" : "⚫") + space;
+    return (player === 1 ? "👤⚪" : "🖥️⚫") + space;
+  }
+
+  function updateUI() {
+    let t = i18n[lang];
+    document.getElementById('btn-lang').innerText = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+    document.getElementById('btn-sound').innerText = soundEnabled ? '🔊' : '🔈'; 
+    
+    let modeBtn = document.getElementById('btn-mode');
+    modeBtn.innerText = MODE_ICONS[gameMode];
+    modeBtn.style.backgroundColor = MODE_COLORS[gameMode] || '#34495e';
+    
+    // Změna ikon v panelech podle režimu:
+    // v PvP: Bílý kámen (Hráč 1) a Černý kámen (Hráč 2)
+    // v AI: Panáček (Hráč 1) a Monitor (Hráč 2)
+    document.getElementById('p1-icon').innerText = gameMode === 'pvp' ? '⚪' : '👤';
+    document.getElementById('p2-icon').innerText = gameMode === 'pvp' ? '⚫' : '🖥️';
+    document.getElementById('log-title').innerText = t.logTitle;
+    document.getElementById('rules-sub-title').innerText = t.subTitle;
+    document.getElementById('rules-text').innerHTML = t.rulesText;
+
+    let p1Panel = document.getElementById('panel-1');
+    let p2Panel = document.getElementById('panel-2');
+    
+    if (isGameOver) {
+      p1Panel.className = 'panel p1-panel disabled';
+      p2Panel.className = 'panel p2-panel disabled';
+    } else {
+      p1Panel.className = 'panel p1-panel' + (currentPlayer === 1 ? ' active' : '');
+      p2Panel.className = 'panel p2-panel' + (currentPlayer === 2 ? ' active' : '');
+    }
+    
+    document.getElementById('rem-1').innerText = pieces.filter(p=>p.player===1).length;
+    document.getElementById('rem-2').innerText = pieces.filter(p=>p.player===2).length;
+    
+    let c1 = homeCounts[1];
+    let c2 = homeCounts[2];
+    document.getElementById('camp-dots-1').innerHTML = `
+      <div class="camp-dot ${c1 > 0 ? 'p1-fill' : ''}"></div>
+      <div class="camp-dot ${c1 > 1 ? 'p1-fill' : ''}"></div>
+    `;
+    document.getElementById('camp-dots-2').innerHTML = `
+      <div class="camp-dot ${c2 > 0 ? 'p2-fill' : ''}"></div>
+      <div class="camp-dot ${c2 > 1 ? 'p2-fill' : ''}"></div>
+    `;
+  }
+
+  function renderBoardGrid() {
+    const grid = document.getElementById('board-grid'); grid.innerHTML = '';
+    for(let r=0; r<8; r++) {
+      for(let c=0; c<8; c++) {
+        let cell = document.createElement('div');
+        cell.className = `cell bg-${board[r][c]}`;
+        if(r===3) cell.classList.add('border-b');
+        if(c===3) cell.classList.add('border-r');
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function renderPieces() {
+    const container = document.getElementById('pieces-container'); container.innerHTML = '';
+    pieces.forEach(p => {
+      let el = document.createElement('div');
+      
+      let isBaseline = (p.player === 1 && p.r === 0) || (p.player === 2 && p.r === 7);
+      
+      el.className = `piece p${p.player}` + 
+                     (selectedPiece && selectedPiece.id === p.id ? ' selected' : '') +
+                     (isBaseline ? ' baseline-blink' : '');
+                     
+      el.style.top = `${p.r * 12.5}%`; el.style.left = `${p.c * 12.5}%`;
+      
+      let inner = document.createElement('div'); inner.className = 'piece-inner';
+      el.appendChild(inner);
+      
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if(isGameOver || (currentPlayer === 2 && gameMode !== 'pvp')) return;
+        if(p.player === currentPlayer) {
+          selectedPiece = p; validMoves = getMovesForPiece(p, pieces, turnCounts[p.player]);
+          renderPieces(); renderMoves();
+        } else {
+          let move = validMoves.find(m => m.r === p.r && m.c === p.c && !m.off);
+          if(move) executeMove(selectedPiece, move);
+        }
+      };
+      container.appendChild(el);
+    });
+  }
+
+  function renderMoves() {
+    const container = document.getElementById('moves-container'); container.innerHTML = '';
+    validMoves.forEach(m => {
+      let el = document.createElement('div');
+      let occ = pieces.find(p => p.r === m.r && p.c === m.c);
+      el.className = 'valid-move' + (occ && !m.off ? ' capture' : '') + (m.off ? ' off-board' : '');
+      el.style.top = `${m.r * 12.5}%`; el.style.left = `${m.c * 12.5}%`;
+      
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if(isGameOver || (currentPlayer === 2 && gameMode !== 'pvp')) return;
+        executeMove(selectedPiece, m);
+      };
+      
+      let inner = document.createElement('div'); inner.className = 'valid-move-inner';
+      el.appendChild(inner); container.appendChild(el);
+    });
+  }
+
+  function renderLog() {
+    const lc = document.getElementById('log-content');
+    if (moveLog.length === 0) { lc.innerHTML = ''; return; }
+    
+    let html = `<div>${moveLog[0]}</div>`;
+    for(let i = moveLog.length - 1; i >= 1; i--) {
+      html += `<div>${moveLog[i]}</div>`;
+    }
+    lc.innerHTML = html;
+    lc.scrollTop = 0;
+  }
+
+  function getMovesForPiece(piece, statePieces, turnCount) {
+    let moves = [];
+    let color = board[piece.r][piece.c];
+    const getP = (r,c) => statePieces.find(x => x.r===r && x.c===c);
+
+    const addLine = (dirs, targetC) => {
+      for(let d of dirs) {
+        let nr = piece.r + d[0], nc = piece.c + d[1];
+        while(nr>=0 && nr<8 && nc>=0 && nc<8) {
+          let occ = getP(nr, nc);
+          if(occ) {
+            if(occ.player !== piece.player) moves.push({r: nr, c: nc});
+            break;
+          }
+          moves.push({r: nr, c: nc});
+          if(board[nr][nc] === targetC) break;
+          nr += d[0]; nc += d[1];
+        }
+      }
+    };
+
+    if(color === 'R') addLine([[-1,0],[1,0],[0,-1],[0,1]], 'R');
+    if(color === 'Y') addLine([[-1,-1],[-1,1],[1,-1],[1,1]], 'Y');
+    if(color === 'G') {
+      [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]].forEach(d => {
+        let nr = piece.r + d[0], nc = piece.c + d[1];
+        if(nr>=0 && nr<8 && nc>=0 && nc<8) {
+          let occ = getP(nr, nc);
+          if(!occ || occ.player !== piece.player) moves.push({r: nr, c: nc});
+        }
+      });
+    }
+    if(color === 'B') {
+      [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]].forEach(d => {
+        let nr = piece.r + d[0], nc = piece.c + d[1];
+        if(nr>=0 && nr<8 && nc>=0 && nc<8) {
+          let occ = getP(nr, nc);
+          if(!occ || occ.player !== piece.player) moves.push({r: nr, c: nc});
+        }
+      });
+    }
+
+    if(piece.player === 1 && piece.r === 0) moves.push({r: piece.r, c: piece.c, off: true});
+    if(piece.player === 2 && piece.r === 7) moves.push({r: piece.r, c: piece.c, off: true});
+
+    if(turnCount === 0) {
+      let oppHome = piece.player === 1 ? 0 : 7;
+      moves = moves.filter(m => {
+        if (m.off) return true;
+        let occ = getP(m.r, m.c);
+        if(occ && occ.player !== piece.player && m.r === oppHome) return false;
+        return true;
+      });
+    }
+    moves.forEach(m => m.pId = piece.id);
+    return moves;
+  }
+
+  function executeMove(piece, move) {
+    let fromColor = board[piece.r][piece.c];
+    let toColor = move.off ? null : board[move.r][move.c];
+    
+    let cap = pieces.find(p => p.r === move.r && p.c === move.c && p.player !== piece.player);
+    let separator = (cap && !move.off) ? "x" : "-";
+    
+    let fromStr = COLS[piece.c] + ROWS[piece.r] + COLOR_EMOJI[fromColor];
+    let toStr = move.off ? "✠" : (separator + COLS[move.c] + ROWS[move.r] + COLOR_EMOJI[toColor]);
+    let prefix = getLogPrefix(piece.player);
+    let moveNum = String(moveLog.length).padStart(2, '0') + ". ";
+    
+    moveLog.push(moveNum + prefix + fromStr + toStr);
+
+    if(move.off) {
+      pieces = pieces.filter(p => p.id !== piece.id);
+      homeCounts[piece.player]++; playSound('move');
+    } else {
+      if(cap) {
+        pieces = pieces.filter(p => p.id !== cap.id); playSound('capture');
+      } else playSound('move');
+      piece.r = move.r; piece.c = move.c;
+    }
+    
+    turnCounts[piece.player]++; selectedPiece = null; validMoves = [];
+    
+    let p1Total = pieces.filter(p=>p.player===1).length + homeCounts[1];
+    let p2Total = pieces.filter(p=>p.player===2).length + homeCounts[2];
+
+    if (homeCounts[1] >= 2) {
+      endGame(1, 'camp');
+    } else if (p2Total <= 1) {
+      endGame(1, 'capture');
+    } else if (homeCounts[2] >= 2) {
+      endGame(2, 'camp');
+    } else if (p1Total <= 1) {
+      endGame(2, 'capture');
+    } else {
+      currentPlayer = currentPlayer === 1 ? 2 : 1;
+      updateUI(); renderPieces(); renderMoves(); renderLog();
+      triggerAI();
+    }
+  }
+
+  function endGame(winner, reason) {
+    isGameOver = true; 
+    let reasonText = reason === 'camp' ? i18n[lang].reasonCamp : i18n[lang].reasonCapture;
+    let endMsg = i18n[lang].gameOver + " " + getLogPrefix(winner, false) + "<br>(" + reasonText + ")";
+    moveLog.push("<b style='color:#f1c40f;'>" + endMsg + "</b>");
+    
+    updateUI(); renderPieces(); renderMoves(); renderLog();
+    playSound('win');
+    showToast(winner === 1 ? i18n[lang].winP1 : i18n[lang].winP2);
+  }
+
+  function triggerAI() {
+    if(gameMode !== 'pvp' && currentPlayer === 2 && !isGameOver) setTimeout(calculateAIMove, 200);
+  }
+
+  function simulateMove(statePieces, move, p1c, p2c) {
+    let nextPieces = statePieces.map(p => ({...p}));
+    let pieceIdx = nextPieces.findIndex(p => p.id === move.pId);
+    let player = nextPieces[pieceIdx].player;
+    
+    if(move.off) {
+      nextPieces.splice(pieceIdx, 1);
+      player === 1 ? p1c++ : p2c++;
+    } else {
+      let capIdx = nextPieces.findIndex(p => p.r === move.r && p.c === move.c);
+      if(capIdx !== -1) nextPieces.splice(capIdx, 1);
+      let p = nextPieces.find(x => x.id === move.pId);
+      p.r = move.r; p.c = move.c;
+    }
+    return { nextPieces, p1c, p2c };
+  }
+
+  function evaluateState(statePieces, p1c, p2c) {
+    let p1 = statePieces.filter(p=>p.player===1), p2 = statePieces.filter(p=>p.player===2);
+    let p1Total = p1.length + p1c;
+    let p2Total = p2.length + p2c;
+
+    if (p1c >= 2 || p2Total <= 1) return -10000;
+    if (p2c >= 2 || p1Total <= 1) return 10000;
+
+    let score = (p2c * 2000) - (p1c * 2000);
+    score += (p2.length * 300) - (p1.length * 300);
+    p2.forEach(p => score += p.r * 15);
+    p1.forEach(p => score -= (7 - p.r) * 15);
+    return score;
+  }
+
+  function generateAllLogicalMoves(statePieces, player, t1, t2) {
+    let allMoves = [];
+    statePieces.filter(p => p.player === player).forEach(p => {
+      allMoves.push(...getMovesForPiece(p, statePieces, player === 1 ? t1 : t2));
+    });
+    allMoves.sort((a,b) => {
+      let scoreA = a.off ? 100 : (statePieces.find(p=>p.r===a.r && p.c===a.c) ? 50 : 0);
+      let scoreB = b.off ? 100 : (statePieces.find(p=>p.r===b.r && p.c===b.c) ? 50 : 0);
+      return scoreB - scoreA;
+    });
+    return allMoves;
+  }
+
+  function minimax(statePieces, p1c, p2c, t1, t2, depth, alpha, beta, isMax) {
+    let evalVal = evaluateState(statePieces, p1c, p2c);
+    if (depth === 0 || Math.abs(evalVal) >= 9000) return evalVal;
+    let moves = generateAllLogicalMoves(statePieces, isMax ? 2 : 1, t1, t2);
+    if (moves.length === 0) return evalVal;
+
+    if (isMax) {
+      let maxEv = -Infinity;
+      for (let m of moves) {
+        let n = simulateMove(statePieces, m, p1c, p2c);
+        let ev = minimax(n.nextPieces, n.p1c, n.p2c, t1, t2+1, depth - 1, alpha, beta, false);
+        maxEv = Math.max(maxEv, ev); alpha = Math.max(alpha, ev);
+        if (beta <= alpha) break;
+      }
+      return maxEv;
+    } else {
+      let minEv = Infinity;
+      for (let m of moves) {
+        let n = simulateMove(statePieces, m, p1c, p2c);
+        let ev = minimax(n.nextPieces, n.p1c, n.p2c, t1+1, t2, depth - 1, alpha, beta, true);
+        minEv = Math.min(minEv, ev); beta = Math.min(beta, ev);
+        if (beta <= alpha) break;
+      }
+      return minEv;
+    }
+  }
+
+  function calculateAIMove() {
+    let depth = gameMode === 'ai-1' ? 2 : (gameMode === 'ai-2' ? 3 : 4);
+    let moves = generateAllLogicalMoves(pieces, 2, turnCounts[1], turnCounts[2]);
+    if(moves.length === 0) { currentPlayer = 1; updateUI(); return; }
+
+    let bestMove = null, bestVal = -Infinity;
+    let randomJitter = depth === 2; // mírná nepředvídatelnost pro nejnižší úroveň
+
+    for (let m of moves) {
+      let n = simulateMove(pieces, m, homeCounts[1], homeCounts[2]);
+      let ev = minimax(n.nextPieces, n.p1c, n.p2c, turnCounts[1], turnCounts[2]+1, depth - 1, -Infinity, Infinity, false);
+      if(randomJitter) ev += Math.random() * 5; 
+      if (ev > bestVal) { bestVal = ev; bestMove = m; }
+    }
+    
+    if(!bestMove) bestMove = moves[0];
+    let pieceToMove = pieces.find(p => p.id === bestMove.pId);
+    executeMove(pieceToMove, bestMove);
+  }
+
+  // --- OVLÁDÁNÍ ---
+  function confirmReset() {
+    showConfirmToast(i18n[lang].resetMsg, () => startNewGame(true));
+  }
+  function toggleMode() {
+    let idx = AI_MODES.indexOf(gameMode);
+    gameMode = AI_MODES[(idx + 1) % AI_MODES.length];
+    updateUI(); triggerAI();
+  }
+  function toggleLang() {
+    lang = lang === 'cs' ? 'en' : 'cs'; 
+    if(moveLog.length > 0) moveLog[0] = `${i18n[lang].boardType} <b>${boardId}</b>`;
+    updateUI(); renderLog();
+  }
+  function toggleRules() {
+    let m = document.getElementById('rules-modal');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+  }
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('soundEnabled', soundEnabled);
+    updateUI();
+  }
+  function copyLog() {
+    let logToCopy = moveLog.length > 0 ? [moveLog[0], ...moveLog.slice(1).reverse()] : [];
+    let plainLog = logToCopy.map(l => l.replace(/<[^>]+>/g, '')).join("\n");
+    navigator.clipboard.writeText(plainLog).then(() => showToast(i18n[lang].copied));
+  }
+  function saveGame() {
+    const state = { boardId, board, pieces, currentPlayer, globalStartingPlayer, gameMode, homeCounts, turnCounts, moveLog, lang };
+    localStorage.setItem('katarenga_save', JSON.stringify(state));
+    showToast(i18n[lang].saved);
+  }
+  function loadGame() {
+    const saved = localStorage.getItem('katarenga_save');
+    if(saved) {
+      const state = JSON.parse(saved);
+      board = state.board; boardId = state.boardId || "N/A"; pieces = state.pieces; currentPlayer = state.currentPlayer;
+      globalStartingPlayer = state.globalStartingPlayer || 1; gameMode = state.gameMode || 'pvp';
+      homeCounts = state.homeCounts; turnCounts = state.turnCounts || {1:1, 2:1};
+      moveLog = state.moveLog || []; lang = state.lang;
+      
+      let p1Total = pieces.filter(p=>p.player===1).length + homeCounts[1];
+      let p2Total = pieces.filter(p=>p.player===2).length + homeCounts[2];
+      isGameOver = (homeCounts[1] >= 2 || p2Total <= 1 || homeCounts[2] >= 2 || p1Total <= 1);
+      
+      selectedPiece = null; validMoves = [];
+      renderBoardGrid(); renderPieces(); renderMoves(); renderLog(); updateUI(); 
+      if(!isGameOver) triggerAI();
+    } else showToast(i18n[lang].noSave);
+  }
+
+  function playSound(type) {
+    if(!soundEnabled) return;
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    
+    if(type === 'move') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'capture') {
+      osc.type = 'square'; osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    } else if (type === 'win') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+    }
+  }
+
+  window.onclick = function(e) {
+    let m = document.getElementById('rules-modal');
+    if (e.target == m) m.style.display = "none";
+    if (!e.target.closest('#board-wrapper') && selectedPiece) {
+      selectedPiece = null; validMoves = []; renderPieces(); renderMoves();
+    }
+  }
+
+  window.onload = init;
+</script>
+</body>
+</html>
