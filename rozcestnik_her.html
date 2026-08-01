@@ -14,6 +14,7 @@
             --accent: #f59e0b;
             --accent-hover: #d97706;
             --border: #334155;
+            --text-muted: #94a3b8;
         }
 
         * {
@@ -43,15 +44,22 @@
 
         h1 {
             font-size: 2.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             background: -webkit-linear-gradient(45deg, #60a5fa, #a78bfa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .search-bar {
-            width: 100%;
-            max-width: 500px;
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            max-width: 700px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .search-bar, .sort-select {
             padding: 0.8rem 1.5rem;
             border-radius: 30px;
             border: 1px solid var(--border);
@@ -62,7 +70,23 @@
             transition: border-color 0.3s;
         }
 
-        .search-bar:focus {
+        .search-bar {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .sort-select {
+            cursor: pointer;
+            min-width: 200px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem top 50%;
+            background-size: 0.65rem auto;
+            padding-right: 2.5rem;
+        }
+
+        .search-bar:focus, .sort-select:focus {
             border-color: var(--primary);
         }
 
@@ -83,6 +107,7 @@
             flex-direction: column;
             border: 1px solid var(--border);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+            position: relative;
         }
 
         .card:hover {
@@ -131,10 +156,22 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
             color: #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .play-count-badge {
+            font-size: 0.75rem;
+            background-color: #334155;
+            color: #cbd5e1;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-weight: normal;
         }
 
         .card-text {
-            color: #94a3b8;
+            color: var(--text-muted);
             font-size: 0.9rem;
             margin-bottom: 1.5rem;
             flex-grow: 1;
@@ -212,7 +249,13 @@
     <div class="container">
         <header>
             <h1>Rozcestník her</h1>
-            <input type="text" id="searchInput" class="search-bar" placeholder="Hledat hru podle názvu...">
+            <div class="controls">
+                <input type="text" id="searchInput" class="search-bar" placeholder="Hledat hru podle názvu...">
+                <select id="sortSelect" class="sort-select">
+                    <option value="alpha">Seřadit abecedně (A-Z)</option>
+                    <option value="plays">Seřadit podle spuštění</option>
+                </select>
+            </div>
         </header>
 
         <div class="grid" id="gamesContainer">
@@ -224,46 +267,79 @@
     </div>
 
     <script>
-        // Cesta ke složce s obrázky
         const IMG_DIR = 'images/';
+        const STORAGE_KEY = 'rozcestnik_play_counts';
 
+        // Načtení počtu spuštění z localStorage
+        let playCounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+        // Databáze her s doplněnými přímými odkazy na BGG
         const games = [
-            { id: 'niju', title: 'Ni-Ju 二十', url: 'https://sentinel65.github.io/niju.html', desc: 'Klasická japonská abstraktní desková hra.', img: 'niju.jpg', fallback: 'gradient-1' },
-            { id: 'passo', title: 'Passo', url: 'https://sentinel65.github.io/passo.html', desc: 'Strategická logická hra.', img: 'passo.jpg', fallback: 'gradient-2' },
-            { id: 'freedom', title: 'Freedom', url: 'https://sentinel65.github.io/Freedom.html', desc: 'Získejte svobodu ve své strategii na hracím plánu.', img: 'freedom.jpg', fallback: 'gradient-3' },
-            { id: 'slidestone', title: 'Slidestone', url: 'https://sentinel65.github.io/Slidestone.html', desc: 'Posouvejte kameny po desce a vytvořte vítěznou formaci.', img: 'slidestone.jpg', fallback: 'gradient-4' },
-            { id: 'sumon', title: 'Sumon', url: 'https://sentinel65.github.io/sumon.html', desc: 'Taktická hra pro bystré mozky.', img: 'sumon.jpg', fallback: 'gradient-5' },
-            { id: 'sentinel', title: 'Sentinel', url: 'https://sentinel65.github.io/sentinel.html', desc: 'Rozsévejte své hrací kameny. K akci s žetony potřebujete základní věž o velikosti alespoň 2 kamenů.', img: 'sentinel.jpg', fallback: 'gradient-6' },
-            { id: 'lockpick', title: 'LockPick', url: 'https://sentinel65.github.io/LockPick.html', desc: 'Kombinační logická výzva.', img: 'lockpick.jpg', fallback: 'gradient-1' },
-            { id: 'cabo', title: 'Cabo', url: 'https://sentinel65.github.io/Cabo.html', desc: 'Zbavte se svých karet a udržujte si nízké skóre v této napínavé karetní hře.', img: 'cabo.jpg', fallback: 'gradient-2' },
-            { id: 'zatre', title: 'Zatre', url: 'https://sentinel65.github.io/zatre.html', desc: 'Matematická abstraktní hra se skládáním čísel.', img: 'zatre.jpg', fallback: 'gradient-3' },
-            { id: 'tessella', title: 'Tessella', url: 'https://sentinel65.github.io/Tessella.html', desc: 'Vytvářejte vzory a mozaiky k vítězství.', img: 'tessella.jpg', fallback: 'gradient-4' },
-            { id: 'baju', title: 'Baju', url: 'https://sentinel65.github.io/Baju.html', desc: 'Abstraktní logická hra pro dva hráče.', img: 'baju.jpg', fallback: 'gradient-5' },
-            { id: 'folky', title: 'Folky', url: 'https://sentinel65.github.io/folky.html', desc: 'Tradiční principy v moderním webovém kabátě.', img: 'folky.jpg', fallback: 'gradient-6' },
-            { id: 'nodelinks', title: 'NodeLinks', url: 'https://sentinel65.github.io/NodeLinks.html', desc: 'Spojujte uzly a blokujte cestu svým oponentům.', img: 'nodelinks.jpg', fallback: 'gradient-1' },
-            { id: 'migoyugo', title: 'MigoYugo', url: 'https://sentinel65.github.io/MigoYugo.html', desc: 'Bystrá strategická hra MigoYugo, implementovaná s AI.', img: 'migoyugo.jpg', fallback: 'gradient-2' },
-            { id: 'ordo', title: 'Ordo', url: 'https://sentinel65.github.io/Ordo.html', desc: 'Udržte své kameny spojené ve skupině napříč herním plánem.', img: 'ordo.jpg', fallback: 'gradient-3' },
-            { id: 'hex6', title: 'Hex6', url: 'https://sentinel65.github.io/Hex6_CB.html', desc: 'Rozšířená varianta na klasickou deskovou hru Hex.', img: 'hex6.jpg', fallback: 'gradient-4' },
-            { id: 'rook', title: 'Rook', url: 'https://sentinel65.github.io/rook.html', desc: 'Taktická partie inspirovaná šachovou věží.', img: 'rook.jpg', fallback: 'gradient-5' },
-            { id: 'collapsi', title: 'Collapsi', url: 'https://sentinel65.github.io/Collapsi_AI_BASE64_en.html', desc: 'Nenechte herní plochu zkolabovat.', img: 'collapsi.jpg', fallback: 'gradient-6' },
-            { id: 'six', title: 'Six', url: 'https://sentinel65.github.io/six.html', desc: 'Pokládejte a přesouvejte kameny do tvaru, chytře navigujte napříč fázemi hry.', img: 'six.jpg', fallback: 'gradient-1' },
-            { id: 'katarenga', title: 'Katarenga', url: 'https://sentinel65.github.io/katarenga.html', desc: 'Varianta šachu, ve které je typ figurky určen políčkem, na kterém se právě nachází.', img: 'katarenga.jpg', fallback: 'gradient-1' },
-            { id: 'honeycombs', title: 'Honeycombs', url: 'https://sentinel65.github.io/honeycombs.html', desc: 'Cilem je propojit všechna pole od 1 do 19 tak, aby sousední čísla ležela vždy vedle sebe.', img: 'honeycombs.jpg', fallback: 'gradient-1' },
-            { id: 'blooms', title: 'Blooms', url: 'https://sentinel65.github.io/blooms.html', desc: 'Blooms je hra pro dva hráče, ve které si hráči navzájem berou figurky tak, že je obklíčí. Inspirací pro ni byla klasická hra Go.', img: 'blooms.jpg', fallback: 'gradient-1' },
-            { id: 'trezor', title: 'Trezor', url: 'https://sentinel65.github.io/Trezor.html', desc: 'Digitalizovaná verze kostková solitaire hry "Vault: A Solitaire Dice Game (2021)"', img: 'trezor.jpg', fallback: 'gradient-1' },
-            { id: 'nte_gemini', title: 'Nine Tiles Extreme', url: 'https://sentinel65.github.io/NTE_Gemini.html', desc: 'Adrenalinová vizuální hříčka, skládejte obrazce s přesností a rychlostí.', img: 'ninetiles.jpg', fallback: 'gradient-2' }
+            { id: 'niju', title: 'Ni-Ju 二十', url: 'https://sentinel65.github.io/niju.html', desc: 'Klasická japonská abstraktní desková hra.', img: 'niju.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/374523/ni-ju' },
+            { id: 'passo', title: 'Passo', url: 'https://sentinel65.github.io/passo.html', desc: 'Strategická logická hra.', img: 'passo.jpg', fallback: 'gradient-2', bgg: 'https://boardgamegeek.com/boardgame/340003/passo' },
+            { id: 'freedom', title: 'Freedom', url: 'https://sentinel65.github.io/Freedom.html', desc: 'Získejte svobodu ve své strategii na hracím plánu.', img: 'freedom.jpg', fallback: 'gradient-3', bgg: 'https://boardgamegeek.com/boardgame/305267/freedom' },
+            { id: 'slidestone', title: 'Slidestone', url: 'https://sentinel65.github.io/Slidestone.html', desc: 'Posouvejte kameny po desce a vytvořte vítěznou formaci.', img: 'slidestone.jpg', fallback: 'gradient-4', bgg: 'https://boardgamegeek.com/boardgame/346852/slidestone' },
+            { id: 'sumon', title: 'Sumon', url: 'https://sentinel65.github.io/sumon.html', desc: 'Taktická hra pro bystré mozky.', img: 'sumon.jpg', fallback: 'gradient-5', bgg: 'https://boardgamegeek.com/boardgame/314144/sumon' },
+            { id: 'sentinel', title: 'Sentinel', url: 'https://sentinel65.github.io/sentinel.html', desc: 'Rozsévejte své hrací kameny. K akci s žetony potřebujete základní věž o velikosti alespoň 2 kamenů.', img: 'sentinel.jpg', fallback: 'gradient-6', bgg: 'https://boardgamegeek.com/boardgame/339281/sentinel' },
+            { id: 'lockpick', title: 'LockPick', url: 'https://sentinel65.github.io/LockPick.html', desc: 'Kombinační logická výzva.', img: 'lockpick.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/313324/lock-pick' },
+            { id: 'cabo', title: 'Cabo', url: 'https://sentinel65.github.io/Cabo.html', desc: 'Zbavte se svých karet a udržujte si nízké skóre v této napínavé karetní hře.', img: 'cabo.jpg', fallback: 'gradient-2', bgg: 'https://boardgamegeek.com/boardgame/73664/cabo' },
+            { id: 'zatre', title: 'Zatre', url: 'https://sentinel65.github.io/zatre.html', desc: 'Matematická abstraktní hra se skládáním čísel.', img: 'zatre.jpg', fallback: 'gradient-3', bgg: 'https://boardgamegeek.com/boardgame/32/zatre' },
+            { id: 'tessella', title: 'Tessella', url: 'https://sentinel65.github.io/Tessella.html', desc: 'Vytvářejte vzory a mozaiky k vítězství.', img: 'tessella.jpg', fallback: 'gradient-4', bgg: 'https://boardgamegeek.com/boardgame/340156/tessella' },
+            { id: 'baju', title: 'Baju', url: 'https://sentinel65.github.io/Baju.html', desc: 'Abstraktní logická hra pro dva hráče.', img: 'baju.jpg', fallback: 'gradient-5', bgg: 'https://boardgamegeek.com/boardgame/340000/baju' },
+            { id: 'folky', title: 'Folky', url: 'https://sentinel65.github.io/folky.html', desc: 'Tradiční principy v moderním webovém kabátě.', img: 'folky.jpg', fallback: 'gradient-6', bgg: 'https://boardgamegeek.com/boardgame/313318/folky' },
+            { id: 'nodelinks', title: 'NodeLinks', url: 'https://sentinel65.github.io/NodeLinks.html', desc: 'Spojujte uzly a blokujte cestu svým oponentům.', img: 'nodelinks.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/340002/nodelinks' },
+            { id: 'migoyugo', title: 'MigoYugo', url: 'https://sentinel65.github.io/MigoYugo.html', desc: 'Bystrá strategická hra MigoYugo, implementovaná s AI.', img: 'migoyugo.jpg', fallback: 'gradient-2', bgg: 'https://boardgamegeek.com/boardgame/340001/migoyugo' },
+            { id: 'ordo', title: 'Ordo', url: 'https://sentinel65.github.io/Ordo.html', desc: 'Udržte své kameny spojené ve skupině napříč herním plánem.', img: 'ordo.jpg', fallback: 'gradient-3', bgg: 'https://boardgamegeek.com/boardgame/71412/ordo' },
+            { id: 'hex6', title: 'Hex6', url: 'https://sentinel65.github.io/Hex6_CB.html', desc: 'Rozšířená varianta na klasickou deskovou hru Hex.', img: 'hex6.jpg', fallback: 'gradient-4', bgg: 'https://boardgamegeek.com/boardgame/339279/hex6' },
+            { id: 'rook', title: 'Rook', url: 'https://sentinel65.github.io/rook.html', desc: 'Taktická partie inspirovaná šachovou věží.', img: 'rook.jpg', fallback: 'gradient-5', bgg: 'https://boardgamegeek.com/boardgame/142942/rook' },
+            { id: 'collapsi', title: 'Collapsi', url: 'https://sentinel65.github.io/Collapsi_AI_BASE64_en.html', desc: 'Nenechte herní plochu zkolabovat.', img: 'collapsi.jpg', fallback: 'gradient-6', bgg: 'https://boardgamegeek.com/boardgame/341258/collapsi' },
+            { id: 'six', title: 'Six', url: 'https://sentinel65.github.io/six.html', desc: 'Pokládejte a přesouvejte kameny do tvaru, chytře navigujte napříč fázemi hry.', img: 'six.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/20195/six' },
+            { id: 'katarenga', title: 'Katarenga', url: 'https://sentinel65.github.io/katarenga.html', desc: 'Varianta šachu, ve které je typ figurky určen políčkem, na kterém se právě nachází.', img: 'katarenga.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/233155/katarenga' },
+            { id: 'honeycombs', title: 'Honeycombs', url: 'https://sentinel65.github.io/honeycombs.html', desc: 'Cilem je propojit všechna pole od 1 do 19 tak, aby sousední čísla ležela vždy vedle sebe.', img: 'honeycombs.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/219677/honeycombs' },
+            { id: 'blooms', title: 'Blooms', url: 'https://sentinel65.github.io/blooms.html', desc: 'Hra pro dva hráče, inspirovaná hrou Go. Hráči si navzájem berou figurky obklíčením.', img: 'blooms.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/281018/blooms' },
+            { id: 'trezor', title: 'Trezor', url: 'https://sentinel65.github.io/Trezor.html', desc: 'Digitalizovaná verze kostková solitaire hry "Vault: A Solitaire Dice Game (2021)"', img: 'trezor.jpg', fallback: 'gradient-1', bgg: 'https://boardgamegeek.com/boardgame/346702/vault-solitaire-dice-game' },
+            { id: 'nte_gemini', title: 'Nine Tiles Extreme', url: 'https://sentinel65.github.io/NTE_Gemini.html', desc: 'Adrenalinová vizuální hříčka, skládejte obrazce s přesností a rychlostí.', img: 'ninetiles.jpg', fallback: 'gradient-2', bgg: 'https://boardgamegeek.com/boardgame/374771/nine-tiles-extreme' }
         ];
 
         const container = document.getElementById('gamesContainer');
         const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
         const emptyState = document.getElementById('emptyState');
 
-        // Handler pro chybu načtení obrázku (např. když ještě není stažený)
+        // Funkce pro logování spuštění hry
+        window.trackPlay = function(gameId) {
+            playCounts[gameId] = (playCounts[gameId] || 0) + 1;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(playCounts));
+            
+            // Pokud chceme ihned aktualizovat UI po kliknutí (badge):
+            const badge = document.getElementById(`badge-${gameId}`);
+            if(badge) {
+                badge.textContent = `${playCounts[gameId]}x`;
+                badge.style.display = 'inline-block';
+            }
+        };
+
+        // Handler pro chybu načtení obrázku
         window.handleImageError = function(imgElement, fallbackClass, title) {
             const parent = imgElement.parentElement;
             parent.classList.add(fallbackClass);
             parent.innerHTML = `<span class="fallback-text">${title.substring(0, 3).toUpperCase()}</span>`;
         };
+
+        // Funkce pro řazení
+        function getSortedGames(gamesList, sortType) {
+            return [...gamesList].sort((a, b) => {
+                if (sortType === 'plays') {
+                    const playsA = playCounts[a.id] || 0;
+                    const playsB = playCounts[b.id] || 0;
+                    if (playsB !== playsA) {
+                        return playsB - playsA; // Sestupně od nejhranější
+                    }
+                }
+                // Implicitní abecední řazení (české znaky)
+                return a.title.localeCompare(b.title, 'cs');
+            });
+        }
 
         function renderGames(gamesList) {
             container.innerHTML = '';
@@ -276,21 +352,24 @@
             emptyState.style.display = 'none';
 
             gamesList.forEach(game => {
-                const bggLink = `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(game.title)}`;
+                const playCount = playCounts[game.id] || 0;
                 
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
                     <div class="card-img">
                         <img src="${IMG_DIR}${game.img}" alt="${game.title}" 
-                             onerror="handleImageError(this, '${game.fallback}', '${game.title.replace(/'/g, "\'")}')">
+                             onerror="handleImageError(this, '${game.fallback}', '${game.title.replace(/'/g, "\\'")}')">
                     </div>
                     <div class="card-body">
-                        <h3 class="card-title">${game.title}</h3>
+                        <h3 class="card-title">
+                            ${game.title}
+                            ${playCount > 0 ? `<span class="play-count-badge" id="badge-${game.id}">${playCount}x</span>` : `<span class="play-count-badge" id="badge-${game.id}" style="display:none;">0x</span>`}
+                        </h3>
                         <p class="card-text">${game.desc}</p>
                         <div class="card-actions">
-                            <a href="${game.url}" class="btn btn-play" target="_blank" rel="noopener noreferrer">Hrát Hru</a>
-                            <a href="${bggLink}" class="btn btn-bgg" target="_blank" rel="noopener noreferrer">Info BGG</a>
+                            <a href="${game.url}" class="btn btn-play" target="_blank" rel="noopener noreferrer" onclick="trackPlay('${game.id}')">Hrát Hru</a>
+                            <a href="${game.bgg}" class="btn btn-bgg" target="_blank" rel="noopener noreferrer">Info BGG</a>
                         </div>
                     </div>
                 `;
@@ -298,17 +377,54 @@
             });
         }
 
-        // Inicializace
-        renderGames(games);
-
-        // Vyhledávání
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
+        // Hlavní funkce pro aktualizaci zobrazení (Vyhledávání + Řazení)
+        function updateDisplay() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const sortType = sortSelect.value;
+            
+            // Nejprve filtrace
             const filteredGames = games.filter(game => 
                 game.title.toLowerCase().includes(searchTerm) || 
                 game.desc.toLowerCase().includes(searchTerm)
             );
-            renderGames(filteredGames);
+            
+            // Poté seřazení
+            const sortedAndFiltered = getSortedGames(filteredGames, sortType);
+            
+            renderGames(sortedAndFiltered);
+        }
+
+        // Event listenery
+        searchInput.addEventListener('input', updateDisplay);
+        sortSelect.addEventListener('change', updateDisplay);
+
+        // Inicializace - první spuštění (implicitně abecedně, díky getSortedGames a výchozí hodnotě selectu)
+        updateDisplay();
+        
+        // Pomocník pro to, když se uživatel vrátí na stránku z otevřené hry - 
+        // vynutí překreslení pro aktualizaci počtadel a pořadí
+        window.addEventListener('focus', () => {
+            const newPlayCounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            // Pokud se počet změní, překreslíme
+            if (JSON.stringify(playCounts) !== JSON.stringify(newPlayCounts)) {
+                playCounts = newPlayCounts;
+                if (sortSelect.value === 'plays') {
+                    updateDisplay();
+                } else {
+                    // Jenom aktualizujeme čísla v badge bez přeskupování layoutu,
+                    // aby obrazovka neposkočila před očima
+                    games.forEach(g => {
+                        const b = document.getElementById(`badge-${g.id}`);
+                        if(b) {
+                            const count = playCounts[g.id] || 0;
+                            if (count > 0) {
+                                b.textContent = `${count}x`;
+                                b.style.display = 'inline-block';
+                            }
+                        }
+                    });
+                }
+            }
         });
     </script>
 </body>
