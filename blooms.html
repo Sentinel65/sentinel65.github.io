@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blooms (Květy)</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --board-bg: #e0e5ec;
+            --hex-size: 30px; 
+            --color-p1-1: #8b0000; 
+            --color-p1-2: #ffd700; 
+            --color-p2-1: #222222; 
+            --color-p2-2: #4285F4; 
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none; width: 90%; max-width: 400px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #ffffff, #e0e5ec); border: 2px solid #ccc;
+            padding: 15px 25px; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2), inset 2px 2px 5px rgba(255,255,255,0.8);
+            font-weight: 400; color: #444; pointer-events: auto; cursor: pointer;
+            animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative; overflow: hidden;
+            text-align: center;
+            justify-content: center;
+            align-items: center
+        }
+        .toast.help-toast { text-align: left; font-size: 0.9rem; max-width: 500px; }
+        .toast.fade-out { animation: fadeOut 0.4s ease-in forwards; }
+        @keyframes slideDown { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
+
+        /* Menu */
+        #menu {
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    z-index: 10;
+    scrollbar-width: none;
+}
+
+#menu::-webkit-scrollbar {
+    display: none;
+}
+        .btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    min-width: 38px;
+    min-height: 38px;
+    flex-shrink: 0; 
+    cursor: pointer; 
+    padding: 5px 8px; 
+    border-radius: 8px; 
+    transition: 0.2s; 
+    position: relative; 
+    color: #444; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; gap: 5px; }
+        .btn:hover { opacity: 0.6; }
+ 
+        /* Status */
+        #status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap; 
+    padding: 12px 20px; 
+    background: #fff; 
+    border-top: 1px solid #f0f0f0; 
+    z-index: 10; }
+        .player-status { display: flex; align-items: center; gap: 12px; padding: 5px 20px; border-radius: 20px; transition: 0.3s; border: 1px solid transparent; white-space: nowrap; flex-shrink: 1; }
+        .player-status.active-turn { background: #f4f8fb; border-color: #e3f2fd; box-shadow: 0 0 15px rgba(33, 150, 243, 0.1); }
+        .color-dot { width: 22px; height: 22px; border-radius: 50%; display: inline-block; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.5); }
+        .score-text { font-weight: 300; font-size: 1rem; white-space: nowrap; color: #666; letter-spacing: 1px; }
+
+        /* Board */
+        #game-area { flex-grow: 1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; background: var(--board-bg); width: 100%; }
+        #board { position: relative; transition: width 0.3s, height 0.3s; margin: auto; }
+        
+        .hex-cell {
+            position: absolute;
+            width: calc(1.732 * var(--hex-size));
+            height: calc(2 * var(--hex-size));
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: #d1d8e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: filter 0.2s;
+            transform: scale(0.95); 
+        }
+        .hex-cell:hover { filter: brightness(0.9); }
+        
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6)) brightness(1); transform: scale(0.95); }
+            50% { filter: drop-shadow(0 0 18px rgba(255, 255, 255, 1)) brightness(1.25); transform: scale(1.02); }
+            100% { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6)) brightness(1); transform: scale(0.95); }
+        }
+        .hex-cell.first-stone-active { animation: pulseGlow 1.2s infinite ease-in-out; z-index: 10; }
+
+        /* Plastický kámen */
+        .hex-stone {
+            width: 95%; height: 95%; 
+            position: absolute;
+            top: 2.5%; left: 2.5%;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: 0.3s;
+            background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.6));
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.6), inset -2px -2px 5px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+
+        .color-darkred .hex-stone { background-color: var(--color-p1-1); }
+        .color-gold .hex-stone { background-color: var(--color-p1-2); }
+        .color-black .hex-stone { background-color: var(--color-p2-1); }
+        .color-blue .hex-stone { background-color: var(--color-p2-2); }
+
+        /* Souřadnice */
+        .hex-coord { position: absolute; font-size: calc(var(--hex-size) * 0.45); color: #666; font-weight: 400; pointer-events: none; opacity: 0; transition: 0.2s; z-index: 2; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .show-coords .hex-coord { opacity: 1; }
+
+        /* Popup na barvy */
+        #color-picker {
+            position: absolute; display: none; gap: 10px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 100; transform: translate(-50%, -100%); margin-top: -15px;
+        }
+        .picker-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.4); border: 2px solid white; transition: 0.2s; }
+        .picker-option:hover { transform: scale(1.15); }
+
+        /* Log */
+        #log-container { height: 160px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; flex-direction: column; z-index: 10; }
+        #log-header { padding: 10px 15px; background: #fafafa; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; color: #555; }
+        #log-header .log-title { font-weight: 300; font-size: 1.1rem; }
+        #log-header button { border: none; background: none; font-size: 1.2rem; cursor: pointer; transition: 0.2s; padding: 0; color: #555; display: flex; align-items: center; justify-content: center; }
+        #log-header button:hover { opacity: 0.6; }
+        #log-messages { flex-grow: 1; overflow-y: auto; padding: 10px 15px; font-weight: 300; font-size: 0.95rem; line-height: 1.6; color: #444; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px dashed #f0f0f0; padding-bottom: 2px; }
+        .log-sys { color: #d32f2f; font-weight: 400; }
+
+@media (max-width: 768px) {
+
+    body {
+        overflow: hidden;
+    }
+
+    #menu {
+        justify-content: flex-start;
+        padding: 4px;
+        gap: 2px;
+    }
+
+    .btn {
+        font-size: 1rem;
+        min-width: 34px;
+        min-height: 34px;
+        padding: 2px;
+    }
+
+    .divider {
+        margin: 0 2px;
+    }
+
+    #status-bar {
+        padding: 6px;
+        gap: 4px;
+    }
+
+    .player-status {
+        gap: 6px;
+        padding: 4px 8px;
+    }
+
+    .color-dot {
+        width: 16px;
+        height: 16px;
+    }
+
+    .score-text {
+        font-size: 0.9rem;
+    }
+
+    #log-container {
+        height: 130px;
+    }
+
+    #log-messages {
+        font-size: 0.82rem;
+        line-height: 1.35;
+    }
+}
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="app" style="display: flex; flex-direction: column; height: 100vh;">
+        <div id="menu">
+            <button class="btn" id="btn-board-toggle" onclick="toggleBoardSize()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </button>
+            <button class="btn" id="btn-mode-toggle" onclick="toggleMode()"></button>
+            <div class="divider"></div>
+            <button class="btn" onclick="saveGame()" data-t-title="btn_save">💾</button>
+            <button class="btn" onclick="loadGame()" data-t-title="btn_load">📂</button>
+            <button class="btn" onclick="undo()" data-t-title="btn_undo">↩️</button>
+            <button class="btn" onclick="resetGame()" data-t-title="btn_reset">🔄</button>
+            <div class="divider"></div>
+            <button class="btn" onclick="toggleCoords()" data-t-title="btn_coords">🔤</button>
+            <button class="btn" id="btn-lang-toggle" onclick="toggleLang()" data-t-title="btn_lang">🇨🇿</button>
+            <button class="btn" onclick="showHelp()" data-t-title="btn_help">💡</button>
+        </div>
+
+        <div id="status-bar">
+            <div id="status-p1" class="player-status active-turn">
+                <span class="color-dot" style="background: var(--color-p1-1)"></span>
+                <span class="color-dot" style="background: var(--color-p1-2)"></span>
+                <span id="score-p1" class="score-text">[0 | 15]</span>
+            </div>
+            <div id="status-p2" class="player-status">
+                <span class="color-dot" style="background: var(--color-p2-1)"></span>
+                <span class="color-dot" style="background: var(--color-p2-2)"></span>
+                <span id="score-p2" class="score-text">[0 | 15]</span>
+            </div>
+        </div>
+
+        <div id="game-area">
+            <div id="board"></div>
+            <div id="color-picker"></div>
+        </div>
+
+        <div id="log-container">
+            <div id="log-header">
+                <span class="log-title" data-t="log_title">Herní log</span>
+                <button onclick="copyLog()" id="btn-copy-log">📋</button>
+            </div>
+            <div id="log-messages"></div>
+        </div>
+    </div>
+
+    <script>
+        const DICT = {
+            cs: { log_title: "Herní log", sys_cap: "Zajal kameny soupeře", win: "vyhrává!", draw: "Remíza!", 
+                  saved: "Hra úspěšně uložena! 💾", loaded: "Hra byla načtena! 📂", copied: "Log zkopírován do schránky! 📋",
+                  help: "<strong>Pravidla Blooms:</strong><br>- Spoj kameny stejné barvy do 'květů'.<br>- Květ je obklíčen, pokud nemá žádné volné sousední pole.<br>- Tah 1: Hráč 1 položí 1 kámen.<br>- Další tahy: Polož 1 nebo 2 kameny (různé barvy!).<br>- Obklíčené květy soupeře jsou na konci tvého tahu odstraněny a připsány jako body.<br>- Pro ukončení tahu bez 2. kamene klikni na svůj první kámen znovu.",
+                  board_size: "Velikost desky", mode: "Režim", ai_mode: "Hráč vs AI", pvp_mode: "Hráč vs Hráč", log_copy: "Kopírovat log",
+                  btn_save: "Uložit hru", btn_load: "Načíst hru", btn_undo: "Tah zpět", btn_reset: "Nová hra", btn_coords: "Zobrazit souřadnice", btn_lang: "Změnit jazyk", btn_help: "Nápověda" },
+            en: { log_title: "Game Log", sys_cap: "Captured opponent's stones", win: "wins!", draw: "Draw!", 
+                  saved: "Game successfully saved! 💾", loaded: "Game loaded! 📂", copied: "Log copied to clipboard! 📋",
+                  help: "<strong>Blooms Rules:</strong><br>- Connect stones of the same color into 'blooms'.<br>- A bloom is fenced if it has no empty adjacent spaces.<br>- Turn 1: Player 1 places 1 stone.<br>- Subsequent turns: Place 1 or 2 stones (different colors!).<br>- Fenced opponent blooms are removed at the end of your turn.<br>- To end a turn early, click your first stone again.",
+                  board_size: "Board Size", mode: "Mode", ai_mode: "Player vs AI", pvp_mode: "Player vs Player", log_copy: "Copy Log",
+                  btn_save: "Save Game", btn_load: "Load Game", btn_undo: "Undo Move", btn_reset: "New Game", btn_coords: "Show Coordinates", btn_lang: "Change Language", btn_help: "Help" }
+        };
+
+        const TARGET_SCORES = { 4: 15, 5: 20, 6: 25 };
+        const EMOJI_MAP = { 'darkred': '🔴', 'gold': '🟡', 'black': '⚫', 'blue': '🔵' };
+        
+        let lang = 'cs';
+        let state = {
+            size: 4, mode: 'ai', turn: 1, moveCount: 1,
+            cells: {}, scores: {1: 0, 2: 0},
+            phase: 'pick1', firstStoneHex: null, firstStoneColor: null, log: []
+        };
+        let history = [];
+        let isProcessing = false;
+        let resizeTimer;
+
+        function init() {
+            localStorage.setItem('soundEnabled', 'false');
+
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(drawBoard, 100);
+            });
+            resetGame();
+            updateDict();
+            setTimeout(drawBoard, 50);
+        }
+
+        function showToast(msg, duration = 3000, isHelp = false) {
+            let toast = document.createElement('div');
+            toast.className = `toast ${isHelp ? 'help-toast' : ''}`;
+            toast.innerHTML = msg;
+            
+            toast.onclick = () => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 400);
+            };
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        toast.classList.add('fade-out');
+                        setTimeout(() => toast.remove(), 400);
+                    }
+                }, duration);
+            }
+        }
+
+        function toggleBoardSize() {
+            const sizes = [4, 5, 6];
+            let nextSize = sizes[(sizes.indexOf(state.size) + 1) % sizes.length];
+            setBoardSize(nextSize);
+        }
+
+        function toggleMode() {
+            setMode(state.mode === 'ai' ? 'pvp' : 'ai');
+        }
+
+        function toggleLang() {
+            lang = lang === 'cs' ? 'en' : 'cs';
+            document.getElementById('btn-lang-toggle').innerText = lang === 'cs' ? '🇨🇿' : '🇬🇧';
+            updateDict();
+            updateMenuUI();
+        }
+
+        function updateMenuUI() {
+            let boardBtn = document.getElementById('btn-board-toggle');
+            boardBtn.title = `${DICT[lang].board_size}: ${state.size}x${state.size}`;
+            
+            let modeBtn = document.getElementById('btn-mode-toggle');
+            modeBtn.innerText = state.mode === 'ai' ? '🖥️' : '👤';
+            modeBtn.title = `${DICT[lang].mode}: ${state.mode === 'ai' ? DICT[lang].ai_mode : DICT[lang].pvp_mode}`;
+        }
+
+        function setBoardSize(size) { state.size = size; resetGame(); }
+        function setMode(mode) { state.mode = mode; resetGame(); }
+
+        function resetGame() {
+
+        // PŘEPNUTÍ STARTUJÍCÍHO HRÁČE
+        startingPlayer =
+            startingPlayer === 1
+                ? 2
+                : 1;
+
+        state = {
+
+            size: state.size,
+
+            mode: state.mode,
+
+            // STARTUJÍCÍ HRÁČ
+            turn: startingPlayer,
+
+            moveCount: 1,
+
+            cells: {},
+
+            scores: {
+                1: 0,
+                2: 0
+            },
+
+            phase: 'pick1',
+
+            firstStoneHex: null,
+
+            firstStoneColor: null,
+
+            log: []
+        };
+
+        history = [];
+
+        document.getElementById('log-messages').innerHTML = '';
+
+        closeColorPicker();
+
+        generateGrid();
+
+        updateMenuUI();
+
+        drawBoard();
+
+        updateUI();
+
+        // TOAST KDO ZAČÍNÁ
+        if (state.mode === 'ai') {
+
+            showToast(
+                state.turn === 1
+                    ? '👤 Začíná hráč'
+                    : '🖥️ Začíná AI'
+            );
+
+        } else {
+
+            showToast(
+                state.turn === 1
+                    ? '🔴 Začíná červený'
+                    : '⚫ Začíná černý'
+            );
+        }
+
+        // AUTOMATICKÝ START AI
+        if (
+            state.mode === 'ai' &&
+            state.turn === 2
+        ) {
+
+            isProcessing = true;
+
+            setTimeout(playAI, 600);
+        }
+    }
+
+        function generateGrid() {
+            const S = state.size;
+            const R = S - 1; 
+            let cols = {};
+            
+            for (let q = -R; q <= R; q++) {
+                let r1 = Math.max(-R, -q - R);
+                let r2 = Math.min(R, -q + R);
+                for (let r = r1; r <= r2; r++) {
+                    if (!cols[q]) cols[q] = [];
+                    cols[q].push(r);
+                }
+            }
+            
+            let sortedQ = Object.keys(cols).map(Number).sort((a,b)=>a-b);
+            sortedQ.forEach((q, cIdx) => {
+                let letter = String.fromCharCode(97 + cIdx);
+                cols[q].sort((a,b)=>a-b).forEach((r, rIdx) => {
+                    let id = `${letter}${rIdx}`;
+                    state.cells[`${q},${r}`] = { id: id, q: q, r: r, color: null };
+                });
+            });
+        }
+
+        function drawBoard() {
+            const board = document.getElementById('board');
+            const container = document.getElementById('game-area');
+            if (Object.keys(state.cells).length === 0) return;
+            
+            board.innerHTML = '';
+            
+            let availableW = container.clientWidth || window.innerWidth;
+            let availableH = container.clientHeight || (window.innerHeight - 300);
+            let pad = 30;
+            availableW -= pad; availableH -= pad;
+
+            let minLeft = Infinity, maxRight = -Infinity;
+            let minTop = Infinity, maxBottom = -Infinity;
+            const SQRT3 = Math.sqrt(3);
+
+            for (let key in state.cells) {
+                let cell = state.cells[key];
+                let cx = SQRT3 * (cell.q + cell.r / 2);
+                let cy = 1.5 * cell.r;
+                
+                let left = cx - SQRT3/2;
+                let right = cx + SQRT3/2;
+                let top = cy - 1;
+                let bottom = cy + 1;
+
+                if(left < minLeft) minLeft = left;
+                if(right > maxRight) maxRight = right;
+                if(top < minTop) minTop = top;
+                if(bottom > maxBottom) maxBottom = bottom;
+            }
+
+            let logicalWidth = maxRight - minLeft;
+            let logicalHeight = maxBottom - minTop;
+
+            let hexSize = Math.min(availableW / logicalWidth, availableH / logicalHeight);
+            
+            board.style.setProperty('--hex-size', `${hexSize}px`);
+            board.style.width = `${logicalWidth * hexSize}px`;
+            board.style.height = `${logicalHeight * hexSize}px`;
+
+            for (let key in state.cells) {
+                let cell = state.cells[key];
+                
+                let div = document.createElement('div');
+                div.className = 'hex-cell';
+                if(cell.color) div.classList.add(`color-${cell.color}`);
+                if(state.firstStoneHex === key) div.classList.add('first-stone-active');
+                
+                let cx = SQRT3 * (cell.q + cell.r / 2);
+                let cy = 1.5 * cell.r;
+                
+                div.style.left = `${(cx - minLeft - SQRT3/2) * hexSize}px`;
+                div.style.top = `${(cy - minTop - 1) * hexSize}px`;
+                
+                let stone = document.createElement('div');
+                stone.className = 'hex-stone';
+                div.appendChild(stone);
+
+                let coord = document.createElement('span');
+                coord.className = 'hex-coord';
+                coord.innerText = cell.id;
+                div.appendChild(coord);
+
+                div.onclick = (e) => handleHexClick(key, e, div);
+                board.appendChild(div);
+            }
+        }
+
+        function handleHexClick(key, event, element) {
+            if (isProcessing) return;
+            if (state.mode === 'ai' && state.turn === 2) return;
+
+            let cell = state.cells[key];
+
+            if (state.phase === 'pick1') {
+                if (cell.color) return;
+                showColorPicker(key, element, event);
+            } else if (state.phase === 'pick2') {
+                if (key === state.firstStoneHex) {
+                    endTurn();
+                } else if (!cell.color) {
+                    let otherColor = getOtherColor(state.turn, state.firstStoneColor);
+                    placeStone(key, otherColor);
+                    endTurn();
+                }
+            }
+        }
+
+        function getColorsForPlayer(player) { return player === 1 ? ['darkred', 'gold'] : ['black', 'blue']; }
+        function getOtherColor(player, color) { return getColorsForPlayer(player).find(c => c !== color); }
+
+        function showColorPicker(key, element, event) {
+            let colors = getColorsForPlayer(state.turn);
+            let picker = document.getElementById('color-picker');
+            picker.innerHTML = '';
+            
+            colors.forEach(c => {
+                let opt = document.createElement('div');
+                opt.className = 'picker-option';
+                opt.style.backgroundColor = c === 'darkred' ? 'var(--color-p1-1)' : c === 'gold' ? 'var(--color-p1-2)' : c === 'black' ? 'var(--color-p2-1)' : 'var(--color-p2-2)';
+                opt.onclick = () => { closeColorPicker(); executePick1(key, c); };
+                picker.appendChild(opt);
+            });
+
+            const rect = document.getElementById('game-area').getBoundingClientRect();
+            picker.style.left = `${event.clientX - rect.left}px`;
+            picker.style.top = `${event.clientY - rect.top}px`;
+            picker.style.display = 'flex';
+        }
+
+        function closeColorPicker() { document.getElementById('color-picker').style.display = 'none'; }
+
+        function executePick1(key, color) {
+            saveHistory();
+            placeStone(key, color);
+
+            if (state.moveCount === 1) {
+                endTurn();
+            } else {
+                state.phase = 'pick2';
+                state.firstStoneHex = key;
+                state.firstStoneColor = color;
+                drawBoard(); 
+            }
+        }
+
+        function placeStone(key, color) {
+
+            state.cells[key].color = color;
+
+            if (!state.currentLogStr) {
+
+                const actor =
+                    state.mode === 'ai' && state.turn === 2
+                        ? '🖥️'
+                        : '👤';
+
+                state.currentLogStr =
+                    `${String(state.moveCount).padStart(2, '0')}. ${actor} `;
+            }
+
+            state.currentLogStr +=
+                `${EMOJI_MAP[color]} ${state.cells[key].id} `;
+        }
+
+        let startingPlayer = 1;
+
+    function endTurn() {
+
+        isProcessing = true;
+
+        state.phase = 'pick1';
+
+        state.firstStoneHex = null;
+
+        state.firstStoneColor = null;
+
+        if (state.currentLogStr) {
+
+            addToLog(state.currentLogStr);
+
+            state.currentLogStr = "";
+        }
+
+        checkCaptures();
+
+        if (checkWinCondition()) {
+
+            isProcessing = false;
+
+            return;
+        }
+
+        // STŘÍDÁNÍ HRÁČŮ
+        state.turn =
+            state.turn === 1
+                ? 2
+                : 1;
+
+        state.moveCount++;
+
+        drawBoard();
+
+        updateUI();
+
+        // AI TAH
+        if (
+            state.mode === 'ai' &&
+            state.turn === 2
+        ) {
+
+            setTimeout(playAI, 600);
+
+        } else {
+
+            isProcessing = false;
+        }
+    }
+
+        function getNeighbors(q, r) {
+            const dirs = [[1,0], [1,-1], [0,-1], [-1,0], [-1,1], [0,1]];
+            return dirs.map(d => `${q+d[0]},${r+d[1]}`).filter(k => state.cells[k]);
+        }
+
+        function checkCaptures() {
+            let opponent = state.turn === 1 ? 2 : 1;
+            let oppColors = getColorsForPlayer(opponent);
+            let visited = new Set();
+            let captured = [];
+            let capCounts = { 'darkred':0, 'gold':0, 'black':0, 'blue':0 };
+
+            for (let key in state.cells) {
+                let cell = state.cells[key];
+                if (oppColors.includes(cell.color) && !visited.has(key)) {
+                    let bloom = [];
+                    let queue = [key];
+                    let hasLiberty = false;
+                    visited.add(key);
+
+                    while (queue.length > 0) {
+                        let curr = queue.shift();
+                        bloom.push(curr);
+                        let [cq, cr] = curr.split(',').map(Number);
+                        
+                        let neighbors = getNeighbors(cq, cr);
+                        for (let nk of neighbors) {
+                            if (state.cells[nk].color === null) {
+                                hasLiberty = true;
+                            } else if (state.cells[nk].color === cell.color && !visited.has(nk)) {
+                                visited.add(nk);
+                                queue.push(nk);
+                            }
+                        }
+                    }
+
+                    if (!hasLiberty) {
+                        bloom.forEach(k => { captured.push(k); capCounts[state.cells[k].color]++; });
+                    }
+                }
+            }
+
+            if (captured.length > 0) {
+                captured.forEach(k => state.cells[k].color = null);
+                state.scores[state.turn] += captured.length;
+                
+                let detail =
+                    Object.keys(capCounts)
+                    .filter(c => capCounts[c] > 0)
+                    .map(c => `${EMOJI_MAP[c]}x${capCounts[c]}`)
+                    .join(', ');
+
+                let coords =
+                    captured
+                    .map(k => state.cells[k].id)
+                    .join(', ');
+    
+                const actor =
+                    state.turn === 2
+                        ? '🖥️'
+                        : '👤';
+
+                addToLog(`
+                    <span class="log-sys">
+                        ${actor}
+                        ${DICT[lang].sys_cap}: 
+                        ${detail}
+                        [${coords}]
+                    </span>
+                `);
+            }
+        }
+
+        function evaluateMove(key, color) {
+
+    let score = 0;
+
+    const [q, r] = key.split(',').map(Number);
+
+    const neighbors = getNeighbors(q, r);
+
+    const myColors = getColorsForPlayer(2);
+    const oppColors = getColorsForPlayer(1);
+
+    // podpora vlastních skupin
+    for (let nk of neighbors) {
+
+        const nc = state.cells[nk].color;
+
+        if (nc === color) score += 12;
+
+        if (oppColors.includes(nc)) score += 4;
+    }
+
+    // blokace soupeřových synergií
+    let oppAdjacent = 0;
+
+    for (let nk of neighbors) {
+
+        let nc = state.cells[nk].color;
+
+        if (oppColors.includes(nc)) {
+            oppAdjacent++;
+        }
+    }
+
+    score += oppAdjacent * 8;
+
+    // simulace tahu
+    state.cells[key].color = color;
+
+    // ======================================
+    // SIMULACE ZAJETÍ
+    // ======================================
+
+    let before = state.scores[2];
+
+    let captured = [];
+    let capturedBackup = {};
+
+    let opponent = 1;
+
+
+    let visited = new Set();
+
+    for (let ckey in state.cells) {
+
+        let cell = state.cells[ckey];
+
+        if (
+            oppColors.includes(cell.color) &&
+            !visited.has(ckey)
+        ) {
+
+            let bloom = [];
+            let queue = [ckey];
+            let hasLiberty = false;
+
+            visited.add(ckey);
+
+            while (queue.length > 0) {
+
+                let curr = queue.shift();
+
+                bloom.push(curr);
+
+                let [cq, cr] =
+                    curr.split(',').map(Number);
+
+                let neighbors =
+                    getNeighbors(cq, cr);
+
+                for (let nk of neighbors) {
+
+                    if (state.cells[nk].color === null) {
+
+                        hasLiberty = true;
+
+                    } else if (
+                        state.cells[nk].color === cell.color &&
+                        !visited.has(nk)
+                    ) {
+
+                        visited.add(nk);
+
+                        queue.push(nk);
+                    }
+                }
+            }
+
+            if (!hasLiberty) {
+
+                bloom.forEach(k => {
+
+                    captured.push(k);
+
+                    capturedBackup[k] =
+                        state.cells[k].color;
+
+                    state.cells[k].color = null;
+                });
+            }
+        }
+    }
+
+    let after =
+        before + captured.length;
+
+    score +=
+        (after - before) * 45;
+
+    // sebevraždy penalizace
+    let ownLiberties = 0;
+
+    for (let nk of neighbors) {
+        if (state.cells[nk].color === null) {
+            ownLiberties++;
+        }
+    }
+
+    score += ownLiberties * 3;
+
+    // kritické liberty
+   if (ownLiberties <= 1) {
+
+    score -= 120;
+
+} else if (ownLiberties === 2) {
+
+    score -= 45;
+}
+
+    // bezpečné skupiny
+    if (ownLiberties >= 3) {
+        score += 12;
+    }
+
+    // střed desky bonus
+    score -= Math.abs(q) * 0.8;
+    score -= Math.abs(r) * 0.8;
+
+    // rollback
+    state.cells[key].color = null;
+
+    // VRÁCENÍ CELÉHO STAVU DESKY
+    captured.forEach(k => {
+        state.cells[k].color = capturedBackup[k];
+    });
+
+    state.scores[2] = before;
+
+    // podpora dvoubarevné synergie
+    for (let nk of neighbors) {
+
+        let nc = state.cells[nk].color;
+
+        if (
+            myColors.includes(nc) &&
+            nc !== color
+        ) {
+
+            score += 14;
+        }
+    }
+
+    return score;
+}
+
+
+
+    function playAI() {
+
+    saveHistory();
+
+    let emptyKeys = getEmptyCells();
+
+    if (emptyKeys.length === 0) {
+
+        endTurn();
+
+        return;
+    }
+
+    // jen tahy poblíž kamenů
+    emptyKeys =
+        emptyKeys.filter(key => {
+
+            const [q, r] =
+                key.split(',').map(Number);
+
+            const neighbors =
+                getNeighbors(q, r);
+
+            return neighbors.some(nk =>
+                state.cells[nk].color !== null
+            );
+        });
+
+    // fallback začátek hry
+    if (emptyKeys.length === 0) {
+
+        emptyKeys = getEmptyCells();
+    }
+
+    const colors =
+        getColorsForPlayer(2);
+
+    let bestMove1 = null;
+
+    let bestScore = -Infinity;
+
+    for (let key of emptyKeys) {
+
+        for (let color of colors) {
+
+            const snapshot =
+                cloneBoard();
+
+            // TAKTIKA
+            let tactical =
+                evaluateMove(
+                    key,
+                    color
+                );
+
+            simulateMove(key, color);
+
+            // STRATEGIE
+            let strategic =
+                minimax(
+                    2,
+                    -Infinity,
+                    Infinity,
+                    false
+                );
+
+            restoreBoard(snapshot);
+
+            let finalScore =
+                tactical +
+                strategic * 0.8;
+
+            // lidskost
+            finalScore +=
+                Math.random() * 4;
+
+            if (finalScore > bestScore) {
+
+                bestScore =
+                    finalScore;
+
+                bestMove1 = {
+                    key,
+                    color
+                };
+            }
+        }
+    }
+
+    if (!bestMove1) {
+
+        endTurn();
+
+        return;
+    }
+
+    placeStone(
+        bestMove1.key,
+        bestMove1.color
+    );
+
+    // první tah hry
+    if (state.moveCount === 1) {
+
+        endTurn();
+
+        return;
+    }
+
+    // ==================================================
+    // DRUHÝ KÁMEN
+    // ==================================================
+
+    let secondColor =
+        getOtherColor(
+            2,
+            bestMove1.color
+        );
+
+    let bestMove2 = null;
+
+    let bestScore2 = -Infinity;
+
+    let remaining =
+        getEmptyCells();
+
+    for (let key of remaining) {
+
+        const snapshot =
+            cloneBoard();
+
+        let tactical =
+            evaluateMove(
+                key,
+                secondColor
+            );
+
+        simulateMove(
+            key,
+            secondColor
+        );
+
+        let strategic =
+            minimax(
+                1,
+                -Infinity,
+                Infinity,
+                false
+            );
+
+        restoreBoard(snapshot);
+
+        let finalScore =
+            tactical +
+            strategic * 0.8;
+
+        finalScore +=
+            Math.random() * 4;
+
+        if (finalScore > bestScore2) {
+
+            bestScore2 =
+                finalScore;
+
+            bestMove2 = {
+                key,
+                color: secondColor
+            };
+        }
+    }
+
+    if (bestMove2) {
+
+        placeStone(
+            bestMove2.key,
+            bestMove2.color
+        );
+    }
+
+    endTurn();
+}
+
+
+function cloneBoard() {
+
+    return JSON.parse(JSON.stringify(state));
+}
+
+function restoreBoard(snapshot) {
+
+    state = snapshot;
+}
+
+function getEmptyCells() {
+
+    return Object.keys(state.cells)
+        .filter(k => state.cells[k].color === null);
+}
+
+
+
+function getGroupAndLiberties(startKey) {
+
+    const color =
+        state.cells[startKey].color;
+
+    const visited =
+        new Set();
+
+    const liberties =
+        new Set();
+
+    const group = [];
+
+    const queue = [startKey];
+
+    visited.add(startKey);
+
+    while (queue.length > 0) {
+
+        const key = queue.shift();
+
+        group.push(key);
+
+        const [q, r] =
+            key.split(',').map(Number);
+
+        const neighbors =
+            getNeighbors(q, r);
+
+        for (let nk of neighbors) {
+
+            const nc =
+                state.cells[nk].color;
+
+            if (nc === null) {
+
+                liberties.add(nk);
+
+            } else if (
+                nc === color &&
+                !visited.has(nk)
+            ) {
+
+                visited.add(nk);
+
+                queue.push(nk);
+            }
+        }
+    }
+
+    return {
+        group,
+        liberties: liberties.size
+    };
+}
+
+
+
+function evaluateBoard() {
+
+    let score = 0;
+
+    const processed =
+        new Set();
+
+    for (let key in state.cells) {
+
+        if (processed.has(key)) {
+            continue;
+        }
+
+        const cell =
+            state.cells[key];
+
+        if (!cell.color) {
+            continue;
+        }
+
+        const data =
+            getGroupAndLiberties(key);
+
+        data.group.forEach(k =>
+            processed.add(k)
+        );
+
+        const liberties =
+            data.liberties;
+
+        const size =
+            data.group.length;
+
+        const [q, r] =
+            key.split(',').map(Number);
+
+        // =====================================
+        // AI
+        // =====================================
+
+        if (
+            cell.color === 'black' ||
+            cell.color === 'blue'
+        ) {
+
+            score += liberties * 12;
+
+            score += size * 8;
+
+            // střed bonus
+            score -= Math.abs(q) * 0.7;
+            score -= Math.abs(r) * 0.7;
+
+            if (liberties === 1) {
+                score -= 150;
+            }
+
+            if (liberties === 2) {
+                score -= 40;
+            }
+
+        } else {
+
+            score -= liberties * 12;
+
+            score -= size * 8;
+
+            score += Math.abs(q) * 0.7;
+            score += Math.abs(r) * 0.7;
+
+            if (liberties === 1) {
+                score += 150;
+            }
+
+            if (liberties === 2) {
+                score += 40;
+            }
+        }
+    }
+
+    // skóre partie
+    score +=
+        (state.scores[2] - state.scores[1]) * 40;
+
+    return score;
+}
+
+
+
+
+
+
+
+
+function simulateMove(key, color) {
+
+    state.cells[key].color = color;
+
+    checkCaptures();
+}
+
+function minimax(
+    depth,
+    alpha,
+    beta,
+    maximizingPlayer
+) {
+
+    if (depth === 0) {
+
+        return evaluateBoard();
+    }
+
+    let emptyKeys = getEmptyCells();
+
+    // ZRYCHLENÍ:
+    // jen relevantní tahy poblíž kamenů
+    emptyKeys =
+        emptyKeys.filter(key => {
+
+            const [q, r] =
+                key.split(',').map(Number);
+
+            const neighbors =
+                getNeighbors(q, r);
+
+            return neighbors.some(nk =>
+                state.cells[nk].color !== null
+            );
+        });
+
+    if (emptyKeys.length === 0) {
+
+        return evaluateBoard();
+    }
+
+    if (maximizingPlayer) {
+
+        let maxEval = -Infinity;
+
+        for (let key of emptyKeys) {
+
+            for (let color of getColorsForPlayer(2)) {
+
+                const snapshot =
+                    cloneBoard();
+
+                simulateMove(key, color);
+
+                let evalScore =
+                    minimax(
+                        depth - 1,
+                        alpha,
+                        beta,
+                        false
+                    );
+
+                restoreBoard(snapshot);
+
+                maxEval =
+                    Math.max(
+                        maxEval,
+                        evalScore
+                    );
+
+                alpha =
+                    Math.max(alpha, evalScore);
+
+                if (beta <= alpha) {
+
+                    break;
+                }
+            }
+        }
+
+        return maxEval;
+
+    } else {
+
+        let minEval = Infinity;
+
+        for (let key of emptyKeys) {
+
+            for (let color of getColorsForPlayer(1)) {
+
+                const snapshot =
+                    cloneBoard();
+
+                simulateMove(key, color);
+
+                let evalScore =
+                    minimax(
+                        depth - 1,
+                        alpha,
+                        beta,
+                        true
+                    );
+
+                restoreBoard(snapshot);
+
+                minEval =
+                    Math.min(
+                        minEval,
+                        evalScore
+                    );
+
+                beta =
+                    Math.min(beta, evalScore);
+
+                if (beta <= alpha) {
+
+                    break;
+                }
+            }
+        }
+
+        return minEval;
+    }
+}
+
+
+        function checkWinCondition() {
+            let target = TARGET_SCORES[state.size];
+            if (state.scores[1] >= target || state.scores[2] >= target) {
+                drawBoard();
+                updateUI();
+                let msg = `🏆 Hráč ${state.turn} ${DICT[lang].win}`;
+                addToLog(`<strong style="color:green; font-weight:400;">${msg}</strong>`);
+                showToast(msg, 6000);
+                return true;
+            }
+            return false;
+        }
+
+        function updateUI() {
+            let target = TARGET_SCORES[state.size];
+            document.getElementById('score-p1').innerText = `[${state.scores[1]} | ${target}]`;
+            document.getElementById('score-p2').innerText = `[${state.scores[2]} | ${target}]`;
+            
+            document.getElementById('status-p1').className = `player-status ${state.turn===1 ? 'active-turn' : ''}`;
+            document.getElementById('status-p2').className = `player-status ${state.turn===2 ? 'active-turn' : ''}`;
+        }
+
+        function renderLog() {
+            const container = document.getElementById('log-messages');
+
+            container.innerHTML =
+                [...state.log]
+                .reverse()
+                .map(msg => `<div class="log-entry">${msg}</div>`)
+                .join('');
+
+            container.scrollTop = 0;
+        }
+
+        function addToLog(msg) {
+            state.log.push(msg);
+            renderLog();
+        }
+
+        function toggleCoords() { document.getElementById('board').classList.toggle('show-coords'); }
+
+        function updateDict() {
+            document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = DICT[lang][el.getAttribute('data-t')]; });
+            document.querySelectorAll('[data-t-title]').forEach(el => { el.title = DICT[lang][el.getAttribute('data-t-title')]; });
+            document.getElementById('btn-copy-log').title = DICT[lang].log_copy;
+        }
+
+        function showHelp() { showToast(DICT[lang].help, 12000, true); }
+
+        async function copyLog() {
+            let text = state.log.map(entry => entry.replace(/<[^>]*>?/gm, '')).join('\n');
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast(DICT[lang].copied);
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
+        }
+
+        function saveHistory() {
+            history.push(JSON.stringify(state));
+            if (history.length > 20) history.shift();
+        }
+
+        function undo() {
+            if (history.length === 0 || isProcessing) return;
+            let targetState;
+            if (state.mode === 'ai' && state.turn === 1) {
+                history.pop(); 
+                targetState = history.pop();
+            } else {
+                targetState = history.pop();
+            }
+
+            if (targetState) {
+                state = JSON.parse(targetState);
+                renderLog();
+                updateMenuUI();
+                drawBoard();
+                updateUI();
+            }
+        }
+
+        function saveGame() {
+            localStorage.setItem('blooms_save', JSON.stringify({state: state, history: history}));
+            showToast(DICT[lang].saved);
+        }
+
+        function loadGame() {
+            let saved = localStorage.getItem('blooms_save');
+            if (saved) {
+                let data = JSON.parse(saved);
+                state = data.state;
+                history = data.history;
+                
+                renderLog();
+                updateMenuUI();
+                drawBoard();
+                updateUI();
+                showToast(DICT[lang].loaded);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
