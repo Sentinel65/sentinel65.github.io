@@ -249,7 +249,7 @@ body{
 }
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
-/* Změna chování pro dotyk v disabled stavu (odstraněno pointer-events:none, aby fungoval dlouhý stisk) */
+/* Změna chování pro dotyk v disabled stavu */
 .traytile.disabled{ opacity:0.35; cursor:default; }
 .traytile.disabled:active{ transform:none; }
 
@@ -717,7 +717,7 @@ cs:{
     
     <h3>Grafická nápověda</h3>
     <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">červeným okrajem</span>. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle modře</span>. Poslední položená dlaždice je označena <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">modrým kolečkem</span> uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">tyrkysovou barvou</span>. Vybraná dlaždice pro přesun na jiné pole je znázorněna <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle žlutým pozadím</span> dlaždice.</p>
-    <p>V módu <b>Klasická hra naslepo</b> si můžete kdykoliv zobrazit překlad japonského přísloví na rubu dlaždice – na počítači stačí na danou dlaždici ukázat myší, na mobilním zařízení na ní dlouze podržte prst a překlad se na chvíli zobrazí jako systémová zpráva.</p>
+    <p>V módu <b>Klasická hra naslepo</b> si můžete kdykoliv zobrazit překlad japonského přísloví na rubu dlaždice – na počítači stačí na danou dlaždici ukázat myší, na mobilním zařízení na ní dlouze podržte prst a překlad se na chvíli zobrazí jako systémová zpráva. Pro lidi s <b>dobrou pamětí</b> - malý handicap: program při každé nové hře vygeneruje <b>stejné přísloví na jinou dlaždici</b>.</p>
 
     <h3>Režim: Klasická hra naslepo</h3>
     <p>Pravidla jsou stejná jako u Klasické hry, ale všechny vaše dlaždice v zásobě jsou skryté (otočené rubem nahoru, kde jsou zapsána japonská přísloví). Ve svém tahu si musíte jednu dlaždici vybrat naslepo. Jakmile ji odkryjete, musíte ji zahrát na hrací desku (<b>můžete s ní libovolně otáčet</b>, ale nelze ji vrátit a vzít si jinou). AI soupeř hraje podle stejných pravidel a tahá si dlaždice také naslepo.</p>
@@ -787,7 +787,7 @@ en:{
     
     <h3>Graphical aid</h3>
     <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">red edge</span>. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">light blue</span>. The last placed tile is marked with a <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">blue circle</span> in the center of the tile, the square from which the last move was made is marked like a hint square but in <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">turquoise color</span>. The selected tile to be moved to another square is indicated by a <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">light yellow background</span> of the tile.</p>
-    <p>In the <b>Classic - Blind Draw</b> mode, you can always view the translation of the Japanese proverb on the back of the tile — on PC, simply hover your mouse over the tile; on a mobile device, long-press the tile and the translation will briefly appear as a system message.</p>
+    <p>In the <b>Classic - Blind Draw</b> mode, you can always view the translation of the Japanese proverb on the back of the tile — on PC, simply hover your mouse over the tile; on a mobile device, long-press the tile and the translation will briefly appear as a system message. For people with <b>a good memory</b>—a little challenge: each time you start a new game, the program generates <b>the same proverb on a different tile</b>. </p>
 
     <h3>Mode: Classic - Blind Draw</h3>
     <p>The rules are the same as Classic mode, but all tiles in your supply are hidden face down (showing Japanese proverbs on the back). On your turn, you must select a tile blindly. Once revealed, you must play it (<b>you can rotate it freely</b>, but you cannot return it to pick another). The AI opponent follows the same rules and also draws tiles blindly.</p>
@@ -869,7 +869,8 @@ function tileFaceSVG(patternIdx, rot, color, size, isFaceDown = false){
   const ink = color==='w' ? 'var(--tile-w-ink)' : 'var(--tile-b-ink)';
 
   if (isFaceDown) {
-    const chars = PROVERBS[patternIdx].jp;
+    const pIdx = (typeof ST !== 'undefined' && ST && ST.proverbMap) ? ST.proverbMap[patternIdx] : patternIdx;
+    const chars = PROVERBS[pIdx].jp;
     const fs = size * 0.32;
     const cx1 = size * 0.30;
     const cx2 = size * 0.70;
@@ -957,6 +958,7 @@ function newGame(){
     board: new Map(),
     pool: { w: poolW, b: poolB },
     blindOrder: { w: shuffleArray(Array.from(poolW)), b: shuffleArray(Array.from(poolB)) },
+    proverbMap: shuffleArray(Array.from({length: NPATTERNS}, (_, i) => i)),
     phase: 'placing',
     turn: GAME_MODE==='solo' ? 'w' : startColor,
     humanColor: 'w',
@@ -1017,7 +1019,7 @@ function saveStats(mode, diff, result, pts) {
 function serializeState(){
   return JSON.stringify({
     board: [...ST.board.entries()], pool: { w:[...ST.pool.w], b:[...ST.pool.b] },
-    blindOrder: ST.blindOrder,
+    blindOrder: ST.blindOrder, proverbMap: ST.proverbMap,
     phase: ST.phase, turn: ST.turn, humanColor: ST.humanColor, aiColor: ST.aiColor,
     winner: ST.winner, winningTileKey: ST.winningTileKey, winPatternKeys: ST.winPatternKeys, log: ST.log,
     pointsW: ST.pointsW, pointsB: ST.pointsB, lastMove: ST.lastMove, lastMoveOrigin: ST.lastMoveOrigin,
@@ -1030,6 +1032,7 @@ function deserializeState(json){
   ST = {
     board: new Map(d.board), pool: { w:new Set(d.pool.w), b:new Set(d.pool.b) },
     blindOrder: d.blindOrder || { w: [...d.pool.w], b: [...d.pool.b] },
+    proverbMap: d.proverbMap || Array.from({length: NPATTERNS}, (_, i) => i),
     phase: d.phase, turn: d.turn, humanColor: d.humanColor, aiColor: d.aiColor,
     winner: d.winner, winningTileKey: d.winningTileKey, winPatternKeys: d.winPatternKeys||null, log: d.log||[],
     pointsW: d.pointsW||0, pointsB: d.pointsB||0, lastMove: d.lastMove||null, lastMoveOrigin: d.lastMoveOrigin||null,
@@ -1421,7 +1424,8 @@ function render(center = false){
       let longPressed = false;
       
       if (isFaceDown) {
-        const trans = PROVERBS[pat][LANG];
+        const pIdx = ST.proverbMap[pat];
+        const trans = PROVERBS[pIdx][LANG];
         // Klasický tooltip pro zobrazení při najetí myší na PC
         div.setAttribute('title', trans);
         
