@@ -101,7 +101,6 @@
     .col-center { order: 1; }
     .col-right { order: 2; width: 100%; margin-top: 8px; }
     .col-left { order: 3; width: 100%; margin-top: 8px; }
-    /* Na mobilu prohozené pořadí: Moje zásoby → Herní deník → Zásobník dílků */
     .panel-supply { order: 1; }
     .panel-log { order: 2; }
     .panel-reserve { order: 3; }
@@ -165,6 +164,7 @@
     user-select: none; -webkit-tap-highlight-color: transparent;
   }
   .deck-slot.empty { opacity: 0.3; pointer-events: none; }
+  .deck-slot.locked, .puzzle-slot.locked { opacity: 0.4; }
   .deck-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--muted); letter-spacing: 1px; line-height: 1.1; margin-bottom: 4px; }
   .deck-count { font-size: 1.5rem; font-weight: 700; color: var(--text); }
   .puzzle-row { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; min-width: 200px; }
@@ -198,11 +198,12 @@
   .actions-remaining { display: flex; gap: 6px; margin-bottom: 12px; }
   .action-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); transition: background .2s; }
   .action-dot.used { background: var(--border); }
-  #end-turn-btn {
+  #end-turn-btn, #ft-done-btn {
     background: var(--accent); color: #000; border: none; border-radius: 8px;
     padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem;
     letter-spacing: 3px; cursor: pointer; width: 100%; margin-top: 8px;
   }
+  #ft-done-btn { background: var(--gold); }
 
   /* ── LOG ── */
   #log {
@@ -217,10 +218,19 @@
   /* ── PLAYERS SIDE ── */
   .player-card {
     background: var(--surface2); border: 2px solid var(--border);
-    border-radius: 10px; padding: 12px; margin-bottom: 10px;
+    border-radius: 10px; padding: 12px; margin-bottom: 10px; transition: border-color 0.2s, background 0.2s;
   }
   .player-card.active { border-color: var(--accent); }
   .player-card.ai { border-color: var(--surface); opacity: 0.85; }
+  
+  /* OPRAVA: Povolení klikání, i když je #app zamrazený */
+  .player-card.clickable-endgame {
+      pointer-events: auto;
+  }
+  .player-card.clickable-endgame:hover {
+      background: var(--surface); border-color: var(--gold);
+  }
+  
   .player-name {
     font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px;
     margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
@@ -247,13 +257,14 @@
   }
   #action-toast.show { opacity: 1; transform: translate(-50%, 0); }
   
+  /* OPRAVA: Dokonalé vycentrování toastu */
   #final-toast {
-    top: 40%; left: 50%; transform: translate(-50%, -20px);
+    top: 50%; left: 50%; transform: translate(-50%, -40%);
     border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(247,201,72,0.4);
     font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 3px;
     color: var(--gold); text-align: center; max-width: 90%; background: #1a1a2ebd; backdrop-filter: blur(4px);
   }
-  #final-toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; cursor: pointer; }
+  #final-toast.show { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
 
   /* ── MODALS & OVERLAYS ── */
   .modal-overlay {
@@ -355,7 +366,10 @@
   <div class="panel panel-log">
     <div class="panel-title panel-toggle" onclick="togglePanel('log-content', 'log-icon')">
       <span data-i18n="log">Herní deník</span>
-      <span id="log-icon" class="toggle-icon">▼</span>
+      <span style="display:flex; align-items:center; gap:14px;">
+        <span id="btn-copy-log" onclick="event.stopPropagation(); copyLog();" title="Kopírovat deník" style="cursor:pointer; font-size:1rem;">📋</span>
+        <span id="log-icon" class="toggle-icon">▼</span>
+      </span>
     </div>
     <div id="log-content" class="collapsible-content">
       <div id="log"></div>
@@ -363,7 +377,7 @@
   </div>
 
   <!-- Supply -->
-  <div class="panel panel-supply">
+  <div class="panel panel-supply" id="supply-panel">
     <div class="panel-title panel-toggle" onclick="togglePanel('supply-content', 'supply-icon')">
       <span data-i18n="my_supply">Moje zásoby</span>
       <span id="supply-icon" class="toggle-icon">▼</span>
@@ -376,7 +390,7 @@
   <!-- CENTER COLUMN (Market, My Puzzles, AI Puzzles) -->
   <div class="col-center">
     <!-- Market -->
-    <div class="panel">
+    <div class="panel" id="market-panel">
       <div class="panel-title" data-i18n="market">Puzzle trh</div>
       <div class="row-label" data-i18n="white_label">Bílé (lehčí)</div>
       <div class="market-container">
@@ -419,9 +433,11 @@
 
     <div class="panel" style="margin-top:12px">
       <div class="panel-title" data-i18n="actions">Akce</div>
+      <div id="ft-banner" style="display:none; background:rgba(230,168,64,.12); border:1px solid var(--gold); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:.8rem; color:var(--gold);"></div>
       <div class="actions-remaining" id="action-dots"></div>
       <div id="actions-panel"></div>
       <button id="end-turn-btn" onclick="endTurn()" data-i18n="end_turn">Ukončit tah →</button>
+      <button id="ft-done-btn" onclick="finishPlayerTouches()" style="display:none;" data-i18n="ft_done_btn">Dokončit poslední úpravy →</button>
     </div>
   </div>
 </div>
@@ -447,7 +463,7 @@
 </div>
 
 <!-- Upgrades Modal -->
-<div id="modal-overlay" class="modal-overlay">
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this) closeModal()">
   <div class="modal-box">
     <h2 id="modal-title">...</h2>
     <div class="modal-grid" id="modal-content"></div>
@@ -456,11 +472,20 @@
 </div>
 
 <!-- Help Modal -->
-<div id="help-modal" class="modal-overlay">
+<div id="help-modal" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
   <div class="modal-box">
     <h2 data-i18n="help_title">Nápověda / Help</h2>
     <div id="help-content" style="font-size:0.95rem; line-height:1.5; color:var(--text);"></div>
     <button class="modal-btn-close" onclick="document.getElementById('help-modal').classList.remove('open')" data-i18n="close">Zavřít</button>
+  </div>
+</div>
+
+<!-- Completed Puzzles Modal (Zobrazení stavu po hře) -->
+<div id="completed-modal" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+  <div class="modal-box" style="max-width: 600px;">
+    <h2 id="completed-modal-title">...</h2>
+    <div id="completed-modal-content"></div>
+    <button class="modal-btn-close" onclick="document.getElementById('completed-modal').classList.remove('open')" data-i18n="close">Zavřít</button>
   </div>
 </div>
 
@@ -489,6 +514,7 @@ const texts = {
     'end_turn': 'Ukončit tah →', 'rot_title': 'Nastav rotaci a orientaci dílku',
     'rot_hint': 'Klepni na "Otočit" nebo "Zrcadlit", dokud dílek nemá tvar, který chceš. Pak potvrď.',
     'rot_btn': 'Otočit', 'flip_btn': 'Zrcadlit', 'cancel': 'Zrušit', 'ok_place': 'OK, umístit →',
+    'log_copied': 'Deník zkopírován do schránky',
     'game_over': 'KONEC HRY', 'play_again': 'Hrát znovu', 'view_state': 'Prohlédnout stav hry',
     'btn_results': '🏆 Výsledky', 'close': 'Zavřít', 'help_title': 'Pravidla a ovládání',
     'empty': 'Prázdno', 'no_puzzles': 'Žádná puzzle — vezmi si je z trhu nebo z balíčku',
@@ -502,10 +528,19 @@ const texts = {
     'modal_upg_title': 'Vyber dílek k vylepšení / výměně',
     'modal_upg_target': 'Vyměnit {0} za:',
     'modal_place_title': 'Vyber dílek k umístění',
-    'toast_3_actions': '✅ Odehrány 3 akce — tah se automaticky ukončuje…',
+    'toast_3_actions': '✅ Ukončuji tah<br><small>Odehrány 3 akce</small>',
     'sys_load_success': '✅ Hra načtena', 'sys_save_success': '✅ Hra uložena', 'sys_no_save': '❌ Žádná uložená hra nenalezena',
     'final_round_trigger': '⚡ KONEC HRY SE BLÍŽÍ!<br><span style="font-size:1.1rem">Dohraje se toto kolo a následuje Závěrečné kolo.</span>',
-    'final_round_start': '🚨 ZÁVĚREČNÉ KOLO SPUŠTĚNO!',
+    'final_round_start': '🚨 ZÁVĚREČNÉ KOLO SPUŠTĚNO! (max. 1 černá kartička na hráče za tah)',
+    'ft_phase_start': '🧩 POSLEDNÍ ÚPRAVY: Můžeš dílky ze zásoby doplnit do rozehraných puzzle. Každý použitý dílek stojí 1 bod!',
+    'ft_phase_title': '🧩 Poslední úpravy',
+    'ft_phase_hint': 'Doplň dílky do svých rozehraných puzzle. Neomezuje tě počet akcí, ale každý použitý dílek odečte 1 bod z celkového skóre. Odměnu za dokončení tímto způsobem nezískáváš. Krok je dobrovolný.',
+    'ft_place_h': 'Umísti dílek (-1 bod)',
+    'ft_done_btn': 'Dokončit poslední úpravy →',
+    'log_ft_your_turn': '🧩 Poslední úpravy: jsi na řadě.',
+    'log_ft_piece': '🧩 Poslední úpravy: použit dílek {0} (-1 bod)',
+    'log_ft_ai_complete': '🤖 AI dokončila puzzle v posledních úpravách: +{0} bodů, -{1} za dílky',
+    'log_err_black_limit': '⚠️ V posledním kole smíš vzít jen 1 černou kartičku za tah!',
     'log_start': '🎮 Hra začíná! Jsi na tahu.',
     'log_take_p': '🧩 Vzal sis puzzle z trhu ({0} bodů)',
     'log_take_b': '🧩 Vzal sis puzzle naslepo z balíčku ({0} bodů)',
@@ -535,17 +570,28 @@ const texts = {
     'log_hint_market': 'Klikni přímo na kartu v trhu nebo na balíček.',
     'log_hint_place': '🎯 Klikni na puzzle. Zvolený dílek: {0}',
     'player_turn': '--- Tah hráče {0} ---',
+    'player_name': 'HRÁČ',
+    'pt': 'B',
+    'pts_full': 'bodů',
+    'completed_puzzles_title': 'Dokončená puzzle - {0}',
+    'ft_deducted': 'Odečteno bodů za dílky (Poslední úpravy): -{0}',
     'help_text': `
-      <strong>Cíl hry:</strong> Dokončováním puzzle získat co nejvíce bodů.<br><br>
-      <strong>Tah hráče:</strong> Hráč má ve svém tahu až 3 akce.<br><br>
+      <strong>Cíl hry:</strong><br>
+      Doplňuj kartičky puzzle a získej co nejvíce bodů. Vhodným výběrem bíle nebo černé kartičky z balíku doplňuj dílky, které v zásobníku nemáš.<br><br>
+      <strong>Tah hráče:</strong><br>
+      Hráč má ve svém tahu až 3 akce.<br><br>
       <strong>Akce:</strong><br>
-      • <em>Vzít puzzle:</em> Z nabídky (trhu) nebo naslepo z balíčku (max 4 rozehrané).<br>
-      • <em>Vzít 1. úroveň:</em> Vzít žlutý dílek ze zásobníku.<br>
-      • <em>Vylepšit/vyměnit:</em> Vylepšíš dílek za jiný stejné úrovně nebo o 1 vyšší.<br>
-      • <em>Umístit dílek:</em> Vložení 1 dílku do jednoho puzzle.<br>
-      • <em>MASTER akce (1x za tah):</em> Lze vložit 1 dílek do <strong>všech</strong> rozehraných puzzle.<br><br>
+      • Vzít puzzle: z nabídky (trhu) nebo naslepo z balíčku (max 4 rozehrané).<br>
+      • Vzít žlutý dílek 1. úrovně ze zásobníku.<br>
+      • Vylepšit / vyměnit: vylepšíš dílek za jiný stejné úrovně nebo o 1 vyšší.<br>
+      • Umístit dílek: vložení 1 dílku do jednoho puzzle.<br>
+      • MASTER akce (1x za tah): lze vložit 1 dílek do všech rozehraných puzzle.<br><br>
       <strong>Ovládání (umístění dílku):</strong><br> 
-      V sekci <em>Moje zásoby</em> klepni na dílek. Objeví se ti dialog pro nastavení rotace dílku (pokud je potřeba). Následně se okno zavře a klepneš na volné místo v konkrétním puzzle.`
+      V sekci Moje zásoby klepni na dílek. Objeví se ti dialog pro nastavení rotace a zrcadlení dílku (pokud je potřeba). Následně se okno zavře a klepneš na volné místo v konkrétním puzzle.<br><br>
+      <strong>Konec hry:</strong><br>
+      • Jakmile se v puzzle trhu odkryje poslední černá kartička, spustí se odpočet — dohraje se aktuální kolo a následuje jedno Závěrečné kolo, ve kterém má každý hráč ještě jeden poslední tah.<br>
+      • V Závěrečném kole si hráč i AI mohou v každém svém tahu vzít nejvýše 1 černou kartičku.<br>
+      • Po odehrání Závěrečného kola následuje fáze Poslední úpravy: každý hráč může (nepovinně) doplnit dílky ze své zásoby do rozehraných puzzle bez ohledu na počet akcí. Za doplnění kartičky puzzle po ukončení Závěrečného kola nezískáváš dílek odměny, ale pouze body za kartičku. Za každý použitý dílek v této fázi se odečítá 1 bod z celkového skóre.`
   },
   'en': {
     'reserve': 'Piece Reserve', 'log': 'Game Log', 'market': 'Puzzle Market',
@@ -556,6 +602,7 @@ const texts = {
     'end_turn': 'End Turn →', 'rot_title': 'Set Piece Rotation & Orientation',
     'rot_hint': 'Tap "Rotate" or "Flip" until the piece has the shape you need, then confirm.',
     'rot_btn': 'Rotate', 'flip_btn': 'Flip', 'cancel': 'Cancel', 'ok_place': 'OK, Place →',
+    'log_copied': 'Log copied to clipboard',
     'game_over': 'GAME OVER', 'play_again': 'Play Again', 'view_state': 'View Game State',
     'btn_results': '🏆 Results', 'close': 'Close', 'help_title': 'Rules and Controls',
     'empty': 'Empty', 'no_puzzles': 'No puzzles — take them from the market or deck',
@@ -569,10 +616,19 @@ const texts = {
     'modal_upg_title': 'Select piece to upgrade / trade',
     'modal_upg_target': 'Trade {0} for:',
     'modal_place_title': 'Select piece to place',
-    'toast_3_actions': '✅ 3 actions used — turn ending automatically...',
+    'toast_3_actions': '✅ Ending turn<br><small>3 actions used</small>',
     'sys_load_success': '✅ Game loaded', 'sys_save_success': '✅ Game saved', 'sys_no_save': '❌ No saved game found',
     'final_round_trigger': '⚡ END GAME TRIGGERED!<br><span style="font-size:1.1rem">One final round remains after this one.</span>',
-    'final_round_start': '🚨 FINAL ROUND INITIATED!',
+    'final_round_start': '🚨 FINAL ROUND INITIATED! (max. 1 black puzzle per player per turn)',
+    'ft_phase_start': '🧩 FINISHING TOUCHES: You can fill your unfinished puzzles with pieces from your supply. Each piece used costs 1 point!',
+    'ft_phase_title': '🧩 Finishing Touches',
+    'ft_phase_hint': 'Fill in your remaining puzzles. There is no action limit, but each piece used deducts 1 point from your final score. You do not receive the completion reward this way. This step is optional.',
+    'ft_place_h': 'Place a piece (-1 pt)',
+    'ft_done_btn': 'Finish Finishing Touches →',
+    'log_ft_your_turn': '🧩 Finishing Touches: your turn.',
+    'log_ft_piece': '🧩 Finishing Touches: used piece {0} (-1 pt)',
+    'log_ft_ai_complete': '🤖 AI completed a puzzle during Finishing Touches: +{0} pts, -{1} for pieces',
+    'log_err_black_limit': '⚠️ You may only take 1 black puzzle per turn in the final round!',
     'log_start': '🎮 Game starts! Your turn.',
     'log_take_p': '🧩 Took puzzle from market ({0} pts)',
     'log_take_b': '🧩 Took puzzle blind from deck ({0} pts)',
@@ -602,17 +658,28 @@ const texts = {
     'log_hint_market': 'Tap directly on a card in the market or the deck.',
     'log_hint_place': '🎯 Tap the puzzle. Chosen piece: {0}',
     'player_turn': '--- Player {0}\'s Turn ---',
+    'player_name': 'PLAYER',
+    'pt': 'pt',
+    'pts_full': 'pts',
+    'completed_puzzles_title': 'Completed Puzzles - {0}',
+    'ft_deducted': 'Points deducted for pieces (Finishing Touches): -{0}',
     'help_text': `
-      <strong>Goal:</strong> Score the most points by completing puzzles.<br><br>
-      <strong>Turn:</strong> A player has up to 3 actions per turn.<br><br>
+      <strong>Game Goal:</strong><br>
+      Complete puzzle cards and get as many points as possible. By choosing the right white or black card from the deck, fill in pieces you don't have in your supply.<br><br>
+      <strong>Player's Turn:</strong><br>
+      A player has up to 3 actions per turn.<br><br>
       <strong>Actions:</strong><br>
-      • <em>Take Puzzle:</em> From the market or blind from the deck (max 4).<br>
-      • <em>Take Level 1:</em> Take a yellow piece from reserve.<br>
-      • <em>Upgrade/Trade:</em> Trade a piece for same or +1 level.<br>
-      • <em>Place Piece:</em> Place 1 piece on one puzzle.<br>
-      • <em>MASTER Action (1x/turn):</em> Place 1 piece into <strong>ALL</strong> your active puzzles.<br><br>
-      <strong>Controls:</strong><br> 
-      Tap the piece you want to place in <em>My Supply</em>. A rotation dialog will appear (if needed). After confirming, just tap an empty space inside your puzzle grid.`
+      • Take puzzle: from the market or blind from the deck (max 4 active).<br>
+      • Take level 1: take a yellow piece from the reserve.<br>
+      • Upgrade / trade: upgrade a piece for another of the same level or 1 higher.<br>
+      • Place piece: place 1 piece into one puzzle.<br>
+      • MASTER action (1x per turn): place 1 piece into all active puzzles.<br><br>
+      <strong>Controls (Placing a piece):</strong><br> 
+      Tap a piece in the My Supply section. A dialog will appear to set the rotation and mirroring of the piece (if needed). The window then closes and you tap an empty spot in the specific puzzle.<br><br>
+      <strong>End of Game:</strong><br>
+      • As soon as the last black card is revealed in the puzzle market, the countdown starts — the current round is played out and one Final Round follows, in which each player has one last turn.<br>
+      • In the Final Round, both the player and AI can take a maximum of 1 black card per turn.<br>
+      • After the Final Round, the Finishing Touches phase follows: each player can (optionally) add pieces from their supply to active puzzles regardless of the number of actions. For completing a puzzle card after the Final Round, you do not get a reward piece, only points for the card. For each piece used in this phase, 1 point is deducted from the total score.`
   }
 };
 
@@ -628,6 +695,7 @@ function toggleLang() {
   document.getElementById('btn-save').title = currentLang === 'cs' ? 'Uložit hru' : 'Save Game';
   document.getElementById('btn-load').title = currentLang === 'cs' ? 'Načíst hru' : 'Load Game';
   document.getElementById('btn-help').title = currentLang === 'cs' ? 'Nápověda' : 'Help';
+  document.getElementById('btn-copy-log').title = currentLang === 'cs' ? 'Kopírovat deník' : 'Copy log';
   
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -650,6 +718,16 @@ function togglePanel(id, iconId) {
   } else {
     el.classList.add('hidden');
     icon.textContent = '◀';
+  }
+}
+
+// Funkce pro autoscroll na mobilech
+function scrollToMobile(id) {
+  if (window.innerWidth < 900) {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }, 150);
   }
 }
 
@@ -771,16 +849,18 @@ function initGame() {
 
   G = {
     round: 1, currentPlayer: 0, endGameTriggered: false, finalRound: -1, isGameOver: false,
-    actionsLeft: 3, masterUsed: false, turnId: 0, turnAutoEnding: false, logs: [],
+    actionsLeft: 3, masterUsed: false, turnId: 0, turnAutoEnding: false, logs: [], blackTakenThisTurn: 0,
     whitePile: white.slice(4), blackPile: activeBlackCards.slice(4),
     whiteMarket: white.slice(0,4).map(p=>({...p,placed:{}})),
     blackMarket: activeBlackCards.slice(0,4).map(p=>({...p,placed:{}})),
     players: [
-      { name: 'Player', score:0, supply:{L1:1,L2:1}, puzzles:[], isAI:false },
-      { name: 'AI', score:0, supply:{L1:1,L2:1}, puzzles:[], isAI:true },
+      { name: '', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:false },
+      { name: 'AI', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:true },
     ],
     reserve: { L1:13, L2:13, L3a:15, L3b:15, L4a:15, L4b:15, L4c:15, L4d:15, L4e:15 },
-    selectedPiece: null, rotation: 0, masterPlaced: {}
+    selectedPiece: null, rotation: 0, flip: false,
+    masterPlacedPuzzles: new Set(), masterTotalPuzzles: 0,
+    finishingTouches: false, ftPlayerIdx: 0, ftPiecesUsed: [0, 0]
   };
 
   log('log_start', [], 'good');
@@ -806,6 +886,24 @@ function renderLog() {
   });
 }
 
+function copyLog() {
+  if (!G.logs.length) return;
+  const text = G.logs.map(l => t(l.key, ...l.args).replace(/<[^>]*>/g, '')).join('\n');
+  const done = () => showActionToast(t('log_copied'));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopyText(text, done));
+  } else {
+    fallbackCopyText(text, done);
+  }
+}
+function fallbackCopyText(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
 function showFinalToast(msg) {
   const tDiv = document.getElementById('final-toast');
   tDiv.innerHTML = msg;
@@ -814,7 +912,7 @@ function showFinalToast(msg) {
 }
 function showActionToast(msg) {
   const tDiv = document.getElementById('action-toast');
-  tDiv.textContent = msg;
+  tDiv.innerHTML = msg;
   tDiv.classList.add('show');
   setTimeout(() => tDiv.classList.remove('show'), 2000);
 }
@@ -875,6 +973,7 @@ function renderHeader() {
   document.getElementById('white-deck').classList.toggle('empty', G.whitePile.length === 0);
   document.getElementById('black-pile-count').textContent = G.blackPile.length;
   document.getElementById('black-deck').classList.toggle('empty', G.blackPile.length === 0);
+  document.getElementById('black-deck').classList.toggle('locked', G.endGameTriggered && G.blackTakenThisTurn >= 1);
 }
 
 function renderReserve() {
@@ -910,7 +1009,7 @@ function renderMarketRow(elId, market, type) {
     const puzzle = market[i];
     const slot = document.createElement('div');
     if (puzzle) {
-      slot.className = 'puzzle-slot';
+      slot.className = 'puzzle-slot' + (type==='black' && G.endGameTriggered && G.blackTakenThisTurn >= 1 ? ' locked' : '');
       slot.innerHTML = `
         ${renderPuzzleGrid(puzzle, true)}
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:6px">
@@ -987,7 +1086,7 @@ function renderAiPuzzles() {
   if (!ai.puzzles.length) { el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">${t('ai_no_puzzles')}</span>`; return; }
   ai.puzzles.forEach(puzzle => {
     const div = document.createElement('div'); div.className = 'my-puzzle-card ai';
-    div.innerHTML = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">${puzzle.pts} ${t('pts')||''}</div>` + renderPuzzleGrid(puzzle, true);
+    div.innerHTML = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">${puzzle.pts} ${t('pts_full')||''}</div>` + renderPuzzleGrid(puzzle, true);
     el.appendChild(div);
   });
 }
@@ -995,22 +1094,70 @@ function renderAiPuzzles() {
 function renderPlayers() {
   const el = document.getElementById('players-panel'); el.innerHTML = '';
   G.players.forEach((p, i) => {
-    const card = document.createElement('div'); card.className = 'player-card' + (i===G.currentPlayer?' active':' ai');
+    const pName = p.isAI ? 'AI' : t('player_name');
+    const card = document.createElement('div');
+    card.className = 'player-card' + (i===G.currentPlayer?' active':' ai');
+    if(G.isGameOver) {
+        card.classList.add('clickable-endgame');
+        card.style.cursor = 'pointer';
+        card.onclick = () => showCompletedPuzzles(i);
+        card.title = t('view_state');
+    }
     const supplyCount = Object.values(p.supply).reduce((a,b)=>a+b,0);
     card.innerHTML = `
       <div class="player-name">
-        ${p.name} ${i===G.currentPlayer?'▶':''}
-        <span class="score-badge">${p.score} pt</span>
+        ${pName} ${i===G.currentPlayer?'▶':''}
+        <span class="score-badge">${p.score} ${t('pt')}</span>
       </div>
       <div style="font-size:.75rem;color:var(--muted)">${t('supply')}: ${supplyCount} · Puzzles: ${p.puzzles.length}/4</div>`;
     el.appendChild(card);
   });
 }
 
+function showCompletedPuzzles(pIdx) {
+  if (!G.isGameOver) return;
+  const p = G.players[pIdx];
+  const pName = p.isAI ? 'AI' : t('player_name');
+  document.getElementById('completed-modal-title').textContent = t('completed_puzzles_title', pName);
+  let html = `<div style="font-size:0.9rem; margin-bottom:12px; color:var(--gold)">${t('ft_deducted', G.ftPiecesUsed[pIdx] || 0)}</div>`;
+  html += `<div class="puzzle-row" style="max-height: 50vh; overflow-y: auto;">`;
+  if (p.completedPuzzles && p.completedPuzzles.length > 0) {
+      p.completedPuzzles.forEach(puz => {
+          html += `<div class="my-puzzle-card" style="min-width: 120px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--gold);">${puz.pts}★</span>
+            </div>
+            ${renderPuzzleGrid(puz, true)}
+          </div>`;
+      });
+  } else {
+      html += `<div style="color:var(--muted); font-size:0.85rem">${t('empty')}</div>`;
+  }
+  html += `</div>`;
+  document.getElementById('completed-modal-content').innerHTML = html;
+  document.getElementById('completed-modal').classList.add('open');
+}
+
 function renderActions() {
   const dots = document.getElementById('action-dots'); dots.innerHTML = '';
-  for (let i=0;i<3;i++) { const d = document.createElement('div'); d.className = 'action-dot' + (i >= G.actionsLeft ? ' used':''); dots.appendChild(d); }
   const panel = document.getElementById('actions-panel');
+  const endTurnBtn = document.getElementById('end-turn-btn'); const ftDoneBtn = document.getElementById('ft-done-btn');
+  const ftBanner = document.getElementById('ft-banner');
+
+  if (G.finishingTouches) {
+    const player = G.players[G.currentPlayer]; const hasSupply = Object.values(player.supply).some(v=>v>0); const hasPuzzle = player.puzzles.length > 0;
+    const canAct = !player.isAI;
+    endTurnBtn.style.display = 'none'; ftDoneBtn.style.display = canAct ? '' : 'none';
+    ftBanner.style.display = ''; ftBanner.innerHTML = `<strong>${t('ft_phase_title')}</strong><br>${t('ft_phase_hint')}`;
+    panel.innerHTML = '';
+    const btn = document.createElement('button'); btn.className = 'action-btn'; btn.disabled = !canAct || !hasSupply || !hasPuzzle;
+    btn.innerHTML = `<span class="action-icon">🎯</span><span class="action-label">${t('act_place')}<br><small style="color:var(--muted)">${t('ft_place_h')}</small></span>`;
+    btn.onclick = () => promptPlace(); panel.appendChild(btn);
+    return;
+  }
+  ftBanner.style.display = 'none'; endTurnBtn.style.display = ''; ftDoneBtn.style.display = 'none';
+
+  for (let i=0;i<3;i++) { const d = document.createElement('div'); d.className = 'action-dot' + (i >= G.actionsLeft ? ' used':''); dots.appendChild(d); }
   const canAct = G.actionsLeft > 0 && !G.players[G.currentPlayer].isAI;
   const player = G.players[G.currentPlayer]; const hasSupply = Object.values(player.supply).some(v=>v>0); const hasPuzzle = player.puzzles.length > 0;
   panel.innerHTML = '';
@@ -1066,14 +1213,7 @@ function renderPieceSVG(piece, cellSize) {
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${rects}</svg>`;
 }
 function renderRewardMini(r) {
-  if (!r) return ''; const lv = parseInt(r.replace('L','')); const piece = PIECES.find(p => p.level === lv); if (!piece) return r;
-  const cs = 14; const gap = 2; const w = piece.size[1]*cs + (piece.size[1]-1)*gap; const h = piece.size[0]*cs + (piece.size[0]-1)*gap;
-  let rects = piece.cells.map(([pr,pc]) => `<rect x="${pc*(cs+gap)}" y="${pr*(cs+gap)}" width="${cs}" height="${cs}" rx="2" fill="${piece.color}" opacity="0.95"/>`).join('');
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:inline-block;vertical-align:middle">${rects}</svg>`;
-}function renderRewardMini(r) {
   if (!r) return '';
-
-  // hledat přímo podle ID, ne podle levelu
   const piece = PIECES.find(p => p.id === r);
   if (!piece) return r;
 
@@ -1105,7 +1245,7 @@ function rotateCells(cells) {
 }
 
 function mirrorCells(cells) {
-  let mirrored = cells.map(([r,c]) => [r, -c]);
+  let mirrored = cells.map(([r,c]) => [-r, c]);
   const minR = Math.min(...mirrored.map(([r])=>r)); const minC = Math.min(...mirrored.map(([,c])=>c));
   return mirrored.map(([r,c]) => [r-minR, c-minC]);
 }
@@ -1116,7 +1256,6 @@ function getRotatedCells() {
   for (let i=0;i<(G.rotation||0);i++) cells = rotateCells(cells); return cells;
 }
 
-// OPRAVA: Dynamické ukotvení za "nejlevější horní" reálný blok orotovaného dílku
 function getPiecePlacementKeys(puzzleIdx, anchorR, anchorC) { 
   const cells = getRotatedCells();
   let pr = Infinity, pc = Infinity;
@@ -1197,20 +1336,26 @@ function spendAction(count=1) { G.actionsLeft -= count; }
 function doTakePuzzle(type, idx) {
   if (G.players[G.currentPlayer].isAI) return; if (G.actionsLeft <= 0) { log('log_err_no_act','','warn'); return; }
   const player = G.players[G.currentPlayer]; if (player.puzzles.length >= 4) { log('log_err_4_puz','','warn'); return; }
+  if (type === 'black' && G.endGameTriggered && G.blackTakenThisTurn >= 1) { log('log_err_black_limit','','warn'); return; }
   const market = type==='white' ? G.whiteMarket : G.blackMarket; const pile = type==='white' ? G.whitePile : G.blackPile;
   const puzzle = market[idx]; if (!puzzle) return;
   const newPuzzle = clone(puzzle); newPuzzle.placed = {}; player.puzzles.push(newPuzzle);
   if (pile.length > 0) { const next = pile.shift(); next.placed = {}; market[idx] = next; } else { market[idx] = null; }
-  if (type === 'black') checkEndGameTrigger();
-  spendAction(); log('log_take_p', [puzzle.pts], 'good'); checkTurnEnd();
+  if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
+  spendAction(); log('log_take_p', [puzzle.pts], 'good'); 
+  scrollToMobile('supply-panel');
+  checkTurnEnd();
 }
 function doTakeBlindPuzzle(type) {
   if (G.players[G.currentPlayer].isAI) return; if (G.actionsLeft <= 0) { log('log_err_no_act','','warn'); return; }
   const player = G.players[G.currentPlayer]; if (player.puzzles.length >= 4) { log('log_err_4_puz','','warn'); return; }
+  if (type === 'black' && G.endGameTriggered && G.blackTakenThisTurn >= 1) { log('log_err_black_limit','','warn'); return; }
   const pile = type === 'white' ? G.whitePile : G.blackPile; if (pile.length === 0) { log('log_err_empty_deck','','warn'); return; }
   const next = pile.shift(); next.placed = {}; player.puzzles.push(next);
-  if (type === 'black') checkEndGameTrigger();
-  spendAction(); log('log_take_b', [next.pts], 'good'); checkTurnEnd();
+  if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
+  spendAction(); log('log_take_b', [next.pts], 'good'); 
+  scrollToMobile('supply-panel');
+  checkTurnEnd();
 }
 function doTakeLevel1() {
   if (G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
@@ -1235,7 +1380,7 @@ function promptUpgrade() {
 }
 function promptPlace() {
   if (G.masterMode) { log('log_err_select_first','','warn'); return; }
-  if (G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
+  if (!G.finishingTouches && G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
   const player = G.players[G.currentPlayer]; const available = PIECES.filter(p=>(player.supply[p.id]||0)>0);
   if (!available.length) { log('log_err_no_pieces','','warn'); return; }
   openModal(t('modal_place_title'), available, (piece) => {
@@ -1246,7 +1391,7 @@ function promptPlace() {
 }
 function handleCellClick(puzzleIdx, row, col) {
   if (G.players[G.currentPlayer].isAI) return;
-  if (!G.masterMode && G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
+  if (!G.masterMode && !G.finishingTouches && G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
   if (!G.selectedPiece) { log('log_err_select_first','','warn'); return; }
   const player = G.players[G.currentPlayer]; const puzzle = player.puzzles[puzzleIdx];
   const keys = getPiecePlacementKeys(puzzleIdx, row, col);
@@ -1269,18 +1414,27 @@ function handleCellClick(puzzleIdx, row, col) {
     return;
   }
   if (G.masterMode) {
-    if (G.masterPlaced && G.masterPlaced[puzzleIdx]) { log('log_err_master_placed', [puzzleIdx+1], 'warn'); return; }
-    G.masterPlaced[puzzleIdx] = true;
-  } else spendAction();
+    if (G.masterPlacedPuzzles.has(puzzle)) { log('log_err_master_placed', [puzzleIdx+1], 'warn'); return; }
+    G.masterPlacedPuzzles.add(puzzle);
+  } else if (!G.finishingTouches) spendAction();
 
   keys.forEach(key => { puzzle.placed[key] = G.selectedPiece; });
   player.supply[G.selectedPiece]--; if (player.supply[G.selectedPiece]<=0) delete player.supply[G.selectedPiece];
   log('log_place', [piece.name, puzzleIdx+1], 'good');
 
+  if (G.finishingTouches) {
+    player.score -= 1; G.ftPiecesUsed[G.currentPlayer] = (G.ftPiecesUsed[G.currentPlayer]||0) + 1;
+    log('log_ft_piece', [piece.name], 'warn');
+  }
+
+  checkPuzzleCompletion(player, puzzleIdx, G.finishingTouches);
+
   if (!G.masterMode) { G.selectedPiece = null; G.rotation = 0; G.flip = false; }
-  else if (Object.keys(G.masterPlaced).length >= player.puzzles.length) {
+  else if (G.masterPlacedPuzzles.size >= G.masterTotalPuzzles) {
     G.masterMode = false; G.selectedPiece = null; G.rotation = 0; G.flip = false; log('log_master_done', [], 'good');
   }
+
+  if (G.finishingTouches) { render(); return; }
   checkTurnEnd();
 }
 function doMaster() {
@@ -1288,10 +1442,10 @@ function doMaster() {
   if (G.masterUsed) { log('log_err_master_used','','warn'); return; }
   const player = G.players[G.currentPlayer]; if (!player.puzzles.length) return;
   const available = PIECES.filter(p=>(player.supply[p.id]||0)>0); if (!available.length) return;
-  G.masterUsed = true; spendAction(); G.masterMode = true; G.masterPlaced = {}; G.selectedPiece = null;
+  G.masterUsed = true; spendAction(); G.masterMode = true; G.masterPlacedPuzzles = new Set(); G.masterTotalPuzzles = player.puzzles.length; G.selectedPiece = null;
   log('log_master', [], 'good'); render();
 }
-function checkPuzzleCompletion(player, idx) {
+function checkPuzzleCompletion(player, idx, skipReward=false) {
   const puzzle = player.puzzles[idx]; const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
   if (Object.keys(puzzle.placed||{}).length >= totalCells) {
     if (!player.isAI && !G.isGameOver) { const card = document.getElementById(`puzzle-card-${idx}`); if (card) card.classList.add('puzzle-complete-flash'); }
@@ -1301,7 +1455,7 @@ function checkPuzzleCompletion(player, idx) {
       const piece = PIECES.find(p => p.id === pid); const count = Math.round(usedPieces[pid] / (piece ? piece.cells.length : 1));
       player.supply[pid] = (player.supply[pid]||0) + count;
     });
-    if (puzzle.reward) {
+    if (puzzle.reward && !skipReward) {
       let rewardPiece = PIECES.find(p => p.id === puzzle.reward && (G.reserve[p.id]||0) > 0);
       if (!rewardPiece) {
         const rewardDef = PIECES.find(p => p.id === puzzle.reward);
@@ -1314,6 +1468,8 @@ function checkPuzzleCompletion(player, idx) {
         log('log_reward', [rewardPiece.name], 'good'); if (!player.isAI && !G.isGameOver) showRewardToast(rewardPiece);
       }
     }
+    // Uložit do dokončených
+    player.completedPuzzles.push(clone(puzzle));
     player.puzzles.splice(idx, 1);
   }
 }
@@ -1335,13 +1491,119 @@ function endTurn() {
   G.currentPlayer = (G.currentPlayer + 1) % G.players.length;
   if (G.currentPlayer === 0) {
     G.round++;
-    if (G.endGameTriggered && G.round > G.finalRound) { endGame(); return; }
+    if (G.endGameTriggered && G.round > G.finalRound) { startFinishingTouches(); return; }
     if (G.endGameTriggered && G.round === G.finalRound) showFinalToast(t('final_round_start'));
   }
-  G.actionsLeft = 3; G.masterUsed = false; render();
+  G.actionsLeft = 3; G.masterUsed = false; G.blackTakenThisTurn = 0; render();
   
-  if (G.players[G.currentPlayer].isAI) setTimeout(aiTurn, 800);
-  else log('player_turn', [G.players[G.currentPlayer].name]);
+  if (G.players[G.currentPlayer].isAI) {
+    setTimeout(aiTurn, 800);
+  } else {
+    log('player_turn', [G.players[G.currentPlayer].name ? G.players[G.currentPlayer].name : t('player_name')]);
+    scrollToMobile('market-panel');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  FINISHING TOUCHES (Poslední úpravy) — end-game phase
+// ═══════════════════════════════════════════════════════
+function startFinishingTouches() {
+  const anyone = G.players.some(p => p.puzzles.length > 0 && Object.values(p.supply).some(v=>v>0));
+  if (!anyone) { endGame(); return; }
+  G.finishingTouches = true; G.ftPlayerIdx = 0; G.ftPiecesUsed = G.players.map(()=>0);
+  G.selectedPiece = null; G.rotation = 0; G.flip = false; G.masterMode = false;
+  showFinalToast(t('ft_phase_start'));
+  advanceFinishingTouches();
+}
+function advanceFinishingTouches() {
+  while (G.ftPlayerIdx < G.players.length) {
+    const p = G.players[G.ftPlayerIdx];
+    const canDoAnything = p.puzzles.length > 0 && Object.values(p.supply).some(v=>v>0);
+    if (!canDoAnything) { G.ftPlayerIdx++; continue; }
+    break;
+  }
+  if (G.ftPlayerIdx >= G.players.length) { G.finishingTouches = false; endGame(); return; }
+  G.currentPlayer = G.ftPlayerIdx; G.selectedPiece = null; G.rotation = 0; G.flip = false;
+  render();
+  const player = G.players[G.ftPlayerIdx];
+  if (player.isAI) setTimeout(aiFinishingTouches, 700);
+  else log('log_ft_your_turn', [], 'good');
+}
+function finishPlayerTouches() {
+  if (!G.finishingTouches) return;
+  G.ftPlayerIdx++; advanceFinishingTouches();
+}
+
+function tryCompletePuzzleWithSupply(puzzle, supply) {
+  const h = puzzle.h, w = puzzle.w;
+  const filled = Array.from({length:h}, (_,r)=>Array.from({length:w},(_,c)=> puzzle.shape[r][c]!==1 || !!(puzzle.placed||{})[`${r}_${c}`]));
+  const stock = {...supply}; const placements = [];
+
+  function findFirstEmpty() {
+    for (let r=0;r<h;r++) for (let c=0;c<w;c++) if (!filled[r][c]) return [r,c];
+    return null;
+  }
+  function fits(cells, r0, c0) {
+    for (const [dr,dc] of cells) { const rr=r0+dr, cc=c0+dc; if (rr<0||rr>=h||cc<0||cc>=w||filled[rr][cc]) return false; }
+    return true;
+  }
+  function place(cells, r0, c0, val) {
+    for (const [dr,dc] of cells) filled[r0+dr][c0+dc] = val;
+  }
+  function solve() {
+    const empty = findFirstEmpty();
+    if (!empty) return true;
+    const [r0, c0] = empty;
+    for (const piece of PIECES) {
+      if ((stock[piece.id]||0) <= 0) continue;
+      for (const flip of [false, true]) {
+        const base = flip ? mirrorCells(piece.cells) : piece.cells;
+        for (let rot=0; rot<4; rot++) {
+          let cells = base; for (let i=0;i<rot;i++) cells = rotateCells(cells);
+          for (const [ar,ac] of cells) {
+            const originR = r0 - ar, originC = c0 - ac;
+            if (!fits(cells, originR, originC)) continue;
+            place(cells, originR, originC, true); stock[piece.id]--;
+            placements.push({ pieceId: piece.id, cells: cells.map(([dr,dc])=>[originR+dr, originC+dc]) });
+            if (solve()) return true;
+            placements.pop(); stock[piece.id]++; place(cells, originR, originC, false);
+          }
+        }
+      }
+    }
+    return false;
+  }
+  return solve() ? placements : null;
+}
+
+function aiFinishingTouches() {
+  const ai = G.players[G.ftPlayerIdx];
+  let improved = true;
+  while (improved) {
+    improved = false;
+    const candidates = [...ai.puzzles].sort((a,b) => {
+      const rA = a.shape.flat().filter(v=>v===1).length - Object.keys(a.placed||{}).length;
+      const rB = b.shape.flat().filter(v=>v===1).length - Object.keys(b.placed||{}).length;
+      return rA - rB;
+    });
+    for (const puzzle of candidates) {
+      const solution = tryCompletePuzzleWithSupply(puzzle, ai.supply);
+      if (!solution) continue;
+      const netGain = puzzle.pts - solution.length;
+      if (netGain <= 0) continue;
+      solution.forEach(({pieceId, cells}) => {
+        cells.forEach(([r,c]) => { puzzle.placed[`${r}_${c}`] = pieceId; });
+        ai.supply[pieceId]--; if (ai.supply[pieceId]<=0) delete ai.supply[pieceId];
+        ai.score -= 1; G.ftPiecesUsed[G.ftPlayerIdx] = (G.ftPiecesUsed[G.ftPlayerIdx]||0) + 1;
+      });
+      log('log_ft_ai_complete', [puzzle.pts, solution.length], 'good');
+      const pIdx = ai.puzzles.indexOf(puzzle);
+      if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx, true);
+      improved = true; render();
+      break;
+    }
+  }
+  setTimeout(finishPlayerTouches, 500);
 }
 
 function endGame() {
@@ -1351,12 +1613,14 @@ function endGame() {
   const el = document.getElementById('final-scores'); el.innerHTML = '';
   const sorted = [...G.players].sort((a,b)=>b.score-a.score);
   sorted.forEach((p,i) => {
+    const pName = p.isAI ? 'AI' : t('player_name');
     const div = document.createElement('div'); div.className = 'final-player' + (i===0?' winner':'');
-    div.innerHTML = `<div class="name">${i===0?'🏆 ':''} ${p.name}</div><div class="pts">${p.score}</div><div style="color:var(--muted);font-size:.8rem">pt</div>`;
+    div.innerHTML = `<div class="name">${i===0?'🏆 ':''} ${pName}</div><div class="pts">${p.score}</div><div style="color:var(--muted);font-size:.8rem">${t('pts_full')}</div>`;
     el.appendChild(div);
   });
   document.getElementById('game-over').classList.add('open');
   document.getElementById('show-results-btn').style.display = 'block';
+  render();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1423,37 +1687,40 @@ function aiTurn() {
         const rB = b.shape.flat().filter(v=>v===1).length - Object.keys(b.placed||{}).length;
         return rA - rB;
       });
-      let placedPieceId = null;
+      let placedPieceId = null; let placedPuzzle = null;
       for (const puzzle of order) {
         for (const piece of PIECES.filter(p=>(ai.supply[p.id]||0)>0).sort((a,b)=>b.cells.length-a.cells.length)) {
-          if (tryPlacePieceOnPuzzle(puzzle, piece)) { placedPieceId = piece.id; break; }
+          if (tryPlacePieceOnPuzzle(puzzle, piece)) { placedPieceId = piece.id; placedPuzzle = puzzle; break; }
         } if (placedPieceId) break;
       }
       if (placedPieceId) {
         ai.supply[placedPieceId]--; if (ai.supply[placedPieceId]<=0) delete ai.supply[placedPieceId];
+        const pIdx = ai.puzzles.indexOf(placedPuzzle);
+        if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx);
         actions--; render(); setTimeout(aiAct, 400); return;
       }
     }
 
     if (ai.puzzles.length < 3) {
+      const blackLimitReached = G.endGameTriggered && G.blackTakenThisTurn >= 1;
       const enoughPieces = (Object.values(ai.supply).reduce((a,b)=>a+b,0) >= 6 || Object.keys(ai.supply).filter(k=>(ai.supply[k]||0)>0).length >= 4);
       const candidates = [];
       G.whiteMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'white', idx:i, score: scorePuzzleForAI(ai,p) }); });
-      if (enoughPieces) G.blackMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'black', idx:i, score: scorePuzzleForAI(ai,p) }); });
+      if (enoughPieces && !blackLimitReached) G.blackMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'black', idx:i, score: scorePuzzleForAI(ai,p) }); });
       candidates.sort((a,b)=>b.score-a.score); const best = candidates[0] || null;
 
-      const pOpts = []; if (G.whitePile.length>0) pOpts.push('white'); if (enoughPieces && G.blackPile.length>0) pOpts.push('black');
+      const pOpts = []; if (G.whitePile.length>0) pOpts.push('white'); if (enoughPieces && !blackLimitReached && G.blackPile.length>0) pOpts.push('black');
       if ((!best || best.score < 0.6) && pOpts.length && Math.random() < 0.35) {
         const type = pOpts[Math.floor(Math.random()*pOpts.length)]; const pile = type === 'black' ? G.blackPile : G.whitePile;
         const next = pile.shift(); next.placed = {}; ai.puzzles.push(next);
-        if (type === 'black') checkEndGameTrigger();
+        if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
         actions--; log('log_ai_blind', [type === 'black' ? t('black_label') : t('white_label')]); render(); setTimeout(aiAct, 400); return;
       }
       if (best) {
         const newP = clone(best.p); newP.placed = {}; ai.puzzles.push(newP);
         const pile = best.type==='black' ? G.blackPile : G.whitePile; const market = best.type==='black' ? G.blackMarket : G.whiteMarket;
         if (pile.length>0) { const n=pile.shift(); n.placed={}; market[best.idx]=n; } else market[best.idx]=null;
-        if (best.type==='black') checkEndGameTrigger();
+        if (best.type==='black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
         actions--; log('log_ai_take', [best.p.pts]); render(); setTimeout(aiAct, 400); return;
       }
     }
@@ -1481,8 +1748,7 @@ function aiTurn() {
 initGame();
 
 // Na PC (širší obrazovka) sekce Zásobník dílků startuje sbalená
-
-  togglePanel('reserve-content', 'reserve-icon');
+togglePanel('reserve-content', 'reserve-icon');
 
 </script>
 </body>
