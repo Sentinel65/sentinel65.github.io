@@ -101,7 +101,13 @@
     .col-center { order: 1; }
     .col-right { order: 2; width: 100%; margin-top: 8px; }
     .col-left { order: 3; width: 100%; margin-top: 8px; }
+    /* Na mobilu prohozené pořadí: Moje zásoby → Herní deník → Zásobník dílků */
+    .panel-supply { order: 1; }
+    .panel-log { order: 2; }
+    .panel-reserve { order: 3; }
   }
+
+  .col-left { display: flex; flex-direction: column; gap: 12px; }
 
   /* ── PANELS ── */
   .panel {
@@ -335,7 +341,7 @@
   <!-- LEFT COLUMN (Supply, Reserve, Log) -->
   <div class="col-left">
   <!-- Reserve -->
-  <div class="panel">
+  <div class="panel panel-reserve">
     <div class="panel-title panel-toggle" onclick="togglePanel('reserve-content', 'reserve-icon')">
       <span data-i18n="reserve">Zásobník dílků</span>
       <span id="reserve-icon" class="toggle-icon">▼</span>
@@ -346,7 +352,7 @@
   </div>
 
   <!-- Log -->
-  <div class="panel" style="margin-top:12px">
+  <div class="panel panel-log">
     <div class="panel-title panel-toggle" onclick="togglePanel('log-content', 'log-icon')">
       <span data-i18n="log">Herní deník</span>
       <span id="log-icon" class="toggle-icon">▼</span>
@@ -357,7 +363,7 @@
   </div>
 
   <!-- Supply -->
-  <div class="panel" style="margin-top:12px">
+  <div class="panel panel-supply">
     <div class="panel-title panel-toggle" onclick="togglePanel('supply-content', 'supply-icon')">
       <span data-i18n="my_supply">Moje zásoby</span>
       <span id="supply-icon" class="toggle-icon">▼</span>
@@ -432,6 +438,7 @@
     <div style="font-size:.75rem; color:var(--muted); margin-bottom:14px;" data-i18n="rot_hint">Klepni na "Otočit", dokud dílek nemá směr, který chceš. Pak potvrď.</div>
     <div id="rotate-preview"></div>
     <button style="background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:12px 20px; color:var(--text); font-size:1rem; font-weight:600; cursor:pointer; width:100%;" onclick="rotateOverlayCycle()">↻ <span data-i18n="rot_btn">Otočit</span> (<span id="rotate-deg">0</span>°)</button>
+    <button style="background:var(--surface2); border:2px solid var(--accent); border-radius:10px; padding:12px 20px; color:var(--text); font-size:1rem; font-weight:600; cursor:pointer; width:100%; margin-top:10px;" onclick="flipOverlayToggle()">⇋ <span data-i18n="flip_btn">Zrcadlit</span> (<span id="flip-state">-</span>)</button>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button style="flex:1; background:transparent; border:1px solid var(--border); border-radius:10px; padding:12px; color:var(--text); cursor:pointer;" onclick="cancelRotateOverlay()" data-i18n="cancel">Zrušit</button>
       <button style="flex:1; background:var(--accent); border:none; border-radius:10px; padding:12px; color:#0d0f14; font-weight:700; font-size:.95rem; cursor:pointer;" onclick="confirmRotateOverlay()" data-i18n="ok_place">OK, umístit →</button>
@@ -461,7 +468,7 @@
 <div id="game-over">
   <h2 data-i18n="game_over">KONEC HRY</h2>
   <div class="final-scores" id="final-scores"></div>
-  <button id="restart-btn" onclick="initGame()" data-i18n="play_again">Hrát znovu</button>
+  <button id="restart-btn" onclick="initGame()" style="background:var(--gold); border:none; border-radius:10px; padding:14px 40px; font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:3px; color:#0d0f14; font-weight:700; cursor:pointer;" data-i18n="play_again">Hrát znovu</button>
   <button id="close-results-btn" onclick="document.getElementById('game-over').classList.remove('open')" style="background:transparent; border:1px solid var(--border); border-radius:10px; padding:14px 40px; font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:3px; color:var(--text); cursor:pointer; margin-top:10px;" data-i18n="view_state">Prohlédnout stav hry</button>
 </div>
 
@@ -479,9 +486,9 @@ const texts = {
     'white_deck': 'Bílý<br>balík', 'black_deck': 'Černý<br>balík',
     'my_puzzles': 'Moje puzzle', 'ai_puzzles': 'Protivník (AI)',
     'players': 'Hráči', 'actions': 'Akce', 'my_supply': 'Moje zásoby',
-    'end_turn': 'Ukončit tah →', 'rot_title': 'Nastav rotaci dílku',
-    'rot_hint': 'Klepni na "Otočit", dokud dílek nemá směr, který chceš. Pak potvrď.',
-    'rot_btn': 'Otočit', 'cancel': 'Zrušit', 'ok_place': 'OK, umístit →',
+    'end_turn': 'Ukončit tah →', 'rot_title': 'Nastav rotaci a orientaci dílku',
+    'rot_hint': 'Klepni na "Otočit" nebo "Zrcadlit", dokud dílek nemá tvar, který chceš. Pak potvrď.',
+    'rot_btn': 'Otočit', 'flip_btn': 'Zrcadlit', 'cancel': 'Zrušit', 'ok_place': 'OK, umístit →',
     'game_over': 'KONEC HRY', 'play_again': 'Hrát znovu', 'view_state': 'Prohlédnout stav hry',
     'btn_results': '🏆 Výsledky', 'close': 'Zavřít', 'help_title': 'Pravidla a ovládání',
     'empty': 'Prázdno', 'no_puzzles': 'Žádná puzzle — vezmi si je z trhu nebo z balíčku',
@@ -546,9 +553,9 @@ const texts = {
     'white_deck': 'White<br>Deck', 'black_deck': 'Black<br>Deck',
     'my_puzzles': 'My Puzzles', 'ai_puzzles': 'Opponent (AI)',
     'players': 'Players', 'actions': 'Actions', 'my_supply': 'My Supply',
-    'end_turn': 'End Turn →', 'rot_title': 'Set Piece Rotation',
-    'rot_hint': 'Tap "Rotate" until the piece fits your needs, then confirm.',
-    'rot_btn': 'Rotate', 'cancel': 'Cancel', 'ok_place': 'OK, Place →',
+    'end_turn': 'End Turn →', 'rot_title': 'Set Piece Rotation & Orientation',
+    'rot_hint': 'Tap "Rotate" or "Flip" until the piece has the shape you need, then confirm.',
+    'rot_btn': 'Rotate', 'flip_btn': 'Flip', 'cancel': 'Cancel', 'ok_place': 'OK, Place →',
     'game_over': 'GAME OVER', 'play_again': 'Play Again', 'view_state': 'View Game State',
     'btn_results': '🏆 Results', 'close': 'Close', 'help_title': 'Rules and Controls',
     'empty': 'Empty', 'no_puzzles': 'No puzzles — take them from the market or deck',
@@ -1030,7 +1037,7 @@ function renderMySupply() {
     const previewPiece = {...piece, cells: rotatedCells, size:[maxR,maxC]}; const needsRotation = !pieceIgnoresRotation(piece);
     const preview = document.createElement('div');
     preview.style.cssText = 'background:rgba(78,205,196,.1);border:1px solid var(--accent);border-radius:8px;padding:8px;margin-bottom:10px;text-align:center' + (needsRotation ? ';cursor:pointer' : '');
-    preview.innerHTML = `<div style="font-size:.7rem;color:var(--accent);margin-bottom:6px">Rotace ${G.rotation*90}°${needsRotation ? ' ✎' : ''}</div>` + renderPieceSVG(previewPiece, 24);
+    preview.innerHTML = `<div style="font-size:.7rem;color:var(--accent);margin-bottom:6px">Rotace ${G.rotation*90}°${G.flip ? ' ⇋' : ''}${needsRotation ? ' ✎' : ''}</div>` + renderPieceSVG(previewPiece, 24);
     if (needsRotation) { preview.onclick = () => openRotateOverlay(piece.id); }
     el.appendChild(preview);
   }
@@ -1040,8 +1047,8 @@ function renderMySupply() {
     const tok = document.createElement('div'); tok.className = 'piece-token' + (G.selectedPiece===piece.id?' selected':'');
     tok.innerHTML = `<div style="opacity:${G.selectedPiece===piece.id?'1':'.7'}">${renderPieceSVG(piece, 22)}</div><div class="count">${cnt}</div>`;
     tok.onclick = () => {
-      if (G.selectedPiece === piece.id) { G.selectedPiece = null; G.rotation = 0; render(); return; }
-      G.selectedPiece = piece.id; G.rotation = 0;
+      if (G.selectedPiece === piece.id) { G.selectedPiece = null; G.rotation = 0; G.flip = false; render(); return; }
+      G.selectedPiece = piece.id; G.rotation = 0; G.flip = false;
       if (pieceIgnoresRotation(piece)) {
         render(); log('log_hint_place', [piece.name], 'good');
         document.getElementById('my-puzzles').scrollIntoView({behavior: 'smooth', block: 'center'});
@@ -1097,8 +1104,15 @@ function rotateCells(cells) {
   return rotated.map(([r,c]) => [r-minR, c-minC]);
 }
 
+function mirrorCells(cells) {
+  let mirrored = cells.map(([r,c]) => [r, -c]);
+  const minR = Math.min(...mirrored.map(([r])=>r)); const minC = Math.min(...mirrored.map(([,c])=>c));
+  return mirrored.map(([r,c]) => [r-minR, c-minC]);
+}
+
 function getRotatedCells() {
   if (!G.selectedPiece) return []; const piece = PIECES.find(p=>p.id===G.selectedPiece); let cells = piece.cells;
+  if (G.flip) cells = mirrorCells(cells);
   for (let i=0;i<(G.rotation||0);i++) cells = rotateCells(cells); return cells;
 }
 
@@ -1121,20 +1135,22 @@ function pieceIgnoresRotation(piece) {
   for (let i=0;i<3;i++) { cells = rotateCells(cells); if (normalize(cells) !== base) return false; } return true;
 }
 function openRotateOverlay(pieceId) {
-  G.selectedPiece = pieceId; G.rotation = G.rotation || 0; renderRotateOverlayPreview(); document.getElementById('rotate-overlay').classList.add('open');
+  G.selectedPiece = pieceId; G.rotation = G.rotation || 0; G.flip = G.flip || false; renderRotateOverlayPreview(); document.getElementById('rotate-overlay').classList.add('open');
 }
 function renderRotateOverlayPreview() {
   const piece = PIECES.find(p=>p.id===G.selectedPiece); if (!piece) return;
   const rotatedCells = getRotatedCells(); const maxR = Math.max(...rotatedCells.map(([r])=>r))+1; const maxC = Math.max(...rotatedCells.map(([,c])=>c))+1;
   document.getElementById('rotate-preview').innerHTML = renderPieceSVG({...piece, cells: rotatedCells, size:[maxR,maxC]}, 32);
   document.getElementById('rotate-deg').textContent = (G.rotation||0)*90;
+  const flipEl = document.getElementById('flip-state'); if (flipEl) flipEl.textContent = G.flip ? '✓' : '-';
 }
 function rotateOverlayCycle() { G.rotation = ((G.rotation||0)+1)%4; renderRotateOverlayPreview(); }
+function flipOverlayToggle() { G.flip = !G.flip; renderRotateOverlayPreview(); }
 function confirmRotateOverlay() {
   document.getElementById('rotate-overlay').classList.remove('open'); const piece = PIECES.find(p=>p.id===G.selectedPiece); render();
   if (piece) { log('log_hint_place', [piece.name], 'good'); document.getElementById('my-puzzles').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 }
-function cancelRotateOverlay() { document.getElementById('rotate-overlay').classList.remove('open'); G.selectedPiece = null; G.rotation = 0; render(); }
+function cancelRotateOverlay() { document.getElementById('rotate-overlay').classList.remove('open'); G.selectedPiece = null; G.rotation = 0; G.flip = false; render(); }
 function isPlacementValid(puzzle, keys) {
   for (const key of keys) {
     const [r,c] = key.split('_').map(Number);
@@ -1223,7 +1239,7 @@ function promptPlace() {
   const player = G.players[G.currentPlayer]; const available = PIECES.filter(p=>(player.supply[p.id]||0)>0);
   if (!available.length) { log('log_err_no_pieces','','warn'); return; }
   openModal(t('modal_place_title'), available, (piece) => {
-    closeModal(); G.selectedPiece = piece.id; G.rotation = 0;
+    closeModal(); G.selectedPiece = piece.id; G.rotation = 0; G.flip = false;
     if (pieceIgnoresRotation(piece)) { log('log_hint_place', [piece.name], 'good'); render(); }
     else { render(); openRotateOverlay(piece.id); }
   });
@@ -1261,9 +1277,9 @@ function handleCellClick(puzzleIdx, row, col) {
   player.supply[G.selectedPiece]--; if (player.supply[G.selectedPiece]<=0) delete player.supply[G.selectedPiece];
   log('log_place', [piece.name, puzzleIdx+1], 'good');
 
-  if (!G.masterMode) { G.selectedPiece = null; G.rotation = 0; }
+  if (!G.masterMode) { G.selectedPiece = null; G.rotation = 0; G.flip = false; }
   else if (Object.keys(G.masterPlaced).length >= player.puzzles.length) {
-    G.masterMode = false; G.selectedPiece = null; G.rotation = 0; log('log_master_done', [], 'good');
+    G.masterMode = false; G.selectedPiece = null; G.rotation = 0; G.flip = false; log('log_master_done', [], 'good');
   }
   checkTurnEnd();
 }
@@ -1286,9 +1302,13 @@ function checkPuzzleCompletion(player, idx) {
       player.supply[pid] = (player.supply[pid]||0) + count;
     });
     if (puzzle.reward) {
-      const targetLevel = parseInt(puzzle.reward.replace('L','')); let rewardPiece = null;
-      for (let lv = targetLevel; lv <= 4; lv++) { rewardPiece = PIECES.find(p => p.level === lv && (G.reserve[p.id]||0) > 0); if (rewardPiece) break; }
-      if (!rewardPiece) for (let lv = targetLevel - 1; lv >= 1; lv--) { rewardPiece = PIECES.find(p => p.level === lv && (G.reserve[p.id]||0) > 0); if (rewardPiece) break; }
+      let rewardPiece = PIECES.find(p => p.id === puzzle.reward && (G.reserve[p.id]||0) > 0);
+      if (!rewardPiece) {
+        const rewardDef = PIECES.find(p => p.id === puzzle.reward);
+        const targetLevel = rewardDef ? rewardDef.level : parseInt(puzzle.reward.replace('L',''));
+        for (let lv = targetLevel; lv <= 4; lv++) { rewardPiece = PIECES.find(p => p.level === lv && (G.reserve[p.id]||0) > 0); if (rewardPiece) break; }
+        if (!rewardPiece) for (let lv = targetLevel - 1; lv >= 1; lv--) { rewardPiece = PIECES.find(p => p.level === lv && (G.reserve[p.id]||0) > 0); if (rewardPiece) break; }
+      }
       if (rewardPiece) {
         player.supply[rewardPiece.id] = (player.supply[rewardPiece.id]||0) + 1; G.reserve[rewardPiece.id]--;
         log('log_reward', [rewardPiece.name], 'good'); if (!player.isAI && !G.isGameOver) showRewardToast(rewardPiece);
@@ -1343,16 +1363,19 @@ function endGame() {
 //  AI LOGIC
 // ═══════════════════════════════════════════════════════
 function tryPlacePieceOnPuzzle(puzzle, piece) {
-  for (let rot=0; rot<4; rot++) {
-    let cells = piece.cells; for (let i=0;i<rot;i++) cells = rotateCells(cells);
-    for (let r=0; r<puzzle.h; r++) {
-      for (let c=0; c<puzzle.w; c++) {
-        const keys = cells.map(([dr,dc])=>`${r+dr}_${c+dc}`); let valid = true;
-        for (const key of keys) {
-          const [kr,kc] = key.split('_').map(Number);
-          if (kr<0||kr>=puzzle.h||kc<0||kc>=puzzle.w || puzzle.shape[kr][kc]!==1 || (puzzle.placed||{})[key]) { valid=false; break; }
+  for (const flip of [false, true]) {
+    const base = flip ? mirrorCells(piece.cells) : piece.cells;
+    for (let rot=0; rot<4; rot++) {
+      let cells = base; for (let i=0;i<rot;i++) cells = rotateCells(cells);
+      for (let r=0; r<puzzle.h; r++) {
+        for (let c=0; c<puzzle.w; c++) {
+          const keys = cells.map(([dr,dc])=>`${r+dr}_${c+dc}`); let valid = true;
+          for (const key of keys) {
+            const [kr,kc] = key.split('_').map(Number);
+            if (kr<0||kr>=puzzle.h||kc<0||kc>=puzzle.w || puzzle.shape[kr][kc]!==1 || (puzzle.placed||{})[key]) { valid=false; break; }
+          }
+          if (valid) { puzzle.placed = puzzle.placed || {}; keys.forEach(key => puzzle.placed[key] = piece.id); return true; }
         }
-        if (valid) { puzzle.placed = puzzle.placed || {}; keys.forEach(key => puzzle.placed[key] = piece.id); return true; }
       }
     }
   }
@@ -1365,12 +1388,16 @@ function estimateFillableCells(supply, puzzle) {
     progress = false; const avail = PIECES.filter(p=>(stock[p.id]||0)>0).sort((a,b)=>b.cells.length-a.cells.length);
     for (const piece of avail) {
       if ((stock[piece.id]||0) <= 0) continue; let placed = false;
-      for (let rot=0; rot<4 && !placed; rot++) {
-        let cells = piece.cells; for (let i=0;i<rot;i++) cells = rotateCells(cells);
-        for (let r=0; r<h && !placed; r++) {
-          for (let c=0; c<w && !placed; c++) {
-            let ok = true; for (const [dr,dc] of cells) { const rr=r+dr, cc=c+dc; if (rr<0||rr>=h||cc<0||cc>=w||filled[rr][cc]) { ok=false; break; } }
-            if (ok) { cells.forEach(([dr,dc])=>filled[r+dr][c+dc]=true); placedCells += cells.length; stock[piece.id]--; placed = true; progress = true; }
+      for (const flip of [false, true]) {
+        if (placed) break;
+        const base = flip ? mirrorCells(piece.cells) : piece.cells;
+        for (let rot=0; rot<4 && !placed; rot++) {
+          let cells = base; for (let i=0;i<rot;i++) cells = rotateCells(cells);
+          for (let r=0; r<h && !placed; r++) {
+            for (let c=0; c<w && !placed; c++) {
+              let ok = true; for (const [dr,dc] of cells) { const rr=r+dr, cc=c+dc; if (rr<0||rr>=h||cc<0||cc>=w||filled[rr][cc]) { ok=false; break; } }
+              if (ok) { cells.forEach(([dr,dc])=>filled[r+dr][c+dc]=true); placedCells += cells.length; stock[piece.id]--; placed = true; progress = true; }
+            }
           }
         }
       }
