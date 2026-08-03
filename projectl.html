@@ -50,17 +50,12 @@
     margin: 0;
     text-align: center;
   }
-  #left-menu {
-    position: absolute; left: 16px; top: 16px;
-    display: flex; gap: 12px; font-size: 1.5rem; cursor: pointer; z-index: 110;
+  #icon-menu {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 14px; font-size: 1.5rem; cursor: pointer;
   }
-  #left-menu div, #top-menu div { transition: transform 0.15s; }
-  #left-menu div:active, #top-menu div:active { transform: scale(0.9); }
-  
-  #top-menu {
-    position: absolute; right: 16px; top: 16px;
-    display: flex; gap: 12px; font-size: 1.5rem; cursor: pointer; z-index: 110;
-  }
+  #icon-menu div { transition: transform 0.15s, opacity 0.15s; }
+  #icon-menu div:active { transform: scale(0.9); }
   #game-info { 
     display: flex; flex-wrap: wrap; gap: 8px; 
     align-items: center; justify-content: center; width: 100%;
@@ -331,12 +326,12 @@
 <body>
 
 <header>
-  <div id="left-menu">
+  <h1>PROJECT L</h1>
+  <div id="icon-menu">
     <div onclick="saveGame()" id="btn-save" title="Uložit hru">💾</div>
     <div onclick="loadGame()" id="btn-load" title="Načíst hru">📂</div>
-  </div>
-  <h1>PROJECT L</h1>
-  <div id="top-menu">
+    <div onclick="confirmNewGame()" id="btn-new" title="Nová hra">🆕</div>
+    <div onclick="undoLastAction()" id="btn-undo" title="Vrátit poslední akci">↩️</div>
     <div id="lang-switch" onclick="toggleLang()" title="Přepnout jazyk">🇬🇧</div>
     <div onclick="openHelp()" id="btn-help" title="Nápověda">💡</div>
   </div>
@@ -549,12 +544,15 @@ const texts = {
     'log_place': '✅ Umístil sis {0} na puzzle #{1}',
     'log_master': '⚡ MASTER AKCE: Nyní můžeš do každého puzzle umístit 1 dílek.',
     'log_master_done': '⚡ Master akce vyčerpána.',
+    'log_undo': '↩️ Poslední akce byla vrácena.',
+    'confirm_new_game': 'Opravdu chceš začít novou hru? Aktuální průběh se ztratí.',
     'log_finish': '🏆 Puzzle dokončeno! +{0} bodů!',
     'log_reward': '🎁 Odměna: {0} přidán do zásoby!',
     'log_ai_turn': '🤖 AI hraje...',
     'log_ai_take': '🤖 AI vzala puzzle z trhu ({0} bodů)',
     'log_ai_blind': '🤖 AI vzala puzzle naslepo ({0})',
     'log_ai_upg': '🤖 AI vylepšila dílek',
+    'log_ai_master': '⚡ AI použila MASTER akci ({0} puzzle najednou)',
     'log_ai_1': '🤖 AI vzala dílek L1',
     'log_err_no_act': 'Nemáš akce!',
     'log_err_4_puz': 'Máš již 4 puzzle!',
@@ -637,12 +635,15 @@ const texts = {
     'log_place': '✅ Placed {0} on puzzle #{1}',
     'log_master': '⚡ MASTER ACTION: You can place 1 piece on every active puzzle.',
     'log_master_done': '⚡ Master action depleted.',
+    'log_undo': '↩️ Last action was undone.',
+    'confirm_new_game': 'Start a new game? Current progress will be lost.',
     'log_finish': '🏆 Puzzle completed! +{0} pts!',
     'log_reward': '🎁 Reward: {0} added to supply!',
     'log_ai_turn': '🤖 AI is playing...',
     'log_ai_take': '🤖 AI took a puzzle from market ({0} pts)',
     'log_ai_blind': '🤖 AI took a puzzle blind ({0})',
     'log_ai_upg': '🤖 AI upgraded a piece',
+    'log_ai_master': '⚡ AI used the MASTER action ({0} puzzles at once)',
     'log_ai_1': '🤖 AI took a level 1 piece',
     'log_err_no_act': 'No actions left!',
     'log_err_4_puz': 'You already have 4 puzzles!',
@@ -694,6 +695,8 @@ function toggleLang() {
   document.getElementById('lang-switch').textContent = currentLang === 'cs' ? '🇬🇧' : '🇨🇿';
   document.getElementById('btn-save').title = currentLang === 'cs' ? 'Uložit hru' : 'Save Game';
   document.getElementById('btn-load').title = currentLang === 'cs' ? 'Načíst hru' : 'Load Game';
+  document.getElementById('btn-new').title = currentLang === 'cs' ? 'Nová hra' : 'New Game';
+  document.getElementById('btn-undo').title = currentLang === 'cs' ? 'Vrátit poslední akci' : 'Undo last action';
   document.getElementById('btn-help').title = currentLang === 'cs' ? 'Nápověda' : 'Help';
   document.getElementById('btn-copy-log').title = currentLang === 'cs' ? 'Kopírovat deník' : 'Copy log';
   
@@ -860,7 +863,8 @@ function initGame() {
     reserve: { L1:13, L2:13, L3a:15, L3b:15, L4a:15, L4b:15, L4c:15, L4d:15, L4e:15 },
     selectedPiece: null, rotation: 0, flip: false,
     masterPlacedPuzzles: new Set(), masterTotalPuzzles: 0,
-    finishingTouches: false, ftPlayerIdx: 0, ftPiecesUsed: [0, 0]
+    finishingTouches: false, ftPlayerIdx: 0, ftPiecesUsed: [0, 0],
+    undoSnapshot: null
   };
 
   log('log_start', [], 'good');
@@ -958,7 +962,8 @@ function loadGame() {
 function render() {
   renderHeader(); renderReserve(); renderMarket(); renderMyPuzzles();
   renderAiPuzzles(); renderPlayers(); renderActions(); renderMySupply(); renderLog();
-  
+  renderUndoButton();
+
   document.getElementById('white-deck-title').innerHTML = t('white_deck');
   document.getElementById('black-deck-title').innerHTML = t('black_deck');
 }
@@ -1375,12 +1380,57 @@ function checkEndGameTrigger() {
   }
 }
 function spendAction(count=1) { G.actionsLeft -= count; }
+
+// ═══════════════════════════════════════════════════════
+//  NEW GAME / UNDO
+// ═══════════════════════════════════════════════════════
+function confirmNewGame() {
+  if (window.confirm(t('confirm_new_game'))) initGame();
+}
+
+// Snapshots the whole game state right before a human action mutates it, so a
+// mis-tap (e.g. placing a piece on the wrong cell on mobile) can be reverted.
+// Only the single most recent action is kept — each new action overwrites it.
+function saveUndoSnapshot() {
+  if (!G.players || G.players[G.currentPlayer].isAI) return;
+  const masterIndices = Array.from(G.masterPlacedPuzzles || []).map(p => G.players[G.currentPlayer].puzzles.indexOf(p)).filter(i => i !== -1);
+  const plain = { ...G };
+  delete plain.masterPlacedPuzzles; delete plain.undoSnapshot;
+  G.undoSnapshot = {
+    data: JSON.parse(JSON.stringify(plain)),
+    masterIndices,
+    masterPlayerIdx: G.currentPlayer
+  };
+}
+function canUndo() {
+  return !!(G.undoSnapshot) && !G.isGameOver && !G.players[G.currentPlayer].isAI;
+}
+function undoLastAction() {
+  if (!canUndo()) return;
+  const snap = G.undoSnapshot;
+  const restored = snap.data;
+  Object.keys(G).forEach(k => delete G[k]);
+  Object.assign(G, restored);
+  G.masterPlacedPuzzles = new Set(snap.masterIndices.map(i => (G.players[snap.masterPlayerIdx].puzzles||[])[i]).filter(Boolean));
+  G.undoSnapshot = null;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('rotate-overlay').classList.remove('open');
+  log('log_undo', [], 'warn');
+  render();
+}
+function renderUndoButton() {
+  const btn = document.getElementById('btn-undo'); if (!btn) return;
+  const enabled = canUndo();
+  btn.style.opacity = enabled ? '1' : '.3';
+  btn.style.pointerEvents = enabled ? 'auto' : 'none';
+}
 function doTakePuzzle(type, idx) {
   if (G.players[G.currentPlayer].isAI) return; if (G.actionsLeft <= 0) { log('log_err_no_act','','warn'); return; }
   const player = G.players[G.currentPlayer]; if (player.puzzles.length >= 4) { log('log_err_4_puz','','warn'); return; }
   if (type === 'black' && G.endGameTriggered && G.blackTakenThisTurn >= 1) { log('log_err_black_limit','','warn'); return; }
   const market = type==='white' ? G.whiteMarket : G.blackMarket; const pile = type==='white' ? G.whitePile : G.blackPile;
   const puzzle = market[idx]; if (!puzzle) return;
+  saveUndoSnapshot();
   const newPuzzle = clone(puzzle); newPuzzle.placed = {}; player.puzzles.push(newPuzzle);
   if (pile.length > 0) { const next = pile.shift(); next.placed = {}; market[idx] = next; } else { market[idx] = null; }
   if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
@@ -1393,6 +1443,7 @@ function doTakeBlindPuzzle(type) {
   const player = G.players[G.currentPlayer]; if (player.puzzles.length >= 4) { log('log_err_4_puz','','warn'); return; }
   if (type === 'black' && G.endGameTriggered && G.blackTakenThisTurn >= 1) { log('log_err_black_limit','','warn'); return; }
   const pile = type === 'white' ? G.whitePile : G.blackPile; if (pile.length === 0) { log('log_err_empty_deck','','warn'); return; }
+  saveUndoSnapshot();
   const next = pile.shift(); next.placed = {}; player.puzzles.push(next);
   if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
   spendAction(); log('log_take_b', [next.pts], 'good'); 
@@ -1402,6 +1453,7 @@ function doTakeBlindPuzzle(type) {
 function doTakeLevel1() {
   if (G.actionsLeft<=0) { log('log_err_no_act','','warn'); return; }
   if ((G.reserve['L1']||0)===0) return;
+  saveUndoSnapshot();
   const player = G.players[G.currentPlayer]; player.supply['L1'] = (player.supply['L1']||0)+1; G.reserve['L1']--;
   spendAction(); log('log_take_1', [], 'good'); checkTurnEnd();
 }
@@ -1414,7 +1466,7 @@ function promptUpgrade() {
     const options = PIECES.filter(p => (p.level === piece.level || p.level === nextLevel) && (G.reserve[p.id]||0) > 0 && p.id !== piece.id);
     if (!options.length) { log('log_err_no_opt','','warn'); return; }
     openModal(t('modal_upg_target', piece.name), options, (target) => {
-      closeModal(); player.supply[piece.id]--; if (player.supply[piece.id]<=0) delete player.supply[piece.id];
+      closeModal(); saveUndoSnapshot(); player.supply[piece.id]--; if (player.supply[piece.id]<=0) delete player.supply[piece.id];
       G.reserve[piece.id] = (G.reserve[piece.id]||0)+1; player.supply[target.id] = (player.supply[target.id]||0)+1; G.reserve[target.id]--;
       spendAction(); log('log_upg', [target.name], 'good'); checkTurnEnd();
     });
@@ -1455,6 +1507,7 @@ function handleCellClick(puzzleIdx, row, col) {
     else log('log_err_invalid', [piece.name, puzzleIdx+1], 'warn');
     return;
   }
+  saveUndoSnapshot();
   if (G.masterMode) {
     if (G.masterPlacedPuzzles.has(puzzle)) { log('log_err_master_placed', [puzzleIdx+1], 'warn'); return; }
     G.masterPlacedPuzzles.add(puzzle);
@@ -1484,6 +1537,7 @@ function doMaster() {
   if (G.masterUsed) { log('log_err_master_used','','warn'); return; }
   const player = G.players[G.currentPlayer]; if (!player.puzzles.length) return;
   const available = PIECES.filter(p=>(player.supply[p.id]||0)>0); if (!available.length) return;
+  saveUndoSnapshot();
   G.masterUsed = true; spendAction(); G.masterMode = true; G.masterPlacedPuzzles = new Set(); G.masterTotalPuzzles = player.puzzles.length; G.selectedPiece = null;
   log('log_master', [], 'good'); render();
 }
@@ -1527,6 +1581,7 @@ function checkTurnEnd() {
 function endTurn() {
   if (G.isGameOver) return;
   G.turnId = (G.turnId||0) + 1; G.turnAutoEnding = false; G.selectedPiece = null; G.masterMode = false;
+  G.undoSnapshot = null;
   const endingPlayer = G.players[G.currentPlayer];
   for (let i = endingPlayer.puzzles.length - 1; i >= 0; i--) checkPuzzleCompletion(endingPlayer, i);
   
@@ -1565,7 +1620,7 @@ function advanceFinishingTouches() {
     break;
   }
   if (G.ftPlayerIdx >= G.players.length) { G.finishingTouches = false; endGame(); return; }
-  G.currentPlayer = G.ftPlayerIdx; G.selectedPiece = null; G.rotation = 0; G.flip = false;
+  G.currentPlayer = G.ftPlayerIdx; G.selectedPiece = null; G.rotation = 0; G.flip = false; G.undoSnapshot = null;
   render();
   const player = G.players[G.ftPlayerIdx];
   if (player.isAI) setTimeout(aiFinishingTouches, 700);
@@ -1576,10 +1631,15 @@ function finishPlayerTouches() {
   G.ftPlayerIdx++; advanceFinishingTouches();
 }
 
-function tryCompletePuzzleWithSupply(puzzle, supply) {
+// Solves a puzzle with the given piece supply, optionally capped to maxPieces placements
+// (used to check whether a completion is achievable within the actions remaining this turn).
+// Pieces are tried largest-first so that, among valid solutions, fewer/bigger pieces are
+// preferred over many small ones — this maximizes net score gain (points - pieces used).
+function tryCompletePuzzleWithSupply(puzzle, supply, maxPieces = Infinity) {
   const h = puzzle.h, w = puzzle.w;
   const filled = Array.from({length:h}, (_,r)=>Array.from({length:w},(_,c)=> puzzle.shape[r][c]!==1 || !!(puzzle.placed||{})[`${r}_${c}`]));
   const stock = {...supply}; const placements = [];
+  const piecesDesc = [...PIECES].sort((a,b)=>b.cells.length-a.cells.length);
 
   function findFirstEmpty() {
     for (let r=0;r<h;r++) for (let c=0;c<w;c++) if (!filled[r][c]) return [r,c];
@@ -1595,8 +1655,9 @@ function tryCompletePuzzleWithSupply(puzzle, supply) {
   function solve() {
     const empty = findFirstEmpty();
     if (!empty) return true;
+    if (placements.length >= maxPieces) return false;
     const [r0, c0] = empty;
-    for (const piece of PIECES) {
+    for (const piece of piecesDesc) {
       if ((stock[piece.id]||0) <= 0) continue;
       for (const flip of [false, true]) {
         const base = flip ? mirrorCells(piece.cells) : piece.cells;
@@ -1620,30 +1681,33 @@ function tryCompletePuzzleWithSupply(puzzle, supply) {
 
 function aiFinishingTouches() {
   const ai = G.players[G.ftPlayerIdx];
+  // Item 6: only ever spend pieces here for a positive net gain (points - pieces used).
+  // Item 5: when several puzzles are completable with the current stock, finish the one
+  // with the best net gain first, so scarce pieces go to the highest-value completion
+  // rather than whichever puzzle happened to have the fewest empty cells.
   let improved = true;
   while (improved) {
     improved = false;
-    const candidates = [...ai.puzzles].sort((a,b) => {
-      const rA = a.shape.flat().filter(v=>v===1).length - Object.keys(a.placed||{}).length;
-      const rB = b.shape.flat().filter(v=>v===1).length - Object.keys(b.placed||{}).length;
-      return rA - rB;
-    });
-    for (const puzzle of candidates) {
+    const candidates = [];
+    ai.puzzles.forEach(puzzle => {
       const solution = tryCompletePuzzleWithSupply(puzzle, ai.supply);
-      if (!solution) continue;
+      if (!solution) return;
       const netGain = puzzle.pts - solution.length;
-      if (netGain <= 0) continue;
-      solution.forEach(({pieceId, cells}) => {
-        cells.forEach(([r,c]) => { puzzle.placed[`${r}_${c}`] = pieceId; });
-        ai.supply[pieceId]--; if (ai.supply[pieceId]<=0) delete ai.supply[pieceId];
-        ai.score -= 1; G.ftPiecesUsed[G.ftPlayerIdx] = (G.ftPiecesUsed[G.ftPlayerIdx]||0) + 1;
-      });
-      log('log_ft_ai_complete', [puzzle.pts, solution.length], 'good');
-      const pIdx = ai.puzzles.indexOf(puzzle);
-      if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx, true);
-      improved = true; render();
-      break;
-    }
+      if (netGain <= 0) return;
+      candidates.push({ puzzle, solution, netGain });
+    });
+    if (!candidates.length) break;
+    candidates.sort((a,b) => b.netGain - a.netGain);
+    const { puzzle, solution } = candidates[0];
+    solution.forEach(({pieceId, cells}) => {
+      cells.forEach(([r,c]) => { puzzle.placed[`${r}_${c}`] = pieceId; });
+      ai.supply[pieceId]--; if (ai.supply[pieceId]<=0) delete ai.supply[pieceId];
+      ai.score -= 1; G.ftPiecesUsed[G.ftPlayerIdx] = (G.ftPiecesUsed[G.ftPlayerIdx]||0) + 1;
+    });
+    log('log_ft_ai_complete', [puzzle.pts, solution.length], 'good');
+    const pIdx = ai.puzzles.indexOf(puzzle);
+    if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx, true);
+    improved = true; render();
   }
   setTimeout(finishPlayerTouches, 500);
 }
@@ -1668,7 +1732,8 @@ function endGame() {
 // ═══════════════════════════════════════════════════════
 //  AI LOGIC
 // ═══════════════════════════════════════════════════════
-function tryPlacePieceOnPuzzle(puzzle, piece) {
+// Returns placement keys for a piece somewhere in the puzzle (any valid orientation), or null. Does not mutate.
+function findPlacementForPiece(puzzle, piece) {
   for (const flip of [false, true]) {
     const base = flip ? mirrorCells(piece.cells) : piece.cells;
     for (let rot=0; rot<4; rot++) {
@@ -1680,12 +1745,19 @@ function tryPlacePieceOnPuzzle(puzzle, piece) {
             const [kr,kc] = key.split('_').map(Number);
             if (kr<0||kr>=puzzle.h||kc<0||kc>=puzzle.w || puzzle.shape[kr][kc]!==1 || (puzzle.placed||{})[key]) { valid=false; break; }
           }
-          if (valid) { puzzle.placed = puzzle.placed || {}; keys.forEach(key => puzzle.placed[key] = piece.id); return true; }
+          if (valid) return keys;
         }
       }
     }
   }
-  return false;
+  return null;
+}
+function pieceFitsSomewhere(puzzle, piece) { return findPlacementForPiece(puzzle, piece) !== null; }
+function tryPlacePieceOnPuzzle(puzzle, piece) {
+  const keys = findPlacementForPiece(puzzle, piece);
+  if (!keys) return false;
+  puzzle.placed = puzzle.placed || {}; keys.forEach(key => puzzle.placed[key] = piece.id);
+  return true;
 }
 function estimateFillableCells(supply, puzzle) {
   const h = puzzle.h, w = puzzle.w; const filled = Array.from({length:h}, (_,r)=>Array.from({length:w},(_,c)=>puzzle.shape[r][c]!==1));
@@ -1710,11 +1782,108 @@ function estimateFillableCells(supply, puzzle) {
     }
   } return placedCells;
 }
+// Item 5: endgame helpers — is the black pile already exhausted (countdown running),
+// and are we in the actual Final Round (last normal turn before Finishing Touches)?
+function isEndgamePhase() { return !!G.endGameTriggered; }
+function isFinalRound() { return G.endGameTriggered && G.round === G.finalRound; }
+
+// Rough strategic value of a reward piece: higher level / bigger pieces are worth more
+// because they unlock harder puzzles later.
+function estimateRewardValue(rewardId) {
+  if (!rewardId) return 0;
+  const piece = PIECES.find(p => p.id === rewardId);
+  if (!piece) return 0;
+  return piece.level * 0.5 + (piece.cells.length - 1) * 0.15;
+}
+
+// Item 2: puzzle value = points + reward value − size penalty, plus a feasibility bonus
+// for puzzles the AI can already substantially fill with pieces it currently holds.
+// The size penalty is increased once the endgame countdown has started (item 5), since
+// large puzzles taken late are unlikely to ever get finished.
 function scorePuzzleForAI(ai, puzzle) {
-  const totalCells = puzzle.shape.flat().filter(v=>v===1).length; const fillable = estimateFillableCells(ai.supply, puzzle);
-  let rewardBonus = 0;
-  if (puzzle.reward) { const tL = parseInt(puzzle.reward.replace('L','')); if (!PIECES.some(p=>p.level===tL && (ai.supply[p.id]||0)>0)) rewardBonus = 0.5; }
-  return (fillable / totalCells)*3 + rewardBonus + puzzle.pts*0.08;
+  const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
+  const fillable = estimateFillableCells(ai.supply, puzzle);
+  const feasibility = totalCells > 0 ? fillable / totalCells : 0;
+
+  const rewardValue = estimateRewardValue(puzzle.reward);
+  const sizePenalty = totalCells * (isEndgamePhase() ? 0.32 : 0.2);
+  const baseValue = puzzle.pts + rewardValue - sizePenalty;
+
+  return baseValue + feasibility * 2.4;
+}
+
+// Item 3: figure out which piece ids would actually help (fit somewhere in) the AI's
+// current puzzles, weighted toward puzzles that are closer to completion so the AI
+// doesn't manufacture pieces for a puzzle it just started.
+function getNeededPieceWeights(ai) {
+  const weights = {};
+  ai.puzzles.forEach(puzzle => {
+    const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
+    const remaining = totalCells - Object.keys(puzzle.placed||{}).length;
+    if (remaining <= 0) return;
+    const urgency = 1 / (remaining + 1);
+    PIECES.forEach(piece => {
+      if (pieceFitsSomewhere(puzzle, piece)) weights[piece.id] = (weights[piece.id]||0) + urgency;
+    });
+  });
+  return weights;
+}
+
+// Item 3: only upgrade a piece into one the current puzzles can actually use, and avoid
+// giving up a piece that is itself still needed, unless we have spares of it.
+function chooseAIUpgrade(ai) {
+  const weights = getNeededPieceWeights(ai);
+  const owned = PIECES.filter(p => (ai.supply[p.id]||0) > 0 && p.level < 4);
+  let best = null, bestScore = -Infinity;
+  owned.forEach(piece => {
+    const targets = PIECES.filter(p => p.level === piece.level + 1 && (G.reserve[p.id]||0) > 0);
+    targets.forEach(target => {
+      let score = (weights[target.id]||0) * 3 - (weights[piece.id]||0) * 2;
+      if ((ai.supply[piece.id]||0) > 1) score += 0.4; // spare copies are safer to convert
+      if (score > bestScore) { bestScore = score; best = { piece, target }; }
+    });
+  });
+  // Skip the upgrade entirely if every option would strip a piece we actually need
+  // without producing anything useful in return — better to just take an L1 piece.
+  if (best && bestScore < -1) return null;
+  return best;
+}
+
+// Item 4: the MASTER action forces exactly one placement into every currently active
+// puzzle, so it's only useful (and safe) when a distinct valid piece can be found for
+// each of the AI's puzzles at once — i.e. when it genuinely hits multiple puzzles.
+function planMasterAssignment(ai) {
+  if (ai.puzzles.length < 2) return null;
+  const stock = {...ai.supply};
+  const piecesDesc = [...PIECES].sort((a,b)=>b.cells.length-a.cells.length);
+  const assignment = [];
+  function assign(i) {
+    if (i >= ai.puzzles.length) return true;
+    const puzzle = ai.puzzles[i];
+    const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
+    if (totalCells - Object.keys(puzzle.placed||{}).length <= 0) return false;
+    for (const piece of piecesDesc) {
+      if ((stock[piece.id]||0) <= 0) continue;
+      const keys = findPlacementForPiece(puzzle, piece);
+      if (!keys) continue;
+      stock[piece.id]--;
+      assignment.push({ puzzleIdx: i, pieceId: piece.id, keys });
+      if (assign(i+1)) return true;
+      assignment.pop(); stock[piece.id]++;
+    }
+    return false;
+  }
+  return assign(0) ? assignment : null;
+}
+function aiUseMaster(ai, assignment) {
+  G.masterUsed = true;
+  assignment.forEach(({puzzleIdx, pieceId, keys}) => {
+    const puzzle = ai.puzzles[puzzleIdx];
+    keys.forEach(key => { puzzle.placed[key] = pieceId; });
+    ai.supply[pieceId]--; if (ai.supply[pieceId]<=0) delete ai.supply[pieceId];
+  });
+  log('log_ai_master', [assignment.length], 'good');
+  for (let i = ai.puzzles.length - 1; i >= 0; i--) checkPuzzleCompletion(ai, i);
 }
 
 function aiTurn() {
@@ -1723,7 +1892,46 @@ function aiTurn() {
 
   function aiAct() {
     if (actions <= 0 || G.isGameOver) { endTurn(); return; }
+
+    // ── Item 4: MASTER ACTION ──────────────────────────────────────────
+    // Only worth spending an action on when it can validly place a distinct piece
+    // into every one of the AI's active puzzles at once (2+), i.e. it genuinely
+    // advances multiple puzzles simultaneously instead of just one.
+    if (!G.masterUsed && ai.puzzles.length >= 2) {
+      const assignment = planMasterAssignment(ai);
+      if (assignment) {
+        aiUseMaster(ai, assignment);
+        actions--; render(); setTimeout(aiAct, 500); return;
+      }
+    }
+
+    // ── Item 1: PLAN PUZZLE COMPLETION ─────────────────────────────────
+    // Before placing pieces greedily, check whether any active puzzle can be fully
+    // completed with the current supply within the actions left this turn. Among
+    // puzzles that can be finished, prefer the most valuable one (points + reward).
     if (ai.puzzles.length > 0 && Object.values(ai.supply).some(v=>v>0)) {
+      let bestPlan = null, bestPuzzle = null, bestScore = -Infinity;
+      ai.puzzles.forEach(puzzle => {
+        const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
+        if (totalCells - Object.keys(puzzle.placed||{}).length <= 0) return;
+        const plan = tryCompletePuzzleWithSupply(puzzle, ai.supply, actions);
+        if (!plan) return;
+        const value = puzzle.pts + estimateRewardValue(puzzle.reward);
+        const score = value - plan.length * 0.05; // tie-break toward fewer pieces needed
+        if (score > bestScore) { bestScore = score; bestPlan = plan; bestPuzzle = puzzle; }
+      });
+
+      if (bestPlan) {
+        const step = bestPlan[0];
+        step.cells.forEach(([r,c]) => { bestPuzzle.placed[`${r}_${c}`] = step.pieceId; });
+        ai.supply[step.pieceId]--; if (ai.supply[step.pieceId]<=0) delete ai.supply[step.pieceId];
+        const pIdx = ai.puzzles.indexOf(bestPuzzle);
+        if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx);
+        actions--; render(); setTimeout(aiAct, 400); return;
+      }
+
+      // Fallback: nothing is fully completable this turn — make the single most useful
+      // placement instead (closest-to-done puzzle, biggest piece that fits).
       const order = [...ai.puzzles].sort((a,b) => {
         const rA = a.shape.flat().filter(v=>v===1).length - Object.keys(a.placed||{}).length;
         const rB = b.shape.flat().filter(v=>v===1).length - Object.keys(b.placed||{}).length;
@@ -1743,15 +1951,25 @@ function aiTurn() {
       }
     }
 
+    // ── Items 2 & 5: TAKE PUZZLE ───────────────────────────────────────
+    // Value-based selection (points + reward - size), with an endgame safeguard:
+    // in the Final Round, only take a puzzle if it can actually be finished with
+    // the actions remaining — there's no future turn left to fall back on.
     if (ai.puzzles.length < 3) {
       const blackLimitReached = G.endGameTriggered && G.blackTakenThisTurn >= 1;
       const enoughPieces = (Object.values(ai.supply).reduce((a,b)=>a+b,0) >= 6 || Object.keys(ai.supply).filter(k=>(ai.supply[k]||0)>0).length >= 4);
+      const finalRd = isFinalRound();
+
       const candidates = [];
       G.whiteMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'white', idx:i, score: scorePuzzleForAI(ai,p) }); });
       if (enoughPieces && !blackLimitReached) G.blackMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'black', idx:i, score: scorePuzzleForAI(ai,p) }); });
-      candidates.sort((a,b)=>b.score-a.score); const best = candidates[0] || null;
 
-      const pOpts = []; if (G.whitePile.length>0) pOpts.push('white'); if (enoughPieces && !blackLimitReached && G.blackPile.length>0) pOpts.push('black');
+      const viable = finalRd
+        ? candidates.filter(cand => tryCompletePuzzleWithSupply(cand.p, ai.supply, Math.max(0, actions - 1)))
+        : candidates;
+      viable.sort((a,b)=>b.score-a.score); const best = viable[0] || null;
+
+      const pOpts = []; if (!finalRd && G.whitePile.length>0) pOpts.push('white'); if (!finalRd && enoughPieces && !blackLimitReached && G.blackPile.length>0) pOpts.push('black');
       if ((!best || best.score < 0.6) && pOpts.length && Math.random() < 0.35) {
         const type = pOpts[Math.floor(Math.random()*pOpts.length)]; const pile = type === 'black' ? G.blackPile : G.whitePile;
         const next = pile.shift(); next.placed = {}; ai.puzzles.push(next);
@@ -1767,15 +1985,17 @@ function aiTurn() {
       }
     }
 
-    const upg = PIECES.filter(p=>(ai.supply[p.id]||0)>0 && p.level<4).sort((a,b)=>(ai.supply[b.id]||0)-(ai.supply[a.id]||0));
-    if (upg.length) {
-      const piece = upg[0]; const target = PIECES.filter(p=>p.level===piece.level+1 && (G.reserve[p.id]||0)>0)[0] || null;
-      if (target) {
-        ai.supply[piece.id]--; if (ai.supply[piece.id]<=0) delete ai.supply[piece.id]; G.reserve[piece.id]=(G.reserve[piece.id]||0)+1;
-        ai.supply[target.id]=(ai.supply[target.id]||0)+1; G.reserve[target.id]--;
-        actions--; log('log_ai_upg'); render(); setTimeout(aiAct, 400); return;
-      }
+    // ── Item 3: SMART UPGRADE ──────────────────────────────────────────
+    // Only convert a piece if the result is actually useful for a current puzzle
+    // (and doesn't strip away a piece the AI still needs for something else).
+    const upgradeChoice = chooseAIUpgrade(ai);
+    if (upgradeChoice) {
+      const { piece, target } = upgradeChoice;
+      ai.supply[piece.id]--; if (ai.supply[piece.id]<=0) delete ai.supply[piece.id]; G.reserve[piece.id]=(G.reserve[piece.id]||0)+1;
+      ai.supply[target.id]=(ai.supply[target.id]||0)+1; G.reserve[target.id]--;
+      actions--; log('log_ai_upg'); render(); setTimeout(aiAct, 400); return;
     }
+
     if ((G.reserve['L1']||0)>0) {
       ai.supply['L1']=(ai.supply['L1']||0)+1; G.reserve['L1']--; actions--; log('log_ai_1'); render(); setTimeout(aiAct, 400); return;
     }
