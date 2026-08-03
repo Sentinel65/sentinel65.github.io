@@ -1039,26 +1039,68 @@ function renderPuzzleGrid(puzzle, small=false) {
 }
 
 function renderMyPuzzles() {
-  const el = document.getElementById('my-puzzles'); const player = G.players[0];
-  el.innerHTML = ''; document.getElementById('my-puzzle-count').textContent = player.puzzles.length;
-  if (!player.puzzles.length) { el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">${t('no_puzzles')}</span>`; return; }
-  
+  const el = document.getElementById('my-puzzles');
+  const player = G.players[0];
+
+  el.innerHTML = '';
+  document.getElementById('my-puzzle-count').textContent = player.puzzles.length;
+
+  if (!player.puzzles.length) {
+    el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">${t('no_puzzles')}</span>`;
+    return;
+  }
+
   player.puzzles.forEach((puzzle, idx) => {
-    const card = document.createElement('div'); card.className = 'my-puzzle-card'; card.id = `puzzle-card-${idx}`;
-    const cellCount = puzzle.shape.flat().filter(v=>v===1).length;
+    const card = document.createElement('div');
+    card.className = 'my-puzzle-card';
+    card.id = `puzzle-card-${idx}`;
+
+    // 👉 NOVÉ: klik na kartičku puzzle
+    card.onclick = () => {
+
+      // Otevři panel zásob, pokud je sbalený
+      const content = document.getElementById('supply-content');
+      const icon = document.getElementById('supply-icon');
+
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.textContent = '▼';
+      }
+
+      // Na mobilu odscrolluj na sekci „Moje zásoby“
+      scrollToMobile('supply-panel');
+    };
+
+    const cellCount = puzzle.shape.flat().filter(v => v === 1).length;
     const placedCount = Object.keys(puzzle.placed || {}).length;
-    const remaining = cellCount - placedCount; const pct = Math.round(placedCount / cellCount * 100);
-    const gridDiv = document.createElement('div'); gridDiv.innerHTML = renderInteractivePuzzleGrid(puzzle, idx);
+    const remaining = cellCount - placedCount;
+    const pct = Math.round(placedCount / cellCount * 100);
+
+    const gridDiv = document.createElement('div');
+    gridDiv.innerHTML = renderInteractivePuzzleGrid(puzzle, idx);
     card.appendChild(gridDiv);
+
     const footer = document.createElement('div');
     footer.innerHTML = `
-      <div style="height:3px;background:var(--border);border-radius:2px;margin:6px 0 4px"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;transition:width .3s"></div></div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin:6px 0 4px">
+        <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;transition:width .3s"></div>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end">
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold);letter-spacing:1px">${puzzle.pts}★</span>
-        <span style="font-size:.68rem;color:${remaining===0?'var(--gold)':'var(--muted)'};align-self:center">${remaining===0?t('done'):remaining+' '+t('left')}</span>
-        ${puzzle.reward ? `<span style="display:flex;align-items:center">${renderRewardMini(puzzle.reward)}</span>` : '<span></span>'}
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold);letter-spacing:1px">
+          ${puzzle.pts}★
+        </span>
+
+        <span style="font-size:.68rem;color:${remaining===0?'var(--gold)':'var(--muted)'};align-self:center">
+          ${remaining===0 ? t('done') : remaining + ' ' + t('left')}
+        </span>
+
+        ${puzzle.reward
+          ? `<span style="display:flex;align-items:center">${renderRewardMini(puzzle.reward)}</span>`
+          : '<span></span>'}
       </div>`;
-    card.appendChild(footer); el.appendChild(card);
+
+    card.appendChild(footer);
+    el.appendChild(card);
   });
 }
 
