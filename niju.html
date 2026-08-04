@@ -249,7 +249,7 @@ body{
 }
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
-/* Změna chování pro dotyk v disabled stavu */
+/* Změna chování pro dotyk v disabled stavu (odstraněno pointer-events:none, aby fungoval dlouhý stisk) */
 .traytile.disabled{ opacity:0.35; cursor:default; }
 .traytile.disabled:active{ transform:none; }
 
@@ -331,6 +331,7 @@ body{
   <div class="topbar" id="topbar">
     <button class="iconbtn" id="btnModeToggle" title="Mode"></button>
     <button class="iconbtn" id="btnNew" title="New game"></button>
+    <button class="iconbtn" id="btnUndo" title="Undo"></button>
     <button class="iconbtn" id="btnSave" title="Save"></button>
     <button class="iconbtn" id="btnLoad" title="Load"></button>
     <button class="iconbtn" id="btnLog" title="Log"></button>
@@ -717,7 +718,7 @@ cs:{
     
     <h3>Grafická nápověda</h3>
     <p>Pokud je po tahu některé pole potřebné pro vítězný vzor dlaždice obsazeno soupeřovou barvou, dlaždice dočasně nemůže vytvořit vítězný tvar — aplikace ji zvýrazní <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">červeným okrajem</span>. Zvýraznění zmizí, jakmile se situace změní (dlaždice se přesune, nebo se blokující sousední dlaždice odsune). Ve fázi pohybu je dlaždice, která se nesmí pohnout orámována <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle modře</span>. Poslední položená dlaždice je označena <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">modrým kolečkem</span> uprostřed dlaždice, pole odkud byl veden poslední tah je označeno jako pole nápovědy ale <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">tyrkysovou barvou</span>. Vybraná dlaždice pro přesun na jiné pole je znázorněna <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">světle žlutým pozadím</span> dlaždice.</p>
-    <p>V módu <b>Klasická hra naslepo</b> si můžete kdykoliv zobrazit překlad japonského přísloví na rubu dlaždice – na počítači stačí na danou dlaždici ukázat myší, na mobilním zařízení na ní dlouze podržte prst a překlad se na chvíli zobrazí jako systémová zpráva. Pro lidi s <b>dobrou pamětí</b> - malý handicap: program při každé nové hře vygeneruje <b>stejné přísloví na jinou dlaždici</b>.</p>
+    <p>V módu <b>Klasická hra naslepo</b> si můžete kdykoliv zobrazit překlad japonského přísloví na rubu dlaždice – na počítači stačí na danou dlaždici ukázat myší, na mobilním zařízení na ní dlouze podržte prst a překlad se na chvíli zobrazí jako systémová zpráva.</p>
 
     <h3>Režim: Klasická hra naslepo</h3>
     <p>Pravidla jsou stejná jako u Klasické hry, ale všechny vaše dlaždice v zásobě jsou skryté (otočené rubem nahoru, kde jsou zapsána japonská přísloví). Ve svém tahu si musíte jednu dlaždici vybrat naslepo. Jakmile ji odkryjete, musíte ji zahrát na hrací desku (<b>můžete s ní libovolně otáčet</b>, ale nelze ji vrátit a vzít si jinou). AI soupeř hraje podle stejných pravidel a tahá si dlaždice také naslepo.</p>
@@ -727,6 +728,7 @@ cs:{
 
     <h3>Režim: Sólo</h3>
     <p>Hráč hraje pouze se svými bílými dlaždicemi a snaží se je postupně všechny uspořádat tak, aby počet úspěšně dokončených vzorů (získaných bodů) byl na konci hry co nejvyšší.</p>
+    <p><b>Tah zpět:</b> V tomto režimu je v horním menu dostupné speciální tlačítko, kterým můžete kdykoliv zrušit a vrátit svůj poslední tah.</p>
 
     <h3>🗺️ Strategie zahájení hry (Opening)</h3>
     <p>Cílem úvodní fáze je připravit si flexibilní strukturu pro střední část hry.</p>
@@ -787,7 +789,7 @@ en:{
     
     <h3>Graphical aid</h3>
     <p>If, after a turn, a square needed for a tile's winning pattern is occupied by the opponent's color, the tile temporarily cannot create a winning shape — the app highlights it with a <span style="border: 2px solid var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 500;">red edge</span>. The highlight disappears as soon as the situation changes (the tile is moved, or the blocking neighboring tile is moved away). In the movement phase, a tile that must not be moved is framed in <span style="border: 2px solid lightblue; padding: 0 4px; border-radius: 4px; font-weight: 500;">light blue</span>. The last placed tile is marked with a <span style="background-color: lightblue; color: #000; padding: 0 4px; border-radius: 10px; font-weight: 500;">blue circle</span> in the center of the tile, the square from which the last move was made is marked like a hint square but in <span style="border: 2px dashed #40e0d0; background-color: rgba(64,224,208,0.14); padding: 0 4px; border-radius: 4px; font-weight: 500;">turquoise color</span>. The selected tile to be moved to another square is indicated by a <span style="background-color: #fff59d; color: #000; padding: 0 4px; border-radius: 4px; font-weight: 500;">light yellow background</span> of the tile.</p>
-    <p>In the <b>Classic - Blind Draw</b> mode, you can always view the translation of the Japanese proverb on the back of the tile — on PC, simply hover your mouse over the tile; on a mobile device, long-press the tile and the translation will briefly appear as a system message. For people with <b>a good memory</b>—a little challenge: each time you start a new game, the program generates <b>the same proverb on a different tile</b>. </p>
+    <p>In the <b>Classic - Blind Draw</b> mode, you can always view the translation of the Japanese proverb on the back of the tile — on PC, simply hover your mouse over the tile; on a mobile device, long-press the tile and the translation will briefly appear as a system message.</p>
 
     <h3>Mode: Classic - Blind Draw</h3>
     <p>The rules are the same as Classic mode, but all tiles in your supply are hidden face down (showing Japanese proverbs on the back). On your turn, you must select a tile blindly. Once revealed, you must play it (<b>you can rotate it freely</b>, but you cannot return it to pick another). The AI opponent follows the same rules and also draws tiles blindly.</p>
@@ -797,6 +799,7 @@ en:{
 
     <h3>Mode: Solo</h3>
     <p>The player plays only with their white tiles and tries to arrange them all so that the number of successfully completed patterns (scored points) at the end of the game is as high as possible.</p>
+    <p><b>Undo move:</b> In this mode, a special button is available in the top menu, allowing you to easily undo and revert your last move at any time.</p>
 
     <h3>🗺️ Opening Strategy</h3>
     <p>The goal of the opening phase is to prepare a flexible structure for the midgame.</p>
@@ -833,6 +836,7 @@ function t(key, vars){
    ICONS (inline SVG, stroke style)
    ========================================================================= */
 const ICONS = {
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>',
   refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/></svg>',
   save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>',
   load:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3Z"/><path d="M21 10v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6"/></svg>',
@@ -869,8 +873,7 @@ function tileFaceSVG(patternIdx, rot, color, size, isFaceDown = false){
   const ink = color==='w' ? 'var(--tile-w-ink)' : 'var(--tile-b-ink)';
 
   if (isFaceDown) {
-    const pIdx = (typeof ST !== 'undefined' && ST && ST.proverbMap) ? ST.proverbMap[patternIdx] : patternIdx;
-    const chars = PROVERBS[pIdx].jp;
+    const chars = PROVERBS[patternIdx].jp;
     const fs = size * 0.32;
     const cx1 = size * 0.30;
     const cx2 = size * 0.70;
@@ -908,6 +911,7 @@ const SETTINGS_KEY = 'niju_settings_v2';
 const STATS_KEY = 'niju_stats_v2';
 
 let ST = null;
+let undoStack = [];
 let UI = { selection:null, zoom:1, movementPlies:0 };
 let DIFFICULTY = 'medium';
 let GAME_MODE = 'classic';
@@ -958,7 +962,6 @@ function newGame(){
     board: new Map(),
     pool: { w: poolW, b: poolB },
     blindOrder: { w: shuffleArray(Array.from(poolW)), b: shuffleArray(Array.from(poolB)) },
-    proverbMap: shuffleArray(Array.from({length: NPATTERNS}, (_, i) => i)),
     phase: 'placing',
     turn: GAME_MODE==='solo' ? 'w' : startColor,
     humanColor: 'w',
@@ -971,6 +974,8 @@ function newGame(){
     turnCounter: 0,
     ended:false,
   };
+  
+  undoStack = [];
   
   if (GAME_MODE === 'solo') {
     addLog({type: 'system', msgKey: 'log_sys_start_solo'});
@@ -1019,7 +1024,7 @@ function saveStats(mode, diff, result, pts) {
 function serializeState(){
   return JSON.stringify({
     board: [...ST.board.entries()], pool: { w:[...ST.pool.w], b:[...ST.pool.b] },
-    blindOrder: ST.blindOrder, proverbMap: ST.proverbMap,
+    blindOrder: ST.blindOrder,
     phase: ST.phase, turn: ST.turn, humanColor: ST.humanColor, aiColor: ST.aiColor,
     winner: ST.winner, winningTileKey: ST.winningTileKey, winPatternKeys: ST.winPatternKeys, log: ST.log,
     pointsW: ST.pointsW, pointsB: ST.pointsB, lastMove: ST.lastMove, lastMoveOrigin: ST.lastMoveOrigin,
@@ -1032,7 +1037,6 @@ function deserializeState(json){
   ST = {
     board: new Map(d.board), pool: { w:new Set(d.pool.w), b:new Set(d.pool.b) },
     blindOrder: d.blindOrder || { w: [...d.pool.w], b: [...d.pool.b] },
-    proverbMap: d.proverbMap || Array.from({length: NPATTERNS}, (_, i) => i),
     phase: d.phase, turn: d.turn, humanColor: d.humanColor, aiColor: d.aiColor,
     winner: d.winner, winningTileKey: d.winningTileKey, winPatternKeys: d.winPatternKeys||null, log: d.log||[],
     pointsW: d.pointsW||0, pointsB: d.pointsB||0, lastMove: d.lastMove||null, lastMoveOrigin: d.lastMoveOrigin||null,
@@ -1060,6 +1064,10 @@ function doLoad(){
    TURN / ACTION HANDLING
    ========================================================================= */
 function performAction(color, action){
+  if (GAME_MODE === 'solo') {
+    undoStack.push(serializeState());
+  }
+  
   if(action.type==='place'){
     ST.board.set(key(action.x,action.y), {color, pattern:action.pattern, rot:action.rot});
     ST.pool[color].delete(action.pattern);
@@ -1424,8 +1432,7 @@ function render(center = false){
       let longPressed = false;
       
       if (isFaceDown) {
-        const pIdx = ST.proverbMap[pat];
-        const trans = PROVERBS[pIdx][LANG];
+        const trans = PROVERBS[pat][LANG];
         // Klasický tooltip pro zobrazení při najetí myší na PC
         div.setAttribute('title', trans);
         
@@ -1672,6 +1679,7 @@ document.getElementById('winNewGame').addEventListener('click', ()=>{ closeOverl
    ========================================================================= */
 function setupIcons() {
   document.getElementById('btnNew').innerHTML = icon('refresh');
+  document.getElementById('btnUndo').innerHTML = icon('undo');
   document.getElementById('btnSave').innerHTML = icon('save');
   document.getElementById('btnLoad').innerHTML = icon('load');
   document.getElementById('btnLog').innerHTML = icon('log');
@@ -1685,6 +1693,17 @@ function setupIcons() {
 setupIcons();
 
 document.getElementById('btnNew').addEventListener('click', ()=>{ newGame(); });
+
+function doUndo() {
+  if (GAME_MODE !== 'solo' || undoStack.length === 0) return;
+  const prevState = undoStack.pop();
+  deserializeState(prevState);
+  syncControlsFromState();
+  checkEndAnimations();
+  safeRender(true);
+}
+document.getElementById('btnUndo').addEventListener('click', doUndo);
+
 document.getElementById('btnSave').addEventListener('click', doSave);
 document.getElementById('btnLoad').addEventListener('click', doLoad);
 
@@ -1717,11 +1736,15 @@ document.getElementById('btnLangToggle').addEventListener('click', ()=>{
 
 function syncControlsFromState(){
   const diffBtn = document.getElementById('btnDiffToggle');
+  const undoBtn = document.getElementById('btnUndo');
+  
   if (GAME_MODE === 'solo') {
     diffBtn.style.display = 'none';
+    undoBtn.style.display = 'flex';
   } else {
     diffBtn.style.display = 'flex';
     diffBtn.innerHTML = icon(DIFF_ICON[DIFFICULTY]);
+    undoBtn.style.display = 'none';
   }
   
   document.getElementById('btnLangToggle').innerHTML = icon(LANG==='cs' ? 'flagEn' : 'flagCs');
