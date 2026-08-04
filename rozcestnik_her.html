@@ -269,9 +269,14 @@
     <script>
         const IMG_DIR = 'images/';
         const STORAGE_KEY = 'rozcestnik_play_counts';
+        const SORT_STORAGE_KEY = 'rozcestnik_sort_order';
 
         // Načtení počtu spuštění z localStorage
         let playCounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        // Načtení posledního zvoleného řazení
+        const savedSort = localStorage.getItem(SORT_STORAGE_KEY) || 'alpha';
+        //vymaže uloženou volbu řazení 
+        //localStorage.removeItem('rozcestnik_sort_order');
 
         // Databáze her s doplněnými přímými odkazy na BGG
         const games = [
@@ -306,6 +311,8 @@
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
         const emptyState = document.getElementById('emptyState');
+        // Obnov poslední zvolené řazení
+        sortSelect.value = savedSort;
 
         // Funkce pro logování spuštění hry
         window.trackPlay = function(gameId) {
@@ -370,7 +377,7 @@
                         <p class="card-text">${game.desc}</p>
                         <div class="card-actions">
                             <a href="${game.url}" class="btn btn-play" target="_blank" rel="noopener noreferrer" onclick="trackPlay('${game.id}')">Hrát Hru</a>
-                            <a href="${game.bgg}" class="btn btn-bgg" target="_blank" rel="noopener noreferrer">Info BGG</a>
+                            <a href="${game.bgg}" class="btn btn-bgg" target="_blank" rel="noopener noreferrer">Zdroj</a>
                         </div>
                     </div>
                 `;
@@ -397,7 +404,10 @@
 
         // Event listenery
         searchInput.addEventListener('input', updateDisplay);
-        sortSelect.addEventListener('change', updateDisplay);
+        sortSelect.addEventListener('change', () => {
+    localStorage.setItem(SORT_STORAGE_KEY, sortSelect.value);
+    updateDisplay();
+});
 
         // Inicializace - první spuštění (implicitně abecedně, díky getSortedGames a výchozí hodnotě selectu)
         updateDisplay();
