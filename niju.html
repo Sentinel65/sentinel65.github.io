@@ -45,6 +45,7 @@ body{
 .app{
   height:100vh; height:100dvh;
   display:flex; flex-direction:column;
+  position:relative;
 }
 
 /* ---------- Header ---------- */
@@ -232,6 +233,17 @@ body{
   position:absolute; top:38%; left:38%; width:24%; height:24%; background-color:lightblue; border-radius:50%; opacity:.85; pointer-events:none; z-index:10;
 }
 
+/* ---------- Replay Button ---------- */
+#btnReplayAnim {
+  position:absolute; left:-80px; top:50%; transform:translateY(-50%);
+  z-index:40; width:56px; height:56px; border-radius:28px;
+  background:var(--accent); color:#fff; border:3px solid var(--paper);
+  box-shadow:var(--shadow); transition:left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+#btnReplayAnim svg { width:26px; height:26px; fill:currentColor; margin-left: 4px; }
+#btnReplayAnim.show { left:16px; }
+
 /* ---------- Tray ---------- */
 .tray-wrap{
   border-top:1px solid var(--line); background:var(--panel);
@@ -249,7 +261,6 @@ body{
 }
 .traytile.sel{ border-color:var(--accent); transform:translateY(-4px); }
 .traytile:active{ transform:scale(.92); }
-/* Změna chování pro dotyk v disabled stavu (odstraněno pointer-events:none, aby fungoval dlouhý stisk) */
 .traytile.disabled{ opacity:0.35; cursor:default; }
 .traytile.disabled:active{ transform:none; }
 
@@ -357,6 +368,8 @@ body{
   <div class="boardscroll" id="boardscroll">
     <div class="board" id="board"></div>
   </div>
+  
+  <button id="btnReplayAnim" title="Replay Animation" aria-label="Replay Animation"></button>
 
   <div class="tray-wrap" id="trayWrap">
     <div class="tray" id="tray"></div>
@@ -919,15 +932,17 @@ let MODES_ORDER = ['classic', 'blind', 'tournament', 'solo'];
 let lastRenderedKeys = new Set(); 
 let DEBUG_COORDS = false;
 
-let soloEndAnimationIndex = 0;
+let soloEndAnimationIndex = -1;
 let soloEndPatterns = [];
 let soloEndInterval = null;
 
 function resetEndAnimation() {
   if (soloEndInterval) clearInterval(soloEndInterval);
   soloEndInterval = null;
-  soloEndAnimationIndex = 0;
+  soloEndAnimationIndex = -1;
   soloEndPatterns = [];
+  const btn = document.getElementById('btnReplayAnim');
+  if (btn) btn.classList.remove('show');
 }
 
 function checkEndAnimations() {
@@ -941,12 +956,39 @@ function checkEndAnimations() {
         });
         if (isComplete) soloEndPatterns.push({ center: k, parts: req });
     }
-    if (soloEndPatterns.length > 1) {
-        soloEndInterval = setInterval(() => {
-            soloEndAnimationIndex = (soloEndAnimationIndex + 1) % soloEndPatterns.length;
-            safeRender(true);
-        }, 1800);
+    if (soloEndPatterns.length > 0) {
+        playEndAnimationsSequence();
     }
+  }
+}
+
+function playEndAnimationsSequence() {
+  if (soloEndInterval) clearInterval(soloEndInterval);
+  const btn = document.getElementById('btnReplayAnim');
+  if (btn) btn.classList.remove('show');
+  
+  if (soloEndPatterns.length > 0) {
+      soloEndAnimationIndex = 0;
+      safeRender(true);
+      
+      const nextStep = () => {
+          soloEndAnimationIndex++;
+          if (soloEndAnimationIndex >= soloEndPatterns.length) {
+              if (soloEndInterval) clearInterval(soloEndInterval);
+              soloEndInterval = null;
+              soloEndAnimationIndex = -1;
+              safeRender(false); // Static render all
+              if (btn) btn.classList.add('show');
+          } else {
+              safeRender(true);
+          }
+      };
+
+      if (soloEndPatterns.length > 1) {
+          soloEndInterval = setInterval(nextStep, 1800);
+      } else {
+          setTimeout(nextStep, 1800);
+      }
   }
 }
 
@@ -1292,13 +1334,19 @@ function render(center = false){
   let isSingleWin = false; 
   
   if (ST.ended && (GAME_MODE === 'solo' || GAME_MODE === 'tournament') && soloEndPatterns.length > 0) {
-      const p = soloEndPatterns[soloEndAnimationIndex];
-      activeCenters.add(p.center);
-      p.parts.forEach(rk => activeWinParts.add(rk));
-      
-      centerTarget = parseKey(p.center);
-      if (soloEndPatterns.length === 1) isSingleWin = true;
-
+      if (soloEndAnimationIndex >= 0 && soloEndAnimationIndex < soloEndPatterns.length) {
+          const p = soloEndPatterns[soloEndAnimationIndex];
+          activeCenters.add(p.center);
+          p.parts.forEach(rk => activeWinParts.add(rk));
+          centerTarget = parseKey(p.center);
+          if (soloEndPatterns.length === 1) isSingleWin = true;
+      } else if (soloEndAnimationIndex === -1) {
+          soloEndPatterns.forEach(p => {
+              activeCenters.add(p.center);
+              p.parts.forEach(rk => activeWinParts.add(rk));
+          });
+          isSingleWin = true; 
+      }
   } else if (ST.ended && (GAME_MODE === 'classic' || GAME_MODE === 'blind')) {
       activeCenters.add(ST.winningTileKey);
       if (ST.winPatternKeys) ST.winPatternKeys.forEach(k => activeWinParts.add(k));
@@ -1433,10 +1481,8 @@ function render(center = false){
       
       if (isFaceDown) {
         const trans = PROVERBS[pat][LANG];
-        // Klasický tooltip pro zobrazení při najetí myší na PC
         div.setAttribute('title', trans);
         
-        // Logika pro detekci dlouhého podržení na dotykovém zařízení
         let pressTimer;
         div.addEventListener('touchstart', (e) => {
             longPressed = false;
@@ -1450,7 +1496,6 @@ function render(center = false){
         div.addEventListener('touchend', () => clearTimeout(pressTimer), {passive: true});
         div.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive: true});
         
-        // Zabrání zobrazení nativního kontextového menu po podržení na mobilech
         div.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
@@ -1458,7 +1503,6 @@ function render(center = false){
 
       if (!isDisabled) {
         div.addEventListener('click', (e) => {
-            // Zabraňuje výběru dlaždice, pokud na ní uživatel jen dlouze podržel prst pro tooltip
             if (longPressed) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1517,7 +1561,7 @@ function onDestinationTap(x,y){
   else performAction(ST.humanColor, {type:'move', fromX:UI.selection.fromX, fromY:UI.selection.fromY, rot:UI.selection.rot, toX:x, toY:y});
 }
 
-function setZoom(z){ UI.zoom = Math.max(0.55, Math.min(2.0, z)); safeRender(false); }
+function setZoom(z){ UI.zoom = Math.max(0.35, Math.min(2.0, z)); safeRender(false); }
 document.getElementById('btnZoomIn').addEventListener('click', ()=>setZoom(UI.zoom+0.15));
 document.getElementById('btnZoomOut').addEventListener('click', ()=>setZoom(UI.zoom-0.15));
 
@@ -1689,10 +1733,14 @@ function setupIcons() {
   document.getElementById('btnZoomOut').innerHTML = icon('zoomout');
   document.querySelectorAll('.closebtn[data-close]').forEach(b=>{ if(!b.innerHTML) b.innerHTML = icon('close'); });
   document.getElementById('btnCopyLog').innerHTML = icon('copy');
+  
+  // Custom Play ikona pro replay
+  document.getElementById('btnReplayAnim').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg>';
 }
 setupIcons();
 
 document.getElementById('btnNew').addEventListener('click', ()=>{ newGame(); });
+document.getElementById('btnReplayAnim').addEventListener('click', playEndAnimationsSequence);
 
 function doUndo() {
   if (GAME_MODE !== 'solo' || undoStack.length === 0) return;
