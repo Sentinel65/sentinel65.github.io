@@ -977,7 +977,7 @@ function playEndAnimationsSequence() {
               if (soloEndInterval) clearInterval(soloEndInterval);
               soloEndInterval = null;
               soloEndAnimationIndex = -1;
-              safeRender(false); // Static render all
+              safeRender(true); // Poslední vykreslení s vycentrováním plochy
               if (btn) btn.classList.add('show');
           } else {
               safeRender(true);
@@ -1341,11 +1341,26 @@ function render(center = false){
           centerTarget = parseKey(p.center);
           if (soloEndPatterns.length === 1) isSingleWin = true;
       } else if (soloEndAnimationIndex === -1) {
+          let wxMin = Infinity, wxMax = -Infinity, wyMin = Infinity, wyMax = -Infinity;
+          
           soloEndPatterns.forEach(p => {
               activeCenters.add(p.center);
               p.parts.forEach(rk => activeWinParts.add(rk));
           });
           isSingleWin = true; 
+          
+          // Výpočet středového bodu pro všechny výherní dlaždice
+          [...activeCenters, ...activeWinParts].forEach(k => {
+              const {x, y} = parseKey(k);
+              if (x < wxMin) wxMin = x;
+              if (x > wxMax) wxMax = x;
+              if (y < wyMin) wyMin = y;
+              if (y > wyMax) wyMax = y;
+          });
+          
+          if (wxMin !== Infinity) {
+              centerTarget = { x: (wxMin + wxMax) / 2, y: (wyMin + wyMax) / 2 };
+          }
       }
   } else if (ST.ended && (GAME_MODE === 'classic' || GAME_MODE === 'blind')) {
       activeCenters.add(ST.winningTileKey);
@@ -1817,4 +1832,4 @@ function syncControlsFromState(){
 })();
 </script>
 </body>
-</html> 
+</html>
