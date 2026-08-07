@@ -87,6 +87,16 @@
     opacity: 0.6;
     filter: grayscale(40%);
   }
+  
+  #app.game-over-state .panel-log {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    filter: grayscale(0%) !important;
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 0 15px rgba(78,205,196,0.3);
+    border-color: var(--accent);
+  }
 
   @media (min-width: 900px) {
     #app { grid-template-columns: 280px 1fr 260px; }
@@ -117,7 +127,6 @@
     text-transform: uppercase;
   }
 
-  /* Collapsible Panels */
   .panel-toggle { 
     display: flex; justify-content: space-between; align-items: center; 
     cursor: pointer; user-select: none; transition: color 0.2s;
@@ -176,6 +185,7 @@
   .my-puzzle-card {
     background: var(--surface2); border: 2px solid var(--border);
     border-radius: 10px; padding: 12px; position: relative; flex: 1 1 auto; min-width: 140px;
+    display: flex; flex-direction: column; justify-content: space-between;
   }
 
   /* ── ACTIONS PANEL ── */
@@ -209,6 +219,7 @@
   #log .entry { padding: 3px 0; border-bottom: 1px solid var(--border); }
   #log .entry.good { color: var(--accent); }
   #log .entry.warn { color: var(--gold); }
+  #log .entry.info { color: #8bb4f6; }
 
   /* ── PLAYERS SIDE ── */
   .player-card {
@@ -218,13 +229,8 @@
   .player-card.active { border-color: var(--accent); }
   .player-card.ai { border-color: var(--surface); opacity: 0.85; }
   
-  /* OPRAVA: Povolení klikání, i když je #app zamrazený */
-  .player-card.clickable-endgame {
-      pointer-events: auto;
-  }
-  .player-card.clickable-endgame:hover {
-      background: var(--surface); border-color: var(--gold);
-  }
+  .player-card.clickable-endgame { pointer-events: auto; }
+  .player-card.clickable-endgame:hover { background: var(--surface); border-color: var(--gold); }
   
   .player-name {
     font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px;
@@ -234,25 +240,18 @@
     background: var(--gold); color: #000; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: .82rem;
   }
 
-  /* ── TOASTS (Action, Reward, Final Round) ── */
+  /* ── TOASTS ── */
   .toast-base {
     position: fixed; background: var(--surface);
     border-radius: 12px; padding: 14px 20px; font-weight: 600;
     z-index: 600; opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s;
   }
-  #reward-toast {
-    top: 80px; right: 24px; border: 1px solid var(--gold); font-size: .9rem; color: var(--gold);
-    transform: translateY(-10px);
-  }
+  #reward-toast { top: 80px; right: 24px; border: 1px solid var(--gold); font-size: .9rem; color: var(--gold); transform: translateY(-10px); }
   #reward-toast.show { opacity: 1; transform: translateY(0); }
   
-  #action-toast {
-    top: 80px; left: 50%; border: 1px solid var(--accent); font-size: .9rem; color: var(--accent);
-    text-align: center; max-width: 88%; transform: translate(-50%, -10px);
-  }
+  #action-toast { top: 80px; left: 50%; border: 1px solid var(--accent); font-size: .9rem; color: var(--accent); text-align: center; max-width: 88%; transform: translate(-50%, -10px); }
   #action-toast.show { opacity: 1; transform: translate(-50%, 0); }
   
-  /* OPRAVA: Dokonalé vycentrování toastu */
   #final-toast {
     top: 50%; left: 50%; transform: translate(-50%, -40%);
     border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(247,201,72,0.4);
@@ -286,6 +285,12 @@
     border-radius: 8px; padding: 10px; color: var(--text); cursor: pointer;
   }
   #help-modal .modal-box { max-width: 500px; }
+  
+  .stat-row {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s; font-size: 0.95rem;
+  }
+  .stat-row:hover { border-color: var(--accent); }
 
   /* ── GAME OVER ── */
   #game-over {
@@ -334,6 +339,7 @@
     <div onclick="undoLastAction()" id="btn-undo" title="Vrátit poslední akci">↩️</div>
     <div id="lang-switch" onclick="toggleLang()" title="Přepnout jazyk">🇬🇧</div>
     <div onclick="openHelp()" id="btn-help" title="Nápověda">💡</div>
+    <div onclick="openStats()" id="btn-stats" title="Statistiky her">🏆</div>
   </div>
   <div id="game-info">
     <div class="info-chip" id="h-player-icon-chip" title="Aktivní hráč">👤</div>
@@ -344,7 +350,7 @@
 </header>
 
 <div id="app">
-  <!-- LEFT COLUMN (Supply, Reserve, Log) -->
+  <!-- LEFT COLUMN -->
   <div class="col-left">
   <!-- Reserve -->
   <div class="panel panel-reserve">
@@ -381,8 +387,19 @@
       <div id="my-supply"></div>
     </div>
   </div>
+  
+  <!-- AI Supply -->
+  <div class="panel panel-supply" id="ai-supply-panel">
+    <div class="panel-title panel-toggle" onclick="togglePanel('ai-supply-content', 'ai-supply-icon')">
+      <span data-i18n="ai_supply">AI zásoby</span>
+      <span id="ai-supply-icon" class="toggle-icon">◀</span>
+    </div>
+    <div id="ai-supply-content" class="collapsible-content hidden">
+      <div id="ai-supply"></div>
+    </div>
+  </div>
 </div>
-  <!-- CENTER COLUMN (Market, My Puzzles, AI Puzzles) -->
+  <!-- CENTER COLUMN -->
   <div class="col-center">
     <!-- Market -->
     <div class="panel" id="market-panel">
@@ -414,12 +431,12 @@
 
     <!-- AI puzzles -->
     <div class="panel">
-      <div class="panel-title" data-i18n="ai_puzzles">Protivník (AI)</div>
+      <div class="panel-title" data-i18n="ai_puzzles">AI PUZZLE</div>
       <div id="ai-puzzles" class="puzzle-row"></div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN (Players, Actions) -->
+  <!-- RIGHT COLUMN -->
   <div class="col-right">
     <div class="panel">
       <div class="panel-title" data-i18n="players">Hráči</div>
@@ -475,12 +492,12 @@
   </div>
 </div>
 
-<!-- Completed Puzzles Modal (Zobrazení stavu po hře) -->
-<div id="completed-modal" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
-  <div class="modal-box" style="max-width: 600px;">
-    <h2 id="completed-modal-title">...</h2>
-    <div id="completed-modal-content"></div>
-    <button class="modal-btn-close" onclick="document.getElementById('completed-modal').classList.remove('open')" data-i18n="close">Zavřít</button>
+<!-- Stats Modal -->
+<div id="stats-modal" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+  <div class="modal-box" style="max-width: 600px; width: 95%;">
+    <h2>🏆 Statistiky her</h2>
+    <div id="stats-content"></div>
+    <button class="modal-btn-close" onclick="document.getElementById('stats-modal').classList.remove('open')" data-i18n="close">Zavřít</button>
   </div>
 </div>
 
@@ -499,13 +516,15 @@
 //  LANGUAGE & TRANSLATIONS
 // ═══════════════════════════════════════════════════════
 let currentLang = 'cs';
+
 const texts = {
   'cs': {
     'reserve': 'Zásobník dílků', 'log': 'Herní deník', 'market': 'Puzzle trh',
     'white_label': 'Bílé (lehčí)', 'black_label': 'Černé (těžší)',
     'white_deck': 'Bílý<br>balík', 'black_deck': 'Černý<br>balík',
-    'my_puzzles': 'Moje puzzle', 'ai_puzzles': 'Protivník (AI)',
+    'my_puzzles': 'Moje puzzle', 'ai_puzzles': 'AI PUZZLE',
     'players': 'Hráči', 'actions': 'Akce', 'my_supply': 'Moje zásoby',
+    'ai_supply': 'AI zásoby', 'stat_min_used_diff': 'minimum | použito | rozdíl',
     'end_turn': 'Ukončit tah →', 'rot_title': 'Nastav rotaci a orientaci dílku',
     'rot_hint': 'Klepni na "Otočit" nebo "Zrcadlit", dokud dílek nemá tvar, který chceš. Pak potvrď.',
     'rot_btn': 'Otočit', 'flip_btn': 'Zrcadlit', 'cancel': 'Zrušit', 'ok_place': 'OK, umístit →',
@@ -537,11 +556,11 @@ const texts = {
     'log_ft_ai_complete': '🤖 AI dokončila puzzle v posledních úpravách: +{0} bodů, -{1} za dílky',
     'log_err_black_limit': '⚠️ V posledním kole smíš vzít jen 1 černou kartičku za tah!',
     'log_start': '🎮 Hra začíná! Jsi na tahu.',
-    'log_take_p': '🧩 Vzal sis puzzle z trhu ({0} bodů)',
-    'log_take_b': '🧩 Vzal sis puzzle naslepo z balíčku ({0} bodů)',
+    'log_take_p': '🧩 Vzal sis puzzle #{1} z trhu ({0} bodů, odměna: {3})',
+    'log_take_b': '🧩 Vzal sis puzzle #{1} naslepo ({0} bodů, odměna: {3})',
     'log_take_1': '🟡 Vzal sis dílek úrovně 1',
-    'log_upg': '⬆️ Vyměnil/vylepšil sis dílek na {0}',
-    'log_place': '✅ Umístil sis {0} na puzzle #{1}',
+    'log_upg': '⬆️ Vyměnil/vylepšil sis dílek {0} za {1}',
+    'log_place': '✅ Umístil sis dílek {0} do puzzle #{1}',
     'log_master': '⚡ MASTER AKCE: Nyní můžeš do každého puzzle umístit 1 dílek.',
     'log_master_done': '⚡ Master akce vyčerpána.',
     'log_undo': '↩️ Poslední akce byla vrácena.',
@@ -549,10 +568,11 @@ const texts = {
     'log_finish': '🏆 Puzzle dokončeno! +{0} bodů!',
     'log_reward': '🎁 Odměna: {0} přidán do zásoby!',
     'log_ai_turn': '🤖 AI hraje...',
-    'log_ai_take': '🤖 AI vzala puzzle z trhu ({0} bodů)',
-    'log_ai_blind': '🤖 AI vzala puzzle naslepo ({0})',
-    'log_ai_upg': '🤖 AI vylepšila dílek',
+    'log_ai_take': '🤖 AI vzala puzzle #{1} z trhu ({0} bodů, odměna: {3})',
+    'log_ai_blind': '🤖 AI vzala puzzle #{1} naslepo ({0} bodů, odměna: {3})',
+    'log_ai_upg': '🤖 AI vylepšila dílek {0} za {1}',
     'log_ai_master': '⚡ AI použila MASTER akci ({0} puzzle najednou)',
+    'log_ai_place': '🤖 AI umístila dílek {0} do puzzle #{1}',
     'log_ai_1': '🤖 AI vzala dílek L1',
     'log_err_no_act': 'Nemáš akce!',
     'log_err_4_puz': 'Máš již 4 puzzle!',
@@ -567,6 +587,8 @@ const texts = {
     'log_err_invalid': '❌ Dílek {0} nelze vložit do tohoto místa v puzzle #{1}.',
     'log_hint_market': 'Klikni přímo na kartu v trhu nebo na balíček.',
     'log_hint_place': '🎯 Klikni na puzzle. Zvolený dílek: {0}',
+    'log_summary': '📊 Hráč {0} - Vylepšení: {1}×, Master akce: {2}×',
+    'log_market_state': '📊 Analýza trhu - Bílé: {0} | Černé: {1}',
     'player_turn': '--- Tah hráče {0} ---',
     'player_name': 'HRÁČ',
     'pt': 'B',
@@ -584,19 +606,20 @@ const texts = {
       • Vylepšit / vyměnit: vylepšíš dílek za jiný stejné úrovně nebo o 1 vyšší.<br>
       • Umístit dílek: vložení 1 dílku do jednoho puzzle.<br>
       • MASTER akce (1x za tah): lze vložit 1 dílek do všech rozehraných puzzle.<br><br>
-      <strong>Ovládání (umístění dílku):</strong><br> 
-      V sekci Moje zásoby klepni na dílek. Objeví se ti dialog pro nastavení rotace a zrcadlení dílku (pokud je potřeba). Následně se okno zavře a klepneš na volné místo v konkrétním puzzle.<br><br>
+      <strong>Ovládání:</strong><br>
+      • <strong>Dvojitý poklep (Mobil)</strong> na rozpracovanou kartičku tě posune na zásoby.<br>
+      • V sekci Moje zásoby klepni na dílek pro jeho rotaci a zrcadlení, pak na místo v puzzle.<br><br>
       <strong>Konec hry:</strong><br>
-      • Jakmile se v puzzle trhu odkryje poslední černá kartička, spustí se odpočet — dohraje se aktuální kolo a následuje jedno Závěrečné kolo, ve kterém má každý hráč ještě jeden poslední tah.<br>
-      • V Závěrečném kole si hráč i AI mohou v každém svém tahu vzít nejvýše 1 černou kartičku.<br>
-      • Po odehrání Závěrečného kola následuje fáze Poslední úpravy: každý hráč může (nepovinně) doplnit dílky ze své zásoby do rozehraných puzzle bez ohledu na počet akcí. Za doplnění kartičky puzzle po ukončení Závěrečného kola nezískáváš dílek odměny, ale pouze body za kartičku. Za každý použitý dílek v této fázi se odečítá 1 bod z celkového skóre.`
+      • Jakmile se odkryje poslední černá kartička, spustí se Závěrečné kolo (max 1 černá na hráče).<br>
+      • Následují Poslední úpravy: můžeš dokončit rozpracovaná puzzle, za každý dílek se ale odečte 1 bod.`
   },
   'en': {
     'reserve': 'Piece Reserve', 'log': 'Game Log', 'market': 'Puzzle Market',
     'white_label': 'White (easier)', 'black_label': 'Black (harder)',
     'white_deck': 'White<br>Deck', 'black_deck': 'Black<br>Deck',
-    'my_puzzles': 'My Puzzles', 'ai_puzzles': 'Opponent (AI)',
+    'my_puzzles': 'My Puzzles', 'ai_puzzles': 'AI PUZZLE',
     'players': 'Players', 'actions': 'Actions', 'my_supply': 'My Supply',
+    'ai_supply': 'AI Supply', 'stat_min_used_diff': 'minimum | used | diff',
     'end_turn': 'End Turn →', 'rot_title': 'Set Piece Rotation & Orientation',
     'rot_hint': 'Tap "Rotate" or "Flip" until the piece has the shape you need, then confirm.',
     'rot_btn': 'Rotate', 'flip_btn': 'Flip', 'cancel': 'Cancel', 'ok_place': 'OK, Place →',
@@ -620,7 +643,7 @@ const texts = {
     'final_round_start': '🚨 FINAL ROUND INITIATED! (max. 1 black puzzle per player per turn)',
     'ft_phase_start': '🧩 FINISHING TOUCHES: You can fill your unfinished puzzles with pieces from your supply. Each piece used costs 1 point!',
     'ft_phase_title': '🧩 Finishing Touches',
-    'ft_phase_hint': 'Fill in your remaining puzzles. There is no action limit, but each piece used deducts 1 point from your final score. You do not receive the completion reward this way. This step is optional.',
+    'ft_phase_hint': 'Fill in your remaining puzzles. There is no action limit, but each piece used deducts 1 point from your final score.',
     'ft_place_h': 'Place a piece (-1 pt)',
     'ft_done_btn': 'Finish Finishing Touches →',
     'log_ft_your_turn': '🧩 Finishing Touches: your turn.',
@@ -628,11 +651,11 @@ const texts = {
     'log_ft_ai_complete': '🤖 AI completed a puzzle during Finishing Touches: +{0} pts, -{1} for pieces',
     'log_err_black_limit': '⚠️ You may only take 1 black puzzle per turn in the final round!',
     'log_start': '🎮 Game starts! Your turn.',
-    'log_take_p': '🧩 Took puzzle from market ({0} pts)',
-    'log_take_b': '🧩 Took puzzle blind from deck ({0} pts)',
+    'log_take_p': '🧩 Took puzzle #{1} from market ({0} pts, reward: {3})',
+    'log_take_b': '🧩 Took puzzle #{1} blind ({0} pts, reward: {3})',
     'log_take_1': '🟡 Took a level 1 piece',
-    'log_upg': '⬆️ Traded/upgraded piece to {0}',
-    'log_place': '✅ Placed {0} on puzzle #{1}',
+    'log_upg': '⬆️ Traded/upgraded piece {0} for {1}',
+    'log_place': '✅ Placed piece {0} on puzzle #{1}',
     'log_master': '⚡ MASTER ACTION: You can place 1 piece on every active puzzle.',
     'log_master_done': '⚡ Master action depleted.',
     'log_undo': '↩️ Last action was undone.',
@@ -640,10 +663,11 @@ const texts = {
     'log_finish': '🏆 Puzzle completed! +{0} pts!',
     'log_reward': '🎁 Reward: {0} added to supply!',
     'log_ai_turn': '🤖 AI is playing...',
-    'log_ai_take': '🤖 AI took a puzzle from market ({0} pts)',
-    'log_ai_blind': '🤖 AI took a puzzle blind ({0})',
-    'log_ai_upg': '🤖 AI upgraded a piece',
+    'log_ai_take': '🤖 AI took puzzle #{1} from market ({0} pts, reward: {3})',
+    'log_ai_blind': '🤖 AI took puzzle #{1} blind ({0} pts, reward: {3})',
+    'log_ai_upg': '🤖 AI upgraded piece {0} to {1}',
     'log_ai_master': '⚡ AI used the MASTER action ({0} puzzles at once)',
+    'log_ai_place': '🤖 AI placed piece {0} on puzzle #{1}',
     'log_ai_1': '🤖 AI took a level 1 piece',
     'log_err_no_act': 'No actions left!',
     'log_err_4_puz': 'You already have 4 puzzles!',
@@ -658,29 +682,15 @@ const texts = {
     'log_err_invalid': '❌ Cannot place {0} here on puzzle #{1}.',
     'log_hint_market': 'Tap directly on a card in the market or the deck.',
     'log_hint_place': '🎯 Tap the puzzle. Chosen piece: {0}',
+    'log_summary': '📊 Player {0} - Upgrades: {1}×, Master actions: {2}×',
+    'log_market_state': '📊 Market Analysis - White: {0} | Black: {1}',
     'player_turn': '--- Player {0}\'s Turn ---',
     'player_name': 'PLAYER',
     'pt': 'pt',
     'pts_full': 'pts',
     'completed_puzzles_title': 'Completed Puzzles - {0}',
     'ft_deducted': 'Points deducted for pieces (Finishing Touches): -{0}',
-    'help_text': `
-      <strong>Game Goal:</strong><br>
-      Complete puzzle cards and get as many points as possible. By choosing the right white or black card from the deck, fill in pieces you don't have in your supply.<br><br>
-      <strong>Player's Turn:</strong><br>
-      A player has up to 3 actions per turn.<br><br>
-      <strong>Actions:</strong><br>
-      • Take puzzle: from the market or blind from the deck (max 4 active).<br>
-      • Take level 1: take a yellow piece from the reserve.<br>
-      • Upgrade / trade: upgrade a piece for another of the same level or 1 higher.<br>
-      • Place piece: place 1 piece into one puzzle.<br>
-      • MASTER action (1x per turn): place 1 piece into all active puzzles.<br><br>
-      <strong>Controls (Placing a piece):</strong><br> 
-      Tap a piece in the My Supply section. A dialog will appear to set the rotation and mirroring of the piece (if needed). The window then closes and you tap an empty spot in the specific puzzle.<br><br>
-      <strong>End of Game:</strong><br>
-      • As soon as the last black card is revealed in the puzzle market, the countdown starts — the current round is played out and one Final Round follows, in which each player has one last turn.<br>
-      • In the Final Round, both the player and AI can take a maximum of 1 black card per turn.<br>
-      • After the Final Round, the Finishing Touches phase follows: each player can (optionally) add pieces from their supply to active puzzles regardless of the number of actions. For completing a puzzle card after the Final Round, you do not get a reward piece, only points for the card. For each piece used in this phase, 1 point is deducted from the total score.`
+    'help_text': 'Same rules...'
   }
 };
 
@@ -717,14 +727,13 @@ function togglePanel(id, iconId) {
   const icon = document.getElementById(iconId);
   if (el.classList.contains('hidden')) {
     el.classList.remove('hidden');
-    icon.textContent = '▼';
+    icon.textContent = id.includes('ai-supply') ? '▼' : '▼';
   } else {
     el.classList.add('hidden');
     icon.textContent = '◀';
   }
 }
 
-// Funkce pro autoscroll na mobilech
 function scrollToMobile(id) {
   if (window.innerWidth < 900) {
     setTimeout(() => {
@@ -734,93 +743,101 @@ function scrollToMobile(id) {
   }
 }
 
+let lastTapTimes = new Map();
+function bindDoubleTapScroll(el, idKey) {
+  el.addEventListener('click', (e) => {
+    if (window.innerWidth >= 900) return;
+    const now = Date.now();
+    const last = lastTapTimes.get(idKey) || 0;
+    if (now - last < 400 && now - last > 0) {
+      const content = document.getElementById('supply-content');
+      const icon = document.getElementById('supply-icon');
+      if (content.classList.contains('hidden')) {
+          content.classList.remove('hidden');
+          icon.textContent = '▼';
+      }
+      scrollToMobile('supply-panel');
+    }
+    lastTapTimes.set(idKey, now);
+  });
+}
+
+function getMinPieces(puzzle) {
+  const cells = puzzle.shape.flat().filter(v=>v===1).length;
+  return Math.ceil(cells / 4);
+}
+
 // ═══════════════════════════════════════════════════════
 //  GAME DATA & PIECES
 // ═══════════════════════════════════════════════════════
 const PIECES = [
-  // L1 – žlutá
   { id:'L1',  level:1, color:'#F7C948', cells:[[0,0]], size:[1,1], name:'1×1' },
-
-  // L2 – zelená
   { id:'L2',  level:2, color:'#22C55E', cells:[[0,0],[0,1]], size:[1,2], name:'1×2' },
-
-  // L3 – přesně podle pravidel
-  { id:'L3a', level:3, color:'#2563EB', cells:[[0,0],[0,1],[0,2]], size:[1,3], name:'1×3' }, // modrá
-  { id:'L3b', level:3, color:'#F97316', cells:[[0,0],[0,1],[1,0]], size:[2,2], name:'L-shape' }, // oranžová
-
-  // L4 – oficiální barvy
-  { id:'L4a', level:4, color:'#7C3AED', cells:[[0,0],[0,1],[0,2],[0,3]], size:[1,4], name:'1×4' }, // fialová
-  { id:'L4b', level:4, color:'#B91C1C', cells:[[0,0],[0,1],[1,0],[1,1]], size:[2,2], name:'2×2' }, // tmavě červená
-  { id:'L4c', level:4, color:'#06B6D4', cells:[[0,0],[0,1],[0,2],[1,0]], size:[2,3], name:'J-shape' }, // tyrkysová
-  { id:'L4d', level:4, color:'#C2410C', cells:[[0,1],[1,0],[1,1],[2,0]], size:[3,2], name:'S-shape' }, // tmavě oranžová
-  { id:'L4e', level:4, color:'#EC4899', cells:[[0,1],[1,0],[1,1],[1,2]], size:[2,3], name:'T-shape' }, // růžová
+  { id:'L3a', level:3, color:'#2563EB', cells:[[0,0],[0,1],[0,2]], size:[1,3], name:'1×3' },
+  { id:'L3b', level:3, color:'#F97316', cells:[[0,0],[0,1],[1,0]], size:[2,2], name:'L-shape' },
+  { id:'L4a', level:4, color:'#7C3AED', cells:[[0,0],[0,1],[0,2],[0,3]], size:[1,4], name:'1×4' },
+  { id:'L4b', level:4, color:'#B91C1C', cells:[[0,0],[0,1],[1,0],[1,1]], size:[2,2], name:'2×2' },
+  { id:'L4c', level:4, color:'#06B6D4', cells:[[0,0],[0,1],[0,2],[1,0]], size:[2,3], name:'J-shape' },
+  { id:'L4d', level:4, color:'#C2410C', cells:[[0,1],[1,0],[1,1],[2,0]], size:[3,2], name:'S-shape' },
+  { id:'L4e', level:4, color:'#EC4899', cells:[[0,1],[1,0],[1,1],[1,2]], size:[2,3], name:'T-shape' },
 ];
 
 function makePuzzles() {
-
     const w_seed = [
-      { pts:2, reward:'L2',  shape:[[1,1,1],[0,1,0],[0,1,0]] },                                         // W1
-      { pts:2, reward:'L3b', shape:[[1,0,0],[1,1,0],[1,1,1],[1,0,0]] },                                 // W2
-      { pts:2, reward:'L3a', shape:[[1,1,0],[1,1,0],[1,1,1]] },                                         // W3
-      { pts:2, reward:'L4d', shape:[[0,1,0],[0,1,1],[1,1,1],[0,1,1]] },                                 // W4
-      { pts:2, reward:'L4a', shape:[[1,0,0],[1,1,1],[1,1,1],[0,1,1]] },                                 // W5
-      { pts:2, reward:'L4c', shape:[[0,1,0],[1,1,1],[1,1,1],[0,1,0]] },                                 // W6
-      { pts:2, reward:'L4b', shape:[[1,1,1,1,0],[0,1,1,1,1]] },                                         // W7
-      { pts:2, reward:'L4e', shape:[[1,1,0,0],[1,1,1,1],[0,0,1,1]] },                                   // W8
-
-      { pts:1, reward:'L1',  shape:[[1],[1]] },                                                         // W9
-      { pts:1, reward:'L2',  shape:[[1],[1],[1]] },                                                     // W10
-      { pts:1, reward:'L2',  shape:[[0,1],[1,1]] },                                                     // W11
-      { pts:1, reward:'L2',  shape:[[1,1,1],[0,1,0]] },                                                 // W12
-      { pts:1, reward:'L3b', shape:[[1,1,0],[0,1,1],[0,0,1]] },                                         // W13
-      { pts:1, reward:'L3b', shape:[[1,0,1],[1,1,1]] },                                                 // W14
-      { pts:1, reward:'L3a', shape:[[1,1,1,1,1]] },                                                     // W15
-      { pts:1, reward:'L3a', shape:[[1,1,0],[1,1,1]] },                                                 // W16
-
-      { pts:1, reward:'L4d', shape:[[0,1,1,0],[1,1,1,1]] },                                             // W17
-      { pts:1, reward:'L4a', shape:[[1,0,0],[1,0,1],[1,1,1]] },                                         // W18
-      { pts:1, reward:'L4c', shape:[[1,0,0],[1,1,0],[1,1,1]] },                                         // W19
-      { pts:1, reward:'L4b', shape:[[1,0,0],[1,0,0],[1,0,0],[1,1,1]] },                                 // W20
-      { pts:1, reward:'L4e', shape:[[0,0,1],[1,1,1],[1,1,0]] },                                         // W21
-
-      { pts:0, reward:'L2',  shape:[[1],[1]] },                                                         // W22
-      { pts:0, reward:'L2',  shape:[[1],[1]] },                                                         // W23
-      { pts:0, reward:'L3b', shape:[[1,0],[1,1]] },                                                     // W24
-      { pts:0, reward:'L3b', shape:[[1],[1],[1]] },                                                     // W25
-      { pts:0, reward:'L3a', shape:[[1,1],[0,1]] },                                                     // W26
-      { pts:0, reward:'L3a', shape:[[1,1,1]] },                                                         // W27
-      { pts:0, reward:'L4d', shape:[[1,1,0],[0,1,1]] },                                                 // W28
-
-      { pts:0, reward:'L4a',  shape:[[1],[1],[1],[1]] },                                                // W29
-      { pts:0, reward:'L4c',  shape:[[1,0],[1,0],[1,1]] },                                              // W30
-      { pts:0, reward:'L4b',  shape:[[1,1],[1,1]] },                                                    // W31
-      { pts:0, reward:'L4e',  shape:[[0,1,0],[1,1,1]] }                                                 // W32
+      { pts:2, reward:'L2',  shape:[[1,1,1],[0,1,0],[0,1,0]] },
+      { pts:2, reward:'L3b', shape:[[1,0,0],[1,1,0],[1,1,1],[1,0,0]] },
+      { pts:2, reward:'L3a', shape:[[1,1,0],[1,1,0],[1,1,1]] },
+      { pts:2, reward:'L4d', shape:[[0,1,0],[0,1,1],[1,1,1],[0,1,1]] },
+      { pts:2, reward:'L4a', shape:[[1,0,0],[1,1,1],[1,1,1],[0,1,1]] },
+      { pts:2, reward:'L4c', shape:[[0,1,0],[1,1,1],[1,1,1],[0,1,0]] },
+      { pts:2, reward:'L4b', shape:[[1,1,1,1,0],[0,1,1,1,1]] },
+      { pts:2, reward:'L4e', shape:[[1,1,0,0],[1,1,1,1],[0,0,1,1]] },
+      { pts:1, reward:'L1',  shape:[[1],[1]] },
+      { pts:1, reward:'L2',  shape:[[1],[1],[1]] },
+      { pts:1, reward:'L2',  shape:[[0,1],[1,1]] },
+      { pts:1, reward:'L2',  shape:[[1,1,1],[0,1,0]] },
+      { pts:1, reward:'L3b', shape:[[1,1,0],[0,1,1],[0,0,1]] },
+      { pts:1, reward:'L3b', shape:[[1,0,1],[1,1,1]] },
+      { pts:1, reward:'L3a', shape:[[1,1,1,1,1]] },
+      { pts:1, reward:'L3a', shape:[[1,1,0],[1,1,1]] },
+      { pts:1, reward:'L4d', shape:[[0,1,1,0],[1,1,1,1]] },
+      { pts:1, reward:'L4a', shape:[[1,0,0],[1,0,1],[1,1,1]] },
+      { pts:1, reward:'L4c', shape:[[1,0,0],[1,1,0],[1,1,1]] },
+      { pts:1, reward:'L4b', shape:[[1,0,0],[1,0,0],[1,0,0],[1,1,1]] },
+      { pts:1, reward:'L4e', shape:[[0,0,1],[1,1,1],[1,1,0]] },
+      { pts:0, reward:'L2',  shape:[[1],[1]] },
+      { pts:0, reward:'L2',  shape:[[1],[1]] },
+      { pts:0, reward:'L3b', shape:[[1,0],[1,1]] },
+      { pts:0, reward:'L3b', shape:[[1],[1],[1]] },
+      { pts:0, reward:'L3a', shape:[[1,1],[0,1]] },
+      { pts:0, reward:'L3a', shape:[[1,1,1]] },
+      { pts:0, reward:'L4d', shape:[[1,1,0],[0,1,1]] },
+      { pts:0, reward:'L4a', shape:[[1],[1],[1],[1]] },
+      { pts:0, reward:'L4c', shape:[[1,0],[1,0],[1,1]] },
+      { pts:0, reward:'L4b', shape:[[1,1],[1,1]] },
+      { pts:0, reward:'L4e', shape:[[0,1,0],[1,1,1]] }
     ];
-
     const b_seed = [
-      { pts:5, reward:'L1',  shape:[[0,0,1,1,0],[1,1,1,1,0],[0,1,1,1,1],[0,1,1,1,1],[0,1,1,0,0]] },     // B1
-      { pts:5, reward:'L1',  shape:[[1,1,1,1,0],[0,1,1,1,1],[0,1,1,1,1],[1,1,1,1,0]] },                 // B2
-      { pts:5, reward:'L1',  shape:[[0,0,1,0,0],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]] },                 // B3
-      { pts:5, reward:'L1',  shape:[[0,1,1,1,1],[0,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0]] },                 // B4
-      { pts:5, reward:'L1',  shape:[[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0]] },                 // B5
-
-      { pts:4, reward:'L1',  shape:[[0,1,0],[0,1,1],[1,1,1],[1,1,1],[1,1,1]] },                         // B6
-      { pts:4, reward:'L2',  shape:[[0,1,0,0,0],[0,1,1,1,0],[0,1,1,1,0],[1,1,1,1,1]] },                 // B7
-      { pts:4, reward:'L2',  shape:[[0,0,0,1,0],[0,0,1,1,0],[1,1,1,1,0],[1,1,1,1,1]] },                 // B8
-      { pts:4, reward:'L3b',  shape:[[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]] },                            // B9
-      { pts:4, reward:'L3b',  shape:[[0,0,1,0,0],[0,1,1,0,0],[0,1,1,0,0],[0,1,1,1,0],[1,1,1,1,1]] },    // B10
-
-      { pts:4, reward:'L3a', shape:[[0,0,0,0,1],[1,1,1,1,1],[1,1,1,1,1],[0,0,1,1,1]] },                 // B11
-      { pts:4, reward:'L3a', shape:[[0,0,0,1,1],[0,0,1,1,1],[0,1,1,1,1],[1,1,1,1,1]] },                 // B12
-
-      { pts:3, reward:'L2',  shape:[[1,1,1,0,0],[1,1,1,1,1]] },                                         // B13
-      { pts:3, reward:'L3b', shape:[[0,1,1,0],[1,1,1,0],[1,1,1,1]] },                                   // B14
-      { pts:3, reward:'L3a', shape:[[1,0,0],[1,1,0],[1,1,1],[1,1,1]] },                                 // B15
-      { pts:3, reward:'L4d', shape:[[1,0,0,0],[1,1,0,0],[1,1,1,0],[1,1,1,1]] },                         // B16
-      { pts:3, reward:'L4a', shape:[[1,1,0],[1,1,1],[1,1,1],[1,1,0]] },                                 // B17
-      { pts:3, reward:'L4c', shape:[[1,1,0],[1,1,0],[1,1,1],[1,1,1]] },                                 // B18
-      { pts:3, reward:'L4b', shape:[[0,1,0],[1,1,0],[1,1,0],[1,1,1],[1,1,1]] },                         // B19
-      { pts:3, reward:'L4e', shape:[[0,1,1],[1,1,1],[1,1,1],[1,1,1]] }                                  // B20
+      { pts:5, reward:'L1',  shape:[[0,0,1,1,0],[1,1,1,1,0],[0,1,1,1,1],[0,1,1,1,1],[0,1,1,0,0]] },
+      { pts:5, reward:'L1',  shape:[[1,1,1,1,0],[0,1,1,1,1],[0,1,1,1,1],[1,1,1,1,0]] },
+      { pts:5, reward:'L1',  shape:[[0,0,1,0,0],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]] },
+      { pts:5, reward:'L1',  shape:[[0,1,1,1,1],[0,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0]] },
+      { pts:5, reward:'L1',  shape:[[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0]] },
+      { pts:4, reward:'L1',  shape:[[0,1,0],[0,1,1],[1,1,1],[1,1,1],[1,1,1]] },
+      { pts:4, reward:'L2',  shape:[[0,1,0,0,0],[0,1,1,1,0],[0,1,1,1,0],[1,1,1,1,1]] },
+      { pts:4, reward:'L2',  shape:[[0,0,0,1,0],[0,0,1,1,0],[1,1,1,1,0],[1,1,1,1,1]] },
+      { pts:4, reward:'L3b', shape:[[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]] },
+      { pts:4, reward:'L3b', shape:[[0,0,1,0,0],[0,1,1,0,0],[0,1,1,0,0],[0,1,1,1,0],[1,1,1,1,1]] },
+      { pts:4, reward:'L3a', shape:[[0,0,0,0,1],[1,1,1,1,1],[1,1,1,1,1],[0,0,1,1,1]] },
+      { pts:4, reward:'L3a', shape:[[0,0,0,1,1],[0,0,1,1,1],[0,1,1,1,1],[1,1,1,1,1]] },
+      { pts:3, reward:'L2',  shape:[[1,1,1,0,0],[1,1,1,1,1]] },
+      { pts:3, reward:'L3b', shape:[[0,1,1,0],[1,1,1,0],[1,1,1,1]] },
+      { pts:3, reward:'L3a', shape:[[1,0,0],[1,1,0],[1,1,1],[1,1,1]] },
+      { pts:3, reward:'L4d', shape:[[1,0,0,0],[1,1,0,0],[1,1,1,0],[1,1,1,1]] },
+      { pts:3, reward:'L4a', shape:[[1,1,0],[1,1,1],[1,1,1],[1,1,0]] },
+      { pts:3, reward:'L4c', shape:[[1,1,0],[1,1,0],[1,1,1],[1,1,1]] },
+      { pts:3, reward:'L4b', shape:[[0,1,0],[1,1,0],[1,1,0],[1,1,1],[1,1,1]] },
+      { pts:3, reward:'L4e', shape:[[0,1,1],[1,1,1],[1,1,1],[1,1,1]] }
     ];
 
   return { 
@@ -837,10 +854,17 @@ function shuffle(arr) {
   return arr;
 }
 
+function logMarketState() {
+  const w = G.whiteMarket.filter(p=>p).map(p=>`#${p.id}[${PIECES.find(x=>x.id===p.reward)?.name || p.reward}]`).join(', ');
+  const b = G.blackMarket.filter(p=>p).map(p=>`#${p.id}[${PIECES.find(x=>x.id===p.reward)?.name || p.reward}]`).join(', ');
+  log('log_market_state', [w || '-', b || '-'], 'info');
+}
+
 // ═══════════════════════════════════════════════════════
 //  GAME STATE & LOGGING
 // ═══════════════════════════════════════════════════════
 let G = {};
+let nextStartPlayer = localStorage.getItem('projectL_nextStart') ? parseInt(localStorage.getItem('projectL_nextStart')) : 0;
 
 function initGame() {
   document.getElementById('game-over').classList.remove('open');
@@ -851,14 +875,14 @@ function initGame() {
   shuffle(white); const activeBlackCards = shuffle(black).slice(0, 12); 
 
   G = {
-    round: 1, currentPlayer: 0, endGameTriggered: false, finalRound: -1, isGameOver: false,
+    round: 1, currentPlayer: nextStartPlayer, endGameTriggered: false, finalRound: -1, isGameOver: false,
     actionsLeft: 3, masterUsed: false, turnId: 0, turnAutoEnding: false, logs: [], blackTakenThisTurn: 0,
     whitePile: white.slice(4), blackPile: activeBlackCards.slice(4),
     whiteMarket: white.slice(0,4).map(p=>({...p,placed:{}})),
     blackMarket: activeBlackCards.slice(0,4).map(p=>({...p,placed:{}})),
     players: [
-      { name: '', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:false },
-      { name: 'AI', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:true },
+      { name: '', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:false, stats: {upgrades:0, master:0} },
+      { name: 'AI', score:0, supply:{L1:1,L2:1}, puzzles:[], completedPuzzles: [], isAI:true, stats: {upgrades:0, master:0} },
     ],
     reserve: { L1:13, L2:13, L3a:15, L3b:15, L4a:15, L4b:15, L4c:15, L4d:15, L4e:15 },
     selectedPiece: null, rotation: 0, flip: false,
@@ -867,15 +891,24 @@ function initGame() {
     undoSnapshot: null
   };
 
+  localStorage.setItem('projectL_nextStart', (nextStartPlayer + 1) % 2);
+  nextStartPlayer = (nextStartPlayer + 1) % 2;
+
   log('log_start', [], 'good');
+  logMarketState();
   render();
+
+  if (G.players[G.currentPlayer].isAI) {
+    setTimeout(aiTurn, 800);
+  } else {
+    log('player_turn', [G.players[G.currentPlayer].name ? G.players[G.currentPlayer].name : t('player_name')]);
+  }
 }
 
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 function log(key, args=[], type='') {
   G.logs.push({ key, args, type });
-  if (G.logs.length > 30) G.logs.shift();
   renderLog();
 }
 
@@ -930,7 +963,7 @@ function showRewardToast(piece) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SAVE / LOAD SYSTEM
+//  SAVE / LOAD / STATS SYSTEM
 // ═══════════════════════════════════════════════════════
 function saveGame() {
   localStorage.setItem('projectL_save', JSON.stringify(G));
@@ -956,12 +989,103 @@ function loadGame() {
   }
 }
 
+function openStats() {
+  const saved = JSON.parse(localStorage.getItem('projectL_stats') || '{"best":null,"last":null}');
+  let html = '';
+  if (saved.best) {
+    html += `<div class="stat-row" onclick="showLogDetails('best')">
+      <strong>🏆 Nejlepší výsledek:</strong> ${saved.best.players[0].score} bodů (${saved.best.date})
+    </div>`;
+  }
+  if (saved.last) {
+    html += `<div class="stat-row" onclick="showLogDetails('last')">
+      <strong>🎮 Poslední hra:</strong> ${saved.last.players[0].score} bodů (${saved.last.date})
+    </div>`;
+  }
+  if (!html) html = "<div style='color:var(--muted)'>Zatím nejsou k dispozici žádné statistiky (hry ještě nebyly dohrány).</div>";
+  document.getElementById('stats-content').innerHTML = html;
+  document.getElementById('stats-modal').classList.add('open');
+}
+
+function showLogDetails(type) {
+  const saved = JSON.parse(localStorage.getItem('projectL_stats'));
+  const data = saved[type];
+  let html = `<h3 style="color:var(--accent);margin-bottom:12px;">Detail hry (${data.date})</h3>`;
+  
+  data.players.forEach(p => {
+    html += `<div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px;">`;
+    html += `<div style="font-family:'Bebas Neue',sans-serif; font-size:1.4rem; color:var(--gold); margin-bottom:8px;">${p.name}: ${p.score} bodů</div>`;
+    html += `<div style="font-size:0.9rem; margin-bottom:8px; color:var(--muted);">
+               Vylepšení: <span style="color:var(--text)">${p.upgrades}×</span> | 
+               Master akce: <span style="color:var(--text)">${p.master}×</span> | 
+               Odečteno za úpravy: <span style="color:var(--text)">-${p.ftDeducted}</span>
+             </div>`;
+    
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.85rem; color:var(--muted); text-transform:uppercase;">Konečná zásoba: `;
+    
+    let totalPieces = 0, totalTypes = 0;
+    let pieceGridHtml = `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">`;
+    let hasSupply = false;
+    PIECES.forEach(piece => {
+      const cnt = p.supply[piece.id] || 0;
+      if (cnt > 0) {
+        hasSupply = true;
+        totalPieces += cnt;
+        totalTypes++;
+        pieceGridHtml += `<div class="piece-token"><div style="opacity:0.8">${renderPieceSVG(piece, 16)}</div><div class="count">${cnt}</div></div>`;
+      }
+    });
+    if (!hasSupply) pieceGridHtml += `<span style="font-size:0.85rem; color:var(--muted)">Prázdná</span>`;
+    pieceGridHtml += `</div>`;
+    
+    html += `${totalPieces} / ${totalTypes}</strong><br>${pieceGridHtml}</div>`;
+
+    let totalCards = p.completedPuzzles ? p.completedPuzzles.length : 0;
+    let totalDiff = 0;
+    if (p.completedPuzzles) {
+        p.completedPuzzles.forEach(puz => {
+            totalDiff += ((puz.actualPiecesUsed || 0) - (puz.minPieces || getMinPieces(puz)));
+        });
+    }
+    let diffStr = totalDiff > 0 ? '+' + totalDiff : (totalDiff === 0 ? '±0' : totalDiff);
+
+    html += `<div><strong style="font-size:0.85rem; color:var(--muted); text-transform:uppercase;">Složené kartičky (${totalCards} | stav ${diffStr}):</strong></div>`;
+    html += `<div class="puzzle-row" style="margin-top:8px; gap:8px;">`;
+    if (p.completedPuzzles && p.completedPuzzles.length > 0) {
+      p.completedPuzzles.forEach(puz => {
+        const actual = puz.actualPiecesUsed || 0;
+        const minP = puz.minPieces || getMinPieces(puz);
+        const diff = actual - minP;
+        const diffColor = diff > 0 ? '#ef4444' : (diff < 0 ? '#22c55e' : 'var(--muted)');
+        const diffSign = diff > 0 ? '+' : (diff === 0 ? '±' : '');
+        
+        html += `<div class="my-puzzle-card" style="min-width:110px; padding:8px; position:relative;" title="${t('stat_min_used_diff')}">
+          <div style="position:absolute; top:4px; left:6px; font-size:0.75rem; color:var(--muted); font-weight:bold;">#${puz.id}</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--gold); margin-left:auto;">${puz.pts}★</span>
+          </div>
+          ${renderPuzzleGrid(puz, true)}
+          <div style="font-size:0.85rem; margin-top:8px; text-align:center; font-weight:600;">
+            ${minP} | ${actual} | <span style="color:${diffColor}">${diffSign}${diff}</span>
+          </div>
+        </div>`;
+      });
+    } else {
+      html += `<div style="font-size:0.85rem; color:var(--muted)">Žádné složené kartičky.</div>`;
+    }
+    html += `</div></div>`;
+  });
+
+  html += `<button class="modal-btn-close" onclick="openStats()">Zpět na přehled</button>`;
+  document.getElementById('stats-content').innerHTML = html;
+}
+
 // ═══════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════
 function render() {
   renderHeader(); renderReserve(); renderMarket(); renderMyPuzzles();
-  renderAiPuzzles(); renderPlayers(); renderActions(); renderMySupply(); renderLog();
+  renderAiPuzzles(); renderPlayers(); renderActions(); renderMySupply(); renderAiSupply(); renderLog();
   renderUndoButton();
 
   document.getElementById('white-deck-title').innerHTML = t('white_deck');
@@ -1016,12 +1140,14 @@ function renderMarketRow(elId, market, type) {
     if (puzzle) {
       slot.className = 'puzzle-slot' + (type==='black' && G.endGameTriggered && G.blackTakenThisTurn >= 1 ? ' locked' : '');
       slot.innerHTML = `
-        ${renderPuzzleGrid(puzzle, true)}
+        <div style="position:absolute; top:4px; left:6px; font-size:0.75rem; color:var(--muted); font-weight:bold;">#${puzzle.id}</div>
+        <div style="margin-top: 10px;">${renderPuzzleGrid(puzzle, true)}</div>
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:6px">
           <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold);letter-spacing:1px">${puzzle.pts}★</span>
           ${puzzle.reward ? `<span style="display:flex;align-items:center">${renderRewardMini(puzzle.reward)}</span>` : '<span></span>'}
         </div>`;
       slot.onclick = (e) => { e.stopPropagation(); doTakePuzzle(type, i); };
+      bindDoubleTapScroll(slot, `market_${type}_${i}`);
     } else {
       slot.className = 'puzzle-slot empty-slot'; slot.textContent = '—';
     }
@@ -1059,22 +1185,13 @@ function renderMyPuzzles() {
     const card = document.createElement('div');
     card.className = 'my-puzzle-card';
     card.id = `puzzle-card-${idx}`;
+    card.style.position = 'relative';
+    bindDoubleTapScroll(card, `mypuz_${idx}`);
 
-    // 👉 NOVÉ: klik na kartičku puzzle
-    card.onclick = () => {
-
-      // Otevři panel zásob, pokud je sbalený
-      const content = document.getElementById('supply-content');
-      const icon = document.getElementById('supply-icon');
-
-      if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.textContent = '▼';
-      }
-
-      // Na mobilu odscrolluj na sekci „Moje zásoby“
-      scrollToMobile('supply-panel');
-    };
+    const indexDiv = document.createElement('div');
+    indexDiv.style.cssText = "position:absolute; top:4px; left:6px; font-size:0.75rem; color:var(--muted); font-weight:bold; z-index: 10;";
+    indexDiv.textContent = `#${puzzle.id}`;
+    card.appendChild(indexDiv);
 
     const cellCount = puzzle.shape.flat().filter(v => v === 1).length;
     const placedCount = Object.keys(puzzle.placed || {}).length;
@@ -1082,6 +1199,7 @@ function renderMyPuzzles() {
     const pct = Math.round(placedCount / cellCount * 100);
 
     const gridDiv = document.createElement('div');
+    gridDiv.style.marginTop = "14px";
     gridDiv.innerHTML = renderInteractivePuzzleGrid(puzzle, idx);
     card.appendChild(gridDiv);
 
@@ -1094,13 +1212,11 @@ function renderMyPuzzles() {
         <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold);letter-spacing:1px">
           ${puzzle.pts}★
         </span>
-
         <span style="font-size:.68rem;color:${remaining===0?'var(--gold)':'var(--muted)'};align-self:center">
           ${remaining===0 ? t('done') : remaining + ' ' + t('left')}
         </span>
-
         ${puzzle.reward
-          ? `<span style="display:flex;align-items:center">${renderRewardMini(puzzle.reward)}</span>`
+          ? `<span style="display:flex;align-items:center;transform:scale(0.9);transform-origin:bottom right;">${renderRewardMini(puzzle.reward)}</span>`
           : '<span></span>'}
       </div>`;
 
@@ -1133,7 +1249,22 @@ function renderAiPuzzles() {
   if (!ai.puzzles.length) { el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">${t('ai_no_puzzles')}</span>`; return; }
   ai.puzzles.forEach(puzzle => {
     const div = document.createElement('div'); div.className = 'my-puzzle-card ai';
-    div.innerHTML = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">${puzzle.pts} ${t('pts_full')||''}</div>` + renderPuzzleGrid(puzzle, true);
+    div.style.position = 'relative';
+    
+    const totalCells = puzzle.shape.flat().filter(v => v === 1).length;
+    const placedCount = Object.keys(puzzle.placed || {}).length;
+    const pct = Math.round(placedCount / totalCells * 100);
+
+    div.innerHTML = `
+      <div style="position:absolute; top:4px; left:6px; font-size:0.75rem; color:var(--muted); font-weight:bold;">#${puzzle.id}</div>
+      <div style="margin-top: 14px;">${renderPuzzleGrid(puzzle, true)}</div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin:6px 0 4px">
+        <div style="height:100%;width:${pct}%;background:var(--muted);border-radius:2px;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--muted);">${puzzle.pts}★</span>
+        ${puzzle.reward ? `<span style="display:flex;align-items:center;transform:scale(0.85);transform-origin:bottom right;">${renderRewardMini(puzzle.reward)}</span>` : '<span></span>'}
+      </div>`;
     el.appendChild(div);
   });
 }
@@ -1144,12 +1275,6 @@ function renderPlayers() {
     const pName = p.isAI ? 'AI' : t('player_name');
     const card = document.createElement('div');
     card.className = 'player-card' + (i===G.currentPlayer?' active':' ai');
-    if(G.isGameOver) {
-        card.classList.add('clickable-endgame');
-        card.style.cursor = 'pointer';
-        card.onclick = () => showCompletedPuzzles(i);
-        card.title = t('view_state');
-    }
     const supplyCount = Object.values(p.supply).reduce((a,b)=>a+b,0);
     card.innerHTML = `
       <div class="player-name">
@@ -1159,30 +1284,6 @@ function renderPlayers() {
       <div style="font-size:.75rem;color:var(--muted)">${t('supply')}: ${supplyCount} · Puzzles: ${p.puzzles.length}/4</div>`;
     el.appendChild(card);
   });
-}
-
-function showCompletedPuzzles(pIdx) {
-  if (!G.isGameOver) return;
-  const p = G.players[pIdx];
-  const pName = p.isAI ? 'AI' : t('player_name');
-  document.getElementById('completed-modal-title').textContent = t('completed_puzzles_title', pName);
-  let html = `<div style="font-size:0.9rem; margin-bottom:12px; color:var(--gold)">${t('ft_deducted', G.ftPiecesUsed[pIdx] || 0)}</div>`;
-  html += `<div class="puzzle-row" style="max-height: 50vh; overflow-y: auto;">`;
-  if (p.completedPuzzles && p.completedPuzzles.length > 0) {
-      p.completedPuzzles.forEach(puz => {
-          html += `<div class="my-puzzle-card" style="min-width: 120px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-                <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--gold);">${puz.pts}★</span>
-            </div>
-            ${renderPuzzleGrid(puz, true)}
-          </div>`;
-      });
-  } else {
-      html += `<div style="color:var(--muted); font-size:0.85rem">${t('empty')}</div>`;
-  }
-  html += `</div>`;
-  document.getElementById('completed-modal-content').innerHTML = html;
-  document.getElementById('completed-modal').classList.add('open');
 }
 
 function renderActions() {
@@ -1251,6 +1352,19 @@ function renderMySupply() {
     el.appendChild(tok);
   });
   if (!any && !G.selectedPiece) el.innerHTML += `<span style="color:var(--muted);font-size:.8rem">${t('no_supply')}</span>`;
+}
+
+function renderAiSupply() {
+  const el = document.getElementById('ai-supply'); const ai = G.players[1]; el.innerHTML = '';
+  let any = false;
+  PIECES.forEach(piece => {
+    const cnt = ai.supply[piece.id]||0; if (cnt===0) return; any = true;
+    const tok = document.createElement('div'); tok.className = 'piece-token';
+    tok.innerHTML = `<div style="opacity:.7">${renderPieceSVG(piece, 22)}</div><div class="count">${cnt}</div>`;
+    tok.style.cursor = 'default';
+    el.appendChild(tok);
+  });
+  if (!any) el.innerHTML += `<span style="color:var(--muted);font-size:.8rem">${t('no_supply')}</span>`;
 }
 
 function renderPieceSVG(piece, cellSize) {
@@ -1388,9 +1502,6 @@ function confirmNewGame() {
   if (window.confirm(t('confirm_new_game'))) initGame();
 }
 
-// Snapshots the whole game state right before a human action mutates it, so a
-// mis-tap (e.g. placing a piece on the wrong cell on mobile) can be reverted.
-// Only the single most recent action is kept — each new action overwrites it.
 function saveUndoSnapshot() {
   if (!G.players || G.players[G.currentPlayer].isAI) return;
   const masterIndices = Array.from(G.masterPlacedPuzzles || []).map(p => G.players[G.currentPlayer].puzzles.indexOf(p)).filter(i => i !== -1);
@@ -1434,8 +1545,8 @@ function doTakePuzzle(type, idx) {
   const newPuzzle = clone(puzzle); newPuzzle.placed = {}; player.puzzles.push(newPuzzle);
   if (pile.length > 0) { const next = pile.shift(); next.placed = {}; market[idx] = next; } else { market[idx] = null; }
   if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
-  spendAction(); log('log_take_p', [puzzle.pts], 'good'); 
-  scrollToMobile('supply-panel');
+  spendAction(); 
+  log('log_take_p', [puzzle.pts, puzzle.id, getMinPieces(puzzle), PIECES.find(p=>p.id===puzzle.reward)?.name || puzzle.reward], 'good'); 
   checkTurnEnd();
 }
 function doTakeBlindPuzzle(type) {
@@ -1446,8 +1557,8 @@ function doTakeBlindPuzzle(type) {
   saveUndoSnapshot();
   const next = pile.shift(); next.placed = {}; player.puzzles.push(next);
   if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
-  spendAction(); log('log_take_b', [next.pts], 'good'); 
-  scrollToMobile('supply-panel');
+  spendAction(); 
+  log('log_take_b', [next.pts, next.id, getMinPieces(next), PIECES.find(p=>p.id===next.reward)?.name || next.reward], 'good'); 
   checkTurnEnd();
 }
 function doTakeLevel1() {
@@ -1468,7 +1579,10 @@ function promptUpgrade() {
     openModal(t('modal_upg_target', piece.name), options, (target) => {
       closeModal(); saveUndoSnapshot(); player.supply[piece.id]--; if (player.supply[piece.id]<=0) delete player.supply[piece.id];
       G.reserve[piece.id] = (G.reserve[piece.id]||0)+1; player.supply[target.id] = (player.supply[target.id]||0)+1; G.reserve[target.id]--;
-      spendAction(); log('log_upg', [target.name], 'good'); checkTurnEnd();
+      player.stats.upgrades++; 
+      spendAction(); 
+      log('log_upg', [piece.name, target.name], 'good');
+      checkTurnEnd();
     });
   });
 }
@@ -1509,13 +1623,14 @@ function handleCellClick(puzzleIdx, row, col) {
   }
   saveUndoSnapshot();
   if (G.masterMode) {
-    if (G.masterPlacedPuzzles.has(puzzle)) { log('log_err_master_placed', [puzzleIdx+1], 'warn'); return; }
+    if (G.masterPlacedPuzzles.has(puzzle)) { log('log_err_master_placed', [puzzle.id], 'warn'); return; }
     G.masterPlacedPuzzles.add(puzzle);
   } else if (!G.finishingTouches) spendAction();
 
   keys.forEach(key => { puzzle.placed[key] = G.selectedPiece; });
   player.supply[G.selectedPiece]--; if (player.supply[G.selectedPiece]<=0) delete player.supply[G.selectedPiece];
-  log('log_place', [piece.name, puzzleIdx+1], 'good');
+  
+  log('log_place', [piece.name, puzzle.id], 'good');
 
   if (G.finishingTouches) {
     player.score -= 1; G.ftPiecesUsed[G.currentPlayer] = (G.ftPiecesUsed[G.currentPlayer]||0) + 1;
@@ -1539,6 +1654,7 @@ function doMaster() {
   const available = PIECES.filter(p=>(player.supply[p.id]||0)>0); if (!available.length) return;
   saveUndoSnapshot();
   G.masterUsed = true; spendAction(); G.masterMode = true; G.masterPlacedPuzzles = new Set(); G.masterTotalPuzzles = player.puzzles.length; G.selectedPiece = null;
+  player.stats.master++; 
   log('log_master', [], 'good'); render();
 }
 function checkPuzzleCompletion(player, idx, skipReward=false) {
@@ -1547,10 +1663,18 @@ function checkPuzzleCompletion(player, idx, skipReward=false) {
     if (!player.isAI && !G.isGameOver) { const card = document.getElementById(`puzzle-card-${idx}`); if (card) card.classList.add('puzzle-complete-flash'); }
     player.score += puzzle.pts; log('log_finish', [puzzle.pts], 'good');
     const usedPieces = {}; Object.values(puzzle.placed).forEach(pid => usedPieces[pid] = (usedPieces[pid]||0) + 1);
+    
+    let actualPiecesUsed = 0;
     Object.keys(usedPieces).forEach(pid => {
-      const piece = PIECES.find(p => p.id === pid); const count = Math.round(usedPieces[pid] / (piece ? piece.cells.length : 1));
+      const piece = PIECES.find(p => p.id === pid); 
+      const count = Math.round(usedPieces[pid] / (piece ? piece.cells.length : 1));
+      actualPiecesUsed += count;
       player.supply[pid] = (player.supply[pid]||0) + count;
     });
+
+    puzzle.actualPiecesUsed = actualPiecesUsed;
+    puzzle.minPieces = getMinPieces(puzzle);
+
     if (puzzle.reward && !skipReward) {
       let rewardPiece = PIECES.find(p => p.id === puzzle.reward && (G.reserve[p.id]||0) > 0);
       if (!rewardPiece) {
@@ -1564,7 +1688,6 @@ function checkPuzzleCompletion(player, idx, skipReward=false) {
         log('log_reward', [rewardPiece.name], 'good'); if (!player.isAI && !G.isGameOver) showRewardToast(rewardPiece);
       }
     }
-    // Uložit do dokončených
     player.completedPuzzles.push(clone(puzzle));
     player.puzzles.splice(idx, 1);
   }
@@ -1586,23 +1709,26 @@ function endTurn() {
   for (let i = endingPlayer.puzzles.length - 1; i >= 0; i--) checkPuzzleCompletion(endingPlayer, i);
   
   G.currentPlayer = (G.currentPlayer + 1) % G.players.length;
+  
   if (G.currentPlayer === 0) {
     G.round++;
+    logMarketState();
     if (G.endGameTriggered && G.round > G.finalRound) { startFinishingTouches(); return; }
     if (G.endGameTriggered && G.round === G.finalRound) showFinalToast(t('final_round_start'));
   }
+  
   G.actionsLeft = 3; G.masterUsed = false; G.blackTakenThisTurn = 0; render();
   
   if (G.players[G.currentPlayer].isAI) {
     setTimeout(aiTurn, 800);
   } else {
     log('player_turn', [G.players[G.currentPlayer].name ? G.players[G.currentPlayer].name : t('player_name')]);
-    scrollToMobile('market-panel');
+    setTimeout(() => scrollToMobile('market-panel'), 150);
   }
 }
 
 // ═══════════════════════════════════════════════════════
-//  FINISHING TOUCHES (Poslední úpravy) — end-game phase
+//  FINISHING TOUCHES (Poslední úpravy)
 // ═══════════════════════════════════════════════════════
 function startFinishingTouches() {
   const anyone = G.players.some(p => p.puzzles.length > 0 && Object.values(p.supply).some(v=>v>0));
@@ -1631,10 +1757,6 @@ function finishPlayerTouches() {
   G.ftPlayerIdx++; advanceFinishingTouches();
 }
 
-// Solves a puzzle with the given piece supply, optionally capped to maxPieces placements
-// (used to check whether a completion is achievable within the actions remaining this turn).
-// Pieces are tried largest-first so that, among valid solutions, fewer/bigger pieces are
-// preferred over many small ones — this maximizes net score gain (points - pieces used).
 function tryCompletePuzzleWithSupply(puzzle, supply, maxPieces = Infinity) {
   const h = puzzle.h, w = puzzle.w;
   const filled = Array.from({length:h}, (_,r)=>Array.from({length:w},(_,c)=> puzzle.shape[r][c]!==1 || !!(puzzle.placed||{})[`${r}_${c}`]));
@@ -1681,10 +1803,6 @@ function tryCompletePuzzleWithSupply(puzzle, supply, maxPieces = Infinity) {
 
 function aiFinishingTouches() {
   const ai = G.players[G.ftPlayerIdx];
-  // Item 6: only ever spend pieces here for a positive net gain (points - pieces used).
-  // Item 5: when several puzzles are completable with the current stock, finish the one
-  // with the best net gain first, so scarce pieces go to the highest-value completion
-  // rather than whichever puzzle happened to have the fewest empty cells.
   let improved = true;
   while (improved) {
     improved = false;
@@ -1716,6 +1834,30 @@ function endGame() {
   G.isGameOver = true;
   document.getElementById('app').classList.add('game-over-state');
   
+  G.players.forEach(p => {
+    log('log_summary', [p.name || (p.isAI ? 'AI' : t('player_name')), p.stats.upgrades, p.stats.master], 'good');
+  });
+
+  const currentStats = {
+    date: new Date().toLocaleString(),
+    players: G.players.map(p => ({
+      name: p.name || (p.isAI ? 'AI' : t('player_name')),
+      score: p.score,
+      upgrades: p.stats.upgrades,
+      master: p.stats.master,
+      supply: clone(p.supply),
+      completedPuzzles: clone(p.completedPuzzles),
+      ftDeducted: G.ftPiecesUsed[G.players.indexOf(p)] || 0
+    }))
+  };
+  const saved = JSON.parse(localStorage.getItem('projectL_stats') || '{"best":null,"last":null}');
+  saved.last = currentStats;
+  const pScore = currentStats.players[0].score;
+  if (!saved.best || pScore > saved.best.players[0].score) {
+     saved.best = currentStats;
+  }
+  localStorage.setItem('projectL_stats', JSON.stringify(saved));
+  
   const el = document.getElementById('final-scores'); el.innerHTML = '';
   const sorted = [...G.players].sort((a,b)=>b.score-a.score);
   sorted.forEach((p,i) => {
@@ -1730,286 +1872,603 @@ function endGame() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  AI LOGIC
+//  AI LOGIC - HUMAN LIKE ENGINE BUILDING MODEL
 // ═══════════════════════════════════════════════════════
-// Returns placement keys for a piece somewhere in the puzzle (any valid orientation), or null. Does not mutate.
-function findPlacementForPiece(puzzle, piece) {
+
+function calculateEngineValue(supply) {
+  let ev = 0;
+  PIECES.forEach(p => {
+    ev += (supply[p.id] || 0) * p.level;
+  });
+  return ev;
+}
+
+function hasPieceLevel(supply, level) {
+  return PIECES.some(p => p.level === level && (supply[p.id] || 0) > 0);
+}
+
+function countHighLevelPieces(supply) {
+  return PIECES
+    .filter(p => p.level >= 3)
+    .reduce((s, p) => s + (supply[p.id] || 0), 0);
+}
+
+function getAiPhase(ai) {
+  const ev = calculateEngineValue(ai.supply);
+  const hasL4 = hasPieceLevel(ai.supply, 4);
+  const hasL3 = hasPieceLevel(ai.supply, 3);
+
+  if (ev >= 12 && hasL4 && hasL3) return 2;
+  return 1;
+}
+
+function getAllPlacementsForPiece(puzzle, piece) {
+  const placements = [];
+
   for (const flip of [false, true]) {
     const base = flip ? mirrorCells(piece.cells) : piece.cells;
-    for (let rot=0; rot<4; rot++) {
-      let cells = base; for (let i=0;i<rot;i++) cells = rotateCells(cells);
-      for (let r=0; r<puzzle.h; r++) {
-        for (let c=0; c<puzzle.w; c++) {
-          const keys = cells.map(([dr,dc])=>`${r+dr}_${c+dc}`); let valid = true;
+
+    for (let rot = 0; rot < 4; rot++) {
+      let cells = base;
+      for (let i = 0; i < rot; i++) cells = rotateCells(cells);
+
+      for (let r = 0; r < puzzle.h; r++) {
+        for (let c = 0; c < puzzle.w; c++) {
+
+          const keys = cells.map(([dr, dc]) => `${r + dr}_${c + dc}`);
+          let valid = true;
+
           for (const key of keys) {
-            const [kr,kc] = key.split('_').map(Number);
-            if (kr<0||kr>=puzzle.h||kc<0||kc>=puzzle.w || puzzle.shape[kr][kc]!==1 || (puzzle.placed||{})[key]) { valid=false; break; }
-          }
-          if (valid) return keys;
-        }
-      }
-    }
-  }
-  return null;
-}
-function pieceFitsSomewhere(puzzle, piece) { return findPlacementForPiece(puzzle, piece) !== null; }
-function tryPlacePieceOnPuzzle(puzzle, piece) {
-  const keys = findPlacementForPiece(puzzle, piece);
-  if (!keys) return false;
-  puzzle.placed = puzzle.placed || {}; keys.forEach(key => puzzle.placed[key] = piece.id);
-  return true;
-}
-function estimateFillableCells(supply, puzzle) {
-  const h = puzzle.h, w = puzzle.w; const filled = Array.from({length:h}, (_,r)=>Array.from({length:w},(_,c)=>puzzle.shape[r][c]!==1));
-  const stock = {...supply}; let placedCells = 0; let progress = true;
-  while (progress) {
-    progress = false; const avail = PIECES.filter(p=>(stock[p.id]||0)>0).sort((a,b)=>b.cells.length-a.cells.length);
-    for (const piece of avail) {
-      if ((stock[piece.id]||0) <= 0) continue; let placed = false;
-      for (const flip of [false, true]) {
-        if (placed) break;
-        const base = flip ? mirrorCells(piece.cells) : piece.cells;
-        for (let rot=0; rot<4 && !placed; rot++) {
-          let cells = base; for (let i=0;i<rot;i++) cells = rotateCells(cells);
-          for (let r=0; r<h && !placed; r++) {
-            for (let c=0; c<w && !placed; c++) {
-              let ok = true; for (const [dr,dc] of cells) { const rr=r+dr, cc=c+dc; if (rr<0||rr>=h||cc<0||cc>=w||filled[rr][cc]) { ok=false; break; } }
-              if (ok) { cells.forEach(([dr,dc])=>filled[r+dr][c+dc]=true); placedCells += cells.length; stock[piece.id]--; placed = true; progress = true; }
+            const [kr, kc] = key.split('_').map(Number);
+
+            if (
+              kr < 0 || kr >= puzzle.h ||
+              kc < 0 || kc >= puzzle.w ||
+              puzzle.shape[kr][kc] !== 1 ||
+              (puzzle.placed || {})[key]
+            ) {
+              valid = false;
+              break;
             }
           }
+
+          if (valid) {
+            placements.push({ keys, rot, flip });
+          }
         }
       }
     }
-  } return placedCells;
-}
-// Item 5: endgame helpers — is the black pile already exhausted (countdown running),
-// and are we in the actual Final Round (last normal turn before Finishing Touches)?
-function isEndgamePhase() { return !!G.endGameTriggered; }
-function isFinalRound() { return G.endGameTriggered && G.round === G.finalRound; }
+  }
 
-// Rough strategic value of a reward piece: higher level / bigger pieces are worth more
-// because they unlock harder puzzles later.
-function estimateRewardValue(rewardId) {
-  if (!rewardId) return 0;
-  const piece = PIECES.find(p => p.id === rewardId);
-  if (!piece) return 0;
-  return piece.level * 0.5 + (piece.cells.length - 1) * 0.15;
+  return placements;
 }
 
-// Item 2: puzzle value = points + reward value − size penalty, plus a feasibility bonus
-// for puzzles the AI can already substantially fill with pieces it currently holds.
-// The size penalty is increased once the endgame countdown has started (item 5), since
-// large puzzles taken late are unlikely to ever get finished.
-function scorePuzzleForAI(ai, puzzle) {
-  const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
-  const fillable = estimateFillableCells(ai.supply, puzzle);
-  const feasibility = totalCells > 0 ? fillable / totalCells : 0;
 
-  const rewardValue = estimateRewardValue(puzzle.reward);
-  const sizePenalty = totalCells * (isEndgamePhase() ? 0.32 : 0.2);
-  const baseValue = puzzle.pts + rewardValue - sizePenalty;
+function placementCompactnessScore(puzzle, keys) {
+  // simulace po umístění
+  const occupied = new Set(Object.keys(puzzle.placed || {}));
+  keys.forEach(k => occupied.add(k));
 
-  return baseValue + feasibility * 2.4;
+  let score = 0;
+
+  // sousedství (4-směrné)
+  for (const key of keys) {
+    const [r, c] = key.split('_').map(Number);
+
+    const neigh = [
+      [r-1,c],[r+1,c],[r,c-1],[r,c+1]
+    ];
+
+    neigh.forEach(([nr,nc]) => {
+      const nk = `${nr}_${nc}`;
+      if (occupied.has(nk)) score += 2;
+    });
+  }
+
+  // penalizace izolovaných děr
+  for (let r = 0; r < puzzle.h; r++) {
+    for (let c = 0; c < puzzle.w; c++) {
+
+      if (puzzle.shape[r][c] !== 1) continue;
+
+      const k = `${r}_${c}`;
+      if (occupied.has(k)) continue;
+
+      let blocked = 0;
+
+      [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc]) => {
+        if (
+          nr < 0 || nr >= puzzle.h ||
+          nc < 0 || nc >= puzzle.w ||
+          puzzle.shape[nr][nc] !== 1 ||
+          occupied.has(`${nr}_${nc}`)
+        ) blocked++;
+      });
+
+      // kapsa = budoucí problém
+      if (blocked >= 3) score -= 12;
+      else if (blocked == 2) score -= 4;
+    }
+  }
+
+  return score;
 }
 
-// Item 3: figure out which piece ids would actually help (fit somewhere in) the AI's
-// current puzzles, weighted toward puzzles that are closer to completion so the AI
-// doesn't manufacture pieces for a puzzle it just started.
-function getNeededPieceWeights(ai) {
-  const weights = {};
-  ai.puzzles.forEach(puzzle => {
+
+function findPlacementForPiece(puzzle, piece) {
+  const all = getAllPlacementsForPiece(puzzle, piece);
+  return all.length ? all[0].keys : null;
+}
+
+function pieceFitsSomewhere(puzzle, piece) {
+  return findPlacementForPiece(puzzle, piece) !== null;
+}
+
+function isFinalRound() {
+  return G.endGameTriggered && G.round === G.finalRound;
+}
+
+// Odhad chybějících dílků
+function estimateMissingPieces(ai, puzzle) {
+  const need = getMinPieces(puzzle);
+  const available = Object.values(ai.supply).reduce((a,b)=>a+b,0);
+  return Math.max(0, need - available);
+}
+
+// Hodnocení puzzle
+function scorePuzzleForAI(ai, puzzle, phase) {
+  const minPieces = getMinPieces(puzzle);
+  const rewardLevel = PIECES.find(p => p.id === puzzle.reward)?.level || 0;
+  const isMissing = (ai.supply[puzzle.reward] || 0) === 0;
+  const missing = estimateMissingPieces(ai, puzzle);
+
+  if (phase === 1) {
+    let score = 0;
+    score += rewardLevel * 6;
+    score += puzzle.pts * 2;
+    score -= minPieces * 2;
+    score -= missing * 4;
+
+    if (isMissing) score += 8;
+    if (minPieces === 1) score += 6;
+    if (rewardLevel >= 3) score += 10;
+
+    return score;
+  }
+
+  let score = 0;
+  score += puzzle.pts * 8;
+  score += rewardLevel * 3;
+  score -= minPieces * 2;
+  score -= missing * 8;
+
+  if (isMissing) score += 6;
+  if (missing === 0) score += 12;
+
+  return score;
+}
+
+// Vylepšení jen pokud má okamžitý efekt
+function chooseAIUpgradeStrict(ai) {
+  let best = null;
+  let bestGain = -Infinity;
+
+  for (const puzzle of ai.puzzles) {
     const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
-    const remaining = totalCells - Object.keys(puzzle.placed||{}).length;
-    if (remaining <= 0) return;
-    const urgency = 1 / (remaining + 1);
-    PIECES.forEach(piece => {
-      if (pieceFitsSomewhere(puzzle, piece)) weights[piece.id] = (weights[piece.id]||0) + urgency;
-    });
-  });
-  return weights;
+    const placedCount = Object.keys(puzzle.placed||{}).length;
+    const missingCells = totalCells - placedCount;
+
+    for (const target of PIECES.filter(p => p.cells.length === missingCells)) {
+      if ((ai.supply[target.id] || 0) > 0) continue;
+      if (!findPlacementForPiece(puzzle, target)) continue;
+
+      const lowerPieces = PIECES.filter(
+        p => p.level === target.level - 1 &&
+             (ai.supply[p.id] || 0) > 0 &&
+             (G.reserve[target.id] || 0) > 0
+      );
+
+      if (lowerPieces.length === 0) continue;
+
+      const gain = target.level * 10 - lowerPieces[0].level * 5;
+
+      if (gain > bestGain) {
+        bestGain = gain;
+        best = { piece: lowerPieces[0], target };
+      }
+    }
+  }
+
+  return bestGain > 0 ? best : null;
 }
 
-// Item 3: only upgrade a piece into one the current puzzles can actually use, and avoid
-// giving up a piece that is itself still needed, unless we have spares of it.
-function chooseAIUpgrade(ai) {
-  const weights = getNeededPieceWeights(ai);
-  const owned = PIECES.filter(p => (ai.supply[p.id]||0) > 0 && p.level < 4);
-  let best = null, bestScore = -Infinity;
-  owned.forEach(piece => {
-    const targets = PIECES.filter(p => p.level === piece.level + 1 && (G.reserve[p.id]||0) > 0);
-    targets.forEach(target => {
-      let score = (weights[target.id]||0) * 3 - (weights[piece.id]||0) * 2;
-      if ((ai.supply[piece.id]||0) > 1) score += 0.4; // spare copies are safer to convert
-      if (score > bestScore) { bestScore = score; best = { piece, target }; }
-    });
-  });
-  // Skip the upgrade entirely if every option would strip a piece we actually need
-  // without producing anything useful in return — better to just take an L1 piece.
-  if (best && bestScore < -1) return null;
-  return best;
+function willActionExhaustWithoutCompletion(ai, cost, placements) {
+  const currentTotal = Object.values(ai.supply).reduce((a,b)=>a+b,0);
+  if (currentTotal - cost > 0) return false;
+
+  for (const p of placements) {
+    const totalCells = p.puzzle.shape.flat().filter(v=>v===1).length;
+    const placedNow = Object.keys(p.puzzle.placed||{}).length;
+    if (placedNow + p.keys.length >= totalCells) return false;
+  }
+  return true;
 }
 
-// Item 4: the MASTER action forces exactly one placement into every currently active
-// puzzle, so it's only useful (and safe) when a distinct valid piece can be found for
-// each of the AI's puzzles at once — i.e. when it genuinely hits multiple puzzles.
+// MASTER jen pokud něco dokončí
 function planMasterAssignment(ai) {
   if (ai.puzzles.length < 2) return null;
-  const stock = {...ai.supply};
-  const piecesDesc = [...PIECES].sort((a,b)=>b.cells.length-a.cells.length);
+
+  const stock = { ...ai.supply };
   const assignment = [];
-  function assign(i) {
-    if (i >= ai.puzzles.length) return true;
-    const puzzle = ai.puzzles[i];
-    const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
-    if (totalCells - Object.keys(puzzle.placed||{}).length <= 0) return false;
-    for (const piece of piecesDesc) {
-      if ((stock[piece.id]||0) <= 0) continue;
-      const keys = findPlacementForPiece(puzzle, piece);
-      if (!keys) continue;
-      stock[piece.id]--;
-      assignment.push({ puzzleIdx: i, pieceId: piece.id, keys });
-      if (assign(i+1)) return true;
-      assignment.pop(); stock[piece.id]++;
+
+  const puzzles = ai.puzzles
+    .map((p,i)=>({p,i}))
+    .sort((a,b)=>{
+      const ra = a.p.shape.flat().filter(v=>v===1).length - Object.keys(a.p.placed||{}).length;
+      const rb = b.p.shape.flat().filter(v=>v===1).length - Object.keys(b.p.placed||{}).length;
+      return ra - rb;
+    });
+
+  for (const {p,i} of puzzles) {
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const piece of PIECES.filter(pp => (stock[pp.id]||0) > 0)) {
+      const placements = getAllPlacementsForPiece(p, piece);
+      if (!placements.length) continue;
+
+      let bestPlacement = null;
+      let bestPlacementScore = -Infinity;
+
+      for (const pl of placements) {
+        const s = placementCompactnessScore(p, pl.keys);
+        if (s > bestPlacementScore) {
+          bestPlacementScore = s;
+          bestPlacement = pl;
+        }
+      }
+
+      const keys = bestPlacement.keys;
+      const total = p.shape.flat().filter(v=>v===1).length;
+      const placed = Object.keys(p.placed||{}).length;
+      const remainingAfter = total - (placed + keys.length);
+
+      let score = 0;
+      if (remainingAfter === 0) score += 100;
+      
+      score += keys.length * 5;
+      score -= piece.level * 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = { puzzleIdx:i, puzzle:p, pieceId:piece.id, keys };
+      }
     }
-    return false;
+
+    if (best) {
+      stock[best.pieceId]--;
+      assignment.push(best);
+    }
   }
-  return assign(0) ? assignment : null;
+
+  const completed = assignment.filter(a => {
+    const total = a.puzzle.shape.flat().filter(v=>v===1).length;
+    const placed = Object.keys(a.puzzle.placed||{}).length;
+    return placed + a.keys.length >= total;
+  }).length;
+  
+  // nikdy nepoužívej MASTER na více než 2 puzzle
+  assignment.sort((a,b)=>{
+    const ta = a.puzzle.shape.flat().filter(v=>v===1).length;
+    const pa = Object.keys(a.puzzle.placed||{}).length;
+    const ca = (pa + a.keys.length >= ta) ? 1 : 0;
+    const tb = b.puzzle.shape.flat().filter(v=>v===1).length;
+    const pb = Object.keys(b.puzzle.placed||{}).length;
+    const cb = (pb + b.keys.length >= tb) ? 1 : 0;
+    // dokončená puzzle první
+    return cb - ca;
+  });
+
+  if (assignment.length > 2) {
+    assignment.length = 2;
+  }
+
+  if (completed === 0) return null;
+  if (willActionExhaustWithoutCompletion(ai, assignment.length, assignment)) return null;
+
+  return assignment;
 }
+
 function aiUseMaster(ai, assignment) {
   G.masterUsed = true;
+
   assignment.forEach(({puzzleIdx, pieceId, keys}) => {
     const puzzle = ai.puzzles[puzzleIdx];
     keys.forEach(key => { puzzle.placed[key] = pieceId; });
-    ai.supply[pieceId]--; if (ai.supply[pieceId]<=0) delete ai.supply[pieceId];
+    ai.supply[pieceId]--;
+    if (ai.supply[pieceId] <= 0) delete ai.supply[pieceId];
+    
+    // Zalogování vkladu při Master akci
+    log('log_ai_place', [PIECES.find(p=>p.id===pieceId).name, puzzle.id], 'good');
   });
+
+  ai.stats.master++;
   log('log_ai_master', [assignment.length], 'good');
-  for (let i = ai.puzzles.length - 1; i >= 0; i--) checkPuzzleCompletion(ai, i);
+
+  for (let i = ai.puzzles.length - 1; i >= 0; i--) {
+    checkPuzzleCompletion(ai, i);
+  }
 }
 
+// Hlavní tah AI
 function aiTurn() {
   if (G.isGameOver) return;
-  const ai = G.players[1]; log('log_ai_turn'); let actions = 3;
+  const ai = G.players[1];
+  log('log_ai_turn');
+
+  let actions = 3;
 
   function aiAct() {
-    if (actions <= 0 || G.isGameOver) { endTurn(); return; }
+    if (actions <= 0 || G.isGameOver) {
+      endTurn();
+      return;
+    }
 
-    // ── Item 4: MASTER ACTION ──────────────────────────────────────────
-    // Only worth spending an action on when it can validly place a distinct piece
-    // into every one of the AI's active puzzles at once (2+), i.e. it genuinely
-    // advances multiple puzzles simultaneously instead of just one.
+    // 1. MASTER
     if (!G.masterUsed && ai.puzzles.length >= 2) {
       const assignment = planMasterAssignment(ai);
       if (assignment) {
         aiUseMaster(ai, assignment);
-        actions--; render(); setTimeout(aiAct, 500); return;
+        actions--;
+        render();
+        setTimeout(aiAct, 500);
+        return;
       }
     }
 
-    // ── Item 1: PLAN PUZZLE COMPLETION ─────────────────────────────────
-    // Before placing pieces greedily, check whether any active puzzle can be fully
-    // completed with the current supply within the actions left this turn. Among
-    // puzzles that can be finished, prefer the most valuable one (points + reward).
+    // 2. Dokonči puzzle
     if (ai.puzzles.length > 0 && Object.values(ai.supply).some(v=>v>0)) {
-      let bestPlan = null, bestPuzzle = null, bestScore = -Infinity;
+      let bestPlan = null;
+      let bestPuzzle = null;
+      let bestScore = -Infinity;
+
       ai.puzzles.forEach(puzzle => {
         const totalCells = puzzle.shape.flat().filter(v=>v===1).length;
         if (totalCells - Object.keys(puzzle.placed||{}).length <= 0) return;
+
         const plan = tryCompletePuzzleWithSupply(puzzle, ai.supply, actions);
         if (!plan) return;
-        const value = puzzle.pts + estimateRewardValue(puzzle.reward);
-        const score = value - plan.length * 0.05; // tie-break toward fewer pieces needed
-        if (score > bestScore) { bestScore = score; bestPlan = plan; bestPuzzle = puzzle; }
+
+        const rewardLevel = PIECES.find(p => p.id === puzzle.reward)?.level || 0;
+        const completedCount = ai.puzzles.filter(p => {
+          const total = p.shape.flat().filter(v=>v===1).length;
+          const placed = Object.keys(p.placed||{}).length;
+          return total - placed <= plan.length;
+        }).length;
+
+        const score = puzzle.pts * 10
+          + rewardLevel * 5
+          - plan.length * 8
+          + (plan.length === 1 ? 20 : 0)
+          + completedCount * 25;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestPlan = plan;
+          bestPuzzle = puzzle;
+        }
       });
 
       if (bestPlan) {
         const step = bestPlan[0];
-        step.cells.forEach(([r,c]) => { bestPuzzle.placed[`${r}_${c}`] = step.pieceId; });
-        ai.supply[step.pieceId]--; if (ai.supply[step.pieceId]<=0) delete ai.supply[step.pieceId];
+        step.cells.forEach(([r,c]) => {
+          bestPuzzle.placed[`${r}_${c}`] = step.pieceId;
+        });
+        ai.supply[step.pieceId]--;
+        if (ai.supply[step.pieceId] <= 0) delete ai.supply[step.pieceId];
+
         const pIdx = ai.puzzles.indexOf(bestPuzzle);
         if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx);
-        actions--; render(); setTimeout(aiAct, 400); return;
+        
+        log('log_ai_place', [PIECES.find(p=>p.id===step.pieceId).name, bestPuzzle.id], 'good');
+
+        actions--;
+        render();
+        setTimeout(aiAct, 400);
+        return;
+      }
+    }
+
+    // 3. Upgrade
+    const upgradeChoice = chooseAIUpgradeStrict(ai);
+    if (upgradeChoice) {
+      const { piece, target } = upgradeChoice;
+      ai.supply[piece.id]--;
+      if (ai.supply[piece.id] <= 0) delete ai.supply[piece.id];
+
+      G.reserve[piece.id] = (G.reserve[piece.id] || 0) + 1;
+      ai.supply[target.id] = (ai.supply[target.id] || 0) + 1;
+      G.reserve[target.id]--;
+
+      ai.stats.upgrades++;
+      actions--;
+
+      log('log_ai_upg', [piece.name, target.name]);
+      render();
+      setTimeout(aiAct, 400);
+      return;
+    }
+
+    // 4. Vezmi puzzle
+    // ZÁSADNÍ OMEZENÍ: AI smí držet max 2 rozehrané kartičky.
+    if (ai.puzzles.length < 2) {
+      const phase = getAiPhase(ai);
+      const blackLimitReached = G.endGameTriggered && G.blackTakenThisTurn >= 1;
+      const finalRd = isFinalRound();
+      
+      const aiPieceCount = Object.values(ai.supply).reduce((a,b)=>a+b,0);
+      const aiTotalCells = Object.entries(ai.supply).reduce((sum, [id, count]) => {
+        const p = PIECES.find(x => x.id === id);
+        return sum + (p ? p.cells.length * count : 0);
+      }, 0);
+
+      let candidates = [];
+
+      if (phase === 1) {
+        G.whiteMarket.forEach((p,i)=>{
+          if(p) candidates.push({p, type:'white', idx:i, score:scorePuzzleForAI(ai,p,phase)});
+        });
+      } else {
+        if (!blackLimitReached) {
+          G.blackMarket.forEach((p,i)=>{
+            if(p) candidates.push({p, type:'black', idx:i, score:scorePuzzleForAI(ai,p,phase)});
+          });
+        }
+        G.whiteMarket.forEach((p,i)=>{
+          if(p) candidates.push({p, type:'white', idx:i, score:scorePuzzleForAI(ai,p,phase)});
+        });
       }
 
-      // Fallback: nothing is fully completable this turn — make the single most useful
-      // placement instead (closest-to-done puzzle, biggest piece that fits).
+      // dokud nemá motor, neber těžké černé
+      if (countHighLevelPieces(ai.supply) < 3) {
+        candidates = candidates.filter(c => !(c.type==='black' && c.p.pts >= 4));
+      }
+
+      const heavyBlackOwned = ai.puzzles.filter(p => p.color === 'black' && p.pts >= 4).length;
+      if (heavyBlackOwned >= 1) {
+        candidates = candidates.filter(c => !(c.type==='black' && c.p.pts >= 4));
+      }
+
+      // FILTR 1: Vezme pouze ty, které vyžadují tolik dílků, co AI už vlastní, popř. max 1 dílek navíc
+      candidates = candidates.filter(c => getMinPieces(c.p) <= aiPieceCount + 1);
+
+      // FILTR 2 (Ochrana proti uváznutí): AI nevezme puzzle s obřím počtem kostiček, pokud na to nemá kapacitu
+      candidates = candidates.filter(c => {
+        const puzzleCells = c.p.shape.flat().filter(v=>v===1).length;
+        // Povolí kartičku, pokud má AI alespoň (počet kostiček kartičky - 3) kostiček v zásobě.
+        return puzzleCells <= Math.max(5, aiTotalCells + 3); 
+      });
+
+      const viable = finalRd
+        ? candidates.filter(c => tryCompletePuzzleWithSupply(c.p, ai.supply, Math.max(0, actions - 1)))
+        : candidates;
+
+      viable.sort((a,b)=>b.score-a.score);
+      const best = viable[0] || null;
+
+      if (best) {
+        const newP = clone(best.p);
+        newP.placed = {};
+        ai.puzzles.push(newP);
+
+        const pile = best.type==='black' ? G.blackPile : G.whitePile;
+        const market = best.type==='black' ? G.blackMarket : G.whiteMarket;
+
+        if (pile.length > 0) {
+          const n = pile.shift();
+          n.placed = {};
+          market[best.idx] = n;
+        } else {
+          market[best.idx] = null;
+        }
+
+        if (best.type==='black') {
+          checkEndGameTrigger();
+          G.blackTakenThisTurn++;
+        }
+
+        actions--;
+        log('log_ai_take', [best.p.pts, best.p.id, getMinPieces(best.p), PIECES.find(p=>p.id===best.p.reward)?.name || best.p.reward]);
+        render();
+        setTimeout(aiAct, 400);
+        return;
+      }
+    }
+
+    // 5. Umístění dílku - ekonomické
+    if (ai.puzzles.length > 0) {
       const order = [...ai.puzzles].sort((a,b) => {
         const rA = a.shape.flat().filter(v=>v===1).length - Object.keys(a.placed||{}).length;
         const rB = b.shape.flat().filter(v=>v===1).length - Object.keys(b.placed||{}).length;
         return rA - rB;
       });
-      let placedPieceId = null; let placedPuzzle = null;
+
+      let bestMove = null;
+      let bestMoveScore = -Infinity;
+
       for (const puzzle of order) {
-        for (const piece of PIECES.filter(p=>(ai.supply[p.id]||0)>0).sort((a,b)=>b.cells.length-a.cells.length)) {
-          if (tryPlacePieceOnPuzzle(puzzle, piece)) { placedPieceId = piece.id; placedPuzzle = puzzle; break; }
-        } if (placedPieceId) break;
+        for (const piece of PIECES.filter(p => (ai.supply[p.id] || 0) > 0)) {
+          const placements = getAllPlacementsForPiece(puzzle, piece);
+          if (!placements.length) continue;
+
+          for (const placement of placements) {
+            const keys = placement.keys;
+            if (willActionExhaustWithoutCompletion(ai, 1, [{ puzzle, keys }])) continue;
+
+            const totalCells = puzzle.shape.flat().filter(v => v === 1).length;
+            const placedNow = Object.keys(puzzle.placed || {}).length;
+            const remainingAfter = totalCells - (placedNow + keys.length);
+
+            let score = 0;
+            if (remainingAfter === 0) score += 100;
+
+            score += keys.length * 5;
+            score -= piece.cells.length * 2;
+            if (piece.level >= 4) score -= 8;
+            if (piece.level === 3) score -= 4;
+
+            score += (totalCells - remainingAfter);
+            score += placementCompactnessScore(puzzle, keys);
+
+            if (score > bestMoveScore) {
+              bestMoveScore = score;
+              bestMove = { puzzle, piece, keys };
+            }
+          }
+        }
       }
-      if (placedPieceId) {
-        ai.supply[placedPieceId]--; if (ai.supply[placedPieceId]<=0) delete ai.supply[placedPieceId];
-        const pIdx = ai.puzzles.indexOf(placedPuzzle);
+
+      if (bestMove) {
+        bestMove.keys.forEach(key => {
+          bestMove.puzzle.placed[key] = bestMove.piece.id;
+        });
+        ai.supply[bestMove.piece.id]--;
+        if (ai.supply[bestMove.piece.id] <= 0) delete ai.supply[bestMove.piece.id];
+
+        const pIdx = ai.puzzles.indexOf(bestMove.puzzle);
         if (pIdx !== -1) checkPuzzleCompletion(ai, pIdx);
-        actions--; render(); setTimeout(aiAct, 400); return;
+        
+        actions--;
+        log('log_ai_place', [bestMove.piece.name, bestMove.puzzle.id], 'good');
+        
+        render();
+        setTimeout(aiAct, 400);
+        return;
       }
     }
 
-    // ── Items 2 & 5: TAKE PUZZLE ───────────────────────────────────────
-    // Value-based selection (points + reward - size), with an endgame safeguard:
-    // in the Final Round, only take a puzzle if it can actually be finished with
-    // the actions remaining — there's no future turn left to fall back on.
-    if (ai.puzzles.length < 3) {
-      const blackLimitReached = G.endGameTriggered && G.blackTakenThisTurn >= 1;
-      const enoughPieces = (Object.values(ai.supply).reduce((a,b)=>a+b,0) >= 6 || Object.keys(ai.supply).filter(k=>(ai.supply[k]||0)>0).length >= 4);
-      const finalRd = isFinalRound();
-
-      const candidates = [];
-      G.whiteMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'white', idx:i, score: scorePuzzleForAI(ai,p) }); });
-      if (enoughPieces && !blackLimitReached) G.blackMarket.forEach((p,i) => { if (p) candidates.push({ p, type:'black', idx:i, score: scorePuzzleForAI(ai,p) }); });
-
-      const viable = finalRd
-        ? candidates.filter(cand => tryCompletePuzzleWithSupply(cand.p, ai.supply, Math.max(0, actions - 1)))
-        : candidates;
-      viable.sort((a,b)=>b.score-a.score); const best = viable[0] || null;
-
-      const pOpts = []; if (!finalRd && G.whitePile.length>0) pOpts.push('white'); if (!finalRd && enoughPieces && !blackLimitReached && G.blackPile.length>0) pOpts.push('black');
-      if ((!best || best.score < 0.6) && pOpts.length && Math.random() < 0.35) {
-        const type = pOpts[Math.floor(Math.random()*pOpts.length)]; const pile = type === 'black' ? G.blackPile : G.whitePile;
-        const next = pile.shift(); next.placed = {}; ai.puzzles.push(next);
-        if (type === 'black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
-        actions--; log('log_ai_blind', [type === 'black' ? t('black_label') : t('white_label')]); render(); setTimeout(aiAct, 400); return;
-      }
-      if (best) {
-        const newP = clone(best.p); newP.placed = {}; ai.puzzles.push(newP);
-        const pile = best.type==='black' ? G.blackPile : G.whitePile; const market = best.type==='black' ? G.blackMarket : G.whiteMarket;
-        if (pile.length>0) { const n=pile.shift(); n.placed={}; market[best.idx]=n; } else market[best.idx]=null;
-        if (best.type==='black') { checkEndGameTrigger(); G.blackTakenThisTurn++; }
-        actions--; log('log_ai_take', [best.p.pts]); render(); setTimeout(aiAct, 400); return;
-      }
+    // 6. L1
+    if ((G.reserve['L1']||0) > 0) {
+      ai.supply['L1'] = (ai.supply['L1'] || 0) + 1;
+      G.reserve['L1']--;
+      actions--;
+      log('log_ai_1');
+      render();
+      setTimeout(aiAct, 400);
+      return;
     }
 
-    // ── Item 3: SMART UPGRADE ──────────────────────────────────────────
-    // Only convert a piece if the result is actually useful for a current puzzle
-    // (and doesn't strip away a piece the AI still needs for something else).
-    const upgradeChoice = chooseAIUpgrade(ai);
-    if (upgradeChoice) {
-      const { piece, target } = upgradeChoice;
-      ai.supply[piece.id]--; if (ai.supply[piece.id]<=0) delete ai.supply[piece.id]; G.reserve[piece.id]=(G.reserve[piece.id]||0)+1;
-      ai.supply[target.id]=(ai.supply[target.id]||0)+1; G.reserve[target.id]--;
-      actions--; log('log_ai_upg'); render(); setTimeout(aiAct, 400); return;
-    }
-
-    if ((G.reserve['L1']||0)>0) {
-      ai.supply['L1']=(ai.supply['L1']||0)+1; G.reserve['L1']--; actions--; log('log_ai_1'); render(); setTimeout(aiAct, 400); return;
-    }
     endTurn();
   }
+
   setTimeout(aiAct, 600);
 }
+
 
 // ═══════════════════════════════════════════════════════
 //  START
 // ═══════════════════════════════════════════════════════
 initGame();
-
-// Na PC (širší obrazovka) sekce Zásobník dílků startuje sbalená
 togglePanel('reserve-content', 'reserve-icon');
 
 </script>
