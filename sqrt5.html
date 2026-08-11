@@ -1628,9 +1628,11 @@ function loadGame(){
   try{
     const d = JSON.parse(raw);
     size = d.size;
-     document.getElementById('boardTotalArea').textContent = ((size - 1) * (size - 1)).toFixed(2);
+    document.getElementById('boardTotalArea').textContent = ((size - 1) * (size - 1)).toFixed(2);
     updateBoardIcon();
-    difficulty = d.difficulty;
+    difficulty = Number(d.difficulty);
+    if(![0,1,2].includes(difficulty)) difficulty = 1;
+    updateDiffIcon();
     board = d.board;
     moveNumber = d.moveNumber;
     currentPlayer = d.currentPlayer;
