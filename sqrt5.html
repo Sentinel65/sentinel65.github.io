@@ -481,7 +481,7 @@ canvas{
       
       <!-- Nový prostřední blok pro zobrazení celkové plochy -->
       <div style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; color: var(--muted); font-size: 12px;">
-        <span style="text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Celková plocha</span>
+        <span id="totalAreaLabel" style="text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Celková plocha</span>
         <b id="boardTotalArea" style="color: var(--text); font-size: 16px;">16.00</b>
       </div>
 
@@ -1696,7 +1696,7 @@ function applyLanguage(){
   if(ps[1]) ps[1].innerHTML = L.infoP2;
 
   // Score / log labels
-  const totalLbl = document.querySelector('#scorePanel span');
+  const totalLbl = document.getElementById('totalAreaLabel');
   if(totalLbl) totalLbl.textContent = L.totalArea;
   const logHeader = document.querySelector('#logPanel .logHeader b');
   if(logHeader) logHeader.textContent = L.gameLog;
@@ -1875,3 +1875,5 @@ updateScores();
 <div id="toast" class="toast"></div>
 </body>
 </html>
+
+
