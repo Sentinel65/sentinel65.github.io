@@ -70,6 +70,11 @@ body{
   line-height:1;
   padding:0;
 }
+#btnSize svg{
+  width: 30px;
+  height: 30px;
+  display: block;
+}
 
 /* ===== Signalizace zvolené obtížnosti ===== */
 .signalIcon{ display:block; }
@@ -81,17 +86,25 @@ body{
 /* ===== Rozložení ===== */
 .app{
   display:grid;
-  grid-template-columns:320px 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(300px, 1fr) minmax(220px, 280px);
   gap:16px;
   padding:16px;
   width:min(1400px,100%);
   margin:auto;
+  align-items: start;
 }
 
 .left-col, .right-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+
+.right-col {
+  /* Log má vyplnit dostupnou výšku a být hezky nahoře */
+  position: sticky;
+  top: 80px; /* pod toolbarem */
 }
 
 .panel{
@@ -109,6 +122,9 @@ body{
   display:flex;
   flex-direction:column;
   gap:10px;
+  justify-self: center; /* deska uprostřed prostředního sloupce */
+  width: 100%;
+  max-width: 620px;
 }
 
 h1{
@@ -217,7 +233,7 @@ canvas{
   background:var(--panel2);
   border-radius:12px;
   padding:10px;
-  max-height:300px;
+  max-height:min(520px, calc(100vh - 200px));
   overflow:auto;
   font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
   font-size:13px;
@@ -238,15 +254,24 @@ canvas{
 }
 .modal.open{display:flex;}
 .modalContent{
+  position: relative;
   width:min(760px,100%);
   max-height:90vh;
   overflow:auto;
   background:var(--panel);
   border-radius:20px;
   padding:20px;
+  padding-top: 28px; /* prostor pro absolutní křížek */
   box-shadow:0 10px 30px rgba(0,0,0,.55);
 }
 .modalContent h2{ margin-top:0; }
+
+#btnCloseHelp{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
 
 /* ===== Toast hlášky ===== */
 .toast{
@@ -271,14 +296,24 @@ canvas{
 }
 
 /* ===== Mobil (Tablet do 800px) Layout ===== */
-@media (max-width:800px){
+@media (max-width:900px){
   .app{
     display: flex;
     flex-direction: column;
+    grid-template-columns: none;
   }
   
   .left-col, .right-col {
     display: contents;
+  }
+
+  .right-col {
+    position: static;
+  }
+
+  .boardPanel {
+    max-width: 100%;
+    justify-self: stretch;
   }
 
   /* Přeskládání prvků pomocí order */
@@ -293,9 +328,50 @@ canvas{
   .toolbar{ gap:4px; padding:6px 4px; }
   .toolbtn{ width:42px; height:42px; min-width:42px; border-radius:10px; }
   #btnSize{ font-size:28px; }
+  #btnSize svg{ width:22px; height:22px; }
   #btnDiff svg{ width:20px; height:20px; }
   .toolbtn:not(#btnSize):not(#btnDiff){ font-size:18px; }
   .score-val { font-size: 18px; }
+
+  .app{
+    display:flex;
+    flex-direction:column;
+    grid-template-columns:none;
+    width:100%;
+    padding:8px 0;
+  }
+
+  .left-col,
+  .right-col{
+    display:contents;
+  }
+
+  .right-col{
+    position:static;
+  }
+
+/* Skóre + informace o tahu */
+  #scorePanel{
+    order:1;
+    width:100%;
+    margin:0;
+    border-radius:16px;
+  }
+
+  /* Hrací deska */
+  .boardPanel{
+    order:2;
+    width:100%;
+    max-width:100%;
+  }
+
+  /* Herní deník */
+  #logPanel{
+    order:3;
+    width:100%;
+    margin:0;
+    border-radius:16px;
+  }
 }
 </style>
 </head>
@@ -307,7 +383,7 @@ canvas{
   <button id="btnSave" class="toolbtn" title="Uložit hru">💾</button>
   <button id="btnLoad" class="toolbtn" title="Načíst hru">📂</button>
   <button id="btnNew" class="toolbtn" title="Nová hra">♻️</button>
-   <button id="btnSize" class="toolbtn" title="Velikost desky" aria-label="Velikost desky">⚄</button>
+  <button id="btnSize" class="toolbtn" title="Velikost desky" aria-label="Velikost desky"></button>
   <button id="btnDiff" class="toolbtn" title="Obtížnost AI" aria-label="Obtížnost AI">
   <svg class="signalIcon level3" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
     <rect class="bar b1" x="3"  y="14" width="4" height="7" rx="1"/>
@@ -347,14 +423,15 @@ canvas{
         <div id="scoreRed" class="score-val">0.00</div>
       </div>
     </div>
+  </div> <!-- konec levého sloupce -->
 
+  <!-- ===== Střed: hrací deska ===== -->
+  <div class="boardPanel">
+    <canvas id="board" width="600" height="600"></canvas>
+  </div>
 
-  <!-- ===== Pravý sloupec ===== -->
+  <!-- ===== Pravý sloupec: log ===== -->
   <div class="right-col">
-    <div class="boardPanel">
-      <canvas id="board" width="1000" height="1000"></canvas>
-    </div>
-
     <div id="logPanel" class="panel" style="padding:12px">
       <div class="logHeader">
         <b>Herní deník</b>
@@ -369,29 +446,20 @@ canvas{
 <!-- ===== Nápověda ===== -->
 <div id="helpModal" class="modal">
   <div class="modalContent">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-    <h2>💡 Jak hrát hru √5</h2">      
-      <button id="btnCloseHelp" class="iconBtn">✖</button>
-    </div>
-	<div class="subtitle">
+    <button id="btnCloseHelp" class="iconBtn" title="Zavřít" aria-label="Zavřít">✖</button>
+    <h2>💡 Jak hrát hru √5</h2>
+    <div class="subtitle">
       <p>The Square Root of Five</p>
-	  <p>Design and rulebook © Rio Malaschitz</p>
-     
+      <p>Design and rulebook © Rio Malaschitz</p>
     </div>
       
-	  
-      
-
-    <ul>
-      <li><b style="color:#2563eb">Ty máš modré kameny.</b></li>
-      <li><b style="color:#dc2626">AI má červené kameny.</b></li>
-    </ul>
     <hr style="border-color:#374151">
     <h4>1. Kdy se kameny spojí?</h4>
     <p> Dva kameny stejné barvy se automaticky spojí, pokud jsou od sebe vzdálené o <b>√5</b> (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.</p>
     <ul>
-      <li>táhni o 2 políčka jedním směrem,</li>
-      <li>a poté o 1 políčko kolmo.</li>
+      <li>Hráč má <b style="color:#2563eb">modré</b> kameny.</li>
+      <li>AI má <b style="color:#dc2626">červené</b> kameny.</li>
+      <li>Táhni o 2 políčka jedním směrem,</br> a poté o 1 políčko kolmo.</li>
     </ul>
     <p>Příklad pro kámen na <b>c3</b>:</p>
     <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:12px;font-family:monospace;line-height:1.4;overflow:auto">
@@ -560,7 +628,19 @@ function updateTurnIndicator(){
 }
 
 function updateBoardIcon(){
-  document.getElementById('btnSize').textContent = boardIcons[size] || '⚄';
+  // SVG kostky: 4, 5, 6 a 7 (jako 6 + středová tečka)
+  const faces = {
+    4: `<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/>`,
+    5: `<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="7" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="7" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/>`,
+    6: `<circle cx="7" cy="6" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="7" cy="12" r="2.2"/><circle cx="17" cy="12" r="2.2"/><circle cx="7" cy="18" r="2.2"/><circle cx="17" cy="18" r="2.2"/>`,
+    7: `<circle cx="7" cy="6" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="7" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="17" cy="12" r="2.2"/><circle cx="7" cy="18" r="2.2"/><circle cx="17" cy="18" r="2.2"/>`
+  };
+  const dots = faces[size] || faces[5];
+  document.getElementById('btnSize').innerHTML =
+    `<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <g fill="currentColor">${dots}</g>
+    </svg>`;
 }
 
 function toast(msg){
@@ -586,7 +666,7 @@ let gameLog = [];
 const scoreBlueEl = document.getElementById('scoreBlue');
 const scoreRedEl = document.getElementById('scoreRed');
 const logEl = document.getElementById('gameLog');
-const boardIcons = { 4: '⚃', 5: '⚄', 6: '⚅' };
+/* ikony velikosti desky se kreslí v updateBoardIcon() jako SVG kostky */
 
 function log(text){
   gameLog.unshift(text);
@@ -617,7 +697,7 @@ document.getElementById('btnCopyLog').onclick = async ()=>{
 };
 
 document.getElementById('btnSize').onclick = () => {
-  size = size===4 ? 5 : size===5 ? 6 : 4;
+  size = size === 4 ? 5 : size === 5 ? 6 : size === 6 ? 7 : 4;
   updateBoardIcon();
   newGame();
 };
@@ -654,12 +734,18 @@ function newGame(){
   if(currentPlayer===2) setTimeout(aiMove, 400);
 }
 
-const letters = ['a','b','c','d','e','f'];
+const letters = ['a','b','c','d','e','f','g'];
 const knightMoves = [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
 
+function getLogicalSize(){
+  // CSS velikost canvasu (ne buffer v DPR)
+  return canvas.clientWidth || parseFloat(canvas.style.width) || 600;
+}
+
 function getMetrics() {
-  const pad = Math.min(90, canvas.width * 0.12);
-  const step = (canvas.width - pad * 2) / (size - 1);
+  const logical = getLogicalSize();
+  const pad = Math.min(90, logical * 0.12);
+  const step = (logical - pad * 2) / (size - 1);
   const stoneR = Math.min(28, step * 0.35);
   const stoneFont = Math.min(22, stoneR * 0.75);
   const coordFont = Math.min(24, pad * 0.4);
@@ -669,7 +755,7 @@ function getMetrics() {
   const highlightR = stoneR + Math.min(6, step * 0.07);
   const highlightW = Math.min(3, step * 0.04);
   
-  return { pad, step, stoneR, stoneFont, coordFont, connWidth, dotR, stoneLineW, highlightR, highlightW };
+  return { pad, step, stoneR, stoneFont, coordFont, connWidth, dotR, stoneLineW, highlightR, highlightW, logical };
 }
 
 function cellToXY(r,c){
@@ -678,12 +764,7 @@ function cellToXY(r,c){
 }
 
 function xyToCell(x,y){
-  const rect = canvas.getBoundingClientRect();
-  const sx = canvas.width / rect.width;
-  const sy = canvas.height / rect.height;
-  x *= sx;
-  y *= sy;
-  
+  // x,y jsou už v CSS pixelech relativně k canvasu (po odečtení rect.left/top)
   const { step } = getMetrics();
   let best = null;
   let bestD = Infinity;
@@ -772,9 +853,31 @@ canvas.addEventListener('click', e => {
 function resizeCanvas(){
   if(!canvas) return;
   const panel = document.querySelector('.boardPanel');
-  const w = Math.min(panel.clientWidth - 24, 900);
-  canvas.width = w;
-  canvas.height = w;
+  const availableWidth = panel.clientWidth - 24;
+
+  // Rezerva na toolbar + okraje (méně agresivní, deska může být větší)
+  const availableHeight = window.innerHeight - 100;
+
+  // Maximum pro PC / větší notebooky
+  const maxSize = 720;
+
+  const w = Math.min(availableWidth, availableHeight, maxSize);
+  // celočíselná CSS velikost = ostřejší mřížka
+  const sizePx = Math.max(280, Math.floor(w));
+
+  const dpr = window.devicePixelRatio || 1;
+
+  // CSS velikost (logické pixely)
+  canvas.style.width = sizePx + 'px';
+  canvas.style.height = sizePx + 'px';
+
+  // Skutečný bitmap buffer v nativním rozlišení displeje
+  canvas.width = Math.round(sizePx * dpr);
+  canvas.height = Math.round(sizePx * dpr);
+
+  // Všechny kreslicí souřadnice zůstávají v CSS pixelech
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
   draw();
 }
 window.addEventListener('resize', resizeCanvas);
@@ -904,18 +1007,22 @@ function drawTerritory(player, color){
 }
 
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const { pad, step, stoneR, stoneFont, coordFont, dotR, stoneLineW, highlightR, highlightW } = getMetrics();
+  const { pad, step, stoneR, stoneFont, coordFont, dotR, stoneLineW, highlightR, highlightW, logical } = getMetrics();
+  const L = logical;
+
+  ctx.clearRect(0, 0, L, L);
   
   ctx.fillStyle = 'white';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0, 0, L, L);
   
+  // Ostřejší mřížka: tenčí čára + zarovnání na půlpixel pro 1px vzhled
   ctx.strokeStyle = '#9ca3af';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.25;
+  ctx.lineCap = 'butt';
   for(let i=0;i<size;i++){
-    const p = pad + i*step;
-    ctx.beginPath(); ctx.moveTo(p,pad); ctx.lineTo(p,canvas.height-pad); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pad,p); ctx.lineTo(canvas.width-pad,p); ctx.stroke();
+    const p = Math.round(pad + i*step) + 0.5;
+    ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, L - pad); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(L - pad, p); ctx.stroke();
   }
   
   ctx.fillStyle = '#6b7280';
@@ -925,7 +1032,7 @@ function draw(){
   
   for(let c=0;c<size;c++){
     const [x] = cellToXY(0,c);
-    ctx.fillText(letters[c], x, canvas.height - Math.min(40, pad * 0.45));
+    ctx.fillText(letters[c], x, L - Math.min(40, pad * 0.45));
   }
   ctx.textAlign = 'right';
   for(let r=0;r<size;r++){
