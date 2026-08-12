@@ -86,7 +86,6 @@ body{
 /* ===== Rozložení ===== */
 .app{
   display:grid;
-  /* levý a pravý sloupec se roztáhnou stejně, střed = šířka desky → sloupce na sebe navazují */
   grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr);
   gap:16px;
   padding:16px;
@@ -104,9 +103,8 @@ body{
 }
 
 .right-col {
-  /* Log má vyplnit dostupnou výšku a být hezky nahoře */
   position: sticky;
-  top: 80px; /* pod toolbarem */
+  top: 80px;
 }
 
 .panel{
@@ -142,7 +140,7 @@ h1{
   margin-bottom:16px;
 }
 
-/* ===== Skóre panel (Nový kompaktní vzhled) ===== */
+/* ===== Skóre panel ===== */
 .score-panel {
   display: flex;
   justify-content: space-between;
@@ -176,7 +174,7 @@ h1{
 }
 
 .turnLabel.winner{
-  background:#f59e0b; /* Zlatá/oranžová pro vítěze */
+  background:#f59e0b;
   color:#111827;
   font-weight:700;
   outline:none;
@@ -263,7 +261,7 @@ canvas{
   background:var(--panel);
   border-radius:20px;
   padding:20px;
-  padding-top: 28px; /* prostor pro absolutní křížek */
+  padding-top: 28px;
   box-shadow:0 10px 30px rgba(0,0,0,.55);
 }
 .modalContent h2{ margin-top:0; }
@@ -371,14 +369,12 @@ canvas{
     justify-self: stretch;
   }
 
-  /* Přeskládání prvků pomocí order */
   #scorePanel { order: 1; }
   .boardPanel { order: 2; }
   #logPanel   { order: 3; }
   #infoPanel  { order: 4; }
 }
 
-/* ===== Mobil – užší toolbar (více tlačítek) ===== */
 @media (max-width:700px){
   .toolbar{ gap:4px; padding:6px 4px; }
   .toolbtn{ width:40px; height:40px; min-width:40px; border-radius:10px; font-size:18px; }
@@ -387,7 +383,6 @@ canvas{
   #btnLang{ font-size:20px; }
 }
 
-/* ===== Mobil (Malé displeje) ===== */
 @media (max-width:480px){
   .toolbar{ gap:3px; padding:5px 2px; }
   .toolbtn{ width:36px; height:36px; min-width:36px; border-radius:9px; font-size:16px; }
@@ -415,7 +410,6 @@ canvas{
     position:static;
   }
 
-/* Skóre + informace o tahu */
   #scorePanel{
     order:1;
     width:100%;
@@ -423,14 +417,12 @@ canvas{
     border-radius:16px;
   }
 
-  /* Hrací deska */
   .boardPanel{
     order:2;
     width:100%;
     max-width:100%;
   }
 
-  /* Herní deník */
   #logPanel{
     order:3;
     width:100%;
@@ -479,7 +471,6 @@ canvas{
         <div id="labelBlue" class="badge turnLabel"><span class="dot blue"></span></div>
       </div>
       
-      <!-- Nový prostřední blok pro zobrazení celkové plochy -->
       <div style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; color: var(--muted); font-size: 12px;">
         <span id="totalAreaLabel" style="text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Celková plocha</span>
         <b id="boardTotalArea" style="color: var(--text); font-size: 16px;">16.00</b>
@@ -490,7 +481,7 @@ canvas{
         <div id="scoreRed" class="score-val">0.00</div>
       </div>
     </div>
-  </div> <!-- konec levého sloupce -->
+  </div>
 
   <!-- ===== Střed: hrací deska ===== -->
   <div class="boardPanel">
@@ -560,7 +551,6 @@ canvas{
     <p style="margin-bottom: 20px;">Tento tvar vznikne, pokud kameny propojujete skokem koně orientovaným <strong>na výšku</strong>. Celé toto uzavřené území zabírá plochu přesně <strong>3 čtverečků</strong>.</p>
     
     <div style="text-align: center; margin: 25px 0;">
-        <!-- SVG vyrekslení hrací desky 6x6 s prostorem dole pro popisky os -->
         <svg width="360" height="380" viewBox="-30 -15 360 380" style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; max-width: 100%; height: auto;">
             <defs>
                 <marker id="arrow-y" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -571,10 +561,8 @@ canvas{
                 </marker>
             </defs>
 
-            <!-- 1. Vybarvené modré území uvnitř kosočtverce -->
             <polygon points="120,0 180,120 120,240 60,120" fill="rgba(0, 123, 255, 0.15)" stroke="#007bff" stroke-width="3" />
 
-            <!-- 2. Šedá mřížka herního plánu -->
             <g stroke="#e2e8f0" stroke-width="1.5">
                 <line x1="0" y1="0" x2="300" y2="0" /><line x1="0" y1="60" x2="300" y2="60" />
                 <line x1="0" y1="120" x2="300" y2="120" /><line x1="0" y1="180" x2="300" y2="180" />
@@ -584,51 +572,41 @@ canvas{
                 <line x1="240" y1="0" x2="240" y2="300" /><line x1="300" y1="0" x2="300" y2="300" />
             </g>
 
-            <!-- 3. Čísla souřadnic na levém okraji (0 až 5) -->
             <g font-size="12" font-family="sans-serif" fill="#94a3b8" text-anchor="middle">
                 <text x="-15" y="5">6</text><text x="-15" y="65">5</text><text x="-15" y="125">4</text>
                 <text x="-15" y="185">3</text><text x="-15" y="245">2</text><text x="-15" y="305">1</text>
             </g>
 
-            <!-- 4. Nová PÍSMENA souřadnic přesunutá DOLŮ (A až F) -->
             <g font-size="12" font-family="sans-serif" font-weight="bold" fill="#94a3b8" text-anchor="middle">
                 <text x="0" y="325">a</text><text x="60" y="325">b</text><text x="120" y="325">c</text>
                 <text x="180" y="325">d</text><text x="240" y="325">e</text><text x="300" y="325">f</text>
             </g>
 
-            <!-- 5. Žlutá trasa -->
             <path d="M 120 0 L 180 0 L 180 120" fill="none" stroke="#ffc107" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-y)" />
 
-            <!-- 6. Červená trasa -->
             <path d="M 120 0 L 120 120 L 180 120" fill="none" stroke="#dc3545" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-r)" />
 
-            <!-- 7. Modré hrací kameny -->
             <circle cx="120" cy="0" r="8" fill="#007bff" />
             <circle cx="180" cy="120" r="8" fill="#007bff" />
             <circle cx="120" cy="240" r="8" fill="#007bff" />
             <circle cx="60" cy="120" r="8" fill="#007bff" />
 
-            <!-- 8. ZALOMENÉ Popisky herních kamenů pomocí tspan -->
             <g font-size="12" font-family="sans-serif" font-weight="bold" fill="#0056b3">
-                <!-- Kámen 1 -->
                 <text x="65" y="15" text-anchor="middle">
                     <tspan x="65" dy="0">Kámen 1</tspan>
                     <tspan x="60" dy="14" font-weight="normal" font-size="11" fill="#4b5563">(souřadnice c6)</tspan>
                 </text>
                 
-                <!-- Kámen 2 -->
                 <text x="180" y="145" text-anchor="start">
                     <tspan x="180" dy="0">Kámen 2</tspan>
                     <tspan x="180" dy="14" font-weight="normal" font-size="11" fill="#4b5563">(souřadnice d4)</tspan>
                 </text>
                 
-                <!-- Kámen 3 -->
                 <text x="150" y="265" text-anchor="middle">
                     <tspan x="150" dy="0">Kámen 3</tspan>
                     <tspan x="150" dy="14" font-weight="normal" font-size="11" fill="#4b5563">(souřadnice c2)</tspan>
                 </text>
                 
-                <!-- Kámen 4 -->
                 <text x="60" y="145" text-anchor="end">
                     <tspan x="60" dy="0">Kámen 4</tspan>
                     <tspan x="60" dy="14" font-weight="normal" font-size="11" fill="#4b5563">(souřadnice b4)</tspan>
@@ -650,10 +628,8 @@ canvas{
     <h4>3. Co znamená skóre?</h4>
     <p>Skóre je <b>geometrická plocha tvého území</b>. Větší uzavřená oblast znamená více bodů.</p>
     <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:12px">
-      <b>Příklad:</b><br>
-      🔵 Ty: 2.25<br>
-      🔴 AI: 1.50
-    </div>
+      <b>Příklad:</b>&nbsp;&nbsp;2.25&nbsp;🔵&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔴&nbsp;1.50
+    </div> 
     <p>Vítězí hráč s větší celkovou plochou.</p>
     <hr style="border-color:#374151">
     <h4>4. Kdy hra končí?</h4>
@@ -727,11 +703,11 @@ const I18N = {
     infoSub: 'The Square Root of Five',
     infoP1: 'Kameny se automaticky spojí, pokud jsou od sebe vzdálené o <b>√5</b> (tah jezdcem v šachu).',
     infoP2: 'Uzavřená smyčka spojů vytvoří území. Vítězí hráč s větší celkovou plochou.',
-    diffNames: ['Lehká','Střední','Těžká'],
+    diffNames: ['lehká','střední','těžká'],
     newGameLog: (s,d) => `Nová hra: ${s}×${s}, obtížnost ${d}`,
     diffSet: (d) => `Obtížnost nastavena: ${d}`,
-    closedAreaYou: (a) => `🔵 Ty jsi uzavřel oblast ${a}`,
-    closedAreaAI: (a) => `🔴 AI uzavřela oblast ${a}`,
+    closedAreaYou: (a) => `🔵 uzavřel oblast ${a}`,
+    closedAreaAI: (a) => `🔴 uzavřel oblast ${a}`,
     gameEnd: '🏁 Konec hry',
     scoreLine: (b,r) => `Skóre: 🔵 ${b} – 🔴 ${r}`,
     saved: '💾 Hra uložena',
@@ -743,17 +719,17 @@ const I18N = {
     toastCopyFail: 'Kopírování se nezdařilo.',
     toastStatsReset: 'Statistiky vymazány.',
     statsTitle: '📊 Statistiky',
-    statsSub: '📶 obtížnost · # deska · 🏆 výhry · ✕ prohry · = remízy · ⭐ nejlepší (já : AI)',
+    statsSub: '📶 obtížnost · # deska · 🏆 výhry · ✕ prohry · = remízy · ⭐ nejlepší (Hráč : AI)',
     statsThDiff: 'Obtížnost',
     statsThSize: 'Deska',
     statsThWins: 'Výhry',
     statsThLosses: 'Prohry',
     statsThDraws: 'Remízy',
-    statsThBest: 'Nejlepší výsledek (já : AI)',
+    statsThBest: 'Nejlepší výsledek (Hráč : AI)',
     statsThLast: 'Poslední hra',
     statsReset: 'Vymazat statistiky',
     statsEmpty: 'zatím žádná',
-    statsYou: 'Ty',
+    statsYou: 'Hráč',
     statsAI: 'AI',
     helpTitle: '💡 Jak hrát hru √5',
     helpHtml: null // filled below
@@ -779,8 +755,8 @@ const I18N = {
     diffNames: ['Easy','Medium','Hard'],
     newGameLog: (s,d) => `New game: ${s}×${s}, difficulty ${d}`,
     diffSet: (d) => `Difficulty set: ${d}`,
-    closedAreaYou: (a) => `🔵 You closed area ${a}`,
-    closedAreaAI: (a) => `🔴 AI closed area ${a}`,
+    closedAreaYou: (a) => `🔵 closed area ${a}`,
+    closedAreaAI: (a) => `🔴 closed area ${a}`,
     gameEnd: '🏁 Game over',
     scoreLine: (b,r) => `Score: 🔵 ${b} – 🔴 ${r}`,
     saved: '💾 Game saved',
@@ -792,17 +768,17 @@ const I18N = {
     toastCopyFail: 'Copy failed.',
     toastStatsReset: 'Statistics cleared.',
     statsTitle: '📊 Statistics',
-    statsSub: '📶 difficulty · # board · 🏆 wins · ✕ losses · = draws · ⭐ best (you : AI)',
+    statsSub: '📶 difficulty · # board · 🏆 wins · ✕ losses · = draws · ⭐ best (Player : AI)',
     statsThDiff: 'Difficulty',
     statsThSize: 'Board',
     statsThWins: 'Wins',
     statsThLosses: 'Losses',
     statsThDraws: 'Draws',
-    statsThBest: 'Best result (you : AI)',
+    statsThBest: 'Best result (Player : AI)',
     statsThLast: 'Last game',
     statsReset: 'Clear statistics',
     statsEmpty: 'none yet',
-    statsYou: 'You',
+    statsYou: 'Player',
     statsAI: 'AI',
     helpTitle: '💡 How to play √5',
     helpHtml: null
@@ -824,7 +800,6 @@ function updateTurnIndicator(){
 }
 
 function updateBoardIcon(){
-  // SVG kostky: 4, 5, 6 a 7 (jako 6 + středová tečka)
   const faces = {
     4: `<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/>`,
     5: `<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="7" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="7" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/>`,
@@ -857,26 +832,25 @@ let moveNumber = 1;
 let currentPlayer = 1;
 let startingPlayer = 2;
 let gameOver = false;
-// gameLog: pole objektů { key, args } nebo plain string (kompatibilita se save)
 let gameLog = [];
 
 const scoreBlueEl = document.getElementById('scoreBlue');
 const scoreRedEl = document.getElementById('scoreRed');
 const logEl = document.getElementById('gameLog');
-/* ikony velikosti desky se kreslí v updateBoardIcon() jako SVG kostky */
 
 function formatLogEntry(entry){
+  const SYS_ICON = '⚙️';  
   if(typeof entry === 'string') return entry;
   const L = t();
   switch(entry.key){
-    case 'newGame': return L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]);
-    case 'diffSet': return L.diffSet(L.diffNames[entry.args[0]]);
-    case 'closedYou': return L.closedAreaYou(entry.args[0]);
-    case 'closedAI': return L.closedAreaAI(entry.args[0]);
-    case 'gameEnd': return L.gameEnd;
+    case 'newGame': return `${SYS_ICON} ` + L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]);
+    case 'diffSet': return `${SYS_ICON} ` +  L.diffSet(L.diffNames[entry.args[0]]);
+    case 'closedYou': return `${SYS_ICON} ` +  L.closedAreaYou(entry.args[0]);
+    case 'closedAI': return `${SYS_ICON} ` +  L.closedAreaAI(entry.args[0]);
+    case 'gameEnd': return `${SYS_ICON} ` +  L.gameEnd;
     case 'score': return L.scoreLine(entry.args[0], entry.args[1]);
-    case 'saved': return L.saved;
-    case 'move': return entry.args[0]; // už hotový text tahu (emoji + souřadnice)
+    case 'saved': return `${SYS_ICON} ` +  L.saved;
+    case 'move': return entry.args[0]; 
     default: return entry.args ? entry.args.join(' ') : '';
   }
 }
@@ -887,7 +861,6 @@ function refreshLogView(){
 }
 
 function log(entry){
-  // entry = string nebo {key, args}
   if(typeof entry === 'string') entry = { key: 'move', args: [entry] };
   gameLog.unshift(entry);
   refreshLogView();
@@ -898,7 +871,6 @@ function clearLog(){
   logEl.textContent = '';
 }
 
-/* ===== Statistiky (localStorage) ===== */
 function statsKey(diff, sz){ return diff + '-' + sz; }
 
 function emptySlot(){
@@ -956,7 +928,6 @@ function recordGameResult(blue, red){
 }
 
 function diffIconSvg(level){
-  // level 0/1/2 → 1/2/3 barevné čárky
   const on = '#e5e7eb';
   const off = '#4b5563';
   const c1 = level >= 0 ? on : off;
@@ -1073,7 +1044,6 @@ const letters = ['a','b','c','d','e','f','g'];
 const knightMoves = [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
 
 function getLogicalSize(){
-  // CSS velikost canvasu (ne buffer v DPR)
   return canvas.clientWidth || parseFloat(canvas.style.width) || 600;
 }
 
@@ -1099,7 +1069,6 @@ function cellToXY(r,c){
 }
 
 function xyToCell(x,y){
-  // x,y jsou už v CSS pixelech relativně k canvasu (po odečtení rect.left/top)
   const { step } = getMetrics();
   let best = null;
   let bestD = Infinity;
@@ -1152,7 +1121,8 @@ function drawConnections(player, color){
   }
 }
 
-function moveCoord(r,c){ return letters[c] + (r+1); }
+// r=0 je nahoře na canvasu → číslo 1 je dole (jako v nápovědě)
+function moveCoord(r,c){ return letters[c] + (size - r); }
 
 canvas.addEventListener('click', e => {
   if(!board || board.length!==size) return; 
@@ -1164,13 +1134,11 @@ canvas.addEventListener('click', e => {
   const [r,c] = cell;
   if(board[r][c]) return;
 
-  // 1. Zjištění plochy před položením kamene
   const prev = parseFloat(scoreBlueEl.textContent);
 
   board[r][c] = { player:1, move:moveNumber, r,c };
   log(String(moveNumber).padStart(2,'0') + ' 🔵 ' + moveCoord(r,c));
   
-  // 2. Výpočet plochy po tahu a zápis do deníku
   const terr = computeTerritory(1).area;
   if(terr > prev + 0.01) {
     log({ key: 'closedYou', args: [terr.toFixed(2)] });
@@ -1180,7 +1148,7 @@ canvas.addEventListener('click', e => {
   currentPlayer = 2;
   updateTurnIndicator();
   draw();
-  updateScores(); // 3. Přidáno pro okamžitou aktualizaci panelu se skóre
+  updateScores(); 
   
   setTimeout(()=>{ if(typeof aiMove === 'function') aiMove(); }, 250);
 });
@@ -1189,15 +1157,12 @@ function resizeCanvas(){
   if(!canvas) return;
   const panel = document.querySelector('.boardPanel');
 
-  // Šířka: ber panel, ale na desktopu i odhad středu okna (boční sloupce ≈ 2×220 + mezery)
   const fromPanel = (panel.clientWidth || 600) - 24;
-  const fromWindow = window.innerWidth - 520; // toolbar layout: levý+pravý sloupec + paddingy
+  const fromWindow = window.innerWidth - 520; 
   const availableWidth = Math.max(fromPanel, Math.min(fromWindow, fromPanel + 80));
 
-  // Výška: rezerva hlavně na toolbar
   const availableHeight = window.innerHeight - 120;
 
-  // Na NTB/PC cíl až 720×720
   const maxSize = 720;
 
   const w = Math.min(availableWidth, availableHeight, maxSize);
@@ -1268,7 +1233,6 @@ function findCycles(player){
   return cycles;
 }
 
-// Pomocná funkce: Zjištění, zda bod leží uvnitř polygonu (algoritmus Ray-casting)
 function isPointInPolygon(pt, poly) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -1282,18 +1246,15 @@ function isPointInPolygon(pt, poly) {
   return inside;
 }
 
-// Pomocná funkce: Výpočet skutečné sjednocené plochy pomocí husté mřížky
 function computeUnionArea(polys) {
   if (polys.length === 0) return 0;
   let area = 0;
-  const res = 20; // Rozlišení: 20x20 bodů na jeden čtverec herního plánu
+  const res = 20; 
   
-  // Projdeme virtuální body pokrývající celou desku
   for (let r = 0; r <= size; r += 1 / res) {
     for (let c = 0; c <= size; c += 1 / res) {
       const pt = { x: c + 0.5 / res, y: r + 0.5 / res };
       
-      // Pokud je bod uvnitř libovolného polygonu, započítáme ho a přeskočíme další
       for (const poly of polys) {
         if (isPointInPolygon(pt, poly)) {
           area += 1 / (res * res);
@@ -1309,7 +1270,6 @@ function computeTerritory(player){
   const cycles = findCycles(player);
   const polys = [];
   
-  // Posbíráme všechny dostatečně velké smyčky
   for(const cyc of cycles){
     const a = polygonArea(cyc);
     if(a > 0.4){ 
@@ -1317,7 +1277,6 @@ function computeTerritory(player){
     }
   }
   
-  // Vypočítáme celkovou plochu tak, aby se překrývající části nepočítaly dvakrát
   const area = computeUnionArea(polys);
   
   return { area, polys };
@@ -1348,7 +1307,6 @@ function draw(){
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, L, L);
   
-  // Ostřejší mřížka: tenčí čára + zarovnání na půlpixel pro 1px vzhled
   ctx.strokeStyle = '#9ca3af';
   ctx.lineWidth = 1.25;
   ctx.lineCap = 'butt';
@@ -1370,7 +1328,8 @@ function draw(){
   ctx.textAlign = 'right';
   for(let r=0;r<size;r++){
     const [,y] = cellToXY(r,0);
-    ctx.fillText(String(r+1), Math.min(55, pad * 0.65), y);
+    // 1 dole, směrem nahoru 2, 3, …
+    ctx.fillText(String(size - r), Math.min(55, pad * 0.65), y);
   }
   
   drawTerritory(1, 'rgba(37,99,235,.22)');
@@ -1387,13 +1346,12 @@ function draw(){
   }
   
   let lastStone = null;
-  let maxMove = -1; // Přidáno pro sledování nejvyššího čísla tahu
+  let maxMove = -1; 
   
   for(let r=0;r<size;r++){
     for(let c=0;c<size;c++){
       const s = board[r][c];
       if(!s) continue;
-	  // Hledání skutečně posledního tahu (nejvyšší s.move)
       if(s.move > maxMove) {
         maxMove = s.move;
         lastStone = s;
@@ -1417,7 +1375,7 @@ function draw(){
   
   if(lastStone){
     const [x,y] = cellToXY(lastStone.r,lastStone.c);
-    ctx.strokeStyle = '#00e600'; // Změněno na sytě zelenou
+    ctx.strokeStyle = '#00e600'; 
     ctx.lineWidth = highlightW;
     ctx.beginPath(); ctx.arc(x,y,highlightR,0,Math.PI*2); ctx.stroke();
   }
@@ -1463,59 +1421,128 @@ function endGame(){
   recordGameResult(s.blue, s.red);
 }
 
-
-
 function emptyCells(){
   const arr = [];
   for(let r=0;r<size;r++) for(let c=0;c<size;c++) if(!board[r][c]) arr.push({r,c});
   return arr;
 }
 
-// Rychlá heuristika pro Minimax (optimalizováno pro výkon)
-function fastEvaluate() {
-  const edges1 = getEdges(1).length;
-  const edges2 = getEdges(2).length;
-  // Přidáme obrovskou váhu za vytvoření vazby a menší za celkový počet kamenů
-  return (edges2 * 20) - (edges1 * 20);
+
+    // ULTRA RYCHLÁ HEURISTIKA – bez findCycles()
+    function fastEvaluate() {
+      let score1 = 0;
+      let score2 = 0;
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          const s = board[r][c];
+          if (!s) continue;
+
+          let local = 0;
+
+          for (const [dr, dc] of knightMoves) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+
+            const s2 = board[nr][nc];
+            if (s2 && s2.player === s.player) local++;
+          }
+
+          // každý spoj se započítá dvakrát
+          local *= 0.5;
+
+          // bonus za centrum
+          const center = (size - 1) / 2;
+          const dist = Math.abs(r - center) + Math.abs(c - center);
+          const centerBonus = (size - dist);
+
+          if (s.player === 1) score1 += local * 10 + centerBonus;
+          else score2 += local * 10 + centerBonus;
+        }
+      }
+
+      return score2 - score1;
+    }
+
+
+function candidateCells() {
+  const set = new Set();
+
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!board[r][c]) continue;
+
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+          if (!board[nr][nc]) set.add(nr + ',' + nc);
+        }
+      }
+    }
+  }
+
+  // první tah
+  if (set.size === 0) {
+    return emptyCells();
+  }
+
+  return [...set].map(k => {
+    const [r, c] = k.split(',').map(Number);
+    return { r, c };
+  });
 }
 
-// Získání seřazených možných tahů (zrychluje alfa-beta prořezávání)
+
 function getSmartMoves(player) {
-  const cells = emptyCells();
+  const cells = candidateCells();
   
   const scoredCells = cells.map(cell => {
     let score = 0;
-    // Zvýhodníme tahy blízko existujících kamenů
+    let ownConns = 0;
+    let oppConns = 0;
+    
     for(let r=0; r<size; r++) {
       for(let c=0; c<size; c++) {
         const s = board[r][c];
         if (s) {
           const distSq = (r - cell.r)**2 + (c - cell.c)**2;
           if (distSq === 5) {
-            if (s.player === player) score += 5; // Tvorba vlastní sítě
-            else score += 3; // Narušení soupeřovy sítě
+            if (s.player === player) {
+              score += 5; 
+              ownConns++;
+            } else {
+              score += 4;
+              oppConns++;
+            }
           }
         }
       }
     }
+    
+    if (ownConns >= 2) score += 50; 
+    if (oppConns >= 2) score += 40;
+
     return { cell, score };
   });
   
-  // Seřadit sestupně podle atraktivity (od nejslibnějších po prázdné rohy)
   scoredCells.sort((a, b) => b.score - a.score);
   return scoredCells.map(sc => sc.cell);
 }
 
-// Jádro Minimaxu s alfa-beta prořezáváním
+// OPRAVENÝ MINIMAX
 function minimax(depth, alpha, beta, isMaximizing) {
   if (depth === 0 || isBoardFull()) {
     return fastEvaluate();
   }
 
+  const maxBranches = size >= 7 ? 5 : 6;
+
   if (isMaximizing) {
     let maxEval = -Infinity;
-    // Oříznutí pro AI
-    const moves = getSmartMoves(2).slice(0, depth === 4 ? 15 : undefined);
+    const moves = getSmartMoves(2).slice(0, maxBranches);
     for (const m of moves) {
       board[m.r][m.c] = { player: 2, move: 0, r: m.r, c: m.c };
       const eval = minimax(depth - 1, alpha, beta, false);
@@ -1527,8 +1554,7 @@ function minimax(depth, alpha, beta, isMaximizing) {
     return maxEval;
   } else {
     let minEval = Infinity;
-    // Oříznutí pro hráče
-    const moves = getSmartMoves(1).slice(0, depth === 4 ? 15 : undefined);
+    const moves = getSmartMoves(1).slice(0, maxBranches);
     for (const m of moves) {
       board[m.r][m.c] = { player: 1, move: 0, r: m.r, c: m.c };
       const eval = minimax(depth - 1, alpha, beta, true);
@@ -1541,76 +1567,119 @@ function minimax(depth, alpha, beta, isMaximizing) {
   }
 }
 
-
-
 function aiMove() {
   if (gameOver) return;
-  
-  // Uložení stavu plochy pro zápis do logu (zde voláme pomalý reálný výpočet)
+
+  const startTime = performance.now();
+
   const prevRed = computeTerritory(2).area;
 
   const cells = emptyCells();
-  if (cells.length === 0) { endGame(); return; }
-  
-  let bestMove;
-  
-  if (difficulty === 0) {
-    // Lehká: Zcela náhodný tah
-    bestMove = cells[Math.floor(Math.random() * cells.length)];
-    } else {
-    // Střední a Těžká: Využití Minimax algoritmu
-    // ZMĚNA: Těžká obtížnost nyní počítá do hloubky 4
-    const depth = difficulty === 1 ? 2 : 4;
-    let bestScore = -Infinity;
-    
-    let moves = getSmartMoves(2);
-    // ZMĚNA: Aby hloubka 4 nezasekla prohlížeč, ořízneme výběr na 15 nejlogičtějších tahů
-    if (depth === 4) {
-      moves = moves.slice(0, 15);
-    }
-    
-    const bestMoves = [];
-
-    for (const m of moves) {
-      // Položení virtuálního kamene
-      board[m.r][m.c] = { player: 2, move: moveNumber, r: m.r, c: m.c };
-      
-      // Volání minimaxu pro prohledání větve
-      const score = minimax(depth - 1, -Infinity, Infinity, false);
-      
-      // Návrat desky do původního stavu
-      board[m.r][m.c] = null;
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMoves.length = 0;
-        bestMoves.push(m);
-      } else if (score === bestScore) {
-        bestMoves.push(m);
-      }
-    }
-    
-    // Zabraňuje deterministické nudě výběrem z rovnocenných tahů
-    bestMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  if (cells.length === 0) {
+    endGame();
+    return;
   }
 
+  let bestMove;
 
-  // Provedení finálního nejlepšího tahu do opravdové hrací desky
-  board[bestMove.r][bestMove.c] = { player: 2, move: moveNumber, r: bestMove.r, c: bestMove.c };
-  log(String(moveNumber).padStart(2, '0') + ' 🔴 ' + moveCoord(bestMove.r, bestMove.c));
+  // ===== LEHKÁ =====
+  if (difficulty === 0) {
+    bestMove = cells[Math.floor(Math.random() * cells.length)];
+
+  } else {
+
+    // ===== NASTAVENÍ HLOUBKY =====
+    const isMobile = window.innerWidth <= 700;
+    const depth = difficulty === 1 ? 2 : (isMobile ? 2 : 3);
+
+    let bestScore = -Infinity;
+
+    // kandidáti jen kolem existujících kamenů
+    let moves = getSmartMoves(2);
+
+    // další omezení větvení
+    const maxMoves = size >= 7 ? 5 : 6;
+    moves = moves.slice(0, maxMoves);
+
+    // ===== BOD 6: rychlý okamžitý silný tah =====
+    // často najde velmi dobrý tah bez minimaxu
+    for (const m of moves) {
+      board[m.r][m.c] = { player: 2, move: moveNumber, r: m.r, c: m.c };
+
+      const val = fastEvaluate();
+
+      board[m.r][m.c] = null;
+
+      if (val > 120) {
+        bestMove = m;
+        break;
+      }
+    }
+
+    // ===== MINIMAX jen pokud nebyl nalezen rychlý tah =====
+    if (!bestMove) {
+
+      const bestMoves = [];
+
+      for (const m of moves) {
+
+        board[m.r][m.c] = { player: 2, move: moveNumber, r: m.r, c: m.c };
+
+        const score = minimax(depth - 1, -Infinity, Infinity, false);
+
+        board[m.r][m.c] = null;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMoves.length = 0;
+          bestMoves.push(m);
+
+        } else if (score === bestScore) {
+          bestMoves.push(m);
+        }
+      }
+
+      bestMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    }
+
+    // pojistka
+    if (!bestMove) {
+      bestMove = moves[0] || cells[0];
+    }
+  }
+
+  const endTime = performance.now();
+  const timeMs = Math.round(endTime - startTime);
+
+  // ===== PROVEDENÍ TAHU =====
+  board[bestMove.r][bestMove.c] = {
+    player: 2,
+    move: moveNumber,
+    r: bestMove.r,
+    c: bestMove.c
+  };
+
+  log(
+    String(moveNumber).padStart(2, '0') +
+    ' 🔴 ' +
+    moveCoord(bestMove.r, bestMove.c) +
+    ` (${timeMs} ms)`
+  );
+
   moveNumber++;
-  
-  // Kontrola, zda tah vytvořil novou plochu a výpis do logu
+
+  // kontrola nově uzavřené oblasti
   const newRed = computeTerritory(2).area;
   if (newRed > prevRed + 0.01) {
     log({ key: 'closedAI', args: [newRed.toFixed(2)] });
   }
-  
+
   currentPlayer = 1;
-  updateTurnIndicator();  
+  updateTurnIndicator();
+
   draw();
   updateScores();
-  
+
   if (isBoardFull()) endGame();
 }
 
@@ -1675,7 +1744,6 @@ function applyLanguage(){
   const L = t();
   document.documentElement.lang = lang;
 
-  // Toolbar
   document.getElementById('btnSave').title = L.save;
   document.getElementById('btnLoad').title = L.load;
   document.getElementById('btnNew').title = L.newGame;
@@ -1683,13 +1751,11 @@ function applyLanguage(){
   document.getElementById('btnDiff').title = L.diff;
   document.getElementById('btnStats').title = L.stats;
   document.getElementById('btnHelp').title = L.help;
-  // Vlajka = jazyk, NA který se přepne (ne aktuální)
   const targetFlag = lang === 'cs' ? '🇬🇧' : '🇨🇿';
   document.getElementById('btnLang').title = L.langTitle;
   document.getElementById('btnLang').textContent = targetFlag;
   document.getElementById('btnLang').setAttribute('aria-label', L.langTitle);
 
-  // Info panel
   const info = document.getElementById('infoPanel');
   info.querySelector('h1').textContent = L.infoTitle;
   info.querySelector('.subtitle').textContent = L.infoSub;
@@ -1697,16 +1763,13 @@ function applyLanguage(){
   if(ps[0]) ps[0].innerHTML = L.infoP1;
   if(ps[1]) ps[1].innerHTML = L.infoP2;
 
-  // Score / log labels
   const totalLbl = document.getElementById('totalAreaLabel');
   if(totalLbl) totalLbl.textContent = L.totalArea;
   const logHeader = document.querySelector('#logPanel .logHeader b');
   if(logHeader) logHeader.textContent = L.gameLog;
   document.getElementById('btnCopyLog').title = L.copyLog;
 
-  // Stats modal
   document.getElementById('statsTitle').textContent = L.statsTitle;
-  // Hlavičky zůstávají piktogramy – překládají se jen title tooltips
   document.getElementById('statsThDiff').title = L.statsThDiff;
   document.getElementById('statsThSize').title = L.statsThSize;
   document.getElementById('statsThWins').title = L.statsThWins;
@@ -1717,7 +1780,6 @@ function applyLanguage(){
   document.getElementById('btnCloseStats').title = L.close;
   document.getElementById('btnCloseHelp').title = L.close;
 
-  // Help title
   const helpH2 = document.querySelector('#helpModal h2');
   if(helpH2) helpH2.textContent = L.helpTitle;
 
@@ -1730,52 +1792,72 @@ function applyHelpBody(){
   const box = document.querySelector('#helpModal .modalContent');
   if(!box) return;
 
-  // Páry [česky, anglicky] pro textové uzly a vybrané HTML bloky
-  const pairs = [
+  // Kompletní HTML náhrady (spolehlivější než text nodes kvůli <b> a <br>)
+  const htmlPairs = [
     ['1. Kdy se kameny spojí?', '1. When do stones connect?'],
     ['2. Jak vznikne území?', '2. How is territory created?'],
     ['3. Co znamená skóre?', '3. What does the score mean?'],
     ['4. Kdy hra končí?', '4. When does the game end?'],
     ['5. Praktické tipy', '5. Practical tips'],
     ['6. Rychlý test', '6. Quick test'],
-    ['Kameny se automaticky spojí, pokud jsou od sebe vzdálené o √5 (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.',
-     'Stones connect automatically when they are √5 apart (a knight move in chess). A closed loop of connections paints the occupied territory. The player with the larger total area wins.'],
-    ['Hráč má modré kameny.', 'You play with blue stones.'],
-    ['AI má červené kameny.', 'AI plays with red stones.'],
+
+    [' Dva kameny stejné barvy se automaticky spojí, pokud jsou od sebe vzdálené o <b>√5</b> (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.',
+     ' Two stones of the same color connect automatically when they are <b>√5</b> apart (a knight move in chess). A closed loop of connections paints the occupied territory. The player with the larger total area wins.'],
+    ['Dva kameny stejné barvy se automaticky spojí, pokud jsou od sebe vzdálené o <b>√5</b> (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.',
+     'Two stones of the same color connect automatically when they are <b>√5</b> apart (a knight move in chess). A closed loop of connections paints the occupied territory. The player with the larger total area wins.'],
+
+    ['Hráč má <b style="color:#2563eb">modré</b> kameny.',
+     'You play with <b style="color:#2563eb">blue</b> stones.'],
+    ['AI má <b style="color:#dc2626">červené</b> kameny.',
+     'AI plays with <b style="color:#dc2626">red</b> stones.'],
+    ['Táhni o 2 políčka jedním směrem,</br> a poté o 1 políčko kolmo.',
+     'Move 2 squares in one direction,<br> then 1 square perpendicular.'],
+    ['Táhni o 2 políčka jedním směrem,<br> a poté o 1 políčko kolmo.',
+     'Move 2 squares in one direction,<br> then 1 square perpendicular.'],
     ['Táhni o 2 políčka jedním směrem, a poté o 1 políčko kolmo.',
      'Move 2 squares in one direction, then 1 square perpendicular.'],
-    ['Příklad pro kámen na c3:', 'Example for a stone on c3:'],
-    ['Když spojnice vytvoří uzavřenou smyčku, prostor uvnitř se stane tvým územím.',
-     'When connections form a closed loop, the space inside becomes your territory.'],
+
+    ['Příklad pro kámen na <b>c3</b>:', 'Example for a stone on <b>c3</b>:'],
+    ['c3 se spojí s:<br>', 'c3 connects to:<br>'],
+    ['c3 se spojí s:', 'c3 connects to:'],
+
+    ['Když spojnice vytvoří <b>uzavřenou smyčku</b>, prostor uvnitř se stane tvým územím.',
+     'When connections form a <b>closed loop</b>, the space inside becomes your territory.'],
     ['Polož modré kameny na:', 'Place blue stones on:'],
     ['Vznikne uzavřený štíhlý kosočtverec:', 'A closed slim rhombus appears:'],
     ['Prostor uvnitř se obarví modře a započítá se do skóre.',
      'The space inside is colored blue and counts toward the score.'],
-    ['Skóre je geometrická plocha tvého území. Větší uzavřená oblast znamená více bodů.',
-     'The score is the geometric area of your territory. A larger closed region means more points.'],
+
+    ['Skóre je <b>geometrická plocha tvého území</b>. Větší uzavřená oblast znamená více bodů.',
+     'The score is the <b>geometric area of your territory</b>. A larger closed region means more points.'],
     ['Vítězí hráč s větší celkovou plochou.', 'The player with the larger total area wins.'],
     ['Hra končí, když už nelze položit další kámen (deska je zaplněná).',
      'The game ends when no more stones can be placed (the board is full).'],
-    ['Kameny těsně vedle sebe se nespojí.', 'Stones right next to each other do not connect.'],
-    ['Snaž se vytvářet trojúhelníky a čtyřúhelníky.', 'Try to form triangles and quadrilaterals.'],
-    ['Blokuj soupeře dřív, než dokončí smyčku.', 'Block the opponent before they complete a loop.'],
+
+    ['Kameny těsně vedle sebe se <b>nespojí</b>.',
+     'Stones right next to each other do <b>not connect</b>.'],
+    ['Snaž se vytvářet <b>trojúhelníky a čtyřúhelníky</b>.',
+     'Try to form <b>triangles and quadrilaterals</b>.'],
+    ['Blokuj soupeře dřív, než dokončí smyčku.',
+     'Block the opponent before they complete a loop.'],
     ['Menší jistá oblast je často lepší než nedokončená velká.',
      'A smaller secure area is often better than an unfinished large one.'],
-    ['Které tahy se spojí s c3?', 'Which moves connect to c3?'],
-    ['Správně jsou a2 a e4, protože mají vzdálenost √5.',
-     'Correct are a2 and e4, because their distance is √5.'],
-    ['Nejjednodušší strategie: vytvoř nejprve malou uzavřenou smyčku a teprve potom ji rozšiřuj.',
-     'Simplest strategy: first make a small closed loop, then expand it.'],
-    ['c3 se spojí s:', 'c3 connects to:'],
+
+    ['Které tahy se spojí s <b>c3</b>?', 'Which moves connect to <b>c3</b>?'],
+    ['Správně jsou <b>a2 a e4</b>, protože mají vzdálenost √5.',
+     'Correct are <b>a2 and e4</b>, because their distance is √5.'],
+    ['🎯 Nejjednodušší strategie: vytvoř nejprve malou uzavřenou smyčku a teprve potom ji rozšiřuj.',
+     '🎯 Simplest strategy: first make a small closed loop, then expand it.'],
+
     ['Grafický příklad: štíhlý kosočtverec (6x6)', 'Graphic example: slim rhombus (6×6)'],
-    ['Tento tvar vznikne, pokud kameny propojujete skokem koně orientovaným na výšku. Celé toto uzavřené území zabírá plochu přesně 3 čtverečků.',
-     'This shape appears when you connect stones with a vertical knight jump. The enclosed area is exactly 3 squares.'],
+    ['Tento tvar vznikne, pokud kameny propojujete skokem koně orientovaným <strong>na výšku</strong>. Celé toto uzavřené území zabírá plochu přesně <strong>3 čtverečků</strong>.',
+     'This shape appears when you connect stones with a knight jump oriented <strong>vertically</strong>. The enclosed area is exactly <strong>3 squares</strong>.'],
     ['Jak se pohybovat:', 'How to move:'],
     ['spojení mezi kamenem 1 a kamenem 2:', 'connection between stone 1 and stone 2:'],
-    ['buď skočíte na d4 po žluté trase z c6 na sloupec d a řádek 4',
-     'either jump to d4 along the yellow path from c6 to file d and rank 4'],
-    ['nebo skočíte na d4 po červené trase z c6 na řádek 4 a sloupec d',
-     'or jump to d4 along the red path from c6 to rank 4 and file d'],
+    ['buď skočíte na d4 po <span style="color: #d9a000; font-weight: bold;">žluté trase</span> z c6 na sloupec d a řádek 4',
+     'either jump to d4 along the <span style="color: #d9a000; font-weight: bold;">yellow path</span> from c6 to file d and rank 4'],
+    ['nebo skočíte na d4 po <span style="color: #dc3545; font-weight: bold;">červené trase</span> z c6 na řádek 4 a sloupec d',
+     'or jump to d4 along the <span style="color: #dc3545; font-weight: bold;">red path</span> from c6 to rank 4 and file d'],
     ['Kámen 1', 'Stone 1'],
     ['Kámen 2', 'Stone 2'],
     ['Kámen 3', 'Stone 3'],
@@ -1784,78 +1866,25 @@ function applyHelpBody(){
     ['(souřadnice d4)', '(coordinate d4)'],
     ['(souřadnice c2)', '(coordinate c2)'],
     ['(souřadnice b4)', '(coordinate b4)'],
-    ['Příklad:', 'Example:'],
-    ['Ty:', 'You:'],
-    ['Two stones of the same color connect automatically when they are √5 apart (a knight move in chess). A closed loop of connections paints the occupied territory. The player with the larger total area wins.',
-     'Dva kameny stejné barvy se automaticky spojí, pokud jsou od sebe vzdálené o √5 (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.']
+    ['<b>Příklad:</b>', '<b>Example:</b>'],
+    ['Příklad:', 'Example:']
   ];
 
-  // Projdi všechny textové uzly a přelož, pokud najdeme pár
-  const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, null);
-  const textNodes = [];
-  while(walker.nextNode()) textNodes.push(walker.currentNode);
-
-  textNodes.forEach(node => {
-    const raw = node.nodeValue;
-    if(!raw || !raw.trim()) return;
-    const trimmed = raw.replace(/\s+/g, ' ').trim();
-    for(const [cs, en] of pairs){
-      const csN = cs.replace(/\s+/g, ' ').trim();
-      const enN = en.replace(/\s+/g, ' ').trim();
-      if(lang === 'en' && trimmed === csN){
-        node.nodeValue = raw.replace(trimmed, en);
-        return;
-      }
-      if(lang === 'cs' && trimmed === enN){
-        node.nodeValue = raw.replace(trimmed, cs);
-        return;
-      }
-      // částečná shoda uvnitř delšího textu
-      if(lang === 'en' && raw.includes(cs)){
-        node.nodeValue = raw.split(cs).join(en);
-        return;
-      }
-      if(lang === 'cs' && raw.includes(en)){
-        node.nodeValue = raw.split(en).join(cs);
-        return;
+  // Projdi všechny prvky a nahraď české HTML anglickým (a naopak)
+  box.querySelectorAll('h2, h3, h4, p, li, div, span, tspan, b, strong').forEach(el => {
+    if (el.querySelector('svg') && el.tagName !== 'SPAN') return;
+    let html = el.innerHTML;
+    let changed = false;
+    for (const [cs, en] of htmlPairs) {
+      if (lang === 'en' && html.includes(cs)) {
+        html = html.split(cs).join(en);
+        changed = true;
+      } else if (lang === 'cs' && html.includes(en)) {
+        html = html.split(en).join(cs);
+        changed = true;
       }
     }
-  });
-
-  // innerHTML odstavce s <b>
-  const htmlPairs = [
-    ['Dva kameny stejné barvy se automaticky spojí, pokud jsou od sebe vzdálené o <b>√5</b> (tah jezdcem v šachu). Uzavřená smyčka spojů vykreslí obsazené území. Vítězí hráč s větší celkovou plochou.',
-     'Two stones of the same color connect automatically when they are <b>√5</b> apart (a knight move in chess). A closed loop of connections paints the occupied territory. The player with the larger total area wins.'],
-    ['Když spojnice vytvoří <b>uzavřenou smyčku</b>, prostor uvnitř se stane tvým územím.',
-     'When connections form a <b>closed loop</b>, the space inside becomes your territory.'],
-    ['Skóre je <b>geometrická plocha tvého území</b>. Větší uzavřená oblast znamená více bodů.',
-     'The score is the <b>geometric area of your territory</b>. A larger closed region means more points.'],
-    ['Správně jsou <b>a2 a e4</b>, protože mají vzdálenost √5.',
-     'Correct are <b>a2 and e4</b>, because their distance is √5.'],
-    ['Příklad pro kámen na <b>c3</b>:',
-     'Example for a stone on <b>c3</b>:'],
-    ['Které tahy se spojí s <b>c3</b>?',
-     'Which moves connect to <b>c3</b>?'],
-    ['Hráč má <b style="color:#2563eb">modré</b> kameny.',
-     'You play with <b style="color:#2563eb">blue</b> stones.'],
-    ['AI má <b style="color:#dc2626">červené</b> kameny.',
-     'AI plays with <b style="color:#dc2626">red</b> stones.'],
-    ['Tento tvar vznikne, pokud kameny propojujete skokem koně orientovaným <strong>na výšku</strong>. Celé toto uzavřené území zabírá plochu přesně <strong>3 čtverečků</strong>.',
-     'This shape appears when you connect stones with a knight jump oriented <strong>vertically</strong>. The enclosed area is exactly <strong>3 squares</strong>.']
-  ];
-  box.querySelectorAll('p, li, h4, div').forEach(el => {
-    if(el.querySelector('svg')) return; // nesahat na SVG kontejner hlouběji než text
-    const html = el.innerHTML;
-    for(const [cs, en] of htmlPairs){
-      if(lang === 'en' && html.includes(cs)){
-        el.innerHTML = html.split(cs).join(en);
-        return;
-      }
-      if(lang === 'cs' && html.includes(en)){
-        el.innerHTML = html.split(en).join(cs);
-        return;
-      }
-    }
+    if (changed) el.innerHTML = html;
   });
 }
 
@@ -1877,5 +1906,3 @@ updateScores();
 <div id="toast" class="toast"></div>
 </body>
 </html>
-
-
