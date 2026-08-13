@@ -839,19 +839,59 @@ const scoreRedEl = document.getElementById('scoreRed');
 const logEl = document.getElementById('gameLog');
 
 function formatLogEntry(entry){
-  const SYS_ICON = '⚙️';  
-  if(typeof entry === 'string') return entry;
+  // Sloupce:  01 🔵 a1   32 ms
+  //           ·· zpráva systému
+  if (typeof entry === 'string') return entry;
   const L = t();
-  switch(entry.key){
-    case 'newGame': return `${SYS_ICON} ` + L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]);
-    case 'diffSet': return `${SYS_ICON} ` +  L.diffSet(L.diffNames[entry.args[0]]);
-    case 'closedYou': return `${SYS_ICON} ` +  L.closedAreaYou(entry.args[0]);
-    case 'closedAI': return `${SYS_ICON} ` +  L.closedAreaAI(entry.args[0]);
-    case 'gameEnd': return `${SYS_ICON} ` +  L.gameEnd;
-    case 'score': return L.scoreLine(entry.args[0], entry.args[1]);
-    case 'saved': return `${SYS_ICON} ` +  L.saved;
-    case 'move': return entry.args[0]; 
-    default: return entry.args ? entry.args.join(' ') : '';
+  const sys = (msg) => '·· ' + msg;
+
+  switch (entry.key) {
+	case 'raw': return entry.args[0];
+    case 'newGame':
+      return sys(L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]));
+    case 'diffSet':
+      return sys(L.diffSet(L.diffNames[entry.args[0]]));
+    case 'closedYou':
+      return sys(L.closedAreaYou(entry.args[0]));
+    case 'closedAI':
+      return sys(L.closedAreaAI(entry.args[0]));
+    case 'gameEnd':
+      return sys(L.gameEnd);
+    case 'score':
+      return sys(L.scoreLine(entry.args[0], entry.args[1]));
+    case 'saved':
+      return sys(L.saved);
+    case 'move': {
+      const a = entry.args || [];
+
+      // starý formát: celý řádek jako jeden string
+      if (a.length === 1) return String(a[0]);
+
+      const num = a[0];
+      const icon = a[1];
+      const coord = a[2];
+      const ms = a[3];
+
+      // ochrana proti undefined
+      if (icon == null || coord == null) {
+        return [num, icon, coord, ms].filter(v => v != null && v !== '').join(' ');
+      }
+
+      let line =
+        String(num).padStart(2, '0') +
+        ' ' + icon +
+        ' ' + String(coord).padEnd(3, ' ');
+
+      if (ms != null && ms !== '') {
+        const tstr = Number(ms) < 1000
+          ? String(Math.round(Number(ms))).padStart(4, ' ') + ' ms'
+          : (Number(ms) / 1000).toFixed(1).padStart(4, ' ') + ' s';
+        line += ' ' + tstr;
+      }
+      return line;
+    }
+    default:
+      return entry.args ? entry.args.filter(v => v != null).join(' ') : '';
   }
 }
 
@@ -861,7 +901,9 @@ function refreshLogView(){
 }
 
 function log(entry){
-  if(typeof entry === 'string') entry = { key: 'move', args: [entry] };
+  if (typeof entry === 'string') {
+    entry = { key: 'raw', args: [entry] }; // ne 'move'
+  }
   gameLog.unshift(entry);
   refreshLogView();
 }
