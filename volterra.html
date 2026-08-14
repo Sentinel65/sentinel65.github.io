@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Volterra</title>
+<style>
+:root {
+  --bg: #e8dcc8;
+  --bg2: #d4c4a8;
+  --panel: #3e2f1c;
+  --panel2: #2a1f12;
+  --accent: #c45c26;
+  --accent2: #e07a3d;
+  --light: #f0e0c0;
+  --light-mid: #e8d4a8;
+  --light-top: #fff8e8;
+  --dark: #4a3220;
+  --dark-mid: #3a2818;
+  --dark-top: #5c4030;
+  --pawn-light: #f5c518;
+  --pawn-dark: #1c1410;
+  --border: #5c4030;
+  --text: #f5efe6;
+  --text-dark: #2a1f12;
+  --muted: #b8a890;
+  --success: #2d8a4e;
+  --cell: #cbb892;
+  --cell-empty: #a89070;
+  --valid: rgba(45, 138, 78, 0.55);
+  --selected: rgba(40, 120, 200, 0.55);
+  --blocked: rgba(180, 50, 40, 0.35);
+  --log-bg: #2a1f12;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
+  color: var(--text-dark);
+}
+body { display: flex; flex-direction: column; }
+
+header {
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px 14px; background: var(--panel); border-bottom: 3px solid var(--accent);
+  flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.logo {
+  font-weight: 800; font-size: 1.5rem; letter-spacing: 3px;
+  color: var(--light-top); text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.menu-bar {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 10px; background: var(--panel2); border-bottom: 2px solid var(--border);
+  flex-shrink: 0; gap: 8px; flex-wrap: wrap;
+}
+.menu-bar button {
+  width: 42px; height: 42px; border: 2px solid var(--border); border-radius: 11px;
+  background: var(--panel); color: var(--text); font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+.menu-bar button:active { transform: scale(0.94); }
+.menu-bar button:hover { background: var(--accent); border-color: var(--accent2); }
+
+.app {
+  flex: 1; display: flex; min-height: 0; overflow: hidden;
+}
+.log-panel {
+  width: 220px; flex-shrink: 0; background: var(--log-bg); border-right: 3px solid var(--accent);
+  display: flex; flex-direction: column; max-height: 100%;
+}
+.log-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; background: var(--panel); color: var(--light-top);
+  font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+}
+.log-header button {
+  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel2); color: var(--text); font-size: 1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.log-header button:active { background: var(--accent); }
+.log-body {
+  flex: 1; overflow-y: auto; padding: 6px 10px;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 0.72rem; line-height: 1.35; color: #d4c8b0;
+}
+.log-body .entry { margin-bottom: 2px; word-break: break-word; }
+.log-body .entry .time { color: #8a7a60; margin-right: 5px; }
+.log-body .entry.human { color: #e8d4a0; }
+.log-body .entry.ai { color: #a8c4e0; }
+.log-body .entry.sys { color: #90b090; }
+.log-body .entry.end { color: #f0a060; font-weight: 600; }
+
+.game-col {
+  flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+}
+.board-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 8px; overflow: auto; min-height: 0;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 6px;
+  width: min(92vw, 360px);
+  aspect-ratio: 4 / 5;
+  max-height: 100%;
+  background: #8b7355;
+  padding: 8px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.2);
+}
+.cell {
+  position: relative; background: var(--cell); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; padding: 3px 3px 4px; cursor: pointer;
+  border: 3px solid transparent; transition: border-color 0.12s, background 0.12s;
+  min-height: 0; overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.cell.empty {
+  background: var(--cell-empty); opacity: 0.7;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+.cell.valid {
+  border-color: var(--success);
+  background: #b8d4a8;
+  box-shadow: 0 0 0 2px rgba(45,138,78,0.4);
+}
+.cell.selected {
+  border-color: #2878c8;
+  background: #a8c4e0;
+  box-shadow: 0 0 0 2px rgba(40,120,200,0.45);
+}
+.height-label.immobile {
+  background: #f5c0c8 !important;
+  color: #5a2030;
+}
+.height-label.top-win {
+  background: #6ecf7a !important;
+  color: #0a3d12;
+  box-shadow: 0 0 0 2px #2d8a4e;
+}
+.height-label.top-tie {
+  background: #f0e060 !important;
+  color: #5a4a00;
+  box-shadow: 0 0 0 2px #c9a800;
+}
+.height-label.second-win {
+  background: #6ecf7a !important;
+  color: #0a3d12;
+  box-shadow: 0 0 0 2px #2d8a4e;
+}
+.stack {
+  display: flex; flex-direction: column-reverse; align-items: center;
+  width: 100%; gap: 2px; z-index: 1; margin-top: auto;
+}
+.piece {
+  width: 78%; height: 10px; border-radius: 4px; flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.piece.light {
+  background: linear-gradient(180deg, var(--light-top) 0%, var(--light-mid) 45%, var(--light) 100%);
+}
+.piece.dark {
+  background: linear-gradient(180deg, var(--dark-top) 0%, var(--dark-mid) 50%, var(--dark) 100%);
+}
+.height-label {
+  position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+  font-size: 1rem; font-weight: 900; color: var(--text-dark);
+  background: rgba(255,248,232,0.95); border-radius: 5px;
+  padding: 0 5px; line-height: 1.15; z-index: 6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25); pointer-events: none;
+  min-width: 1.3em; text-align: center;
+}
+.pawn {
+  position: absolute; top: 40%; left: 50%; transform: translate(-50%, 0);
+  width: 40%; aspect-ratio: 1; border-radius: 50%;
+  border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.45); z-index: 5;
+  pointer-events: none;
+}
+.pawn.light {
+  background: radial-gradient(circle at 32% 28%, #ffe680, var(--pawn-light) 55%, #c9a00a);
+  border-color: #fff8d0;
+}
+.pawn.dark {
+  background: radial-gradient(circle at 32% 28%, #5a4a3a, var(--pawn-dark) 60%, #0a0806);
+  border-color: #c8b8a0;
+}
+
+.status {
+  text-align: center; padding: 10px 12px; font-size: 1.05rem; font-weight: 600;
+  background: var(--panel2); color: var(--light-top); border-top: 2px solid var(--border);
+  flex-shrink: 0; line-height: 1.35; min-height: 44px;
+}
+.status.end { color: var(--accent2); font-size: 1.1rem; }
+
+.controls {
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  padding: 10px; background: var(--panel); border-top: 2px solid var(--border);
+  flex-shrink: 0; min-height: 56px;
+}
+.controls button {
+  padding: 11px 20px; border: 2px solid var(--border); border-radius: 12px;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  background: var(--panel2); color: var(--text); transition: background 0.15s;
+}
+.controls button.primary { background: var(--accent); border-color: var(--accent2); color: #fff; }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+.controls button:not(:disabled):active { transform: scale(0.97); }
+.controls .piece-choice { display: none; gap: 10px; align-items: center; }
+.controls .piece-choice.show { display: flex; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(30,20,10,0.75); z-index: 100;
+  display: none; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--panel); border-radius: 16px; max-width: 420px; width: 100%;
+  max-height: 85vh; overflow-y: auto; padding: 22px; border: 3px solid var(--accent);
+  color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.modal h2 { color: var(--accent2); margin-bottom: 14px; font-size: 1.35rem; }
+.modal p, .modal li { font-size: 1rem; line-height: 1.5; margin-bottom: 8px; }
+.modal ul { padding-left: 20px; margin-bottom: 12px; }
+.stats-table-wrap {
+  margin: 14px 0; overflow-x: auto;
+}
+.stats-table {
+  width: 100%; border-collapse: collapse;
+  background: #e8dcc8; border-radius: 10px; overflow: hidden;
+  color: var(--text-dark); font-size: 1.15rem;
+}
+.stats-table th, .stats-table td {
+  padding: 12px 10px; text-align: center; border: 1px solid #cbb892;
+}
+.stats-table th {
+  background: #d4c4a8; font-size: 1.25rem; font-weight: 600;
+}
+.stats-table td {
+  font-weight: 700; font-size: 1.2rem; background: #f5efe6;
+}
+.stats-table td:empty::after { content: "–"; color: #999; }
+.modal .btns { display: flex; gap: 10px; margin-top: 16px; }
+.modal .btns button {
+  flex: 1; padding: 12px; border: none; border-radius: 12px;
+  font-weight: 700; cursor: pointer; font-size: 1rem;
+}
+.modal .btns .ok { background: var(--accent); color: #fff; }
+.modal .btns .cancel { background: var(--panel2); color: var(--text); border: 2px solid var(--border); }
+.modal .close-btn {
+  display: block; width: 100%; margin-top: 16px; padding: 14px;
+  background: var(--accent); color: #fff; border: none; border-radius: 12px;
+  font-weight: 700; cursor: pointer; font-size: 1.05rem;
+}
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--panel); color: var(--text); padding: 12px 24px;
+  border-radius: 12px; border: 2px solid var(--accent); z-index: 200;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none; font-size: 1rem; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35); max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; }
+
+@media (max-width: 700px) {
+  html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
+  body { display: block; }
+  .app {
+    flex-direction: column;
+    display: flex;
+    min-height: auto;
+    overflow: visible;
+  }
+  .log-panel {
+    width: 100%; border-right: none; border-top: 3px solid var(--accent);
+    max-height: none; height: 140px; order: 2; flex-shrink: 0;
+  }
+  .game-col { order: 1; flex: none; min-height: auto; }
+  .board-wrap {
+    flex: none;
+    padding: 10px 8px;
+    overflow: visible;
+  }
+  .board {
+    width: min(92vw, 340px);
+    height: auto;
+    aspect-ratio: 4 / 5;
+    max-height: none;
+  }
+  .log-body { font-size: 0.7rem; }
+}
+@media (max-width: 400px) {
+  .menu-bar button { width: 38px; height: 38px; font-size: 1.05rem; }
+  .logo { font-size: 1.25rem; letter-spacing: 2px; }
+  .height-label { font-size: 0.9rem; }
+  .piece { height: 8px; }
+  .board { width: min(94vw, 320px); aspect-ratio: 4 / 5; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">VOLTERRA</div>
+</header>
+<div class="menu-bar">
+  <button id="btn-save" title="Uložit">💾</button>
+  <button id="btn-load" title="Načíst">📂</button>
+  <button id="btn-reset" title="Reset">🔄</button>
+  <button id="btn-stats" title="Statistiky">📊</button>
+  <button id="btn-help" title="Nápověda">💡</button>
+  <button id="btn-lang" title="Jazyk">🇬🇧</button>
+</div>
+
+<div class="app">
+  <div class="log-panel">
+    <div class="log-header">
+      <span id="log-title">Log</span>
+      <button id="btn-copy-log" title="Kopírovat log">📋</button>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+  <div class="game-col">
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+    <div class="status" id="status">Načítání…</div>
+    <div class="controls" id="controls">
+      <div class="undo-wrap">
+        <button id="btn-undo" disabled>↩</button>
+      </div>
+      <div class="piece-choice" id="piece-choice">
+        <button id="p1">1</button>
+        <button id="p2" class="primary">2</button>
+        <button id="pcancel">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="help-modal">
+  <div class="modal">
+    <h2 id="help-title">Nápověda</h2>
+    <div id="help-body"></div>
+    <button class="close-btn" id="help-close">Zavřít</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="stats-modal">
+  <div class="modal">
+    <h2 id="stats-title">Statistiky</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="stats-table">
+        <thead>
+          <tr>
+            <th title="Partie">#</th>
+            <th title="Výhry">🏆</th>
+            <th title="Prohry">×</th>
+            <th title="Nejvyšší věž">⭐</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="st-played">0</td>
+            <td id="st-wins">0</td>
+            <td id="st-losses">0</td>
+            <td id="st-best">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="close-btn" id="stats-close">Zavřít</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h2 id="confirm-title">Potvrdit</h2>
+    <p id="confirm-msg"></p>
+    <div class="btns">
+      <button class="cancel" id="confirm-no">Ne</button>
+      <button class="ok" id="confirm-yes">Ano</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+"use strict";
+
+const I18N = {
+  cs: {
+    statusSelectDest: "Vyberte cílové pole",
+    statusSelectPieces: "Kolik dílků přesunout?",
+    statusMustBoth: "Ještě jedna akce (figurka nebo věž)",
+    statusAIThinking: "AI přemýšlí…",
+    statusYourTurn: "Váš tah – 2 akce (figurka + věž)",
+    winYou: "Vyhráli jste!",
+    winAI: "AI vyhrála!",
+    draw: "Remíza",
+    saveOk: "Hra uložena",
+    loadOk: "Hra načtena",
+    loadFail: "Žádná uložená hra",
+    resetConfirm: "Opravdu restartovat hru?",
+    helpTitle: "Nápověda – Volterra",
+    statsTitle: "Statistiky",
+    close: "Zavřít",
+    confirmTitle: "Potvrdit",
+    yes: "Ano",
+    no: "Ne",
+    logTitle: "Log",
+    copied: "Log zkopírován",
+    youStart: "Začínáte vy (světlé)",
+    aiStarts: "Začíná AI (tmavé)",
+    endReasonHuman: "Nemůžete provést obě akce",
+    endReasonAI: "AI nemůže provést obě akce",
+    gameOver: "Konec hry",
+    undo: "Zpět",
+    logYouStart: "Začínáte vy (světlé)",
+    logAiStarts: "Začíná AI (tmavé)",
+    logAiThinking: "AI přemýšlí… (d{depth})",
+    logAiMove: "AI: {move}",
+    logPlayerMove: "Hráč: {move}",
+    logPlayerTurn: "Tah hráče",
+    logBack: "Zpět",
+    logSaved: "Hra uložena",
+    logLoaded: "Hra načtena",
+    logEnd: "Konec hry: {result}",
+    logWinTower: "Nejvyšší věž vítěze: {height} na {cell}",
+    logAiError: "AI chyba: {err}",
+    pawnMove: "figurka {from} → {to}",
+    towerMove: "věž {from} → {to} ({num})",
+    help: `
+<p><strong>Cíl:</strong> Mít na konci nejvyšší věž.</p>
+<p><strong>Tah:</strong> 2 akce v libovolném pořadí:</p>
+<ul>
+<li><strong>Figurka</strong> – na sousední věž své barvy (8 směrů).</li>
+<li><strong>Věž</strong> – vlastní věž u figurky s volnou stranou: přesuňte 1–2 vrchní dílky na jinou věž u figurky.</li>
+</ul>
+<p>Figurka ne na soupeřovu věž. Věže ne na prázdné pole ani na pole s figurkou.</p>
+<p>Hra končí, když hráč nemůže udělat obě akce. <strong>Vyhrává hráč s nejvyšší věží</strong>; při rovnosti se porovnává druhá nejvyšší věž, pak třetí atd.</p>
+<p><em>Růžové pozadí čísla = z daného pole nelze táhnout. Po konci hry: zelená = rozhodující nejvyšší věž, žlutá = shoda nejvyšších.</em></p>`
+  },
+  en: {
+    statusSelectDest: "Select destination",
+    statusSelectPieces: "How many pieces to move?",
+    statusMustBoth: "One more action (pawn or tower)",
+    statusAIThinking: "AI is thinking…",
+    statusYourTurn: "Your turn – 2 actions (pawn + tower)",
+    winYou: "You win!",
+    winAI: "AI wins!",
+    draw: "Draw",
+    saveOk: "Game saved",
+    loadOk: "Game loaded",
+    loadFail: "No saved game",
+    resetConfirm: "Really restart the game?",
+    helpTitle: "Help – Volterra",
+    statsTitle: "Statistics",
+    close: "Close",
+    confirmTitle: "Confirm",
+    yes: "Yes",
+    no: "No",
+    logTitle: "Log",
+    copied: "Log copied",
+    youStart: "You start (light)",
+    aiStarts: "AI starts (dark)",
+    endReasonHuman: "You cannot perform both actions",
+    endReasonAI: "AI cannot perform both actions",
+    gameOver: "Game over",
+    undo: "Undo",
+    logYouStart: "You start (light)",
+    logAiStarts: "AI starts (dark)",
+    logAiThinking: "AI is thinking… (d{depth})",
+    logAiMove: "AI: {move}",
+    logPlayerMove: "Player: {move}",
+    logPlayerTurn: "Player's turn",
+    logBack: "Undo",
+    logSaved: "Game saved",
+    logLoaded: "Game loaded",
+    logEnd: "Game over: {result}",
+    logWinTower: "Winner's highest tower: {height} at {cell}",
+    logAiError: "AI error: {err}",
+    pawnMove: "pawn {from} → {to}",
+    towerMove: "tower {from} → {to} ({num})",
+    help: `
+<p><strong>Goal:</strong> Own the highest tower at the end.</p>
+<p><strong>Turn:</strong> 2 actions in any order:</p>
+<ul>
+<li><strong>Pawn</strong> – to neighbouring tower of your colour (8 directions).</li>
+<li><strong>Tower</strong> – your tower next to pawn with a free side: move top 1–2 pieces onto another tower next to the pawn.</li>
+</ul>
+<p>Pawn not onto opponent's tower. Towers not onto empty or pawn squares.</p>
+<p>Game ends when a player cannot do both actions. <strong>The player with the highest tower wins</strong>; if tied, compare the second-highest tower, then the third, and so on.</p>
+<p><em>Pink number = no move from that cell. After game end: green = decisive highest tower, yellow = tied highest.</em></p>`
+  }
+};
+
+let lang = "cs";
+function t(key) { return I18N[lang][key] || key; }
+function fmt(key, params) {
+  let s = t(key);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      s = s.split("{" + k + "}").join(String(v));
+    }
+  }
+  return s;
+}
+function formatLogEntry(e) {
+  if (e.key) {
+    const params = Object.assign({}, e.params || {});
+    // nested move string for AI/player moves
+    if (params._move) {
+      const m = params._move;
+      if (m.type === "pawn") params.move = fmt("pawnMove", { from: m.from, to: m.to });
+      else params.move = fmt("towerMove", { from: m.from, to: m.to, num: m.num });
+    }
+    if (params._resultKey) {
+      params.result = t(params._resultKey);
+    }
+    return fmt(e.key, params);
+  }
+  return e.msg || "";
+}
+
+const ROWS = 5, COLS = 4;
+const LIGHT = 0, DARK = 1;
+const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const AI_DEPTH = 3;
+
+let board = [];
+let pawns = [{r:2,c:1}, {r:2,c:2}];
+let current = LIGHT;
+let humanColor = LIGHT;
+let aiColor = DARK;
+let gameOver = false;
+let history = [];
+let selected = null;
+let pendingActions = [];
+let movePhase = "select";
+let towerMoveData = null;
+let gameLog = [];
+let gamesStarted = 0;
+let stats = { played: 0, wins: 0, losses: 0, bestTower: 0 };
+let confirmCallback = null;
+let endReasonColor = null; // who couldn't move
+
+function loadStats() {
+  try {
+    const s = JSON.parse(localStorage.getItem("volterra_stats") || "{}");
+    stats = { played: s.played||0, wins: s.wins||0, losses: s.losses||0, bestTower: s.bestTower||0 };
+    gamesStarted = s.gamesStarted || 0;
+  } catch(e) {}
+}
+function saveStats() {
+  localStorage.setItem("volterra_stats", JSON.stringify({ ...stats, gamesStarted }));
+}
+
+function isEmpty(b, r, c) { return !b[r][c] || b[r][c].length === 0; }
+function topColor(b, r, c) {
+  if (isEmpty(b, r, c)) return -1;
+  return b[r][c][b[r][c].length - 1];
+}
+function height(b, r, c) { return isEmpty(b, r, c) ? 0 : b[r][c].length; }
+function inBounds(r, c) { return r >= 0 && r < ROWS && c >= 0 && c < COLS; }
+function opponent(col) { return 1 - col; }
+function cloneBoard(b) { return b.map(row => row.map(s => s.slice())); }
+function clonePawns(p) { return [{ r: p[0].r, c: p[0].c }, { r: p[1].r, c: p[1].c }]; }
+
+function freeSide(b, r, c) {
+  const orth = [[-1,0],[1,0],[0,-1],[0,1]];
+  for (const [dr, dc] of orth) {
+    const nr = r + dr, nc = c + dc;
+    if (!inBounds(nr, nc) || isEmpty(b, nr, nc)) return true;
+  }
+  return false;
+}
+
+function hasPawnOn(p, r, c) {
+  return (p[0].r === r && p[0].c === c) || (p[1].r === r && p[1].c === c);
+}
+
+function getComponent(startR, startC, b) {
+  const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+  const q = [[startR, startC]];
+  visited[startR][startC] = true;
+  const cells = [];
+  while (q.length) {
+    const [r, c] = q.shift();
+    cells.push([r, c]);
+    for (const [dr, dc] of DIRS) {
+      const nr = r + dr, nc = c + dc;
+      if (inBounds(nr, nc) && !visited[nr][nc] && !isEmpty(b, nr, nc)) {
+        visited[nr][nc] = true;
+        q.push([nr, nc]);
+      }
+    }
+  }
+  return { cells, visited };
+}
+
+function applySeparation(b, p) {
+  const nonEmpty = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (!isEmpty(b, r, c)) nonEmpty.push([r, c]);
+  if (nonEmpty.length === 0) return;
+  const comps = [];
+  const seen = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+  for (const [r, c] of nonEmpty) {
+    if (seen[r][c]) continue;
+    const comp = getComponent(r, c, b);
+    comps.push(comp);
+    for (const [cr, cc] of comp.cells) seen[cr][cc] = true;
+  }
+  if (comps.length <= 1) return;
+  const pawnComps = [null, null];
+  for (let i = 0; i < comps.length; i++) {
+    const v = comps[i].visited;
+    if (v[p[0].r] && v[p[0].r][p[0].c]) pawnComps[0] = i;
+    if (v[p[1].r] && v[p[1].r][p[1].c]) pawnComps[1] = i;
+  }
+  if (pawnComps[0] === pawnComps[1] && pawnComps[0] !== null) {
+    const keep = pawnComps[0];
+    for (let i = 0; i < comps.length; i++) {
+      if (i === keep) continue;
+      for (const [r, c] of comps[i].cells) b[r][c] = [];
+    }
+  }
+}
+
+function getPawnMoves(color, b, p) {
+  const pr = p[color].r, pc = p[color].c;
+  const moves = [];
+  for (const [dr, dc] of DIRS) {
+    const nr = pr + dr, nc = pc + dc;
+    if (!inBounds(nr, nc) || isEmpty(b, nr, nc)) continue;
+    if (topColor(b, nr, nc) !== color) continue;
+    if (nr === pr && nc === pc) continue;
+    moves.push({ type: "pawn", color, fromR: pr, fromC: pc, toR: nr, toC: nc });
+  }
+  return moves;
+}
+
+function getTowerMoves(color, b, p) {
+  const pr = p[color].r, pc = p[color].c;
+  const moves = [];
+  for (const [dr, dc] of DIRS) {
+    const sr = pr + dr, sc = pc + dc;
+    if (!inBounds(sr, sc) || isEmpty(b, sr, sc)) continue;
+    if (topColor(b, sr, sc) !== color) continue;
+    if (!freeSide(b, sr, sc)) continue;
+    const h = height(b, sr, sc);
+    const maxNum = Math.min(2, h);
+    for (const [dr2, dc2] of DIRS) {
+      const tr = pr + dr2, tc = pc + dc2;
+      if (!inBounds(tr, tc) || isEmpty(b, tr, tc)) continue;
+      if (tr === sr && tc === sc) continue;
+      if (hasPawnOn(p, tr, tc)) continue;
+      for (let num = 1; num <= maxNum; num++) {
+        moves.push({ type: "tower", color, fromR: sr, fromC: sc, toR: tr, toC: tc, num });
+      }
+    }
+  }
+  return moves;
+}
+
+function applyAction(action, b, p) {
+  const nb = cloneBoard(b);
+  const np = clonePawns(p);
+  if (action.type === "pawn") {
+    const col = action.color !== undefined ? action.color : current;
+    np[col].r = action.toR;
+    np[col].c = action.toC;
+  } else {
+    const stack = nb[action.fromR][action.fromC];
+    const moved = stack.splice(stack.length - action.num, action.num);
+    nb[action.toR][action.toC].push(...moved);
+    if (stack.length === 0) applySeparation(nb, np);
+  }
+  return { board: nb, pawns: np };
+}
+
+function canDoBoth(color, b, p) {
+  const pawnMs = getPawnMoves(color, b, p);
+  const towerMs = getTowerMoves(color, b, p);
+  for (const pm of pawnMs) {
+    const inter = applyAction(pm, b, p);
+    if (getTowerMoves(color, inter.board, inter.pawns).length > 0) return true;
+  }
+  for (const tm of towerMs) {
+    const inter = applyAction(tm, b, p);
+    if (getPawnMoves(color, inter.board, inter.pawns).length > 0) return true;
+  }
+  return false;
+}
+
+function generateFullTurns(color, b, p) {
+  const turns = [];
+  const pawnMs = getPawnMoves(color, b, p);
+  const towerMs = getTowerMoves(color, b, p);
+  for (const pm of pawnMs) {
+    const inter = applyAction(pm, b, p);
+    for (const tm of getTowerMoves(color, inter.board, inter.pawns)) turns.push([pm, tm]);
+  }
+  for (const tm of towerMs) {
+    const inter = applyAction(tm, b, p);
+    for (const pm of getPawnMoves(color, inter.board, inter.pawns)) turns.push([tm, pm]);
+  }
+  return turns;
+}
+
+/** Cells from which a color currently has no useful action (for highlighting) */
+function getImmobileCells(color, b, p) {
+  const immobile = new Set();
+  const pr = p[color].r, pc = p[color].c;
+  // If pawn has no moves and no tower moves at all → mark pawn cell
+  const pMoves = getPawnMoves(color, b, p);
+  const tMoves = getTowerMoves(color, b, p);
+  if (pMoves.length === 0) immobile.add(pr + "," + pc);
+  // Towers of this color adjacent that cannot be moved (no free side or no dest)
+  for (const [dr, dc] of DIRS) {
+    const sr = pr + dr, sc = pc + dc;
+    if (!inBounds(sr, sc) || isEmpty(b, sr, sc)) continue;
+    if (topColor(b, sr, sc) !== color) continue;
+    const canMove = tMoves.some(m => m.fromR === sr && m.fromC === sc);
+    if (!canMove) immobile.add(sr + "," + sc);
+  }
+  // Also mark own towers elsewhere that are "stuck" (no free side) when game over
+  if (gameOver) {
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        if (isEmpty(b, r, c)) continue;
+        if (topColor(b, r, c) !== color) continue;
+        if (!freeSide(b, r, c)) immobile.add(r + "," + c);
+      }
+  }
+  return immobile;
+}
+
+function evaluate(b, p, forColor) {
+  const ownH = [], oppH = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      if (isEmpty(b, r, c)) continue;
+      const h = height(b, r, c);
+      if (topColor(b, r, c) === forColor) ownH.push(h);
+      else oppH.push(h);
+    }
+  ownH.sort((a, x) => x - a);
+  oppH.sort((a, x) => x - a);
+  let score = 0;
+  const maxLen = Math.max(ownH.length, oppH.length);
+  for (let i = 0; i < maxLen; i++) {
+    const o = ownH[i] || 0, e = oppH[i] || 0;
+    score += (o - e) * Math.pow(100, maxLen - i);
+  }
+  const myTurns = generateFullTurns(forColor, b, p).length;
+  const oppTurns = generateFullTurns(opponent(forColor), b, p).length;
+  score += (myTurns - oppTurns) * 12;
+  if (ownH[0]) score += ownH[0] * 3;
+  if (oppH[0]) score -= oppH[0] * 2;
+  const pr = p[forColor].r, pc = p[forColor].c;
+  for (const [dr, dc] of DIRS) {
+    const nr = pr + dr, nc = pc + dc;
+    if (inBounds(nr, nc) && topColor(b, nr, nc) === forColor) score += height(b, nr, nc) * 2;
+  }
+  return score;
+}
+
+function minimax(b, p, color, depth, alpha, beta, maximizing) {
+  if (depth === 0 || !canDoBoth(color, b, p)) {
+    return { score: evaluate(b, p, aiColor), turn: null };
+  }
+  const turns = generateFullTurns(color, b, p);
+  if (turns.length === 0) return { score: evaluate(b, p, aiColor), turn: null };
+  let bestTurn = turns[0];
+  if (maximizing) {
+    let maxEval = -Infinity;
+    for (const turn of turns) {
+      let cb = cloneBoard(b), cp = clonePawns(p);
+      for (const act of turn) {
+        const res = applyAction(act, cb, cp);
+        cb = res.board; cp = res.pawns;
+      }
+      const val = minimax(cb, cp, opponent(color), depth - 1, alpha, beta, false);
+      if (val.score > maxEval) { maxEval = val.score; bestTurn = turn; }
+      alpha = Math.max(alpha, val.score);
+      if (beta <= alpha) break;
+    }
+    return { score: maxEval, turn: bestTurn };
+  } else {
+    let minEval = Infinity;
+    for (const turn of turns) {
+      let cb = cloneBoard(b), cp = clonePawns(p);
+      for (const act of turn) {
+        const res = applyAction(act, cb, cp);
+        cb = res.board; cp = res.pawns;
+      }
+      const val = minimax(cb, cp, opponent(color), depth - 1, alpha, beta, true);
+      if (val.score < minEval) { minEval = val.score; bestTurn = turn; }
+      beta = Math.min(beta, val.score);
+      if (beta <= alpha) break;
+    }
+    return { score: minEval, turn: bestTurn };
+  }
+}
+
+function cellName(r, c) { return String.fromCharCode(65 + c) + (ROWS - r); }
+
+function actionToStr(act) {
+  // returns display string in current language
+  if (act.type === "pawn") {
+    return fmt("pawnMove", { from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC) });
+  }
+  return fmt("towerMove", { from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC), num: act.num });
+}
+function actionParams(act) {
+  if (act.type === "pawn") {
+    return { type: "pawn", from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC) };
+  }
+  return { type: "tower", from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC), num: act.num };
+}
+
+function boardStateStr() {
+  const lines = [];
+  for (let r = 0; r < ROWS; r++) {
+    const row = [];
+    for (let c = 0; c < COLS; c++) {
+      if (isEmpty(board, r, c)) { row.push("."); continue; }
+      const h = height(board, r, c);
+      const top = topColor(board, r, c) === LIGHT ? "L" : "D";
+      let mark = top + h;
+      if (pawns[0].r === r && pawns[0].c === c) mark += "*";
+      if (pawns[1].r === r && pawns[1].c === c) mark += "#";
+      row.push(mark);
+    }
+    lines.push(row.join(" "));
+  }
+  return lines.join(" | ");
+}
+
+function logEntry(key, params, cls) {
+  const now = new Date();
+  const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  gameLog.push({ time, key, params: params || {}, cls: cls || "sys" });
+  if (gameLog.length > 250) gameLog.shift();
+  renderLog();
+}
+// zpětná kompatibilita
+function log(msg, cls) {
+  logEntry(null, null, cls);
+  gameLog[gameLog.length - 1].msg = msg;
+  gameLog[gameLog.length - 1].key = null;
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById("log-body");
+  const entries = gameLog.slice().reverse();
+  el.innerHTML = entries.map(e => {
+    const msg = formatLogEntry(e);
+    return `<div class="entry ${e.cls}"><span class="time">${e.time}</span>${msg}</div>`;
+  }).join("");
+  el.scrollTop = 0;
+}
+
+function aiMove() {
+  if (gameOver) return;
+  setStatus(t("statusAIThinking"));
+  logEntry("logAiThinking", { depth: AI_DEPTH }, "ai");
+  setTimeout(() => {
+    try {
+      current = aiColor;
+      if (!canDoBoth(aiColor, board, pawns)) {
+        endGame(aiColor);
+        return;
+      }
+      const result = minimax(board, pawns, aiColor, AI_DEPTH, -Infinity, Infinity, true);
+      if (!result.turn || result.turn.length < 2) {
+        endGame(aiColor);
+        return;
+      }
+      // Uložit stav před AI (current zůstává human pro undo)
+      pushHistory();
+      for (const act of result.turn) {
+        const res = applyAction(act, board, pawns);
+        board = res.board;
+        pawns = res.pawns;
+        logEntry("logAiMove", { _move: actionParams(act) }, "ai");
+      }
+      current = humanColor;
+      pendingActions = [];
+      selected = null;
+      movePhase = "select";
+      hidePieceChoice();
+      render();
+      if (!canDoBoth(humanColor, board, pawns)) {
+        endGame(humanColor);
+      } else {
+        setStatus(t("statusYourTurn"));
+        logEntry("logPlayerTurn", {}, "human");
+      }
+    } catch (err) {
+      logEntry("logAiError", { err: err.message }, "sys");
+      console.error(err);
+      endGame(aiColor);
+    }
+  }, 30);
+}
+
+function initBoard() {
+  board = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => []));
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      board[r][c] = [((r + c) % 2 === 0) ? LIGHT : DARK];
+    }
+  }
+  if (topColor(board, 2, 1) === LIGHT) {
+    pawns = [{ r: 2, c: 1 }, { r: 2, c: 2 }];
+  } else {
+    pawns = [{ r: 2, c: 2 }, { r: 2, c: 1 }];
+  }
+  if (topColor(board, pawns[0].r, pawns[0].c) !== LIGHT) {
+    board[2][1] = [LIGHT];
+    board[2][2] = [DARK];
+    pawns = [{ r: 2, c: 1 }, { r: 2, c: 2 }];
+  }
+
+  humanColor = LIGHT;
+  aiColor = DARK;
+  gameOver = false;
+  endReasonColor = null;
+  history = [];
+  pendingActions = [];
+  selected = null;
+  movePhase = "select";
+  towerMoveData = null;
+  gameLog = [];
+  window._endHighlight = null;
+  window._endStatus = null;
+  hidePieceChoice();
+
+  const humanStarts = (gamesStarted % 2 === 0);
+  gamesStarted++;
+  saveStats();
+
+  if (humanStarts) {
+    current = LIGHT;
+    logEntry("logYouStart", {}, "sys");
+    setStatus(t("statusYourTurn"));
+  } else {
+    current = DARK;
+    logEntry("logAiStarts", {}, "sys");
+    setStatus(t("statusAIThinking"));
+    setTimeout(() => aiMove(), 280);
+  }
+}
+
+function pushHistory() {
+  history.push({
+    board: cloneBoard(board),
+    pawns: clonePawns(pawns),
+    current,
+    pending: pendingActions.slice(),
+    logLen: gameLog.length
+  });
+  if (history.length > 50) history.shift();
+}
+
+function undo() {
+  if (history.length === 0 || gameOver) return;
+  const h = history.pop();
+  board = h.board;
+  pawns = h.pawns;
+  // Vždy vrátit tah hráči – po AI tahu by current byl aiColor a šlo by označit
+  current = humanColor;
+  pendingActions = [];
+  if (h.logLen !== undefined) gameLog = gameLog.slice(0, h.logLen);
+  selected = null;
+  movePhase = "select";
+  towerMoveData = null;
+  gameOver = false;
+  endReasonColor = null;
+  hidePieceChoice();
+  render();
+  renderLog();
+  setStatus(t("statusYourTurn"));
+  logEntry("logBack", {}, "sys");
+}
+
+function endGame(whoCouldNotMove) {
+  if (gameOver) return;
+  gameOver = true;
+  endReasonColor = whoCouldNotMove;
+  hidePieceChoice();
+
+  const lightTowers = []; // {r,c,h}
+  const darkTowers = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      if (isEmpty(board, r, c)) continue;
+      const h = height(board, r, c);
+      const entry = { r, c, h };
+      if (topColor(board, r, c) === LIGHT) lightTowers.push(entry);
+      else darkTowers.push(entry);
+    }
+  lightTowers.sort((a, b) => b.h - a.h);
+  darkTowers.sort((a, b) => b.h - a.h);
+  const lightH = lightTowers.map(x => x.h);
+  const darkH = darkTowers.map(x => x.h);
+
+  let winner = null;
+  const maxL = Math.max(lightH.length, darkH.length, 1);
+  for (let i = 0; i < maxL; i++) {
+    const l = lightH[i] || 0, d = darkH[i] || 0;
+    if (l > d) { winner = LIGHT; break; }
+    if (d > l) { winner = DARK; break; }
+  }
+
+  let msg;
+  if (winner === null) {
+    msg = t("draw");
+  } else if (winner === humanColor) {
+    msg = t("winYou");
+    stats.wins++;
+  } else {
+    msg = t("winAI");
+    stats.losses++;
+  }
+  const bestThis = Math.max(lightH[0] || 0, darkH[0] || 0);
+  if (bestThis > (stats.bestTower || 0)) stats.bestTower = bestThis;
+  stats.played++;
+  saveStats();
+
+  const reasonKey = whoCouldNotMove === humanColor ? "endReasonHuman" : "endReasonAI";
+  window._endStatus = { resultKey: winner === null ? "draw" : (winner === humanColor ? "winYou" : "winAI"), reasonKey };
+  const statusEl = document.getElementById("status");
+  statusEl.textContent = t(window._endStatus.resultKey) + " — " + t(window._endStatus.reasonKey);
+  statusEl.classList.add("end");
+
+  // Zvýraznění: green highest decisive, yellow if tie on first rank
+  window._endHighlight = { winner, lightTowers, darkTowers };
+
+  // Stručný log: jen konec + nejvyšší věž vítěze
+  const resultKey = winner === null ? "draw" : (winner === humanColor ? "winYou" : "winAI");
+  logEntry("logEnd", { _resultKey: resultKey }, "sys");
+  if (winner !== null) {
+    const towers = winner === LIGHT ? lightTowers : darkTowers;
+    if (towers.length) {
+      const top = towers[0];
+      logEntry("logWinTower", { height: top.h, cell: cellName(top.r, top.c) }, "sys");
+    }
+  }
+
+  render();
+}
+
+function setStatus(txt) {
+  const el = document.getElementById("status");
+  el.textContent = txt;
+  el.classList.remove("end");
+}
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+function showConfirm(msg, onYes) {
+  document.getElementById("confirm-title").textContent = t("confirmTitle");
+  document.getElementById("confirm-msg").textContent = msg;
+  document.getElementById("confirm-yes").textContent = t("yes");
+  document.getElementById("confirm-no").textContent = t("no");
+  confirmCallback = onYes;
+  document.getElementById("confirm-modal").classList.add("show");
+}
+
+function hidePieceChoice() {
+  document.getElementById("piece-choice").classList.remove("show");
+  towerMoveData = null;
+}
+
+function showPieceChoiceUI() {
+  document.getElementById("piece-choice").classList.add("show");
+  setStatus(t("statusSelectPieces"));
+}
+
+function render() {
+  const immL = getImmobileCells(LIGHT, board, pawns);
+  const immD = getImmobileCells(DARK, board, pawns);
+
+  const boardEl = document.getElementById("board");
+  boardEl.innerHTML = "";
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell" + (isEmpty(board, r, c) ? " empty" : "");
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      const key = r + "," + c;
+      const isImmobile = !gameOver && (immL.has(key) || immD.has(key));
+
+      if (!isEmpty(board, r, c)) {
+        const stack = board[r][c];
+        const h = stack.length;
+        const lbl = document.createElement("div");
+        let hlClass = "height-label";
+        if (gameOver && window._endHighlight) {
+          const eh = window._endHighlight;
+          const maxH = Math.max(
+            (eh.lightTowers[0] && eh.lightTowers[0].h) || 0,
+            (eh.darkTowers[0] && eh.darkTowers[0].h) || 0
+          );
+          const lightTop = eh.lightTowers.filter(t => t.h === maxH);
+          const darkTop = eh.darkTowers.filter(t => t.h === maxH);
+          const bothHaveMax = lightTop.length && darkTop.length;
+          if (bothHaveMax) {
+            // shoda nejvyšších → žlutá; druhá nejvyšší vítěze zelená
+            if ((topColor(board, r, c) === LIGHT && lightTop.some(t => t.r === r && t.c === c)) ||
+                (topColor(board, r, c) === DARK && darkTop.some(t => t.r === r && t.c === c))) {
+              hlClass += " top-tie";
+            } else if (eh.winner !== null) {
+              const wt = eh.winner === LIGHT ? eh.lightTowers : eh.darkTowers;
+              const secondH = wt.length > 1 ? wt[1].h : -1;
+              if (h === secondH && topColor(board, r, c) === eh.winner &&
+                  wt.filter(t => t.h === secondH).some(t => t.r === r && t.c === c)) {
+                hlClass += " second-win";
+              }
+            }
+          } else if (h === maxH) {
+            // jednoznačná nejvyšší → zelená (všechny s max výškou od vítěze, nebo obecně max)
+            if (eh.winner === null || topColor(board, r, c) === eh.winner) {
+              hlClass += " top-win";
+            }
+          }
+        } else if (isImmobile) {
+          hlClass += " immobile";
+        }
+        lbl.className = hlClass;
+        lbl.textContent = h;
+        cell.appendChild(lbl);
+
+        const stackEl = document.createElement("div");
+        stackEl.className = "stack";
+        const show = stack.slice(-2);
+        for (const col of show) {
+          const p = document.createElement("div");
+          p.className = "piece " + (col === LIGHT ? "light" : "dark");
+          stackEl.appendChild(p);
+        }
+        cell.appendChild(stackEl);
+      }
+
+      if (pawns[0].r === r && pawns[0].c === c) {
+        const pn = document.createElement("div");
+        pn.className = "pawn light";
+        cell.appendChild(pn);
+      }
+      if (pawns[1].r === r && pawns[1].c === c) {
+        const pn = document.createElement("div");
+        pn.className = "pawn dark";
+        cell.appendChild(pn);
+      }
+
+      if (selected && selected.r === r && selected.c === c) cell.classList.add("selected");
+      if (movePhase === "dest" && selected && !gameOver) {
+        if (selected.type === "pawn") {
+          if (getPawnMoves(current, board, pawns).some(m => m.toR === r && m.toC === c))
+            cell.classList.add("valid");
+        } else if (selected.type === "tower") {
+          if (getTowerMoves(current, board, pawns).some(m =>
+            m.fromR === selected.r && m.fromC === selected.c && m.toR === r && m.toC === c))
+            cell.classList.add("valid");
+        }
+      }
+
+      cell.addEventListener("click", () => onCellClick(r, c));
+      boardEl.appendChild(cell);
+    }
+  }
+  document.getElementById("btn-undo").disabled = history.length === 0 || gameOver || current !== humanColor;
+}
+
+function onCellClick(r, c) {
+  if (gameOver || current !== humanColor) return;
+
+  if (movePhase === "select") {
+    if (pawns[current].r === r && pawns[current].c === c) {
+      selected = { type: "pawn", r, c };
+      movePhase = "dest";
+      setStatus(t("statusSelectDest"));
+      render();
+      return;
+    }
+    const pr = pawns[current].r, pc = pawns[current].c;
+    const dist = Math.max(Math.abs(r - pr), Math.abs(c - pc));
+    if (dist === 1 && topColor(board, r, c) === current && freeSide(board, r, c) && !isEmpty(board, r, c)) {
+      selected = { type: "tower", r, c };
+      movePhase = "dest";
+      setStatus(t("statusSelectDest"));
+      render();
+      return;
+    }
+  } else if (movePhase === "dest") {
+    if (selected.type === "pawn") {
+      const moves = getPawnMoves(current, board, pawns);
+      const m = moves.find(x => x.toR === r && x.toC === c);
+      if (m) {
+        pushHistory();
+        const res = applyAction(m, board, pawns);
+        board = res.board; pawns = res.pawns;
+        pendingActions.push(m);
+        logEntry("logPlayerMove", { _move: actionParams(m) }, "human");
+        selected = null;
+        movePhase = "select";
+        afterHumanAction();
+      } else {
+        selected = null;
+        movePhase = "select";
+        setStatus(t("statusYourTurn"));
+        render();
+      }
+    } else if (selected.type === "tower") {
+      const tms = getTowerMoves(current, board, pawns).filter(m =>
+        m.fromR === selected.r && m.fromC === selected.c && m.toR === r && m.toC === c);
+      if (tms.length > 0) {
+        const nums = [...new Set(tms.map(m => m.num))];
+        if (nums.length === 1) {
+          doTowerMove(selected.r, selected.c, r, c, nums[0]);
+        } else {
+          towerMoveData = { fromR: selected.r, fromC: selected.c, toR: r, toC: c };
+          movePhase = "pieces";
+          showPieceChoiceUI();
+          render();
+        }
+      } else {
+        selected = null;
+        movePhase = "select";
+        setStatus(t("statusYourTurn"));
+        render();
+      }
+    }
+  }
+}
+
+function doTowerMove(fr, fc, tr, tc, num) {
+  const m = { type: "tower", color: current, fromR: fr, fromC: fc, toR: tr, toC: tc, num };
+  pushHistory();
+  const res = applyAction(m, board, pawns);
+  board = res.board; pawns = res.pawns;
+  pendingActions.push(m);
+  logEntry("logPlayerMove", { _move: actionParams(m) }, "human");
+  selected = null;
+  movePhase = "select";
+  hidePieceChoice();
+  afterHumanAction();
+}
+
+function afterHumanAction() {
+  render();
+  if (pendingActions.length >= 2) {
+    pendingActions = [];
+    if (!canDoBoth(aiColor, board, pawns)) {
+      endGame(aiColor);
+      return;
+    }
+    current = aiColor;
+    aiMove();
+  } else {
+    setStatus(t("statusMustBoth") + " (" + pendingActions.length + "/2)");
+    const hasPawnAct = pendingActions.some(a => a.type === "pawn");
+    if (hasPawnAct) {
+      if (getTowerMoves(current, board, pawns).length === 0) { endGame(humanColor); return; }
+    } else {
+      if (getPawnMoves(current, board, pawns).length === 0) { endGame(humanColor); return; }
+    }
+  }
+}
+
+function saveGame() {
+  const data = { board, pawns, current, pendingActions, gameOver, lang, gameLog, humanColor, endReasonColor };
+  localStorage.setItem("volterra_save", JSON.stringify(data));
+  toast(t("saveOk"));
+  logEntry("logSaved", {}, "sys");
+}
+
+function loadGame() {
+  const raw = localStorage.getItem("volterra_save");
+  if (!raw) { toast(t("loadFail")); return; }
+  try {
+    const data = JSON.parse(raw);
+    board = data.board;
+    pawns = data.pawns;
+    current = data.current;
+    pendingActions = data.pendingActions || [];
+    gameOver = data.gameOver || false;
+    endReasonColor = data.endReasonColor || null;
+    gameLog = data.gameLog || [];
+    if (data.lang) { lang = data.lang; updateLangUI(); }
+    selected = null;
+    movePhase = "select";
+    hidePieceChoice();
+    render();
+    renderLog();
+    if (gameOver) {
+      document.getElementById("status").textContent = (lang === "cs" ? "Konec hry" : "Game over");
+      document.getElementById("status").classList.add("end");
+    } else {
+      setStatus(current === humanColor ? t("statusYourTurn") : t("statusAIThinking"));
+    }
+    toast(t("loadOk"));
+    logEntry("logLoaded", {}, "sys");
+    if (!gameOver && current === aiColor) setTimeout(() => aiMove(), 200);
+  } catch (e) {
+    toast(t("loadFail"));
+  }
+}
+
+function resetGame() {
+  showConfirm(t("resetConfirm"), () => {
+    initBoard();
+    render();
+    renderLog();
+  });
+}
+
+function showStats() {
+  document.getElementById("stats-title").textContent = t("statsTitle");
+  const dash = (n) => (n ? String(n) : "–");
+  document.getElementById("st-played").textContent = dash(stats.played);
+  document.getElementById("st-wins").textContent = dash(stats.wins);
+  document.getElementById("st-losses").textContent = dash(stats.losses);
+  document.getElementById("st-best").textContent = dash(stats.bestTower || 0);
+  document.getElementById("stats-close").textContent = t("close");
+  document.getElementById("stats-modal").classList.add("show");
+}
+
+function updateLangUI() {
+  document.getElementById("btn-lang").textContent = lang === "cs" ? "🇬🇧" : "🇨🇿";
+  document.getElementById("help-title").textContent = t("helpTitle");
+  document.getElementById("help-body").innerHTML = t("help");
+  document.getElementById("help-close").textContent = t("close");
+  document.getElementById("log-title").textContent = t("logTitle");
+  document.getElementById("stats-title").textContent = t("statsTitle");
+  document.getElementById("stats-close").textContent = t("close");
+  document.getElementById("confirm-title").textContent = t("confirmTitle");
+  document.getElementById("confirm-yes").textContent = t("yes");
+  document.getElementById("confirm-no").textContent = t("no");
+  // button titles
+  document.getElementById("btn-save").title = lang === "cs" ? "Uložit" : "Save";
+  document.getElementById("btn-load").title = lang === "cs" ? "Načíst" : "Load";
+  document.getElementById("btn-reset").title = "Reset";
+  document.getElementById("btn-stats").title = t("statsTitle");
+  document.getElementById("btn-help").title = t("helpTitle");
+  document.getElementById("btn-lang").title = lang === "cs" ? "English" : "Čeština";
+  document.getElementById("btn-copy-log").title = lang === "cs" ? "Kopírovat log" : "Copy log";
+  document.getElementById("btn-undo").title = t("undo");
+  // status line
+  if (gameOver && window._endStatus) {
+    const statusEl = document.getElementById("status");
+    statusEl.textContent = t(window._endStatus.resultKey) + " — " + t(window._endStatus.reasonKey);
+    statusEl.classList.add("end");
+  } else if (current === humanColor) {
+    if (movePhase === "dest") setStatus(t("statusSelectDest"));
+    else if (movePhase === "pieces") setStatus(t("statusSelectPieces"));
+    else if (pendingActions.length === 1) setStatus(t("statusMustBoth") + " (1/2)");
+    else setStatus(t("statusYourTurn"));
+  } else {
+    setStatus(t("statusAIThinking"));
+  }
+}
+
+function toggleLang() {
+  lang = lang === "cs" ? "en" : "cs";
+  updateLangUI();
+  renderLog();
+}
+
+function copyLog() {
+  const text = gameLog.slice().reverse().map(e => `[${e.time}] ${formatLogEntry(e)}`).join("\n");
+  const done = () => toast(t("copied"));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta); done();
+    });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta); done();
+  }
+}
+
+function setupEvents() {
+  document.getElementById("btn-save").onclick = saveGame;
+  document.getElementById("btn-load").onclick = loadGame;
+  document.getElementById("btn-reset").onclick = resetGame;
+  document.getElementById("btn-stats").onclick = showStats;
+  document.getElementById("btn-help").onclick = () => document.getElementById("help-modal").classList.add("show");
+  document.getElementById("help-close").onclick = () => document.getElementById("help-modal").classList.remove("show");
+  document.getElementById("stats-close").onclick = () => document.getElementById("stats-modal").classList.remove("show");
+  document.getElementById("btn-lang").onclick = toggleLang;
+  document.getElementById("btn-undo").onclick = undo;
+  document.getElementById("btn-copy-log").onclick = copyLog;
+  document.getElementById("p1").onclick = () => {
+    if (towerMoveData) doTowerMove(towerMoveData.fromR, towerMoveData.fromC, towerMoveData.toR, towerMoveData.toC, 1);
+  };
+  document.getElementById("p2").onclick = () => {
+    if (towerMoveData) doTowerMove(towerMoveData.fromR, towerMoveData.fromC, towerMoveData.toR, towerMoveData.toC, 2);
+  };
+  document.getElementById("pcancel").onclick = () => {
+    selected = null; movePhase = "select";
+    hidePieceChoice();
+    setStatus(t("statusYourTurn"));
+    render();
+  };
+  document.getElementById("confirm-yes").onclick = () => {
+    document.getElementById("confirm-modal").classList.remove("show");
+    if (confirmCallback) confirmCallback();
+    confirmCallback = null;
+  };
+  document.getElementById("confirm-no").onclick = () => {
+    document.getElementById("confirm-modal").classList.remove("show");
+    confirmCallback = null;
+  };
+}
+
+loadStats();
+setupEvents();
+updateLangUI();
+initBoard();
+render();
+renderLog();
+
+})();
+</script>
+</body>
+</html>
