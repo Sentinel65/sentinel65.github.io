@@ -102,12 +102,42 @@ header {
   flex: 1; display: flex; align-items: center; justify-content: center;
   padding: 8px; overflow: auto; min-height: 0;
 }
+.board-frame {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: 1fr 22px;
+  gap: 2px;
+  width: min(92vw, 382px);
+  max-height: 100%;
+}
+.row-labels {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 6px;
+  padding: 8px 0;
+  align-items: stretch;
+}
+.row-labels span {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--text-dark); opacity: 0.75;
+}
+.col-labels {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 0 8px;
+}
+.col-labels span {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--text-dark); opacity: 0.75;
+}
 .board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(5, 1fr);
   gap: 6px;
-  width: min(92vw, 360px);
+  width: 100%;
   aspect-ratio: 4 / 5;
   max-height: 100%;
   background: #8b7355;
@@ -156,6 +186,11 @@ header {
   color: #0a3d12;
   box-shadow: 0 0 0 2px #2d8a4e;
 }
+.height-label.draw-all {
+  background: #f0a050 !important;
+  color: #5a2a00;
+  box-shadow: 0 0 0 2px #c87820;
+}
 .stack {
   display: flex; flex-direction: column-reverse; align-items: center;
   width: 100%; gap: 2px; z-index: 1; margin-top: auto;
@@ -194,28 +229,77 @@ header {
   border-color: #c8b8a0;
 }
 
-.status {
-  text-align: center; padding: 10px 12px; font-size: 1.05rem; font-weight: 600;
-  background: var(--panel2); color: var(--light-top); border-top: 2px solid var(--border);
-  flex-shrink: 0; line-height: 1.35; min-height: 44px;
-}
-.status.end { color: var(--accent2); font-size: 1.1rem; }
-
 .controls {
   display: flex; justify-content: center; align-items: center; gap: 10px;
-  padding: 10px; background: var(--panel); border-top: 2px solid var(--border);
+  padding: 8px 12px; background: var(--panel); border-top: 2px solid var(--border);
   flex-shrink: 0; min-height: 56px;
 }
+.controls .status {
+  display: none;
+  text-align: center; font-size: 0.95rem; font-weight: 700;
+  color: var(--light-top); line-height: 1.25; padding: 0 6px;
+}
+.controls .status.end {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--accent2); font-size: 1.05rem;
+}
+.controls .status .trophy { color: #f0d060; font-size: 1.35rem; }
+.controls .action-icons {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.controls .action-icons.hidden { display: none; }
+.act-icon {
+  width: 42px; height: 42px; border-radius: 10px; border: 2px solid var(--border);
+  background: var(--cell); display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.2s, filter 0.2s;
+  user-select: none; padding: 0;
+}
+.act-icon .dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.act-icon .dot.yellow {
+  background: radial-gradient(circle at 32% 28%, #ffe680, #f5c518 55%, #c9a00a);
+}
+.act-icon .dot.brown {
+  background: radial-gradient(circle at 32% 28%, #5c4030, #4a3220 55%, #2c1e12);
+}
+.act-icon .tile {
+  width: 26px; height: 12px; border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.act-icon .tile.light {
+  background: linear-gradient(180deg, #f5e6c8 0%, #e8c878 45%, #c9a84a 100%);
+}
+.act-icon .tile.dark {
+  background: linear-gradient(180deg, #6b5344 0%, #4a3728 50%, #2c1e14 100%);
+}
+.act-icon.done {
+  opacity: 0.3; filter: grayscale(0.85);
+}
+.act-icon#btn-undo {
+  cursor: pointer; color: var(--text-dark); font-size: 1.2rem; font-weight: 700;
+  background: var(--cell);
+}
+.act-icon#btn-undo:disabled {
+  opacity: 0.35; cursor: not-allowed;
+}
+.act-icon.hidden-icon { display: none !important; }
 .controls button {
-  padding: 11px 20px; border: 2px solid var(--border); border-radius: 12px;
-  font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  padding: 8px 14px; border: 2px solid var(--border); border-radius: 10px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
   background: var(--panel2); color: var(--text); transition: background 0.15s;
+  min-width: 40px; min-height: 40px;
 }
 .controls button.primary { background: var(--accent); border-color: var(--accent2); color: #fff; }
 .controls button:disabled { opacity: 0.4; cursor: not-allowed; }
 .controls button:not(:disabled):active { transform: scale(0.97); }
-.controls .piece-choice { display: none; gap: 10px; align-items: center; }
+.controls .piece-choice { display: none; gap: 8px; align-items: center; }
 .controls .piece-choice.show { display: flex; }
+.log-body .entry .turn-num { color: #fff; font-weight: 700; margin-right: 4px; }
+.log-body .entry .dots { color: #fff; margin-right: 4px; }
 
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(30,20,10,0.75); z-index: 100;
@@ -288,8 +372,12 @@ header {
     padding: 10px 8px;
     overflow: visible;
   }
+  .board-frame {
+    width: min(94vw, 360px);
+    max-height: none;
+  }
   .board {
-    width: min(92vw, 340px);
+    width: 100%;
     height: auto;
     aspect-ratio: 4 / 5;
     max-height: none;
@@ -301,7 +389,8 @@ header {
   .logo { font-size: 1.25rem; letter-spacing: 2px; }
   .height-label { font-size: 0.9rem; }
   .piece { height: 8px; }
-  .board { width: min(94vw, 320px); aspect-ratio: 4 / 5; }
+  .board-frame { width: min(96vw, 340px); }
+  .board { width: 100%; aspect-ratio: 4 / 5; }
 }
 </style>
 </head>
@@ -328,17 +417,27 @@ header {
   </div>
   <div class="game-col">
     <div class="board-wrap">
-      <div class="board" id="board"></div>
-    </div>
-    <div class="status" id="status">Načítání…</div>
-    <div class="controls" id="controls">
-      <div class="undo-wrap">
-        <button id="btn-undo" disabled>↩</button>
+      <div class="board-frame">
+        <div class="row-labels" id="row-labels">
+          <span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+        </div>
+        <div class="board" id="board"></div>
+        <div class="col-labels" id="col-labels">
+          <span>A</span><span>B</span><span>C</span><span>D</span>
+        </div>
       </div>
-      <div class="piece-choice" id="piece-choice">
-        <button id="p1">1</button>
-        <button id="p2" class="primary">2</button>
-        <button id="pcancel">✕</button>
+    </div>
+    <div class="controls" id="controls">
+      <div class="status" id="status"></div>
+      <div class="action-icons" id="action-icons">
+        <div class="act-icon" id="icon-pawn" title="Figurka"><span class="dot yellow" id="icon-pawn-dot"></span></div>
+        <div class="act-icon" id="icon-tower" title="Věž"><span class="tile light" id="icon-tower-tile"></span></div>
+        <button class="act-icon" id="btn-undo" disabled title="Zpět">↩</button>
+        <div class="piece-choice" id="piece-choice">
+          <button id="p1">1</button>
+          <button id="p2" class="primary">2</button>
+          <button id="pcancel">✕</button>
+        </div>
       </div>
     </div>
   </div>
@@ -363,6 +462,7 @@ header {
             <th title="Partie">#</th>
             <th title="Výhry">🏆</th>
             <th title="Prohry">×</th>
+            <th title="Remízy">=</th>
             <th title="Nejvyšší věž">⭐</th>
           </tr>
         </thead>
@@ -371,6 +471,7 @@ header {
             <td id="st-played">0</td>
             <td id="st-wins">0</td>
             <td id="st-losses">0</td>
+            <td id="st-draws">0</td>
             <td id="st-best">0</td>
           </tr>
         </tbody>
@@ -402,9 +503,10 @@ const I18N = {
     statusMustBoth: "Ještě jedna akce (figurka nebo věž)",
     statusAIThinking: "AI přemýšlí…",
     statusYourTurn: "Váš tah – 2 akce (figurka + věž)",
-    winYou: "Vyhráli jste!",
-    winAI: "AI vyhrála!",
+    winYou: "Hráč",
+    winAI: "AI",
     draw: "Remíza",
+    gameOverLabel: "Konec hry!",
     saveOk: "Hra uložena",
     loadOk: "Hra načtena",
     loadFail: "Žádná uložená hra",
@@ -425,28 +527,45 @@ const I18N = {
     undo: "Zpět",
     logYouStart: "Začínáte vy (světlé)",
     logAiStarts: "Začíná AI (tmavé)",
-    logAiThinking: "AI přemýšlí… (d{depth})",
-    logAiMove: "AI: {move}",
-    logPlayerMove: "Hráč: {move}",
     logPlayerTurn: "Tah hráče",
+    logAiTurn: "Tah AI",
     logBack: "Zpět",
     logSaved: "Hra uložena",
     logLoaded: "Hra načtena",
     logEnd: "Konec hry: {result}",
     logWinTower: "Nejvyšší věž vítěze: {height} na {cell}",
     logAiError: "AI chyba: {err}",
-    pawnMove: "figurka {from} → {to}",
-    towerMove: "věž {from} → {to} ({num})",
     help: `
-<p><strong>Cíl:</strong> Mít na konci nejvyšší věž.</p>
-<p><strong>Tah:</strong> 2 akce v libovolném pořadí:</p>
+<p><strong>Hra Volterra</strong><br>
+<em>Design and rulebook © 2020 Julien Griffon</em></p>
+<p><strong>Cíl:</strong> Mít na konci hry nejvyšší věž ve středověkém městě Volterra.</p>
+<p><strong>Tah:</strong> povinné 2 akce v libovolném pořadí:</p>
 <ul>
-<li><strong>Figurka</strong> – na sousední věž své barvy (8 směrů).</li>
-<li><strong>Věž</strong> – vlastní věž u figurky s volnou stranou: přesuňte 1–2 vrchní dílky na jinou věž u figurky.</li>
+<li><strong>Vlastní figurka</strong> – smí pouze na sousední věž své barvy (pohyb všemi směry).</li>
+<li><strong>Věž</strong> – vlastní věž u figurky s aspoň jednou volnou stranou: můžete přesunout 1–2 vrchní dílky na kteroukoli věž (vlastní i soupeře), která sousedí s vlastní figurkou.</li>
 </ul>
-<p>Figurka ne na soupeřovu věž. Věže ne na prázdné pole ani na pole s figurkou.</p>
-<p>Hra končí, když hráč nemůže udělat obě akce. <strong>Vyhrává hráč s nejvyšší věží</strong>; při rovnosti se porovnává druhá nejvyšší věž, pak třetí atd.</p>
-<p><em>Růžové pozadí čísla = z daného pole nelze táhnout. Po konci hry: zelená = rozhodující nejvyšší věž, žlutá = shoda nejvyšších.</em></p>`
+<p><strong>POZOR:</strong> barva dílku, který je na vrcholu věže, určuje, komu tato věž patří!</p>
+<p><strong>Rozdělení herní desky:</strong><br>
+Je povoleno rozdělit hrací desku odstraněním věže. Pokud se 2 věže navzájem dotýkají rohy, jsou stále považovány za propojené a jde stále o jednu hrací desku.<br>
+Pokud stojí obě figurky po rozdělení hrací desky na stejné části, druhá část hrací desky je odstraněna ze hry!<br>
+Pokud stojí obě figurky po rozdělení hrací desky každá na jiné části, pokračuje každý hráč ve hře na „své“ části hrací desky!</p>
+<p><strong>Konec hry:</strong><br>
+Hra končí ve chvíli, když někdo z hráčů nemůže vykonat obě akce. Vyhrává hráč s nejvyšší věží; při rovnosti se porovnává druhá nejvyšší věž, pak třetí atd. Pokud mají oba soupeři stejný počet věží se shodnou výškou, hra končí remízou.</p>
+<p><strong>Barevná pozadí čísel:</strong><br>
+Růžové = z daného pole nelze táhnout.<br>
+Po konci hry:<br>
+Zelená = rozhodující nejvyšší věž<br>
+Žlutá = shoda nejvyšších<br>
+Oranžová = shoda čísel všech věží u obou hráčů</p>
+<p><strong>Ikony pod deskou:</strong><br>
+Kolečko = akce figurky (žluté u hráče, hnědé u AI)<br>
+Dílek = akce věže (světlý / tmavý podle hráče na tahu)<br>
+Po odehrání akce ikona zešedne. ↩ = zpět. Při volbě 1 / 2 dílků se zobrazí jen tato tlačítka.</p>
+<p><strong>Formát logu:</strong><br>
+<strong>Tah hráče</strong> / <strong>Tah AI</strong> – začátek tahu.<br>
+<span style="color:#fff">01.</span> první akce tahu, <span style="color:#fff">...</span> druhá akce.<br>
+<code>fC3-B4</code> = figurka z C3 na B4<br>
+<code>vD2-B4 (1)</code> = věž z D2 na B4 (1 dílek, případně 2)</p>`
   },
   en: {
     statusSelectDest: "Select destination",
@@ -454,9 +573,10 @@ const I18N = {
     statusMustBoth: "One more action (pawn or tower)",
     statusAIThinking: "AI is thinking…",
     statusYourTurn: "Your turn – 2 actions (pawn + tower)",
-    winYou: "You win!",
-    winAI: "AI wins!",
+    winYou: "Player",
+    winAI: "AI",
     draw: "Draw",
+    gameOverLabel: "Game over!",
     saveOk: "Game saved",
     loadOk: "Game loaded",
     loadFail: "No saved game",
@@ -477,28 +597,45 @@ const I18N = {
     undo: "Undo",
     logYouStart: "You start (light)",
     logAiStarts: "AI starts (dark)",
-    logAiThinking: "AI is thinking… (d{depth})",
-    logAiMove: "AI: {move}",
-    logPlayerMove: "Player: {move}",
     logPlayerTurn: "Player's turn",
+    logAiTurn: "AI's turn",
     logBack: "Undo",
     logSaved: "Game saved",
     logLoaded: "Game loaded",
     logEnd: "Game over: {result}",
     logWinTower: "Winner's highest tower: {height} at {cell}",
     logAiError: "AI error: {err}",
-    pawnMove: "pawn {from} → {to}",
-    towerMove: "tower {from} → {to} ({num})",
     help: `
-<p><strong>Goal:</strong> Own the highest tower at the end.</p>
-<p><strong>Turn:</strong> 2 actions in any order:</p>
+<p><strong>Volterra</strong><br>
+<em>Design and rulebook © 2020 Julien Griffon</em></p>
+<p><strong>Goal:</strong> Own the highest tower in the medieval town of Volterra at the end of the game.</p>
+<p><strong>Turn:</strong> exactly 2 actions in any order:</p>
 <ul>
-<li><strong>Pawn</strong> – to neighbouring tower of your colour (8 directions).</li>
-<li><strong>Tower</strong> – your tower next to pawn with a free side: move top 1–2 pieces onto another tower next to the pawn.</li>
+<li><strong>Your pawn</strong> – may only move onto a neighbouring tower of your colour (any direction).</li>
+<li><strong>Tower</strong> – your tower next to the pawn with at least one free side: move the top 1–2 pieces onto any tower (yours or opponent’s) adjacent to your pawn.</li>
 </ul>
-<p>Pawn not onto opponent's tower. Towers not onto empty or pawn squares.</p>
-<p>Game ends when a player cannot do both actions. <strong>The player with the highest tower wins</strong>; if tied, compare the second-highest tower, then the third, and so on.</p>
-<p><em>Pink number = no move from that cell. After game end: green = decisive highest tower, yellow = tied highest.</em></p>`
+<p><strong>NOTE:</strong> the colour of the top piece determines who owns the tower!</p>
+<p><strong>Splitting the board:</strong><br>
+You may split the board by removing a tower. Towers touching only at corners are still connected as one board.<br>
+If both pawns stand on the same part after a split, the other part is removed from play!<br>
+If each pawn stands on a different part, each player continues on their own part of the board!</p>
+<p><strong>End of the game:</strong><br>
+The game ends when a player cannot perform both actions. The player with the highest tower wins; if tied, compare the second-highest, then the third, and so on. If both players have the same number of towers with matching heights, the game is a draw.</p>
+<p><strong>Number background colours:</strong><br>
+Pink = no move from that cell.<br>
+After the game ends:<br>
+Green = decisive highest tower<br>
+Yellow = tied highest towers<br>
+Orange = all tower heights match for both players</p>
+<p><strong>Icons under the board:</strong><br>
+Circle = pawn action (yellow for the player, brown for AI)<br>
+Tile = tower action (light / dark according to the side to move)<br>
+After an action is played the icon greys out. ↩ = undo. When choosing 1 / 2 pieces only those buttons are shown.</p>
+<p><strong>Log format:</strong><br>
+<strong>Player's turn</strong> / <strong>AI's turn</strong> – start of a turn.<br>
+<span style="color:#fff">01.</span> first action of the turn, <span style="color:#fff">...</span> second action.<br>
+<code>fC3-B4</code> = pawn from C3 to B4<br>
+<code>vD2-B4 (1)</code> = tower from D2 to B4 (1 piece, or 2)</p>`
   }
 };
 
@@ -514,17 +651,18 @@ function fmt(key, params) {
   return s;
 }
 function formatLogEntry(e) {
+  if (e.key === "logMove") {
+    const num = e.params.num;
+    const compact = e.params.compact || "";
+    if (num) {
+      const n = String(num).padStart(2, "0");
+      return `<span class="turn-num">${n}.</span> ${compact}`;
+    }
+    return `<span class="dots">...</span> ${compact}`;
+  }
   if (e.key) {
     const params = Object.assign({}, e.params || {});
-    // nested move string for AI/player moves
-    if (params._move) {
-      const m = params._move;
-      if (m.type === "pawn") params.move = fmt("pawnMove", { from: m.from, to: m.to });
-      else params.move = fmt("towerMove", { from: m.from, to: m.to, num: m.num });
-    }
-    if (params._resultKey) {
-      params.result = t(params._resultKey);
-    }
+    if (params._resultKey) params.result = t(params._resultKey);
     return fmt(e.key, params);
   }
   return e.msg || "";
@@ -547,15 +685,18 @@ let pendingActions = [];
 let movePhase = "select";
 let towerMoveData = null;
 let gameLog = [];
+let turnNum = 0;
+let actionsInTurn = 0;
+let turnActionsDone = []; // types completed in current half-turn
 let gamesStarted = 0;
-let stats = { played: 0, wins: 0, losses: 0, bestTower: 0 };
+let stats = { played: 0, wins: 0, losses: 0, draws: 0, bestTower: 0 };
 let confirmCallback = null;
 let endReasonColor = null; // who couldn't move
 
 function loadStats() {
   try {
     const s = JSON.parse(localStorage.getItem("volterra_stats") || "{}");
-    stats = { played: s.played||0, wins: s.wins||0, losses: s.losses||0, bestTower: s.bestTower||0 };
+    stats = { played: s.played||0, wins: s.wins||0, losses: s.losses||0, draws: s.draws||0, bestTower: s.bestTower||0 };
     gamesStarted = s.gamesStarted || 0;
   } catch(e) {}
 }
@@ -815,19 +956,17 @@ function minimax(b, p, color, depth, alpha, beta, maximizing) {
 
 function cellName(r, c) { return String.fromCharCode(65 + c) + (ROWS - r); }
 
-function actionToStr(act) {
-  // returns display string in current language
-  if (act.type === "pawn") {
-    return fmt("pawnMove", { from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC) });
-  }
-  return fmt("towerMove", { from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC), num: act.num });
+function compactMove(act) {
+  const fr = cellName(act.fromR, act.fromC);
+  const to = cellName(act.toR, act.toC);
+  if (act.type === "pawn") return "f" + fr + "-" + to;
+  return "v" + fr + "-" + to + " (" + act.num + ")";
 }
+function actionToStr(act) { return compactMove(act); }
 function actionParams(act) {
-  if (act.type === "pawn") {
-    return { type: "pawn", from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC) };
-  }
-  return { type: "tower", from: cellName(act.fromR, act.fromC), to: cellName(act.toR, act.toC), num: act.num };
+  return { compact: compactMove(act), type: act.type };
 }
+
 
 function boardStateStr() {
   const lines = [];
@@ -848,18 +987,39 @@ function boardStateStr() {
 }
 
 function logEntry(key, params, cls) {
-  const now = new Date();
-  const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  gameLog.push({ time, key, params: params || {}, cls: cls || "sys" });
-  if (gameLog.length > 250) gameLog.shift();
+  gameLog.push({ key, params: params || {}, cls: cls || "sys" });
+  if (gameLog.length > 300) gameLog.shift();
   renderLog();
 }
-// zpětná kompatibilita
 function log(msg, cls) {
   logEntry(null, null, cls);
   gameLog[gameLog.length - 1].msg = msg;
   gameLog[gameLog.length - 1].key = null;
   renderLog();
+}
+function logTurnHeader(who) {
+  turnNum++;
+  actionsInTurn = 0;
+  turnActionsDone = [];
+  logEntry(who === "ai" ? "logAiTurn" : "logPlayerTurn", {}, who === "ai" ? "ai" : "human");
+}
+function logMove(act, who) {
+  if (actionsInTurn === 0) {
+    logTurnHeader(who);
+    turnActionsDone = [];
+  }
+  actionsInTurn++;
+  turnActionsDone.push(act.type);
+  const isFirst = actionsInTurn === 1;
+  logEntry("logMove", {
+    num: isFirst ? turnNum : 0,
+    compact: compactMove(act)
+  }, who === "ai" ? "ai" : "human");
+  if (actionsInTurn >= 2) {
+    actionsInTurn = 0;
+    // turnActionsDone necháme do začátku dalšího tahu (pak se vyčistí)
+  }
+  updateActionIcons();
 }
 
 function renderLog() {
@@ -867,7 +1027,7 @@ function renderLog() {
   const entries = gameLog.slice().reverse();
   el.innerHTML = entries.map(e => {
     const msg = formatLogEntry(e);
-    return `<div class="entry ${e.cls}"><span class="time">${e.time}</span>${msg}</div>`;
+    return `<div class="entry ${e.cls}">${msg}</div>`;
   }).join("");
   el.scrollTop = 0;
 }
@@ -875,7 +1035,6 @@ function renderLog() {
 function aiMove() {
   if (gameOver) return;
   setStatus(t("statusAIThinking"));
-  logEntry("logAiThinking", { depth: AI_DEPTH }, "ai");
   setTimeout(() => {
     try {
       current = aiColor;
@@ -888,13 +1047,13 @@ function aiMove() {
         endGame(aiColor);
         return;
       }
-      // Uložit stav před AI (current zůstává human pro undo)
       pushHistory();
+      actionsInTurn = 0;
       for (const act of result.turn) {
         const res = applyAction(act, board, pawns);
         board = res.board;
         pawns = res.pawns;
-        logEntry("logAiMove", { _move: actionParams(act) }, "ai");
+        logMove(act, "ai");
       }
       current = humanColor;
       pendingActions = [];
@@ -905,8 +1064,9 @@ function aiMove() {
       if (!canDoBoth(humanColor, board, pawns)) {
         endGame(humanColor);
       } else {
+        turnActionsDone = [];
+        actionsInTurn = 0;
         setStatus(t("statusYourTurn"));
-        logEntry("logPlayerTurn", {}, "human");
       }
     } catch (err) {
       logEntry("logAiError", { err: err.message }, "sys");
@@ -944,9 +1104,14 @@ function initBoard() {
   movePhase = "select";
   towerMoveData = null;
   gameLog = [];
+  turnNum = 0;
+  actionsInTurn = 0;
+  turnActionsDone = [];
   window._endHighlight = null;
   window._endStatus = null;
   hidePieceChoice();
+  const st = document.getElementById("status");
+  if (st) { st.innerHTML = ""; st.classList.remove("end"); st.style.display = "none"; }
 
   const humanStarts = (gamesStarted % 2 === 0);
   gamesStarted++;
@@ -955,10 +1120,12 @@ function initBoard() {
   if (humanStarts) {
     current = LIGHT;
     logEntry("logYouStart", {}, "sys");
+    actionsInTurn = 0;
     setStatus(t("statusYourTurn"));
   } else {
     current = DARK;
     logEntry("logAiStarts", {}, "sys");
+    actionsInTurn = 0;
     setStatus(t("statusAIThinking"));
     setTimeout(() => aiMove(), 280);
   }
@@ -970,7 +1137,10 @@ function pushHistory() {
     pawns: clonePawns(pawns),
     current,
     pending: pendingActions.slice(),
-    logLen: gameLog.length
+    logLen: gameLog.length,
+    turnNum,
+    actionsInTurn,
+    turnActionsDone: turnActionsDone.slice()
   });
   if (history.length > 50) history.shift();
 }
@@ -984,6 +1154,10 @@ function undo() {
   current = humanColor;
   pendingActions = [];
   if (h.logLen !== undefined) gameLog = gameLog.slice(0, h.logLen);
+  if (h.turnNum !== undefined) turnNum = h.turnNum;
+  if (h.actionsInTurn !== undefined) actionsInTurn = h.actionsInTurn;
+  if (h.turnActionsDone !== undefined) turnActionsDone = h.turnActionsDone.slice();
+  else turnActionsDone = [];
   selected = null;
   movePhase = "select";
   towerMoveData = null;
@@ -1018,16 +1192,18 @@ function endGame(whoCouldNotMove) {
   const darkH = darkTowers.map(x => x.h);
 
   let winner = null;
+  let decideIdx = 0;
   const maxL = Math.max(lightH.length, darkH.length, 1);
   for (let i = 0; i < maxL; i++) {
     const l = lightH[i] || 0, d = darkH[i] || 0;
-    if (l > d) { winner = LIGHT; break; }
-    if (d > l) { winner = DARK; break; }
+    if (l > d) { winner = LIGHT; decideIdx = i; break; }
+    if (d > l) { winner = DARK; decideIdx = i; break; }
   }
 
   let msg;
   if (winner === null) {
     msg = t("draw");
+    stats.draws = (stats.draws || 0) + 1;
   } else if (winner === humanColor) {
     msg = t("winYou");
     stats.wins++;
@@ -1043,11 +1219,14 @@ function endGame(whoCouldNotMove) {
   const reasonKey = whoCouldNotMove === humanColor ? "endReasonHuman" : "endReasonAI";
   window._endStatus = { resultKey: winner === null ? "draw" : (winner === humanColor ? "winYou" : "winAI"), reasonKey };
   const statusEl = document.getElementById("status");
-  statusEl.textContent = t(window._endStatus.resultKey) + " — " + t(window._endStatus.reasonKey);
+  const who = winner === null ? t("draw") : t(window._endStatus.resultKey);
+  statusEl.innerHTML = t("gameOverLabel") + ' <span class="trophy">🏆</span> ' + who;
   statusEl.classList.add("end");
+  statusEl.style.display = "flex";
+  updateActionIcons();
 
   // Zvýraznění: green highest decisive, yellow if tie on first rank
-  window._endHighlight = { winner, lightTowers, darkTowers };
+  window._endHighlight = { winner, lightTowers, darkTowers, decideIdx };
 
   // Stručný log: jen konec + nejvyšší věž vítěze
   const resultKey = winner === null ? "draw" : (winner === humanColor ? "winYou" : "winAI");
@@ -1063,10 +1242,57 @@ function endGame(whoCouldNotMove) {
   render();
 }
 
+function updateActionIcons() {
+  const icons = document.getElementById("action-icons");
+  const st = document.getElementById("status");
+  const btnUndo = document.getElementById("btn-undo");
+  if (gameOver) {
+    icons.classList.add("hidden");
+    st.style.display = "flex";
+    st.classList.add("end");
+    if (btnUndo) btnUndo.style.display = "none";
+    return;
+  }
+  icons.classList.remove("hidden");
+  st.style.display = "none";
+  st.classList.remove("end");
+  if (btnUndo) btnUndo.style.display = "";
+
+  // barva podle toho, kdo je na tahu: hráč (světlá) / AI (tmavá)
+  const isLight = current === LIGHT;
+  const pawnDot = document.getElementById("icon-pawn-dot");
+  const towerTile = document.getElementById("icon-tower-tile");
+  if (pawnDot) {
+    pawnDot.className = "dot " + (isLight ? "yellow" : "brown");
+  }
+  if (towerTile) {
+    towerTile.className = "tile " + (isLight ? "light" : "dark");
+  }
+
+  // odehrané akce v aktuálním tahu (hráč i AI)
+  const done = turnActionsDone.length ? turnActionsDone : pendingActions.map(a => a.type);
+  const hasPawn = done.includes("pawn");
+  const hasTower = done.includes("tower");
+  const ip = document.getElementById("icon-pawn");
+  const it = document.getElementById("icon-tower");
+  if (ip) ip.classList.toggle("done", hasPawn);
+  if (it) it.classList.toggle("done", hasTower);
+  if (btnUndo) {
+    btnUndo.disabled = history.length === 0 || current !== humanColor;
+  }
+}
+
 function setStatus(txt) {
+  // text status only used at end of game; during play we use icons
+  if (!gameOver) {
+    updateActionIcons();
+    return;
+  }
   const el = document.getElementById("status");
-  el.textContent = txt;
-  el.classList.remove("end");
+  el.innerHTML = txt;
+  el.classList.add("end");
+  el.style.display = "flex";
+  updateActionIcons();
 }
 
 function toast(msg) {
@@ -1088,11 +1314,21 @@ function showConfirm(msg, onYes) {
 function hidePieceChoice() {
   document.getElementById("piece-choice").classList.remove("show");
   towerMoveData = null;
+  // znovu zobrazit identifikaci akcí + zpět
+  ["icon-pawn", "icon-tower", "btn-undo"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("hidden-icon");
+  });
+  updateActionIcons();
 }
 
 function showPieceChoiceUI() {
   document.getElementById("piece-choice").classList.add("show");
-  setStatus(t("statusSelectPieces"));
+  // jen 1, 2, ✕ – skrýt identifikaci akcí a zpět
+  ["icon-pawn", "icon-tower", "btn-undo"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden-icon");
+  });
 }
 
 function render() {
@@ -1118,29 +1354,25 @@ function render() {
         let hlClass = "height-label";
         if (gameOver && window._endHighlight) {
           const eh = window._endHighlight;
-          const maxH = Math.max(
-            (eh.lightTowers[0] && eh.lightTowers[0].h) || 0,
-            (eh.darkTowers[0] && eh.darkTowers[0].h) || 0
-          );
-          const lightTop = eh.lightTowers.filter(t => t.h === maxH);
-          const darkTop = eh.darkTowers.filter(t => t.h === maxH);
-          const bothHaveMax = lightTop.length && darkTop.length;
-          if (bothHaveMax) {
-            // shoda nejvyšších → žlutá; druhá nejvyšší vítěze zelená
-            if ((topColor(board, r, c) === LIGHT && lightTop.some(t => t.r === r && t.c === c)) ||
-                (topColor(board, r, c) === DARK && darkTop.some(t => t.r === r && t.c === c))) {
-              hlClass += " top-tie";
-            } else if (eh.winner !== null) {
-              const wt = eh.winner === LIGHT ? eh.lightTowers : eh.darkTowers;
-              const secondH = wt.length > 1 ? wt[1].h : -1;
-              if (h === secondH && topColor(board, r, c) === eh.winner &&
-                  wt.filter(t => t.h === secondH).some(t => t.r === r && t.c === c)) {
-                hlClass += " second-win";
+          if (eh.winner === null) {
+            // plná shoda všech výšek → oranžová u všech věží
+            hlClass += " draw-all";
+          } else {
+            const rankOf = (towers, rr, cc) => {
+              for (let i = 0; i < towers.length; i++)
+                if (towers[i].r === rr && towers[i].c === cc) return i;
+              return -1;
+            };
+            const col = topColor(board, r, c);
+            const myT = col === LIGHT ? eh.lightTowers : eh.darkTowers;
+            const rank = rankOf(myT, r, c);
+            if (rank >= 0 && eh.decideIdx !== undefined && eh.decideIdx !== null) {
+              if (rank < eh.decideIdx) {
+                hlClass += " top-tie";
+              } else if (rank === eh.decideIdx && col === eh.winner) {
+                hlClass += " top-win";
               }
-            }
-          } else if (h === maxH) {
-            // jednoznačná nejvyšší → zelená (všechny s max výškou od vítěze, nebo obecně max)
-            if (eh.winner === null || topColor(board, r, c) === eh.winner) {
+            } else if (rank === 0 && eh.winner === col && (eh.decideIdx === 0 || eh.decideIdx == null)) {
               hlClass += " top-win";
             }
           }
@@ -1189,7 +1421,7 @@ function render() {
       boardEl.appendChild(cell);
     }
   }
-  document.getElementById("btn-undo").disabled = history.length === 0 || gameOver || current !== humanColor;
+  updateActionIcons();
 }
 
 function onCellClick(r, c) {
@@ -1221,7 +1453,7 @@ function onCellClick(r, c) {
         const res = applyAction(m, board, pawns);
         board = res.board; pawns = res.pawns;
         pendingActions.push(m);
-        logEntry("logPlayerMove", { _move: actionParams(m) }, "human");
+        logMove(m, "human");
         selected = null;
         movePhase = "select";
         afterHumanAction();
@@ -1260,7 +1492,7 @@ function doTowerMove(fr, fc, tr, tc, num) {
   const res = applyAction(m, board, pawns);
   board = res.board; pawns = res.pawns;
   pendingActions.push(m);
-  logEntry("logPlayerMove", { _move: actionParams(m) }, "human");
+  logMove(m, "human");
   selected = null;
   movePhase = "select";
   hidePieceChoice();
@@ -1289,7 +1521,7 @@ function afterHumanAction() {
 }
 
 function saveGame() {
-  const data = { board, pawns, current, pendingActions, gameOver, lang, gameLog, humanColor, endReasonColor };
+  const data = { board, pawns, current, pendingActions, gameOver, lang, gameLog, humanColor, endReasonColor, endStatus: window._endStatus || null, endHighlight: window._endHighlight || null };
   localStorage.setItem("volterra_save", JSON.stringify(data));
   toast(t("saveOk"));
   logEntry("logSaved", {}, "sys");
@@ -1306,6 +1538,8 @@ function loadGame() {
     pendingActions = data.pendingActions || [];
     gameOver = data.gameOver || false;
     endReasonColor = data.endReasonColor || null;
+    window._endStatus = data.endStatus || null;
+    window._endHighlight = data.endHighlight || null;
     gameLog = data.gameLog || [];
     if (data.lang) { lang = data.lang; updateLangUI(); }
     selected = null;
@@ -1313,12 +1547,14 @@ function loadGame() {
     hidePieceChoice();
     render();
     renderLog();
-    if (gameOver) {
-      document.getElementById("status").textContent = (lang === "cs" ? "Konec hry" : "Game over");
-      document.getElementById("status").classList.add("end");
-    } else {
-      setStatus(current === humanColor ? t("statusYourTurn") : t("statusAIThinking"));
+    if (gameOver && window._endStatus) {
+      const who = window._endStatus.resultKey === "draw" ? t("draw") : t(window._endStatus.resultKey);
+      const statusEl = document.getElementById("status");
+      statusEl.innerHTML = t("gameOverLabel") + ' <span class="trophy">🏆</span> ' + who;
+      statusEl.classList.add("end");
+      statusEl.style.display = "flex";
     }
+    updateActionIcons();
     toast(t("loadOk"));
     logEntry("logLoaded", {}, "sys");
     if (!gameOver && current === aiColor) setTimeout(() => aiMove(), 200);
@@ -1341,6 +1577,7 @@ function showStats() {
   document.getElementById("st-played").textContent = dash(stats.played);
   document.getElementById("st-wins").textContent = dash(stats.wins);
   document.getElementById("st-losses").textContent = dash(stats.losses);
+  document.getElementById("st-draws").textContent = dash(stats.draws || 0);
   document.getElementById("st-best").textContent = dash(stats.bestTower || 0);
   document.getElementById("stats-close").textContent = t("close");
   document.getElementById("stats-modal").classList.add("show");
@@ -1369,15 +1606,13 @@ function updateLangUI() {
   // status line
   if (gameOver && window._endStatus) {
     const statusEl = document.getElementById("status");
-    statusEl.textContent = t(window._endStatus.resultKey) + " — " + t(window._endStatus.reasonKey);
+    const who = window._endStatus.resultKey === "draw" ? t("draw") : t(window._endStatus.resultKey);
+    statusEl.innerHTML = t("gameOverLabel") + ' <span class="trophy">🏆</span> ' + who;
     statusEl.classList.add("end");
-  } else if (current === humanColor) {
-    if (movePhase === "dest") setStatus(t("statusSelectDest"));
-    else if (movePhase === "pieces") setStatus(t("statusSelectPieces"));
-    else if (pendingActions.length === 1) setStatus(t("statusMustBoth") + " (1/2)");
-    else setStatus(t("statusYourTurn"));
+    statusEl.style.display = "flex";
+    updateActionIcons();
   } else {
-    setStatus(t("statusAIThinking"));
+    updateActionIcons();
   }
 }
 
@@ -1388,7 +1623,12 @@ function toggleLang() {
 }
 
 function copyLog() {
-  const text = gameLog.slice().reverse().map(e => `[${e.time}] ${formatLogEntry(e)}`).join("\n");
+  const text = gameLog.slice().reverse().map(e => {
+    // strip HTML for clipboard
+    const tmp = document.createElement("div");
+    tmp.innerHTML = formatLogEntry(e);
+    return tmp.textContent || tmp.innerText || "";
+  }).join("\n");
   const done = () => toast(t("copied"));
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(() => {
@@ -1411,6 +1651,14 @@ function setupEvents() {
   document.getElementById("btn-help").onclick = () => document.getElementById("help-modal").classList.add("show");
   document.getElementById("help-close").onclick = () => document.getElementById("help-modal").classList.remove("show");
   document.getElementById("stats-close").onclick = () => document.getElementById("stats-modal").classList.remove("show");
+  // zavření modalu kliknutím mimo obsah
+  ["help-modal", "stats-modal", "confirm-modal"].forEach(id => {
+    const ov = document.getElementById(id);
+    if (!ov) return;
+    ov.addEventListener("click", (e) => {
+      if (e.target === ov) ov.classList.remove("show");
+    });
+  });
   document.getElementById("btn-lang").onclick = toggleLang;
   document.getElementById("btn-undo").onclick = undo;
   document.getElementById("btn-copy-log").onclick = copyLog;
