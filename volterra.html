@@ -66,50 +66,57 @@ header {
 .menu-bar button:hover { background: var(--accent); border-color: var(--accent2); }
 
 .app {
-  flex: 1; display: flex; min-height: 0; overflow: hidden;
+  flex: 1; display: flex; justify-content: center; align-items: stretch;
+  min-height: 0; overflow: hidden;
 }
-.log-panel {
-  width: 220px; flex-shrink: 0; background: var(--log-bg); border-right: 3px solid var(--accent);
-  display: flex; flex-direction: column; max-height: 100%;
+.game-col {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  min-width: 0; min-height: 0; max-width: 560px; width: 100%;
 }
-.log-header {
+.board-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 12px; overflow: auto; min-height: 0; width: 100%;
+}
+.board-frame {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: 1fr 24px;
+  gap: 3px;
+  width: min(92vw, 460px);
+  max-height: 100%;
+}
+/* Log modal */
+.modal.log-modal {
+  max-width: 420px; display: flex; flex-direction: column; max-height: 80vh;
+}
+.modal.log-modal .log-modal-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 10px; background: var(--panel); color: var(--light-top);
-  font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+  gap: 8px; margin-bottom: 10px;
 }
-.log-header button {
-  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px;
-  background: var(--panel2); color: var(--text); font-size: 1rem;
+.modal.log-modal .log-modal-header h2 {
+  margin: 0; flex: 1;
+}
+.modal.log-modal .log-modal-actions {
+  display: flex; gap: 6px; flex-shrink: 0;
+}
+.modal.log-modal .log-modal-actions button {
+  width: 36px; height: 36px; border: 2px solid var(--border); border-radius: 10px;
+  background: var(--panel2); color: var(--text); font-size: 1.1rem;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0;
 }
-.log-header button:active { background: var(--accent); }
+.modal.log-modal .log-modal-actions button:active { background: var(--accent); }
 .log-body {
-  flex: 1; overflow-y: auto; padding: 6px 10px;
+  flex: 1; overflow-y: auto; padding: 8px 10px;
   font-family: ui-monospace, "Cascadia Code", monospace;
-  font-size: 0.72rem; line-height: 1.35; color: #d4c8b0;
+  font-size: 0.8rem; line-height: 1.4; color: #d4c8b0;
+  background: var(--log-bg); border-radius: 10px; min-height: 180px; max-height: 55vh;
 }
-.log-body .entry { margin-bottom: 2px; word-break: break-word; }
-.log-body .entry .time { color: #8a7a60; margin-right: 5px; }
+.log-body .entry { margin-bottom: 3px; word-break: break-word; }
 .log-body .entry.human { color: #e8d4a0; }
 .log-body .entry.ai { color: #a8c4e0; }
 .log-body .entry.sys { color: #90b090; }
 .log-body .entry.end { color: #f0a060; font-weight: 600; }
-
-.game-col {
-  flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0;
-}
-.board-wrap {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 8px; overflow: auto; min-height: 0;
-}
-.board-frame {
-  display: grid;
-  grid-template-columns: 22px 1fr;
-  grid-template-rows: 1fr 22px;
-  gap: 2px;
-  width: min(92vw, 382px);
-  max-height: 100%;
-}
 .row-labels {
   display: grid;
   grid-template-rows: repeat(5, 1fr);
@@ -357,16 +364,13 @@ header {
   html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
   body { display: block; }
   .app {
-    flex-direction: column;
     display: flex;
     min-height: auto;
     overflow: visible;
   }
-  .log-panel {
-    width: 100%; border-right: none; border-top: 3px solid var(--accent);
-    max-height: none; height: 140px; order: 2; flex-shrink: 0;
+  .game-col {
+    flex: none; min-height: auto; max-width: 100%;
   }
-  .game-col { order: 1; flex: none; min-height: auto; }
   .board-wrap {
     flex: none;
     padding: 10px 8px;
@@ -382,7 +386,7 @@ header {
     aspect-ratio: 4 / 5;
     max-height: none;
   }
-  .log-body { font-size: 0.7rem; }
+  .log-body { font-size: 0.75rem; max-height: 50vh; }
 }
 @media (max-width: 400px) {
   .menu-bar button { width: 38px; height: 38px; font-size: 1.05rem; }
@@ -403,18 +407,12 @@ header {
   <button id="btn-load" title="Načíst">📂</button>
   <button id="btn-reset" title="Reset">🔄</button>
   <button id="btn-stats" title="Statistiky">📊</button>
+  <button id="btn-log" title="Log">📜</button>
   <button id="btn-help" title="Nápověda">💡</button>
   <button id="btn-lang" title="Jazyk">🇬🇧</button>
 </div>
 
 <div class="app">
-  <div class="log-panel">
-    <div class="log-header">
-      <span id="log-title">Log</span>
-      <button id="btn-copy-log" title="Kopírovat log">📋</button>
-    </div>
-    <div class="log-body" id="log-body"></div>
-  </div>
   <div class="game-col">
     <div class="board-wrap">
       <div class="board-frame">
@@ -449,6 +447,19 @@ header {
     <h2 id="help-title">Nápověda</h2>
     <div id="help-body"></div>
     <button class="close-btn" id="help-close">Zavřít</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="log-modal">
+  <div class="modal log-modal">
+    <div class="log-modal-header">
+      <h2 id="log-title">Log</h2>
+      <div class="log-modal-actions">
+        <button id="btn-copy-log" title="Kopírovat">📋</button>
+        <button id="log-close" title="Zavřít">✕</button>
+      </div>
+    </div>
+    <div class="log-body" id="log-body"></div>
   </div>
 </div>
 
@@ -886,42 +897,117 @@ function getImmobileCells(color, b, p) {
   return immobile;
 }
 
-function evaluate(b, p, forColor) {
-  const ownH = [], oppH = [];
+function collectHeights(b, color) {
+  const hs = [];
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++) {
       if (isEmpty(b, r, c)) continue;
-      const h = height(b, r, c);
-      if (topColor(b, r, c) === forColor) ownH.push(h);
-      else oppH.push(h);
+      if (topColor(b, r, c) === color) hs.push(height(b, r, c));
     }
-  ownH.sort((a, x) => x - a);
-  oppH.sort((a, x) => x - a);
+  hs.sort((a, x) => x - a);
+  return hs;
+}
+
+function evaluate(b, p, forColor) {
+  const ownH = collectHeights(b, forColor);
+  const oppH = collectHeights(b, opponent(forColor));
+  const opp = opponent(forColor);
   let score = 0;
-  const maxLen = Math.max(ownH.length, oppH.length);
+
+  // 1) Lexikografické porovnání výšek = pravidla konce hry (1. věž rozhoduje nejvíc)
+  const maxLen = Math.max(ownH.length, oppH.length, 1);
+  const rankW = [50000, 8000, 2000, 600, 200, 80, 30];
   for (let i = 0; i < maxLen; i++) {
     const o = ownH[i] || 0, e = oppH[i] || 0;
-    score += (o - e) * Math.pow(100, maxLen - i);
+    const w = rankW[i] || 10;
+    score += (o - e) * w;
   }
-  const myTurns = generateFullTurns(forColor, b, p).length;
-  const oppTurns = generateFullTurns(opponent(forColor), b, p).length;
-  score += (myTurns - oppTurns) * 12;
-  if (ownH[0]) score += ownH[0] * 3;
-  if (oppH[0]) score -= oppH[0] * 2;
+
+  // 2) Agresivní důraz na nejvyšší věže (kvadraticky – vysoké věže dominují)
+  const ownMax = ownH[0] || 0, oppMax = oppH[0] || 0;
+  score += ownMax * ownMax * 18;
+  score -= oppMax * oppMax * 22; // raději srazit soupeře než jen růst sám
+  if (ownMax > oppMax) score += 400 + (ownMax - oppMax) * 80;
+  else if (oppMax > ownMax) score -= 450 + (oppMax - ownMax) * 90;
+
+  // 3) Druhá / třetí věž
+  score += (ownH[1] || 0) * (ownH[1] || 0) * 6;
+  score -= (oppH[1] || 0) * (oppH[1] || 0) * 7;
+  score += (ownH[2] || 0) * 8;
+  score -= (oppH[2] || 0) * 9;
+
+  // 4) Konec hry – kdo nemůže táhnout
+  const iCan = canDoBoth(forColor, b, p);
+  const oppCan = canDoBoth(opp, b, p);
+  if (!iCan && !oppCan) {
+    // remíza / porovnání už v rankW
+  } else if (!oppCan) score += 100000;
+  else if (!iCan) score -= 100000;
+
+  // 5) Mobilita (lehce) – bez drahého generateFullTurns na listu
+  const myPawn = getPawnMoves(forColor, b, p).length;
+  const myTower = getTowerMoves(forColor, b, p).length;
+  const oppPawn = getPawnMoves(opp, b, p).length;
+  const oppTower = getTowerMoves(opp, b, p).length;
+  score += (myPawn + myTower - oppPawn - oppTower) * 8;
+
+  // 6) Figurka u vlastních vysokých věží + možnost stavět
   const pr = p[forColor].r, pc = p[forColor].c;
   for (const [dr, dc] of DIRS) {
     const nr = pr + dr, nc = pc + dc;
-    if (inBounds(nr, nc) && topColor(b, nr, nc) === forColor) score += height(b, nr, nc) * 2;
+    if (!inBounds(nr, nc) || isEmpty(b, nr, nc)) continue;
+    const h = height(b, nr, nc);
+    if (topColor(b, nr, nc) === forColor) score += h * 6 + 4;
+    else score += h * 2; // u soupeřovy – šance převzít vrchol
   }
+
   return score;
+}
+
+/** Rychlé skóre tahu pro řazení (preferuj skládání 2 dílků na vysoké / soupeřovy věže) */
+function turnOrderScore(turn, b, p, color) {
+  let s = 0;
+  let cb = cloneBoard(b), cp = clonePawns(p);
+  for (const act of turn) {
+    if (act.type === "tower") {
+      const destH = isEmpty(cb, act.toR, act.toC) ? 0 : height(cb, act.toR, act.toC);
+      const destOwn = !isEmpty(cb, act.toR, act.toC) && topColor(cb, act.toR, act.toC) === color;
+      s += act.num * 30;
+      s += (destH + act.num) * (destH + act.num) * 3;
+      if (destOwn) s += 40;
+      else s += 55; // převzetí / růst na soupeři
+      if (act.num === 2) s += 25;
+    } else {
+      // figurka k vyšším vlastním věžím
+      for (const [dr, dc] of DIRS) {
+        const nr = act.toR + dr, nc = act.toC + dc;
+        if (inBounds(nr, nc) && !isEmpty(cb, nr, nc) && topColor(cb, nr, nc) === color)
+          s += height(cb, nr, nc) * 4;
+      }
+    }
+    const res = applyAction(act, cb, cp);
+    cb = res.board; cp = res.pawns;
+  }
+  // po tahu: změna max výšky
+  const ownMax = collectHeights(cb, color)[0] || 0;
+  const oppMax = collectHeights(cb, opponent(color))[0] || 0;
+  s += ownMax * 15 - oppMax * 18;
+  return s;
 }
 
 function minimax(b, p, color, depth, alpha, beta, maximizing) {
   if (depth === 0 || !canDoBoth(color, b, p)) {
     return { score: evaluate(b, p, aiColor), turn: null };
   }
-  const turns = generateFullTurns(color, b, p);
+  let turns = generateFullTurns(color, b, p);
   if (turns.length === 0) return { score: evaluate(b, p, aiColor), turn: null };
+
+  // řazení tahů – agresivní první (lepší prořezávání + silnější volba při stejném skóre)
+  turns = turns
+    .map(t => ({ t, s: turnOrderScore(t, b, p, color) }))
+    .sort((a, c) => maximizing ? c.s - a.s : a.s - c.s)
+    .map(x => x.t);
+
   let bestTurn = turns[0];
   if (maximizing) {
     let maxEval = -Infinity;
@@ -1589,6 +1675,7 @@ function updateLangUI() {
   document.getElementById("help-body").innerHTML = t("help");
   document.getElementById("help-close").textContent = t("close");
   document.getElementById("log-title").textContent = t("logTitle");
+  document.getElementById("btn-log").title = t("logTitle");
   document.getElementById("stats-title").textContent = t("statsTitle");
   document.getElementById("stats-close").textContent = t("close");
   document.getElementById("confirm-title").textContent = t("confirmTitle");
@@ -1648,11 +1735,16 @@ function setupEvents() {
   document.getElementById("btn-load").onclick = loadGame;
   document.getElementById("btn-reset").onclick = resetGame;
   document.getElementById("btn-stats").onclick = showStats;
+  document.getElementById("btn-log").onclick = () => {
+    renderLog();
+    document.getElementById("log-modal").classList.add("show");
+  };
+  document.getElementById("log-close").onclick = () => document.getElementById("log-modal").classList.remove("show");
   document.getElementById("btn-help").onclick = () => document.getElementById("help-modal").classList.add("show");
   document.getElementById("help-close").onclick = () => document.getElementById("help-modal").classList.remove("show");
   document.getElementById("stats-close").onclick = () => document.getElementById("stats-modal").classList.remove("show");
   // zavření modalu kliknutím mimo obsah
-  ["help-modal", "stats-modal", "confirm-modal"].forEach(id => {
+  ["help-modal", "stats-modal", "confirm-modal", "log-modal"].forEach(id => {
     const ov = document.getElementById(id);
     if (!ov) return;
     ov.addEventListener("click", (e) => {
