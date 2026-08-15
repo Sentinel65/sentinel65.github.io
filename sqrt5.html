@@ -471,7 +471,7 @@ canvas{
         <div id="labelBlue" class="badge turnLabel"><span class="dot blue"></span></div>
       </div>
       
-      <div style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; color: var(--muted); font-size: 12px;">
+      <div id="btnFlashArea" title="Zobrazit 2 poslední uzavřené oblasti (4 s)" style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;">
         <span id="totalAreaLabel" style="text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Celková plocha</span>
         <b id="boardTotalArea" style="color: var(--text); font-size: 16px;">16.00</b>
       </div>
@@ -641,6 +641,7 @@ canvas{
       <li>Snaž se vytvářet <b>trojúhelníky a čtyřúhelníky</b>.</li>
       <li>Blokuj soupeře dřív, než dokončí smyčku.</li>
       <li>Menší jistá oblast je často lepší než nedokončená velká.</li>
+      <li>Klepnutím na <b>Celková plocha</b> (uprostřed skóre) na 4&nbsp;s zobrazíš jen <b>2 poslední uzavřené oblasti</b> — jejich kameny, spoje a plochu; ostatní se dočasně skryjí. V deníku je u uzavření seznam tahů <b>lokální</b> hranice (smyčka přes uzavírací kámen), např. <code>[3, 7, 9, 11]</code>.</li>
     </ul>
     <hr style="border-color:#374151">
     <h4>6. Rychlý test</h4>
@@ -706,8 +707,8 @@ const I18N = {
     diffNames: ['lehká','střední','těžká'],
     newGameLog: (s,d) => `Nová hra: ${s}×${s}, obtížnost ${d}`,
     diffSet: (d) => `Obtížnost nastavena: ${d}`,
-    closedAreaYou: (a) => `🔵 uzavřel oblast ${a}`,
-    closedAreaAI: (a) => `🔴 uzavřel oblast ${a}`,
+    closedAreaYou: (a, moves) => `🔵 uzavřel oblast ${a}` + (moves && moves.length ? `  [${moves.join(', ')}]` : ''),
+    closedAreaAI: (a, moves) => `🔴 uzavřel oblast ${a}` + (moves && moves.length ? `  [${moves.join(', ')}]` : ''),
     gameEnd: '🏁 Konec hry',
     scoreLine: (b,r) => `Skóre: 🔵 ${b} – 🔴 ${r}`,
     saved: '💾 Hra uložena',
@@ -755,8 +756,8 @@ const I18N = {
     diffNames: ['Easy','Medium','Hard'],
     newGameLog: (s,d) => `New game: ${s}×${s}, difficulty ${d}`,
     diffSet: (d) => `Difficulty set: ${d}`,
-    closedAreaYou: (a) => `🔵 closed area ${a}`,
-    closedAreaAI: (a) => `🔴 closed area ${a}`,
+    closedAreaYou: (a, moves) => `🔵 closed area ${a}` + (moves && moves.length ? `  [${moves.join(', ')}]` : ''),
+    closedAreaAI: (a, moves) => `🔴 closed area ${a}` + (moves && moves.length ? `  [${moves.join(', ')}]` : ''),
     gameEnd: '🏁 Game over',
     scoreLine: (b,r) => `Score: 🔵 ${b} – 🔴 ${r}`,
     saved: '💾 Game saved',
@@ -768,17 +769,17 @@ const I18N = {
     toastCopyFail: 'Copy failed.',
     toastStatsReset: 'Statistics cleared.',
     statsTitle: '📊 Statistics',
-    statsSub: '📶 difficulty · # board · 🏆 wins · ✕ losses · = draws · ⭐ best (Player : AI)',
+    statsSub: '📶 difficulty · # board · 🏆 wins · ✕ losses · = draws · ⭐ best (you : AI)',
     statsThDiff: 'Difficulty',
     statsThSize: 'Board',
     statsThWins: 'Wins',
     statsThLosses: 'Losses',
     statsThDraws: 'Draws',
-    statsThBest: 'Best result (Player : AI)',
+    statsThBest: 'Best result (you : AI)',
     statsThLast: 'Last game',
     statsReset: 'Clear statistics',
     statsEmpty: 'none yet',
-    statsYou: 'Player',
+    statsYou: 'You',
     statsAI: 'AI',
     helpTitle: '💡 How to play √5',
     helpHtml: null
@@ -833,65 +834,43 @@ let currentPlayer = 1;
 let startingPlayer = 2;
 let gameOver = false;
 let gameLog = [];
+let flashTimer = null;
 
 const scoreBlueEl = document.getElementById('scoreBlue');
 const scoreRedEl = document.getElementById('scoreRed');
 const logEl = document.getElementById('gameLog');
 
 function formatLogEntry(entry){
-  // Sloupce:  01 🔵 a1   32 ms
-  //           ·· zpráva systému
-  if (typeof entry === 'string') return entry;
+  const SYS = '⚙️';
+  // Sloupce (monospace):  NN  🔵  a1      32 ms
+  //                       ··  ⚙️  zpráva systému
+  if(typeof entry === 'string'){
+    // zpětná kompatibilita se starými stringy v save
+    return entry;
+  }
   const L = t();
-  const sys = (msg) => '·· ' + msg;
-
-  switch (entry.key) {
-	case 'raw': return entry.args[0];
-    case 'newGame':
-      return sys(L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]));
-    case 'diffSet':
-      return sys(L.diffSet(L.diffNames[entry.args[0]]));
-    case 'closedYou':
-      return sys(L.closedAreaYou(entry.args[0]));
-    case 'closedAI':
-      return sys(L.closedAreaAI(entry.args[0]));
-    case 'gameEnd':
-      return sys(L.gameEnd);
-    case 'score':
-      return sys(L.scoreLine(entry.args[0], entry.args[1]));
-    case 'saved':
-      return sys(L.saved);
+  const sys = (msg) => '··  ' + SYS + '  ' + msg;
+  switch(entry.key){
+    case 'newGame': return sys(L.newGameLog(entry.args[0], L.diffNames[entry.args[1]]));
+    case 'diffSet': return sys(L.diffSet(L.diffNames[entry.args[0]]));
+    case 'closedYou': return sys(L.closedAreaYou(entry.args[0], entry.args[1] || []));
+    case 'closedAI': return sys(L.closedAreaAI(entry.args[0], entry.args[1] || []));
+    case 'gameEnd': return sys(L.gameEnd);
+    case 'score': return sys(L.scoreLine(entry.args[0], entry.args[1]));
+    case 'saved': return sys(L.saved);
     case 'move': {
-      const a = entry.args || [];
-
-      // starý formát: celý řádek jako jeden string
-      if (a.length === 1) return String(a[0]);
-
-      const num = a[0];
-      const icon = a[1];
-      const coord = a[2];
-      const ms = a[3];
-
-      // ochrana proti undefined
-      if (icon == null || coord == null) {
-        return [num, icon, coord, ms].filter(v => v != null && v !== '').join(' ');
-      }
-
-      let line =
-        String(num).padStart(2, '0') +
-        ' ' + icon +
-        ' ' + String(coord).padEnd(3, ' ');
-
-      if (ms != null && ms !== '') {
-        const tstr = Number(ms) < 1000
-          ? String(Math.round(Number(ms))).padStart(4, ' ') + ' ms'
-          : (Number(ms) / 1000).toFixed(1).padStart(4, ' ') + ' s';
-        line += ' ' + tstr;
+      // args: [moveNumber, icon, coord, timeMs?]
+      const [num, icon, coord, ms] = entry.args;
+      let line = String(num).padStart(2, '0') + '  ' + icon + '  ' + String(coord).padEnd(3, ' ');
+      if(ms != null && ms !== ''){
+        const tstr = (Number(ms) < 1000)
+          ? (String(Math.round(Number(ms))).padStart(4, ' ') + ' ms')
+          : ((Number(ms) / 1000).toFixed(1).padStart(4, ' ') + ' s');
+        line += '  ' + tstr;
       }
       return line;
     }
-    default:
-      return entry.args ? entry.args.filter(v => v != null).join(' ') : '';
+    default: return entry.args ? entry.args.join(' ') : '';
   }
 }
 
@@ -901,9 +880,7 @@ function refreshLogView(){
 }
 
 function log(entry){
-  if (typeof entry === 'string') {
-    entry = { key: 'raw', args: [entry] }; // ne 'move'
-  }
+  if(typeof entry === 'string') entry = { key: 'move', args: [entry] };
   gameLog.unshift(entry);
   refreshLogView();
 }
@@ -1069,6 +1046,7 @@ function newGame(){
   board = Array.from({length:size},()=>Array(size).fill(null));
   moveNumber = 1;
   gameOver = false;
+  if(flashTimer){ clearTimeout(flashTimer); flashTimer = null; }
   document.getElementById('boardTotalArea').textContent = ((size - 1) * (size - 1)).toFixed(2);
   startingPlayer = startingPlayer===1 ? 2 : 1;
   currentPlayer = startingPlayer;
@@ -1176,14 +1154,15 @@ canvas.addEventListener('click', e => {
   const [r,c] = cell;
   if(board[r][c]) return;
 
-  const prev = parseFloat(scoreBlueEl.textContent);
+  const beforeBlue = computeTerritory(1);
 
   board[r][c] = { player:1, move:moveNumber, r,c };
-  log(String(moveNumber).padStart(2,'0') + ' 🔵 ' + moveCoord(r,c));
+  log({ key: 'move', args: [moveNumber, '🔵', moveCoord(r,c)] });
   
-  const terr = computeTerritory(1).area;
-  if(terr > prev + 0.01) {
-    log({ key: 'closedYou', args: [terr.toFixed(2)] });
+  const afterBlue = computeTerritory(1);
+  if(afterBlue.area > beforeBlue.area + 0.01) {
+    const boundaryMoves = movesForClosure(afterBlue, r, c);
+    log({ key: 'closedYou', args: [afterBlue.area.toFixed(2), boundaryMoves] });
   }
 
   moveNumber++;
@@ -1324,11 +1303,11 @@ function computeTerritory(player){
   return { area, polys };
 }
 
-function drawTerritory(player, color){
-  const terr = computeTerritory(player);
+function drawPolys(polys, color){
+  if(!polys || !polys.length) return;
   ctx.fillStyle = color;
   ctx.strokeStyle = 'transparent';
-  for(const poly of terr.polys){
+  for(const poly of polys){
     ctx.beginPath();
     poly.forEach((p,i)=>{
       const [x,y] = cellToXY(p.r,p.c);
@@ -1339,6 +1318,290 @@ function drawTerritory(player, color){
     ctx.fill();
   }
 }
+
+function drawTerritory(player, color){
+  const terr = computeTerritory(player);
+  drawPolys(terr.polys, color);
+}
+
+function polySig(poly){
+  return poly.map(p => p.r + ',' + p.c).sort().join(';');
+}
+
+// Pouze nejmenší smyčka procházející uzavíracím kamenem (= právě uzavřený obrazec)
+function polysForClosure(afterTerr, lastR, lastC){
+  const all = afterTerr.polys || [];
+  if(!all.length) return [];
+  const seed = all.filter(poly => poly.some(p => p.r === lastR && p.c === lastC));
+  if(!seed.length) return [];
+  seed.sort((a,b) => polygonArea(a) - polygonArea(b));
+  // jen jedna nejmenší smyčka — ne celá síť
+  return [seed[0].map(pt => ({ r: pt.r, c: pt.c }))];
+}
+
+// Čísla tahů na hranici uzavřené oblasti (vždy včetně uzavíracího kamene)
+function movesForClosure(afterTerr, lastR, lastC){
+  const moves = new Set();
+  const polys = polysForClosure(afterTerr, lastR, lastC);
+  for(const poly of polys){
+    for(const p of poly){
+      const s = board[p.r] && board[p.r][p.c];
+      if(s && s.move != null) moves.add(Number(s.move));
+    }
+  }
+  const closer = board[lastR] && board[lastR][lastC];
+  if(closer && closer.move != null) moves.add(Number(closer.move));
+  return [...moves].sort((a,b) => a - b);
+}
+
+// Najde kámen podle čísla tahu
+function findStoneByMove(moveNum){
+  const m = Number(moveNum);
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      if(board[r][c] && Number(board[r][c].move) === m) return board[r][c];
+    }
+  }
+  return null;
+}
+
+// Všechny jednoduché cykly v podgrafu kamenů daných tahů (√5)
+function cyclesAmongMoves(player, moveList){
+  const set = new Set((moveList || []).map(Number));
+  const nodes = [];
+  for(const m of set){
+    const s = findStoneByMove(m);
+    if(s && s.player === player) nodes.push(s);
+  }
+  if(nodes.length < 3) return [];
+  const key = s => s.r + ',' + s.c;
+  const byKey = new Map(nodes.map(s => [key(s), s]));
+  const adj = new Map(nodes.map(s => [key(s), []]));
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a = nodes[i], b = nodes[j];
+      if((a.r-b.r)**2 + (a.c-b.c)**2 === 5){
+        adj.get(key(a)).push(key(b));
+        adj.get(key(b)).push(key(a));
+      }
+    }
+  }
+  const found = [];
+  const seenSig = new Set();
+  const nodeKeys = nodes.map(key);
+
+  function dfs(startK, k, path, visited){
+    for(const nxt of adj.get(k) || []){
+      if(nxt === startK && path.length >= 3){
+        const poly = path.map(pk => {
+          const s = byKey.get(pk);
+          return { r: s.r, c: s.c };
+        });
+        const sig = poly.map(p => p.r+','+p.c).sort().join(';');
+        if(!seenSig.has(sig)){
+          seenSig.add(sig);
+          found.push(poly);
+        }
+        continue;
+      }
+      if(visited.has(nxt)) continue;
+      // omez délku — stačí malé obrazce
+      if(path.length >= Math.min(8, nodes.length)) continue;
+      visited.add(nxt);
+      path.push(nxt);
+      dfs(startK, nxt, path, visited);
+      path.pop();
+      visited.delete(nxt);
+    }
+  }
+  for(const sk of nodeKeys){
+    dfs(sk, sk, [sk], new Set([sk]));
+  }
+  return found;
+}
+
+// Výplň: všechny smyčky v množině tahů, alpha 0.22 (překryv stejné barvy = tmavší)
+function fillFromMoves(player, moveList, color){
+  const set = new Set((moveList || []).map(Number));
+  if(set.size < 3) return false;
+
+  const polys = [];
+  const seen = new Set();
+
+  function addPoly(poly){
+    if(!poly || poly.length < 3) return;
+    const sig = poly.map(p => p.r+','+p.c).sort().join(';');
+    if(seen.has(sig)) return;
+    seen.add(sig);
+    polys.push(poly);
+  }
+
+  // a) herní smyčky, jejichž vrcholy ⊆ moveList
+  for(const poly of findCycles(player)){
+    const ms = poly.map(p => {
+      const s = board[p.r] && board[p.r][p.c];
+      return s ? Number(s.move) : null;
+    }).filter(m => m != null);
+    if(ms.length >= 3 && ms.every(m => set.has(m))) addPoly(poly);
+  }
+
+  // b) cykly jen v podgrafu těchto kamenů
+  for(const poly of cyclesAmongMoves(player, moveList)) addPoly(poly);
+
+  // c) fallback: jeden polygon kolem těžiště
+  if(!polys.length){
+    const pts = [];
+    for(const m of set){
+      const s = findStoneByMove(m);
+      if(s && s.player === player) pts.push({ r: s.r, c: s.c });
+    }
+    if(pts.length >= 3){
+      const cy = pts.reduce((a,p)=>a+p.r,0)/pts.length;
+      const cx = pts.reduce((a,p)=>a+p.c,0)/pts.length;
+      pts.sort((a,b) => Math.atan2(a.r-cy, a.c-cx) - Math.atan2(b.r-cy, b.c-cx));
+      addPoly(pts);
+    }
+  }
+
+  if(!polys.length) return false;
+
+  // kresli s globalAlpha — překryv = sčítání krytí
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = color; // plná barva, alpha řeší globalAlpha
+  for(const poly of polys){
+    ctx.beginPath();
+    poly.forEach((p,i)=>{
+      const [x,y] = cellToXY(p.r,p.c);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  return true;
+}
+
+// Náhled 4 s: 2 poslední různé uzavřené obrazce (kameny + spoje + plocha)
+function flashRecentTerritories(){
+  // newest-first; přesně 2 poslední různé záznamy z logu (bez dalšího rozšiřování)
+  const regions = [];
+  const seen = new Set();
+  for(const entry of gameLog){
+    if(!entry || typeof entry === 'string') continue;
+    if(entry.key !== 'closedYou' && entry.key !== 'closedAI') continue;
+    const player = entry.key === 'closedYou' ? 1 : 2;
+    const moves = (entry.args && entry.args[1] ? entry.args[1] : []).map(Number).filter(m => !isNaN(m));
+    if(moves.length < 3) continue;
+    const key = player + ':' + [...moves].sort((a,b)=>a-b).join(',');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    regions.push({ player, moves });
+    if(regions.length >= 2) break;
+  }
+
+  if(!regions.length){
+    toast(lang === 'en'
+      ? 'No closed areas with move numbers yet.'
+      : 'Zatím žádné uzavřené oblasti s čísly tahů.');
+    return;
+  }
+
+  if(flashTimer){ clearTimeout(flashTimer); flashTimer = null; }
+
+  const activeMoves = new Set();
+  for(const reg of regions) for(const m of reg.moves) activeMoves.add(m);
+
+  const { pad, step, stoneR, stoneFont, coordFont, dotR, stoneLineW, logical } = getMetrics();
+  const L = logical;
+
+  // prázdná deska
+  ctx.clearRect(0, 0, L, L);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, L, L);
+
+  // mřížka
+  ctx.strokeStyle = '#9ca3af';
+  ctx.lineWidth = 1.25;
+  for(let i=0;i<size;i++){
+    const p = Math.round(pad + i*step) + 0.5;
+    ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, L - pad); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(L - pad, p); ctx.stroke();
+  }
+
+  // popisky souřadnic
+  ctx.fillStyle = '#6b7280';
+  ctx.font = coordFont + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for(let c=0;c<size;c++){
+    const [x] = cellToXY(0,c);
+    ctx.fillText(letters[c], x, L - Math.min(40, pad * 0.45));
+  }
+  ctx.textAlign = 'right';
+  for(let r=0;r<size;r++){
+    const [,y] = cellToXY(r,0);
+    ctx.fillText(String(size - r), Math.min(55, pad * 0.65), y);
+  }
+
+  // 1) plochy — všechny herní smyčky uvnitř množiny tahů
+  for(const reg of regions){
+    const color = reg.player === 1 ? '#2563eb' : '#dc2626';
+    fillFromMoves(reg.player, reg.moves, color);
+  }
+
+  // 2) spoje jen mezi aktivními kameny (vzdálenost √5)
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  for(const player of [1,2]){
+    ctx.strokeStyle = player === 1 ? '#2563eb' : '#dc2626';
+    const edges = getEdges(player);
+    for(const [a,b] of edges){
+      const sa = board[a.r][a.c];
+      const sb = board[b.r][b.c];
+      if(!sa || !sb) continue;
+      if(!activeMoves.has(Number(sa.move)) || !activeMoves.has(Number(sb.move))) continue;
+      const [x1,y1] = cellToXY(a.r,a.c);
+      const [x2,y2] = cellToXY(b.r,b.c);
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
+    }
+  }
+
+  // 3) tečky mřížky
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const [x,y] = cellToXY(r,c);
+      ctx.fillStyle = '#111827';
+      ctx.beginPath(); ctx.arc(x,y,dotR,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // 4) jen aktivní kameny
+  for(const m of activeMoves){
+    const s = findStoneByMove(m);
+    if(!s) continue;
+    const [x,y] = cellToXY(s.r,s.c);
+    ctx.fillStyle = s.player===1 ? '#2563eb' : '#dc2626';
+    ctx.beginPath(); ctx.arc(x,y,stoneR,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = stoneLineW;
+    ctx.stroke();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold ' + stoneFont + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(s.move).padStart(2,'0'), x, y+1);
+  }
+
+  flashTimer = setTimeout(() => {
+    flashTimer = null;
+    draw();
+  }, 4000); // délka náhledu posledních 2 oblastí (ms)
+}
+
 
 function draw(){
   const { pad, step, stoneR, stoneFont, coordFont, dotR, stoneLineW, highlightR, highlightW, logical } = getMetrics();
@@ -1614,7 +1877,7 @@ function aiMove() {
 
   const startTime = performance.now();
 
-  const prevRed = computeTerritory(2).area;
+  const beforeRed = computeTerritory(2);
 
   const cells = emptyCells();
   if (cells.length === 0) {
@@ -1701,19 +1964,15 @@ function aiMove() {
     c: bestMove.c
   };
 
-  log(
-    String(moveNumber).padStart(2, '0') +
-    ' 🔴 ' +
-    moveCoord(bestMove.r, bestMove.c) +
-    ` (${timeMs} ms)`
-  );
+  log({ key: 'move', args: [moveNumber, '🔴', moveCoord(bestMove.r, bestMove.c), timeMs] });
 
   moveNumber++;
 
   // kontrola nově uzavřené oblasti
-  const newRed = computeTerritory(2).area;
-  if (newRed > prevRed + 0.01) {
-    log({ key: 'closedAI', args: [newRed.toFixed(2)] });
+  const afterRed = computeTerritory(2);
+  if (afterRed.area > beforeRed.area + 0.01) {
+    const boundaryMoves = movesForClosure(afterRed, bestMove.r, bestMove.c);
+    log({ key: 'closedAI', args: [afterRed.area.toFixed(2), boundaryMoves] });
   }
 
   currentPlayer = 1;
@@ -1779,6 +2038,10 @@ function loadGame(){
 }
 
 document.getElementById('btnSave').onclick = saveGame;
+document.getElementById('btnFlashArea').onclick = (e) => {
+  e.stopPropagation();
+  flashRecentTerritories();
+};
 document.getElementById('btnLoad').onclick = loadGame;
 
 /* ===== Jazyk ===== */
@@ -1807,6 +2070,10 @@ function applyLanguage(){
 
   const totalLbl = document.getElementById('totalAreaLabel');
   if(totalLbl) totalLbl.textContent = L.totalArea;
+  const flashBtn = document.getElementById('btnFlashArea');
+  if(flashBtn) flashBtn.title = lang === 'en'
+    ? 'Show the 2 most recent closed areas (4 s)'
+    : 'Zobrazit 2 poslední uzavřené oblasti (4 s)';
   const logHeader = document.querySelector('#logPanel .logHeader b');
   if(logHeader) logHeader.textContent = L.gameLog;
   document.getElementById('btnCopyLog').title = L.copyLog;
@@ -1884,6 +2151,10 @@ function applyHelpBody(){
      'Block the opponent before they complete a loop.'],
     ['Menší jistá oblast je často lepší než nedokončená velká.',
      'A smaller secure area is often better than an unfinished large one.'],
+    ['Klepnutím na <b>Celková plocha</b> (uprostřed skóre) na 4&nbsp;s zobrazíš jen <b>2 poslední uzavřené oblasti</b> — jejich kameny, spoje a plochu; ostatní se dočasně skryjí. V deníku je u uzavření seznam tahů <b>lokální</b> hranice (smyčka přes uzavírací kámen), např. <code>[3, 7, 9, 11]</code>.',
+     'Tap <b>Total area</b> (center of the score bar) to show for 4&nbsp;s only the <b>2 most recent closed areas</b> — their stones, connections and fill; everything else is temporarily hidden. The log lists moves of the <b>local</b> boundary loop through the closing stone, e.g. <code>[3, 7, 9, 11]</code>.'],
+    ['Klepnutím na Celková plocha (uprostřed skóre) na 4 s zobrazíš jen 2 poslední uzavřené oblasti — jejich kameny, spoje a plochu. V deníku jsou u uzavření čísla tahů hranice; při sloučení všechny tahy celku.',
+     'Tap Total area (center of the score bar) to show for 4 s only the 2 most recent closed areas — their stones, connections and fill. The log lists boundary move numbers; if merged, all moves of the whole region.'],
 
     ['Které tahy se spojí s <b>c3</b>?', 'Which moves connect to <b>c3</b>?'],
     ['Správně jsou <b>a2 a e4</b>, protože mají vzdálenost √5.',
