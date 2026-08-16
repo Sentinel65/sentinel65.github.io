@@ -25,6 +25,24 @@ body {
   overflow-x: hidden; touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+.board-container {
+  display: flex; justify-content: center; width: 100%;
+}
+.board-wrap {
+  position: relative;
+  width: min(95vw, 400px);
+}
+#btn-coords {
+  position: absolute; top: 0; left: 0; width: 40px; height: 40px;
+  opacity: 0; cursor: pointer; z-index: 20; border: none; background: transparent;
+  padding: 0; margin: 0;
+}
+.cell.coord-label::before {
+  content: attr(data-coord);
+  position: absolute; top: 1px; left: 2px;
+  font-size: 8px; color: rgba(0,0,0,0.45); pointer-events: none; z-index: 3;
+  font-family: monospace; line-height: 1;
+}
 .top-menu {
   display: flex; gap: 3px; justify-content: center; align-items: center;
   flex-wrap: nowrap; background: var(--menu-bg);
@@ -117,6 +135,23 @@ body {
 }
 .cell:not(.invalid):active { background: rgba(255,255,255,0.5); }
 
+
+.tile.chain-pick {
+  animation: chainFlash 0.9s ease-in-out infinite !important;
+}
+.tile.chain-flash {
+  animation: chainFlash 0.5s ease-out;
+  z-index: 12;
+}
+@keyframes chainFlash {
+  0% { box-shadow: 0 0 0 0 rgba(229,57,53,0); transform: scale(1); }
+  30% { box-shadow: 0 0 0 4px rgba(229,57,53,0.95), 0 0 16px 4px rgba(229,57,53,0.6); transform: scale(1.14); }
+  100% { box-shadow: 0 0 0 0 rgba(229,57,53,0); transform: scale(1); }
+}
+.cell.chain-path {
+  /* no persistent path tint – only the tile flashes red */
+  transition: background 0.3s;
+}
 .tile.win-line {
   box-shadow: 0 0 0 3px #FFD700, 0 0 12px 2px rgba(255, 215, 0, 0.7);
   animation: winPulse 1.1s ease-in-out infinite;
@@ -285,7 +320,25 @@ body {
   .board { gap: 2px; padding: 4px; }
   .carousel { gap: 4px; }
   .menu-btn { min-width: 32px; min-height: 32px; font-size: 16px; padding: 5px 5px; }
-  .top-menu { gap: 2px; padding: 5px 4px; }
+  .board-container {
+  display: flex; justify-content: center; width: 100%;
+}
+.board-wrap {
+  position: relative;
+  width: min(95vw, 400px);
+}
+#btn-coords {
+  position: absolute; top: 0; left: 0; width: 40px; height: 40px;
+  opacity: 0; cursor: pointer; z-index: 20; border: none; background: transparent;
+  padding: 0; margin: 0;
+}
+.cell.coord-label::before {
+  content: attr(data-coord);
+  position: absolute; top: 1px; left: 2px;
+  font-size: 8px; color: rgba(0,0,0,0.45); pointer-events: none; z-index: 3;
+  font-family: monospace; line-height: 1;
+}
+.top-menu { gap: 2px; padding: 5px 4px; }
 }
 </style>
 </head>
@@ -310,7 +363,12 @@ body {
   <div id="win-message"></div>
 </div>
 
-<div class="board-container"><div class="board" id="board"></div></div>
+<div class="board-container">
+  <div class="board-wrap">
+    <button id="btn-coords" title="" aria-label="coords" onclick="toggleCoords()"></button>
+    <div class="board" id="board"></div>
+  </div>
+</div>
 <div class="carousel-wrapper" id="carousel-wrapper"><div class="carousel" id="carousel"></div></div>
 <div id="tile-tooltip" class="tile-tooltip"></div>
 
@@ -720,10 +778,15 @@ function applyImpact(ax,ay,type,rot){
   return false;
 }
 async function resolveFullActivation(px,py){
-  // Track by tile OBJECT so a tile that moves (e.g. Persuade) cannot activate again this turn
+  // Rules:
+  // - each own tile activates at most once per turn (except Rephrase)
+  // - if multiple own tiles become valid at once, choose ONE (branching)
+  // - physical domino is handled inside pushLine
   activatedThisTurn = new Set();
   const newTile = board[py][px];
   if (newTile) activatedThisTurn.add(newTile);
+
+  // Primary activation of the newly placed tile
   let result = applyImpact(px, py, newTile.type, newTile.rot);
   if (result === 'choice') {
     const choice = await askDecisionDirection(px, py, newTile.rot);
@@ -736,14 +799,19 @@ async function resolveFullActivation(px,py){
   } else if (result === 'rephrase') {
     await askRephraseRotation(px, py);
   }
+  if (!isSimulating) {
+    renderBoard(); // primary tile: orange last-move only (no red flash)
+  }
+
+  // Chain activations
   let safety = 25;
+  let chainStep = 0;
   while (safety-- > 0) {
     const candidates = [];
     for (let y = 0; y < BOARD_SIZE; y++) for (let x = 0; x < BOARD_SIZE; x++) {
       if (!isValidPos(x, y)) continue;
       const t = board[y][x];
       if (!t || t.player !== currentPlayer) continue;
-      // Each tile activates at most once per turn (Rephrase is the exception)
       if (activatedThisTurn.has(t) && t.type !== 'Rephrase') continue;
       const {tx, ty} = getTargetPos(x, y, t.type, t.rot);
       if (!isValidPos(tx, ty)) continue;
@@ -753,10 +821,27 @@ async function resolveFullActivation(px,py){
       candidates.push({x, y, type: t.type, rot: t.rot, tile: t});
     }
     if (!candidates.length) break;
-    let chosen = candidates[0];
-    if (isSimulating && candidates.length > 1)
-      chosen = candidates[Math.floor(Math.random() * candidates.length)];
+
+    let chosen;
+    if (candidates.length === 1) {
+      chosen = candidates[0];
+    } else {
+      // Branching rule: must pick exactly one
+      const isAI = isSimulating || (gameMode >= 1 && currentPlayer !== 1);
+      if (isAI) {
+        chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      } else {
+        chosen = await askChainChoice(candidates);
+        if (!chosen) break;
+      }
+    }
+
     activatedThisTurn.add(chosen.tile);
+    chainStep++;
+    if (!isSimulating) {
+      lastMoveEffects.push({chain: true, step: chainStep, type: chosen.type, x: chosen.x, y: chosen.y});
+    }
+
     let r = applyImpact(chosen.x, chosen.y, chosen.type, chosen.rot);
     if (r === 'choice') {
       const choice = await askDecisionDirection(chosen.x, chosen.y, chosen.rot);
@@ -769,8 +854,63 @@ async function resolveFullActivation(px,py){
     } else if (r === 'rephrase') {
       await askRephraseRotation(chosen.x, chosen.y);
     }
+    if (!isSimulating) {
+      renderBoard();
+      await animateChainFlash(chosen.x, chosen.y);
+    }
   }
 }
+
+function animateChainFlash(x, y, ms){
+  const dur = ms || 700;
+  return new Promise(resolve => {
+    const cell = document.getElementById(`cell-${x}-${y}`);
+    if (!cell) { resolve(); return; }
+    const tile = cell.querySelector('.tile');
+    if (tile) {
+      tile.classList.add('chain-flash');
+      tile.style.animationDuration = dur + 'ms';
+    }
+    setTimeout(() => {
+      if (tile) {
+        tile.classList.remove('chain-flash');
+        tile.style.animationDuration = '';
+      }
+      resolve();
+    }, dur);
+  });
+}
+
+function askChainChoice(candidates){
+  // Blink candidate tiles on the board; player clicks one to continue the chain
+  return new Promise(resolve => {
+    const cells = [];
+    for (const c of candidates) {
+      const cell = document.getElementById(`cell-${c.x}-${c.y}`);
+      if (!cell) continue;
+      const tile = cell.querySelector('.tile');
+      if (tile) tile.classList.add('chain-flash', 'chain-pick');
+      cell.style.cursor = 'pointer';
+      const handler = (ev) => {
+        ev.stopPropagation();
+        cleanup();
+        resolve(c);
+      };
+      cell.addEventListener('click', handler);
+      cells.push({cell, tile, handler});
+    }
+    // Toast hint
+    showToast(lang === 'cs' ? 'Větvení: klikni na kámen, který se má aktivovat' : 'Branch: tap the tile to activate', 4000);
+    function cleanup() {
+      for (const o of cells) {
+        o.cell.removeEventListener('click', o.handler);
+        o.cell.style.cursor = '';
+        if (o.tile) o.tile.classList.remove('chain-flash', 'chain-pick');
+      }
+    }
+  });
+}
+
 function askDecisionDirection(ax,ay,rot){
   return new Promise(resolve=>{
     // AI / simulation: choose automatically (prefer the direction that moves more / random)
@@ -853,15 +993,29 @@ async function attemptMove(x,y,player,type,rot){
   if(!isCenterCell(x,y)||board[y][x]!==null) return false;
   if(turnCount===0&&x===3&&y===3){ if(!isSimulating) showToast(DICT[lang].centerError); return false; }
   if(!inventory[player][type]) return false;
-  if(!isSimulating){ saveState(); lastMoveEffects = []; lastMoveCell = {x, y}; }
-  board[y][x]={player,type,rot}; inventory[player][type]=false;
-  await resolveFullActivation(x,y);
+  if(!isSimulating){ saveState(); lastMoveEffects = []; lastMoveCell = null; /* orange only after full turn */ }
+  const placedTile = {player, type, rot};
+  board[y][x] = placedTile; inventory[player][type]=false;
+  await resolveFullActivation(x, y);
+  // Orange only at END of turn – final cell of the played tile
+  if (!isSimulating) {
+    lastMoveCell = findTileCell(placedTile) || {x, y};
+  }
   if(!isSimulating){
     let msg = `${playerLabel(player)} ${type} [${x},${y}] @${rot*90}`;
+    let chainParts = [];
+    let moveParts = [];
     for (const e of lastMoveEffects) {
-      if (e.out) msg += ` ${playerLabel(e.player)} ${e.type} OUT`;
-      else msg += ` ${playerLabel(e.player)} ${e.type} [${e.x},${e.y}]`;
+      if (e.chain) {
+        chainParts.push(`⚡${e.type}[${e.x},${e.y}]`);
+      } else if (e.out) {
+        moveParts.push(`${playerLabel(e.player)} ${e.type} OUT`);
+      } else if (e.player !== undefined) {
+        moveParts.push(`${playerLabel(e.player)} ${e.type} [${e.x},${e.y}]`);
+      }
     }
+    if (moveParts.length) msg += ' → ' + moveParts.join(' → ');
+    if (chainParts.length) msg += ' | chain: ' + chainParts.join(' → ');
     logAction(msg);
   }
   if(!isSimulating){
@@ -986,6 +1140,32 @@ function loadGame(){
   initBoardHTML(); renderBoard(); buildCarousel(); updateCarouselUI(); updateTurnIndicator(); updateModeButton();
   document.getElementById('win-message').style.display='none'; document.getElementById('turn-indicator').style.display='flex';
 }
+
+
+let showCoords = false;
+function toggleCoords(){
+  showCoords = !showCoords;
+  for (let y = 0; y < BOARD_SIZE; y++)
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      if (!isValidPos(x, y)) continue;
+      const cell = document.getElementById(`cell-${x}-${y}`);
+      if (!cell) continue;
+      if (showCoords) {
+        cell.classList.add('coord-label');
+        cell.setAttribute('data-coord', x + ',' + y);
+      } else {
+        cell.classList.remove('coord-label');
+        cell.removeAttribute('data-coord');
+      }
+    }
+}
+function findTileCell(tileObj){
+  for (let yy = 0; yy < BOARD_SIZE; yy++)
+    for (let xx = 0; xx < BOARD_SIZE; xx++)
+      if (isValidPos(xx, yy) && board[yy][xx] === tileObj)
+        return {x: xx, y: yy};
+  return null; // off board
+}
 function playerLabel(p){
   if (p === 1) return 'P1';
   if (gameMode === 0) return 'P' + p;
@@ -1066,11 +1246,26 @@ function showHelp(){
     <h3>${cs ? 'Seznam kamenů' : 'Tile list'}</h3>
     ${tileHelpHTML(cs)}
 
+    <h3>${cs ? 'Pravidla řetězení' : 'Chain reaction rules'}</h3>
+    <ul>
+      <li><strong>${cs ? 'Jednou a dost' : 'Once only'}:</strong> ${cs
+        ? 'Každá tvoje dlaždice se během jednoho tahu aktivuje maximálně jednou. Nemůže vzniknout nekonečná smyčka.'
+        : 'Each of your tiles may activate at most once per turn. No infinite loops.'}</li>
+      <li><strong>${cs ? 'Větvení reakcí' : 'Branching'}:</strong> ${cs
+        ? 'Pokud posun soupeřovy dlaždice vjede do rány dvěma tvým dlaždicím současně, musíš si vybrat pouze jednu (klikni na blikající kámen). Její efekt pak může sekundárně aktivovat tu druhou.'
+        : 'If an opponent tile moves into range of two of your tiles at once, choose only one (tap a blinking tile). Its effect may later enable the other.'}</li>
+      <li><strong>${cs ? 'Fyzické řetězení (Domino)' : 'Physical domino'}:</strong> ${cs
+        ? 'Když tlačíš dlaždici a za ní těsně stojí další, posunou se všechny o jedno pole. To samo o sobě není „efekt řetězení“ – ten nastane, až když soupeřova dlaždice skončí před šipkou některé z tvých dlaždic.'
+        : 'Pushing a tile with another directly behind moves them all one space. That is not a chain activation until an opponent tile stops in front of one of your arrows.'}</li>
+      <li><strong>${cs ? 'Vytlačení z desky' : 'Off the board'}:</strong> ${cs
+        ? 'Dlaždice vytlačená mimo plán se vrací majiteli do zásoby a lze ji znovu zahrát.'
+        : 'A tile pushed off the board returns to its owner’s inventory and can be played again.'}</li>
+    </ul>
     <div class="tip-box">
       <strong>${cs ? 'Ovládání' : 'Controls'}</strong><br>
       ${cs
-        ? '• Popis kamene: na PC najetím myši, na mobilu delším podržením.<br>• Log (📜): chronologický zápis tahů a posunů.<br>• Otočení kamene: opakované klepnutí na kámen v zásobníku.'
-        : '• Tile description: hover on PC, long-press on mobile.<br>• Log (📜): chronological record of moves and pushes.<br>• Rotate tile: tap the inventory tile again.'}
+        ? '• Popis kamene: na PC najetím myši, na mobilu delším podržením.<br>• Log (📜): zápis tahů, posunů a řetězení.<br>• Otočení kamene: opakované klepnutí v zásobníku.<br>• Souřadnice desky: neviditelné tlačítko v levém horním rohu hrací desky.'
+        : '• Tile description: hover on PC, long-press on mobile.<br>• Log (📜): moves, pushes and chains.<br>• Rotate tile: tap inventory tile again.<br>• Board coordinates: invisible button in the top-left corner of the game board.'}
     </div>
   `;
   document.getElementById('helpModal').style.display = 'flex';
