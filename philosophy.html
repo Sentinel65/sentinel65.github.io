@@ -162,11 +162,11 @@ body {
   50% { box-shadow: 0 0 0 4px #FFEA00, 0 0 18px 4px rgba(255, 215, 0, 0.9); transform: scale(1.06); }
 }
 .cell.last-move {
-  box-shadow: inset 0 0 0 2.5px #FF8C00;
-  background: rgba(255, 140, 0, 0.32) !important;
+  /* no cell background fill – prevents brown "ghost" on empty cells */
 }
-.cell.last-move.center-zone {
-  background: rgba(255, 140, 0, 0.40) !important;
+.tile.last-move-tile {
+  box-shadow: 0 0 0 3px #FF8C00, 0 0 10px 2px rgba(255,140,0,0.55);
+  border-radius: 14%;
 }
 
 
@@ -628,19 +628,55 @@ function renderBoard(){
   for(let y=0;y<BOARD_SIZE;y++) for(let x=0;x<BOARD_SIZE;x++){
     if(!isValidPos(x,y)) continue;
     const cell=document.getElementById(`cell-${x}-${y}`);
-    cell.innerHTML='';
-    cell.classList.toggle('last-move', !!(lastMoveCell && lastMoveCell.x===x && lastMoveCell.y===y));
+    if(!cell) continue;
+    // Full clear (fixes ghost tiles after Toss on mobile)
+    while(cell.firstChild) cell.removeChild(cell.firstChild);
+    cell.classList.remove('last-move', 'chain-path');
+    cell.style.background = '';
+    cell.style.boxShadow = '';
+    const isLast = !!(lastMoveCell && lastMoveCell.x===x && lastMoveCell.y===y);
     const t=board[y][x];
     if(t){
       const div=document.createElement('div');
       div.className=`tile P${t.player}`;
+      if (isLast) div.classList.add('last-move-tile');
       div.style.transform=`rotate(${t.rot*90}deg)`;
-      div.innerHTML=`<img src="${TILE_IMGS[t.player][t.type]}" alt="">`;
+      const img=document.createElement('img');
+      img.src=TILE_IMGS[t.player][t.type];
+      img.alt='';
+      img.draggable=false;
+      div.appendChild(img);
       if (winLineCells && winLineCells.some(c => c.x === x && c.y === y)) {
         div.classList.add('win-line');
       }
       cell.appendChild(div);
+    } else if (isLast) {
+      // played tile left the cell (e.g. Persuade off-board) – subtle ring only
+      cell.classList.add('last-move');
     }
+  }
+}
+function renderCell(x, y){
+  if(!isValidPos(x,y)) return;
+  const cell=document.getElementById(`cell-${x}-${y}`);
+  if(!cell) return;
+  while(cell.firstChild) cell.removeChild(cell.firstChild);
+  cell.classList.remove('last-move', 'chain-path');
+  cell.style.background = '';
+  cell.style.boxShadow = '';
+  const isLast = !!(lastMoveCell && lastMoveCell.x===x && lastMoveCell.y===y);
+  const t=board[y][x];
+  if(t){
+    const div=document.createElement('div');
+    div.className=`tile P${t.player}`;
+    if (isLast) div.classList.add('last-move-tile');
+    div.style.transform=`rotate(${t.rot*90}deg)`;
+    const img=document.createElement('img');
+    img.src=TILE_IMGS[t.player][t.type];
+    img.alt='';
+    img.draggable=false;
+    div.appendChild(img);
+    cell.appendChild(div);
   }
 }
 function buildCarousel(){
@@ -760,12 +796,20 @@ function applyImpact(ax,ay,type,rot){
       return true;
     }
     case 'Toss': {
-      const destX=ax-2*dx, destY=ay-2*dy;
-      board[ty][tx]=null;
-      if(isValidPos(destX,destY)){
-        if(board[destY][destX]) pushLine(destX,destY,-dx,-dy);
-        board[destY][destX]=target;
-      } else inventory[target.player][target.type]=true;
+      // Target flies 2 spaces back over the Toss tile
+      const destX = ax - 2 * dx, destY = ay - 2 * dy;
+      const fromX = tx, fromY = ty;
+      board[ty][tx] = null; // clear origin in state
+      if (isValidPos(destX, destY)) {
+        if (board[destY][destX]) pushLine(destX, destY, -dx, -dy);
+        board[destY][destX] = target;
+        if (!isSimulating) lastMoveEffects.push({player: target.player, type: target.type, x: destX, y: destY, out: false});
+      } else {
+        inventory[target.player][target.type] = true;
+        if (!isSimulating) lastMoveEffects.push({player: target.player, type: target.type, x: fromX, y: fromY, out: true});
+      }
+      // Full redraw so origin cell never stays as a brown/ghost square
+      if (!isSimulating) renderBoard();
       return true;
     }
     case 'Decision':
@@ -779,7 +823,7 @@ function applyImpact(ax,ay,type,rot){
 }
 async function resolveFullActivation(px,py){
   // Rules:
-  // - each own tile activates at most once per turn (except Rephrase)
+  // - each own tile activates at most once per turn (including Rephrase)
   // - if multiple own tiles become valid at once, choose ONE (branching)
   // - physical domino is handled inside pushLine
   activatedThisTurn = new Set();
@@ -800,7 +844,9 @@ async function resolveFullActivation(px,py){
     await askRephraseRotation(px, py);
   }
   if (!isSimulating) {
-    renderBoard(); // primary tile: orange last-move only (no red flash)
+    renderBoard();
+    // Force browser paint so Toss origin is not left as a ghost on mobile
+    void document.body.offsetHeight;
   }
 
   // Chain activations
@@ -812,7 +858,7 @@ async function resolveFullActivation(px,py){
       if (!isValidPos(x, y)) continue;
       const t = board[y][x];
       if (!t || t.player !== currentPlayer) continue;
-      if (activatedThisTurn.has(t) && t.type !== 'Rephrase') continue;
+      if (activatedThisTurn.has(t)) continue; // once only – including Rephrase
       const {tx, ty} = getTargetPos(x, y, t.type, t.rot);
       if (!isValidPos(tx, ty)) continue;
       const target = board[ty][tx];
@@ -1264,8 +1310,8 @@ function showHelp(){
     <div class="tip-box">
       <strong>${cs ? 'Ovládání' : 'Controls'}</strong><br>
       ${cs
-        ? '• Popis kamene: na PC najetím myši, na mobilu delším podržením.<br>• Log (📜): zápis tahů, posunů a řetězení.<br>• Otočení kamene: opakované klepnutí v zásobníku.<br>• Souřadnice desky: neviditelné tlačítko v levém horním rohu hrací desky.'
-        : '• Tile description: hover on PC, long-press on mobile.<br>• Log (📜): moves, pushes and chains.<br>• Rotate tile: tap inventory tile again.<br>• Board coordinates: invisible button in the top-left corner of the game board.'}
+        ? '• Popis kamene: na PC najetím myši, na mobilu delším podržením.<br>• Log (📜): zápis tahů, posunů a řetězení.<br>• Otočení kamene: opakované klepnutí v zásobníku.<br>• Souřadnice desky: neviditelné tlačítko v levém horním rohu.'
+        : '• Tile description: hover on PC, long-press on mobile.<br>• Log (📜): moves, pushes and chains.<br>• Rotate tile: tap inventory tile again.<br>• Board coordinates: invisible button in the top-left corner.'}
     </div>
   `;
   document.getElementById('helpModal').style.display = 'flex';
@@ -1407,7 +1453,7 @@ function boardFill(){
   let n=0; for(let y=0;y<BOARD_SIZE;y++) for(let x=0;x<BOARD_SIZE;x++) if(isValidPos(x,y)&&board[y][x]) n++;
   return n;
 }
-function makeAIMove(aiPlayer){
+async function makeAIMove(aiPlayer){
   if(!gameActive) return;
   isSimulating=true;
   let bestMove=null, bestEval=-Infinity;
@@ -1434,7 +1480,7 @@ function makeAIMove(aiPlayer){
     if(e>bestEval){ bestEval=e; bestMove=m; }
   }
   isSimulating=false;
-  if(bestMove) attemptMove(bestMove.x,bestMove.y,aiPlayer,bestMove.type,bestMove.rot);
+  if(bestMove) await attemptMove(bestMove.x,bestMove.y,aiPlayer,bestMove.type,bestMove.rot);
   else endGameLose(aiPlayer);
 }
 
