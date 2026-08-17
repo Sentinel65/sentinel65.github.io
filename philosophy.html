@@ -170,7 +170,7 @@ body {
 }
 
 .tile.chain-flash {
-  animation: chainFlash 0.4s ease-out 3; /* Zajišťuje 3x probliknutí */
+  animation: chainFlash 0.5s ease-out 3;
   z-index: 12;
 }
 
@@ -965,34 +965,27 @@ async function resolveFullActivation(px,py){
 }
 
 function animateChainFlash(x, y, ms){
-  // 3 red flashes over ~1.5s total (game + replay)
+  // 3 red flashes, total ~1.5s (CSS iteration-count: 3)
   const total = (ms != null) ? ms : 1500;
   return new Promise(resolve => {
-    const cell = document.getElementById(`cell-${x}-${y}`);
+    const cell = document.getElementById('cell-' + x + '-' + y);
     if (!cell) { resolve(); return; }
     const tile = cell.querySelector('.tile');
     if (!tile) { resolve(); return; }
-    const pulse = 1500 / 3; // ~500ms per blink
-    let n = 0;
-    function one(){
+    tile.classList.remove('chain-flash');
+    void tile.offsetWidth;
+    tile.style.animationDuration = (total / 3) + 'ms';
+    tile.style.animationIterationCount = '3';
+    tile.classList.add('chain-flash');
+    setTimeout(() => {
       tile.classList.remove('chain-flash');
-      void tile.offsetWidth;
-      tile.style.animationDuration = pulse + 'ms';
-      tile.classList.add('chain-flash');
-      n++;
-      if (n < 3) {
-        setTimeout(one, pulse);
-      } else {
-        setTimeout(() => {
-          tile.classList.remove('chain-flash');
-          tile.style.animationDuration = '';
-          resolve();
-        }, pulse);
-      }
-    }
-    one();
+      tile.style.animationDuration = '';
+      tile.style.animationIterationCount = '';
+      resolve();
+    }, total);
   });
 }
+
 
 function askChainChoice(candidates){
   // Blink candidate tiles on the board; player clicks one to continue the chain
@@ -1189,10 +1182,16 @@ async function attemptMove(x,y,player,type,rot){
   return true;
 }
 function hasAnyValidMove(player){
-  const types=Object.keys(inventory[player]).filter(t=>inventory[player][t]);
-  if(!types.length) return false;
-  for(let y=2;y<=4;y++) for(let x=2;x<=4;x++){
-    if(board[y][x]===null){ if(turnCount===0&&x===3&&y===3) continue; return true; }
+  // Official loss condition: cannot place at start of turn if
+  // (a) inventory empty, or (b) central 3×3 has no free cell.
+  // Applies in PvP, PvAI and Pv2AI – caller then endGameLose(player).
+  const types = Object.keys(inventory[player]).filter(t => inventory[player][t]);
+  if (!types.length) return false;
+  for (let y = 2; y <= 4; y++) for (let x = 2; x <= 4; x++) {
+    if (board[y][x] === null) {
+      if (turnCount === 0 && x === 3 && y === 3) continue;
+      return true;
+    }
   }
   return false;
 }
@@ -1577,18 +1576,83 @@ function undoMove(){
   }
 }
 function saveGame(){
-  localStorage.setItem('philosophySave', JSON.stringify({board,inventory,currentPlayer,turnCount,gameMode,numPlayers,gameLog,historyStack}));
-  showToast(DICT[lang].saved);
+  const payload = {
+    board, inventory, currentPlayer, turnCount, gameMode, numPlayers,
+    gameLog, historyStack,
+    gameActive,
+    lastMoveCell,
+    winLineCells,
+    eliminated: window._eliminated || {},
+    replayFrames,
+    replayIndex
+  };
+  try {
+    localStorage.setItem('philosophySave', JSON.stringify(payload));
+    showToast(DICT[lang].saved);
+  } catch (e) {
+    // replayFrames can be large – retry without intermediate frames if quota exceeded
+    try {
+      const slim = { ...payload, replayFrames: replayFrames.length ? [replayFrames[0], replayFrames[replayFrames.length-1]] : [] };
+      localStorage.setItem('philosophySave', JSON.stringify(slim));
+      showToast((lang==='cs'?'Uloženo (zkrácený záznam)':'Saved (trimmed replay)'));
+    } catch (e2) {
+      showToast(lang==='cs'?'Uložení selhalo (málo místa)':'Save failed (storage full)');
+    }
+  }
 }
 function loadGame(){
   const data=localStorage.getItem('philosophySave');
   if(!data){ showToast(DICT[lang].noSave); return; }
-  const p=JSON.parse(data);
-  board=p.board; inventory=p.inventory; currentPlayer=p.currentPlayer; turnCount=p.turnCount;
-  gameMode=p.gameMode||0; numPlayers=p.numPlayers||2; gameLog=p.gameLog||[]; historyStack=p.historyStack||[];
-  gameActive=true; selectedTileType=null; selectedRotation=0;
-  initBoardHTML(); renderBoard(); buildCarousel(); updateCarouselUI(); updateTurnIndicator(); updateModeButton();
-  document.getElementById('win-message').style.display='none'; document.getElementById('turn-indicator').style.display='flex';
+  let p;
+  try { p = JSON.parse(data); } catch(e){ showToast(DICT[lang].noSave); return; }
+  board = p.board;
+  inventory = p.inventory;
+  currentPlayer = p.currentPlayer;
+  turnCount = p.turnCount;
+  gameMode = p.gameMode || 0;
+  numPlayers = p.numPlayers || 2;
+  gameLog = p.gameLog || [];
+  historyStack = p.historyStack || [];
+  gameActive = (p.gameActive !== undefined) ? p.gameActive : true;
+  lastMoveCell = p.lastMoveCell || null;
+  winLineCells = p.winLineCells || null;
+  window._eliminated = p.eliminated || {};
+  selectedTileType = null;
+  selectedRotation = 0;
+  // Restore full replay if present
+  replayFrames = Array.isArray(p.replayFrames) ? p.replayFrames : [];
+  replayIndex = typeof p.replayIndex === 'number' ? p.replayIndex : Math.max(0, replayFrames.length - 1);
+  replayMode = false;
+  replayPlaying = false;
+  clearTimeout(replayTimer);
+  const bar = document.getElementById('replay-bar');
+  if (bar) { bar.classList.remove('active'); bar.style.display = 'none'; }
+  // If no frames saved, at least keep current board as single frame so 🎬 is not empty
+  if (!replayFrames.length) {
+    captureReplayFrame(lang === 'cs' ? 'Načtený stav' : 'Loaded state');
+  }
+  initBoardHTML();
+  renderBoard();
+  buildCarousel();
+  updateCarouselUI();
+  updateModeButton();
+  if (!gameActive && winLineCells) {
+    document.getElementById('turn-indicator').style.display = 'none';
+    document.getElementById('win-message').style.display = 'block';
+    highlightWinLine(winLineCells);
+  } else if (!gameActive) {
+    document.getElementById('turn-indicator').style.display = 'none';
+    document.getElementById('win-message').style.display = 'block';
+  } else {
+    document.getElementById('win-message').style.display = 'none';
+    document.getElementById('turn-indicator').style.display = 'flex';
+    updateTurnIndicator();
+  }
+  showToast(
+    replayFrames.length > 1
+      ? (lang === 'cs' ? 'Načteno – přehrávač má ' + replayFrames.length + ' kroků' : 'Loaded – replay has ' + replayFrames.length + ' steps')
+      : (lang === 'cs' ? 'Načteno (bez plného záznamu tahů)' : 'Loaded (no full move recording)')
+  );
 }
 
 
@@ -1683,8 +1747,8 @@ function showHelp(){
         ? '<strong>Více závěrů najednou:</strong> Pokud má na konci tahu Conclusion <strong>více hráčů</strong>, hra <strong>nekončí remízou</strong> — pokračuje dál.'
         : '<strong>Several Conclusions:</strong> If multiple players have a Conclusion at once, it is <strong>not a draw</strong> — the game continues.'}</p>
       <p>${cs
-        ? '<strong>Prohra:</strong> Nemůžeš-li na začátku tahu položit kámen (prázdný zásobník nebo plná středová 3×3), <strong>prohráváš</strong>. Ve hře 3 hráčů vyřazený hráč vypadává, jeho kameny zůstanou na desce a hra pokračuje.'
-        : '<strong>Loss:</strong> If at the start of your turn you cannot place a tile (empty inventory or full central 3×3), <strong>you lose</strong>. In a 3-player game that player is eliminated, their tiles stay, and the game continues.'}</p>
+        ? '<strong>Prohra (režim PvP, PxAI): </strong> Nemůže-li hráč na začátku tahu položit kámen (má prázdný zásobník nebo je plná středová 3×3), <strong>prohrává.</strong><br><strong>Prohra (režim Px2AI): </strong> Nemůže-li hráč na začátku tahu položit kámen (má prázdný zásobník), hráč <strong>vypadává</strong> ze hry, jeho kameny ale zůstanou na desce a hra pokračuje. Je-li plná středová 3x3, pak <strong>vyhrává</strong> hráč, který jako <strong>poslední</strong> položil svůj kámen na středovou 3x3 a efekt jeho kamene nebo řetezová reakce  kamenů způsobí, že se středová 3x3 zaplní.'
+        : '<strong>Loss (PvP or PxAI modes):</strong> If a player cannot place a stone at the start of their turn (their stone pile is empty or the central 3×3 grid is full), <strong>you lose</strong>.<br><strong>Loss (Px2AI mode):</strong>  If a player cannot place a stone at the start of their turn (their stack is empty), the player is <strong>eliminated</strong> from the game, but their stones remain on the board and the game continues. If the central 3×3 is full, the player who <strong>last placed</strong> a stone in the central 3×3 <strong>wins</strong>, provided that the effect of that stone or a chain reaction of stones causes the central 3×3 to fill up.'}</p>
     </div>
 
     <h3>${cs ? 'Barvy kamenů' : 'Tile colors'}</h3>
