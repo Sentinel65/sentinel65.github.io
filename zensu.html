@@ -573,15 +573,13 @@ header {
       obj: 'Cíl hry',
       objText: 'Převeďte alespoň jeden svůj kámen do domácího území soupeře (jeho zadní řada). Hra končí okamžitě. Lze také vyhrát zajetím všech kamenů soupeře.',
       moves: 'Tahy',
-      movesText: 'Hráči se střídají. Každý tah přesuňte jeden svůj kámen o přesný počet polí v jednom směru (vpřed, vzad, vlevo, vpravo – ne diagonálně). Počet polí určuje číslo na příslušné straně kamene. Kameny nelze otáčet.',
+      movesText: 'Hráči se střídají. Každý tah přesuňte jeden svůj kámen o přesný počet polí v jednom směru (vpřed, vzad, vlevo, vpravo – ne diagonálně). Počet určuje číslo na příslušné straně kamene. Kameny nelze otáčet.',
       jump: 'Skoky a braní',
       jumpText: 'Nesmíte skončit na vlastním kameni. Můžete skákat přes vlastní kameny. Soupeřovy kameny, přes které skočíte nebo na které doskočíte, jsou okamžitě odstraněny. V jednom tahu lze zajmout až 4 kameny. I zpětný tah smí brát.',
       opening: 'Zahájení',
       openingText: 'Hráči se ve zahájení střídají. Po každé nové hře (reset) nebo načtení stránky začíná střídavě tyrkysová a červená (AI). Kdo začíná aktuální partii, je zapsáno v logu.',
       setup: 'Rozestavení',
       setupText: 'Zadní (<b>domácí</b>) řada: kameny s číslem <b>2 </b>v bílém trojúhelníku. <br>Přední řada: kameny s číslem <b>1</b> v bílém trojúhelníku. ',
-      type1: 'Kámen 1 (přední): Vpřed 1, Vlevo 2, Vzad 3, Vpravo 4',
-      type2: 'Kámen 2 (domácí): Vpřed 2, Vlevo 3, Vzad 4, Vpravo 1',
       close: 'Zavřít',
       difficulty: 'Obtížnost',
       depth: 'hloubka',
@@ -621,8 +619,6 @@ header {
       openingText: 'Players alternate who starts. After each new game (reset) or page reload, turquoise and red (AI) take turns starting. Who starts the current game is recorded in the log.',
       setup: 'Setup',
       setupText: 'Back (<b>home</b>) row: pieces with number <b>2</b> in the white triangle.<br> Front row: pieces with number <b>1</b> in the white triangle.',
-      type1: 'Piece 1 (front): Forward 1, Left 2, Back 3, Right 4',
-      type2: 'Piece 2 (home): Forward 2, Left 3, Back 4, Right 1',
       close: 'Close',
       difficulty: 'Difficulty',
       depth: 'depth',
@@ -767,17 +763,72 @@ header {
 
   /** Can owner win on their next move from position b? */
   function canWinNext(b, owner) {
+    const goal = owner === RED ? 8 : 0;
     const moves = allMoves(owner, b);
     for (const m of moves) {
-      if (owner === RED && m.toR === 8) return true;
-      if (owner === TURQ && m.toR === 0) return true;
+      if (m.toR === goal) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Clear path length (in empty squares) for a piece moving purely forward.
+   * Returns how many consecutive empty squares lie ahead toward the goal.
+   */
+  function forwardClearance(b, r, c, owner) {
+    const dr = owner === RED ? 1 : -1;
+    const goal = owner === RED ? 8 : 0;
+    let clear = 0;
+    let rr = r + dr;
+    while (rr >= 0 && rr <= 8) {
+      if (b[rr][c]) break;
+      clear++;
+      if (rr === goal) break;
+      rr += dr;
+    }
+    return clear;
+  }
+
+  /**
+   * Distance in rows from piece to goal (0 = on goal row).
+   */
+  function distToGoal(r, owner) {
+    return owner === RED ? (8 - r) : r;
+  }
+
+  /**
+   * Is this square directly in front of an enemy piece on the same file,
+   * within that piece's forward move range?
+   */
+  function isBlockingSquare(b, toR, toC, myOwner) {
+    const enemy = myOwner === RED ? TURQ : RED;
+    // Look along the file for an enemy piece that would advance onto/through toR
+    if (myOwner === RED) {
+      // Enemy (TURQ) advances upward (decreasing row). We block if we stand
+      // between them and their goal (row 0), i.e. enemy is below us (higher r).
+      for (let r = toR + 1; r <= 8; r++) {
+        const p = b[r][toC];
+        if (!p) continue;
+        if (p.owner !== enemy) break;
+        const fwd = MOVE_NUMS[p.type].F;
+        if (r - fwd <= toR) return true; // their forward move reaches our square or beyond
+        break;
+      }
+    } else {
+      for (let r = toR - 1; r >= 0; r--) {
+        const p = b[r][toC];
+        if (!p) continue;
+        if (p.owner !== enemy) break;
+        const fwd = MOVE_NUMS[p.type].F;
+        if (r + fwd >= toR) return true;
+        break;
+      }
     }
     return false;
   }
 
   /**
    * Static evaluation. Positive = good for RED (AI).
-   * Higher progress weight, threat detection, reduced capture greed bias.
    */
   function evaluate(b) {
     let score = 0;
@@ -789,7 +840,6 @@ header {
         if (!p) continue;
         if (p.owner === RED) {
           redCount++;
-          // Stronger progress: prefer advancing toward row 8
           score += (r * 18) + (p.type === 1 ? 6 : 3);
           score += (2.5 - Math.abs(c - 2.5)) * 1.2;
         } else {
@@ -800,7 +850,6 @@ header {
       }
     }
 
-    // Material – moderate weight so progress & threats matter more
     score += (redCount - turqCount) * 38;
 
     // Near / on goal
@@ -811,26 +860,75 @@ header {
       if (b[0][c] && b[0][c].owner === TURQ) score -= 500;
     }
 
-    // Immediate win threats (opponent or us can score next move)
-    if (canWinNext(b, TURQ)) score -= 800;
-    if (canWinNext(b, RED)) score += 800;
+    // --- Open-file / runaway progress penalty ---
+    // If an enemy piece has a long clear path toward our home, punish heavily.
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = b[r][c];
+        if (!p) continue;
+        const clear = forwardClearance(b, r, c, p.owner);
+        const dist = distToGoal(r, p.owner);
+        const fwd = MOVE_NUMS[p.type].F;
+        // "Runaway" if clearance covers a large part of remaining distance
+        if (clear >= Math.min(dist, fwd) && dist > 0) {
+          const threat = (clear + 1) * (9 - dist) * 8;
+          if (p.owner === TURQ) score -= threat; // bad for us
+          else score += threat * 0.6;            // good for us (milder)
+        }
+        // Extra: piece within 2 forward-moves of goal with clear path
+        if (dist <= fwd * 2 && clear >= Math.min(dist, fwd)) {
+          if (p.owner === TURQ) score -= 120 + (3 - Math.min(dist, 3)) * 80;
+          else score += 80 + (3 - Math.min(dist, 3)) * 50;
+        }
+      }
+    }
+
+    // --- Immediate win (1 ply) ---
+    if (canWinNext(b, TURQ)) score -= 900;
+    if (canWinNext(b, RED)) score += 900;
+
+    // --- Near-win threat (2 plies): opponent can reach a square from which
+    //     they win on the following move (simple 1-step lookahead on progress) ---
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = b[r][c];
+        if (!p) continue;
+        const fwd = MOVE_NUMS[p.type].F;
+        const dist = distToGoal(r, p.owner);
+        const clear = forwardClearance(b, r, c, p.owner);
+        // Can get within one forward-move of goal in one turn, then score next
+        if (dist > fwd && dist <= fwd * 2 && clear >= fwd) {
+          if (p.owner === TURQ) score -= 350;
+          else score += 250;
+        }
+      }
+    }
 
     return score;
   }
 
-  /** Move ordering score: wins > stop opponent win > captures > progress */
+  /** Move ordering: wins > blocks > captures > progress */
   function moveOrderKey(m, maximizing, b) {
     let key = 0;
-    // Winning move
+    const myOwner = maximizing ? RED : TURQ;
+
+    // Winning move – highest priority
     if (maximizing && m.toR === 8) key += 10000;
     if (!maximizing && m.toR === 0) key += 10000;
-    // Captures (moderate – not greedy)
+
+    // Block an advancing enemy on the same file
+    if (isBlockingSquare(b, m.toR, m.toC, myOwner)) key += 400;
+
+    // Captures (moderate)
     key += m.captures.length * 25;
+
     // Progress toward goal
     key += maximizing ? m.toR * 3 : (8 - m.toR) * 3;
-    // Prefer moving forward-ish type pieces
+
+    // Prefer type-2 (longer forward)
     const piece = b[m.fromR][m.fromC];
     if (piece && piece.type === 2) key += 5;
+
     return key;
   }
 
@@ -1192,61 +1290,63 @@ header {
     }
 
     current = current === TURQ ? RED : TURQ;
-
-    if (current === RED && !gameOver) {
-        aiThinking = true;
-    }
-
     renderBoard();
 
     if (current === RED && !gameOver) {
-        startAIThinking();
+      // Yield to browser so player's move is painted before AI blocks the thread
+      scheduleAI();
     }
   }
 
-  function startAIThinking() {
+  /** Let the UI paint the player's move, then run AI without any overlay. */
+  function scheduleAI() {
     if (gameOver || current !== RED) return;
-
     aiThinking = true;
+    // Double rAF: browser paints the player move first, then we search.
+    // No thinking overlay – avoids flicker.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (gameOver || current !== RED) {
+          aiThinking = false;
+          return;
+        }
+        setTimeout(() => { aiMove(); }, 0);
+      });
+    });
+  }
 
-    // Overlay NEZOBRAZUJEME.
-    // AI výpočet probíhá synchronně a nechceme žádné probliknutí.
-    aiMove();
-}
-
+  function startAIThinking() {
+    scheduleAI();
+  }
 
   function aiMove() {
     if (gameOver || current !== RED) {
-        aiThinking = false;
-        thinkingEl.classList.remove('visible');
-        return;
+      aiThinking = false;
+      return;
     }
 
     const best = findBestMove();
-
-    // AI už nepřemýšlí – overlay musí být vždy skrytý.
     aiThinking = false;
-    thinkingEl.classList.remove('visible');
 
     if (!best) {
-        gameOver = true;
-        winner = TURQ;
-        logEnd(TURQ);
-        renderBoard();
-        toast(t('winYou'), 'win');
-        return;
+      gameOver = true;
+      winner = TURQ;
+      logEnd(TURQ);
+      renderBoard();
+      toast(t('winYou'), 'win');
+      return;
     }
 
     doMove(
-        best.fromR,
-        best.fromC,
-        best.toR,
-        best.toC,
-        best.captures,
-        best.dir,
-        best.steps
+      best.fromR,
+      best.fromC,
+      best.toR,
+      best.toC,
+      best.captures,
+      best.dir,
+      best.steps
     );
-}
+  }
 
   function toast(msg, type = '') {
     const el = document.createElement('div');
@@ -1268,7 +1368,6 @@ header {
       <h3>${t('obj')}</h3><p>${t('objText')}</p>
       <h3>${t('opening')}</h3><p>${t('openingText')}</p>
       <h3>${t('setup')}</h3><p>${t('setupText')}</p>
-
       <h3>${t('moves')}</h3><p>${t('movesText')}</p>
       <h3>${t('jump')}</h3><p>${t('jumpText')}</p>
       <button class="close-btn" id="helpClose">${t('close')}</button>
@@ -1351,9 +1450,7 @@ header {
       renderBoard();
       toast(t('loaded'));
       if (current === RED && !gameOver) {
-        aiThinking = true;
-        //thinkingEl.classList.add('visible');
-        setTimeout(aiMove, 300);
+        scheduleAI();
       }
     } catch (e) { toast(t('noSave'), 'error'); }
   }
@@ -1414,9 +1511,7 @@ header {
   buildBoardDOM();
   renderBoard();
   if (current === RED) {
-    aiThinking = true;
-    //thinkingEl.classList.add('visible');
-    setTimeout(aiMove, 250);
+    scheduleAI();
   }
 })();
 </script>
