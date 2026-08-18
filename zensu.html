@@ -573,13 +573,13 @@ header {
       obj: 'Cíl hry',
       objText: 'Převeďte alespoň jeden svůj kámen do domácího území soupeře (jeho zadní řada). Hra končí okamžitě. Lze také vyhrát zajetím všech kamenů soupeře.',
       moves: 'Tahy',
-      movesText: 'Hráči se střídají. Každý tah přesuňte jeden svůj kámen o přesný počet polí v jednom směru (vpřed, vzad, vlevo, vpravo – ne diagonálně). Počet určuje číslo na příslušné straně kamene. Kameny nelze otáčet.',
+      movesText: 'Hráči se střídají. Každý tah přesuňte jeden svůj kámen o přesný počet polí v jednom směru (vpřed, vzad, vlevo, vpravo – ne diagonálně). Počet polí určuje číslo na příslušné straně kamene. Kameny nelze otáčet.',
       jump: 'Skoky a braní',
       jumpText: 'Nesmíte skončit na vlastním kameni. Můžete skákat přes vlastní kameny. Soupeřovy kameny, přes které skočíte nebo na které doskočíte, jsou okamžitě odstraněny. V jednom tahu lze zajmout až 4 kameny. I zpětný tah smí brát.',
       opening: 'Zahájení',
       openingText: 'Hráči se ve zahájení střídají. Po každé nové hře (reset) nebo načtení stránky začíná střídavě tyrkysová a červená (AI). Kdo začíná aktuální partii, je zapsáno v logu.',
       setup: 'Rozestavení',
-      setupText: 'Zadní (domácí) řada: kameny s číslem 2 v bílém trojúhelníku. Přední řada: kameny s číslem 1 v bílém trojúhelníku. Čísla na stranách kamene určují, o kolik polí kterým směrem může daný kámen táhnout.',
+      setupText: 'Zadní (<b>domácí</b>) řada: kameny s číslem <b>2 </b>v bílém trojúhelníku. <br>Přední řada: kameny s číslem <b>1</b> v bílém trojúhelníku. ',
       type1: 'Kámen 1 (přední): Vpřed 1, Vlevo 2, Vzad 3, Vpravo 4',
       type2: 'Kámen 2 (domácí): Vpřed 2, Vlevo 3, Vzad 4, Vpravo 1',
       close: 'Zavřít',
@@ -620,7 +620,7 @@ header {
       opening: 'Opening',
       openingText: 'Players alternate who starts. After each new game (reset) or page reload, turquoise and red (AI) take turns starting. Who starts the current game is recorded in the log.',
       setup: 'Setup',
-      setupText: 'Back (home) row: pieces with number 2 in the white triangle. Front row: pieces with number 1 in the white triangle. The numbers on the sides of a piece determine how many squares it may move in each direction.',
+      setupText: 'Back (<b>home</b>) row: pieces with number <b>2</b> in the white triangle.<br> Front row: pieces with number <b>1</b> in the white triangle.',
       type1: 'Piece 1 (front): Forward 1, Left 2, Back 3, Right 4',
       type2: 'Piece 2 (home): Forward 2, Left 3, Back 4, Right 1',
       close: 'Close',
@@ -1268,7 +1268,7 @@ header {
       <h3>${t('obj')}</h3><p>${t('objText')}</p>
       <h3>${t('opening')}</h3><p>${t('openingText')}</p>
       <h3>${t('setup')}</h3><p>${t('setupText')}</p>
-      <p>${t('type1')}</p><p>${t('type2')}</p>
+
       <h3>${t('moves')}</h3><p>${t('movesText')}</p>
       <h3>${t('jump')}</h3><p>${t('jumpText')}</p>
       <button class="close-btn" id="helpClose">${t('close')}</button>
