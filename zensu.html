@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZENSŪ</title>
+<style>
+:root {
+  --bg: #1a1f2e;
+  --board-bg: #2a3347;
+  --cell: #3d4a63;
+  --cell-alt: #354058;
+  --accent: #00c9b1;
+  --accent-dim: #00a894;
+  --red: #e74c5e;
+  --red-dim: #c0394b;
+  --turquoise: #00c9b1;
+  --text: #e8eef7;
+  --text-dim: #9aa8bf;
+  --toast-bg: #243044;
+  --border: #4a5875;
+  --select: #f1c40f;
+  --move: #2ecc71;
+  --danger: #e74c3c;
+  --menu-btn: #3d4a63;
+  --menu-hover: #4a5875;
+  --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --wm: rgba(0, 201, 177, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 8px;
+  gap: 6px;
+}
+header {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.menu {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.menu button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: var(--menu-btn);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, transform 0.1s;
+  position: relative;
+}
+.menu button:hover, .menu button:focus-visible {
+  background: var(--menu-hover);
+  outline: 2px solid var(--accent);
+}
+.menu button:active { transform: scale(0.94); }
+.menu button svg {
+  width: 22px; height: 22px;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.menu button .badge {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  font-size: 0.55rem;
+  background: var(--accent);
+  color: #111;
+  border-radius: 4px;
+  padding: 1px 3px;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+}
+#statusBar {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  min-height: 1.4em;
+}
+#statusBar .turn { font-weight: 600; color: var(--text); }
+#statusBar .turn.turquoise { color: var(--turquoise); }
+#statusBar .turn.red { color: var(--red); }
+#boardWrap {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 6 / 9;
+  background: var(--board-bg);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+#board {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  gap: 3px;
+  background: var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cell {
+  background: var(--cell);
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+.cell:nth-child(odd) { background: var(--cell-alt); }
+.cell.home-turquoise { background: linear-gradient(180deg, var(--cell) 70%, rgba(0,201,177,0.15)); }
+.cell.home-red { background: linear-gradient(0deg, var(--cell) 70%, rgba(231,76,94,0.15)); }
+.cell.selectable { cursor: pointer; }
+.cell.selected { outline: 3px solid var(--select); outline-offset: -3px; z-index: 2; }
+.cell.move-target { cursor: pointer; background: rgba(46,204,113,0.35) !important; }
+.cell.move-target::after {
+  content: '';
+  width: 28%; height: 28%;
+  border-radius: 50%;
+  background: var(--move);
+  opacity: 0.85;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+.cell.capture-target { background: rgba(231,76,60,0.4) !important; }
+.cell.capture-target::after {
+  content: '';
+  width: 36%; height: 36%;
+  border-radius: 4px;
+  border: 2px solid var(--danger);
+  position: absolute;
+  opacity: 0.9;
+  z-index: 1;
+  pointer-events: none;
+}
+.cell .wm {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.1rem, 5.5vw, 1.7rem);
+  font-weight: 800;
+  color: var(--wm);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+.cell .coord {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: clamp(0.4rem, 1.8vw, 0.55rem);
+  color: rgba(255,255,255,0.35);
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 1;
+  line-height: 1;
+  display: none;
+}
+.cell .coord.visible { display: block; }
+/* Invisible hit area on A1 for coord toggle */
+#coordToggle {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 16%;
+  height: 11%;
+  z-index: 15;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.piece {
+  width: 90%;
+  height: 90%;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  z-index: 3;
+  user-select: none;
+}
+.piece.turquoise { background: #0e7a6a; }
+.piece.red { background: #922b3a; }
+.piece.selected {
+  box-shadow: 0 0 0 3px var(--select), 0 4px 12px rgba(0,0,0,0.45);
+  transform: scale(1.06);
+}
+.piece .tri {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: clamp(0.55rem, 2.9vw, 0.9rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+}
+.piece .tri.front {
+  background: #f5f7fa;
+  color: #1a1f2e;
+  text-shadow: none;
+  font-size: clamp(0.7rem, 3.4vw, 1.05rem);
+  font-weight: 900;
+  z-index: 2;
+}
+.piece.turquoise .tri:not(.front) { background: #16a085; }
+.piece.red .tri:not(.front) { background: #c0394b; }
+.piece .tri.top { clip-path: polygon(0 0, 100% 0, 50% 50%); }
+.piece .tri.bot { clip-path: polygon(0 100%, 100% 100%, 50% 50%); }
+.piece .tri.left { clip-path: polygon(0 0, 0 100%, 50% 50%); }
+.piece .tri.right { clip-path: polygon(100% 0, 100% 100%, 50% 50%); }
+.piece .tri.top { align-items: flex-start; padding-top: 8%; }
+.piece .tri.bot { align-items: flex-end; padding-bottom: 8%; }
+.piece .tri.left { justify-content: flex-start; padding-left: 8%; }
+.piece .tri.right { justify-content: flex-end; padding-right: 8%; }
+
+.thinking {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: grid;
+    place-items: center;
+    z-index: 20;
+    border-radius: 8px;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 1rem;
+    pointer-events: none;
+
+    opacity: 0;
+    visibility: hidden;
+}
+
+.thinking.visible {
+    opacity: 1;
+    visibility: visible;
+}.thinking .spinner {
+  width: 28px; height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-bottom: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,14,22,0.78);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+.overlay.visible { display: flex; }
+.panel {
+  background: var(--toast-bg);
+  border-radius: 16px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.panel h2 {
+  color: var(--accent);
+  font-size: 1.35rem;
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+}
+.panel .credit {
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-bottom: 14px;
+}
+.panel h3 {
+  color: var(--text);
+  font-size: 0.95rem;
+  margin: 12px 0 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 3px;
+}
+.panel p, .panel li {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.panel ul { padding-left: 18px; }
+.panel .close-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.panel .close-btn:hover { background: var(--accent-dim); }
+
+.log-panel {
+  max-width: 400px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 75dvh;
+}
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.log-header h2 { margin: 0; font-size: 1.15rem; }
+.log-header .copy-btn {
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: var(--menu-btn);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.log-header .copy-btn:hover { background: var(--menu-hover); }
+.log-header .copy-btn svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.log-body {
+  overflow-y: auto;
+  padding: 10px 14px;
+  flex: 1;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.log-body .entry {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(74,88,117,0.3);
+  white-space: nowrap;
+}
+.log-body .entry:first-child { color: var(--text); }
+.log-body .meta {
+  color: var(--accent);
+  font-style: italic;
+  border-bottom: none;
+  padding: 4px 0;
+  white-space: normal;
+}
+.log-body .sq {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin: 0 3px 1px 0;
+}
+.log-body .sq.t { background: var(--turquoise); }
+.log-body .sq.r { background: var(--red); }
+.log-empty { color: var(--text-dim); font-style: italic; text-align: center; padding: 24px 0; }
+
+#toasts {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(92vw, 360px);
+  pointer-events: none;
+}
+.toast {
+  background: var(--toast-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  box-shadow: var(--shadow);
+  animation: toastIn 0.3s ease;
+  pointer-events: auto;
+}
+.toast.error { border-left-color: var(--danger); }
+.toast.win { border-left-color: var(--select); background: #2a3a20; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 380px) {
+  .menu button { width: 36px; height: 36px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="menu" id="menu">
+    <button id="btnSave" title="Uložit / Save" aria-label="Save">
+      <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    </button>
+    <button id="btnLoad" title="Načíst / Load" aria-label="Load">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button id="btnDiff" title="Obtížnost / Difficulty" aria-label="Difficulty">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <span class="badge" id="diffBadge">2</span>
+    </button>
+    <button id="btnReset" title="Nová hra / Reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
+    <button id="btnLog" title="Log tahů / Move log" aria-label="Log">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </button>
+    <button id="btnHelp" title="Nápověda / Help" aria-label="Help">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <button id="btnLang" title="Jazyk / Language" aria-label="Language">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="badge" id="langBadge">EN</span>
+    </button>
+  </div>
+</header>
+
+<div id="statusBar">
+  <span id="turnLabel" class="turn turquoise">—</span>
+</div>
+
+<div id="boardWrap">
+  <div id="board"></div>
+  <button id="coordToggle" title="" aria-label="Toggle coordinates"></button>
+  <div class="thinking" id="thinking">
+    <div>
+      <div class="spinner"></div>
+      <div id="thinkingText">AI přemýšlí…</div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<div class="overlay" id="helpOverlay">
+  <div class="panel" id="helpPanel"></div>
+</div>
+
+<div class="overlay" id="logOverlay">
+  <div class="panel log-panel" id="logPanel">
+    <div class="log-header">
+      <h2 id="logTitle">Log</h2>
+      <button class="copy-btn" id="btnCopyLog" title="Kopírovat / Copy">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const ROWS = 9, COLS = 6;
+  const TURQ = 'turquoise', RED = 'red';
+  const DEPTHS = [2, 3, 5]; // Easy / Medium / Hard (+ quiescence)
+  const DIFF_NAMES = { cs: ['Snadná', 'Střední', 'Těžká'], en: ['Easy', 'Medium', 'Hard'] };
+  const Q_DEPTH = 4; // max extra plies for capture-only quiescence
+
+  const MOVE_NUMS = {
+    1: { F: 1, L: 2, B: 3, R: 4 },
+    2: { F: 2, L: 3, B: 4, R: 1 }
+  };
+
+  const WM_LETTERS = {
+    '2,1': 'Z', '3,1': 'E', '4,1': 'N', '5,1': 'S', '6,1': 'Ū',
+    '2,4': 'Z', '3,4': 'E', '4,4': 'N', '5,4': 'S', '6,4': 'Ū'
+  };
+
+  function getDirs(owner) {
+    if (owner === TURQ) {
+      return { F: { dr: -1, dc: 0 }, L: { dr: 0, dc: -1 }, B: { dr: 1, dc: 0 }, R: { dr: 0, dc: 1 } };
+    }
+    return { F: { dr: 1, dc: 0 }, L: { dr: 0, dc: 1 }, B: { dr: -1, dc: 0 }, R: { dr: 0, dc: -1 } };
+  }
+
+  let board = [];
+  let current = TURQ;
+  let selected = null;
+  let legalMoves = [];
+  let gameOver = false;
+  let winner = null;
+  let difficulty = 1;
+  let lang = 'cs';
+  let aiThinking = false;
+  let moveLog = [];   // structured entries, newest first
+  let moveNumber = 0;
+  let cellNodes = [];
+  let pieceById = new Map(); // id -> DOM element
+  let nextPieceId = 1;
+  let showCoords = false;
+  let humanIsTurq = true; // human always plays turquoise visually at bottom; who starts alternates
+
+  // Who starts this game (TURQ or RED). Alternates on reset / page load.
+  let starter = TURQ;
+
+  const T = {
+    cs: {
+      yourTurn: 'Váš tah (tyrkysová)',
+      aiTurn: 'Tah AI (červená)',
+      thinking: 'AI přemýšlí…',
+      winYou: 'Vyhráli jste! Gratulujeme.',
+      winAI: 'AI vyhrála.',
+      winCaptureYou: 'Vyhráli jste – všechny kameny soupeře zajaty.',
+      winCaptureAI: 'AI vyhrála – všechny vaše kameny zajaty.',
+      saved: 'Hra uložena.',
+      loaded: 'Hra načtena.',
+      noSave: 'Žádná uložená hra.',
+      reset: 'Nová hra zahájena.',
+      logTitle: 'Log tahů',
+      logEmpty: 'Zatím žádné tahy.',
+      copied: 'Log zkopírován.',
+      helpTitle: 'ZENSŪ – Nápověda',
+      credit: 'Design and rulebook © 1995 Raymond Haysman',
+      obj: 'Cíl hry',
+      objText: 'Převeďte alespoň jeden svůj kámen do domácího území soupeře (jeho zadní řada). Hra končí okamžitě. Lze také vyhrát zajetím všech kamenů soupeře.',
+      moves: 'Tahy',
+      movesText: 'Hráči se střídají. Každý tah přesuňte jeden svůj kámen o přesný počet polí v jednom směru (vpřed, vzad, vlevo, vpravo – ne diagonálně). Počet určuje číslo na příslušné straně kamene. Kameny nelze otáčet.',
+      jump: 'Skoky a braní',
+      jumpText: 'Nesmíte skončit na vlastním kameni. Můžete skákat přes vlastní kameny. Soupeřovy kameny, přes které skočíte nebo na které doskočíte, jsou okamžitě odstraněny. V jednom tahu lze zajmout až 4 kameny. I zpětný tah smí brát.',
+      opening: 'Zahájení',
+      openingText: 'Hráči se ve zahájení střídají. Po každé nové hře (reset) nebo načtení stránky začíná střídavě tyrkysová a červená (AI). Kdo začíná aktuální partii, je zapsáno v logu.',
+      setup: 'Rozestavení',
+      setupText: 'Zadní (domácí) řada: kameny s číslem 2 v bílém trojúhelníku. Přední řada: kameny s číslem 1 v bílém trojúhelníku. Čísla na stranách kamene určují, o kolik polí kterým směrem může daný kámen táhnout.',
+      type1: 'Kámen 1 (přední): Vpřed 1, Vlevo 2, Vzad 3, Vpravo 4',
+      type2: 'Kámen 2 (domácí): Vpřed 2, Vlevo 3, Vzad 4, Vpravo 1',
+      close: 'Zavřít',
+      difficulty: 'Obtížnost',
+      depth: 'hloubka',
+      gameStart: 'Začátek hry',
+      gameEnd: 'Konec hry',
+      winnerYou: 'Vítěz: tyrkysová (hráč)',
+      winnerAI: 'Vítěz: červená (AI)',
+      diffChanged: 'Změna obtížnosti',
+      coordsOn: 'Souřadnice zapnuty',
+      coordsOff: 'Souřadnice vypnuty',
+      starts: 'začíná'
+    },
+    en: {
+      yourTurn: 'Your turn (turquoise)',
+      aiTurn: 'AI turn (red)',
+      thinking: 'AI thinking…',
+      winYou: 'You win! Congratulations.',
+      winAI: 'AI wins.',
+      winCaptureYou: 'You win – all opponent pieces captured.',
+      winCaptureAI: 'AI wins – all your pieces captured.',
+      saved: 'Game saved.',
+      loaded: 'Game loaded.',
+      noSave: 'No saved game found.',
+      reset: 'New game started.',
+      logTitle: 'Move log',
+      logEmpty: 'No moves yet.',
+      copied: 'Log copied.',
+      helpTitle: 'ZENSŪ – Help',
+      credit: 'Design and rulebook © 1995 Raymond Haysman',
+      obj: 'Object of the game',
+      objText: 'Get at least one of your pieces into the opponent’s home territory (their back row). The game ends immediately. You can also win by capturing all opponent pieces.',
+      moves: 'Moves',
+      movesText: 'Players alternate turns. Move one of your pieces exactly the number of squares indicated by the number on that side of the piece, orthogonally (forward, back, left, right – no diagonals). Pieces may never be rotated.',
+      jump: 'Jumping & capturing',
+      jumpText: 'You may not land on your own piece. You may jump over your own pieces. Any opponent pieces jumped over or landed on are captured and removed at once. Up to four pieces can be captured in a single move. Backward captures are allowed.',
+      opening: 'Opening',
+      openingText: 'Players alternate who starts. After each new game (reset) or page reload, turquoise and red (AI) take turns starting. Who starts the current game is recorded in the log.',
+      setup: 'Setup',
+      setupText: 'Back (home) row: pieces with number 2 in the white triangle. Front row: pieces with number 1 in the white triangle. The numbers on the sides of a piece determine how many squares it may move in each direction.',
+      type1: 'Piece 1 (front): Forward 1, Left 2, Back 3, Right 4',
+      type2: 'Piece 2 (home): Forward 2, Left 3, Back 4, Right 1',
+      close: 'Close',
+      difficulty: 'Difficulty',
+      depth: 'depth',
+      gameStart: 'Game start',
+      gameEnd: 'Game end',
+      winnerYou: 'Winner: turquoise (player)',
+      winnerAI: 'Winner: red (AI)',
+      diffChanged: 'Difficulty changed',
+      coordsOn: 'Coordinates on',
+      coordsOff: 'Coordinates off',
+      starts: 'starts'
+    }
+  };
+  function t(key) { return T[lang][key] || key; }
+
+  function emptyBoard() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  }
+
+  function makePiece(owner, type) {
+    return { owner, type, id: nextPieceId++ };
+  }
+
+  function loadStarter() {
+    try {
+      const s = localStorage.getItem('zensu_starter');
+      if (s === RED || s === TURQ) return s;
+    } catch (e) {}
+    return TURQ;
+  }
+
+  function saveStarter(s) {
+    try { localStorage.setItem('zensu_starter', s); } catch (e) {}
+  }
+
+  function setupBoard(alternate) {
+    if (alternate) {
+      starter = (starter === TURQ) ? RED : TURQ;
+      saveStarter(starter);
+    }
+    board = emptyBoard();
+    nextPieceId = 1;
+    for (let c = 0; c < COLS; c++) {
+      board[0][c] = makePiece(RED, 2);
+      board[1][c] = makePiece(RED, 1);
+      board[7][c] = makePiece(TURQ, 1);
+      board[8][c] = makePiece(TURQ, 2);
+    }
+    current = starter;
+    selected = null;
+    legalMoves = [];
+    gameOver = false;
+    winner = null;
+    moveLog = [];
+    moveNumber = 0;
+    // clear piece DOM map – will be rebuilt by renderBoard
+    for (const el of pieceById.values()) el.remove();
+    pieceById.clear();
+
+    const starterName = starter === TURQ
+      ? (lang === 'cs' ? 'Tyrkysová' : 'Turquoise')
+      : (lang === 'cs' ? 'Červená (AI)' : 'Red (AI)');
+    logMeta('start', {
+      starter,
+      diff: difficulty,
+      depth: DEPTHS[difficulty]
+    });
+  }
+
+  function inBounds(r, c) {
+    return r >= 0 && r < ROWS && c >= 0 && c < COLS;
+  }
+
+  function getMovesForPiece(r, c, b = board) {
+    const piece = b[r][c];
+    if (!piece) return [];
+    const nums = MOVE_NUMS[piece.type];
+    const dirs = getDirs(piece.owner);
+    const moves = [];
+    for (const dirKey of ['F', 'L', 'B', 'R']) {
+      const steps = nums[dirKey];
+      const { dr, dc } = dirs[dirKey];
+      let cr = r, cc = c;
+      const captures = [];
+      let valid = true;
+      for (let s = 1; s <= steps; s++) {
+        cr += dr; cc += dc;
+        if (!inBounds(cr, cc)) { valid = false; break; }
+        const occ = b[cr][cc];
+        if (occ && occ.owner !== piece.owner) captures.push({ r: cr, c: cc });
+      }
+      if (!valid) continue;
+      const land = b[cr][cc];
+      if (land && land.owner === piece.owner) continue;
+      moves.push({ r: cr, c: cc, captures: captures.slice(), dir: dirKey, steps });
+    }
+    return moves;
+  }
+
+  function allMoves(owner, b = board) {
+    const list = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = b[r][c];
+        if (p && p.owner === owner) {
+          for (const m of getMovesForPiece(r, c, b)) {
+            list.push({ fromR: r, fromC: c, toR: m.r, toC: m.c, captures: m.captures, dir: m.dir, steps: m.steps });
+          }
+        }
+      }
+    }
+    return list;
+  }
+
+  function cloneBoard(b) {
+    return b.map(row => row.map(cell => cell ? { owner: cell.owner, type: cell.type, id: cell.id } : null));
+  }
+
+  function applyMove(b, move) {
+    const nb = cloneBoard(b);
+    const piece = nb[move.fromR][move.fromC];
+    nb[move.fromR][move.fromC] = null;
+    for (const cap of move.captures) nb[cap.r][cap.c] = null;
+    nb[move.toR][move.toC] = piece;
+    return nb;
+  }
+
+  function checkWin(b, justMovedOwner, toR) {
+    if (justMovedOwner === TURQ && toR === 0) return TURQ;
+    if (justMovedOwner === RED && toR === 8) return RED;
+    let hasTurq = false, hasRed = false;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = b[r][c];
+        if (p) { if (p.owner === TURQ) hasTurq = true; else hasRed = true; }
+      }
+    }
+    if (!hasTurq) return RED;
+    if (!hasRed) return TURQ;
+    return null;
+  }
+
+  /** Can owner win on their next move from position b? */
+  function canWinNext(b, owner) {
+    const moves = allMoves(owner, b);
+    for (const m of moves) {
+      if (owner === RED && m.toR === 8) return true;
+      if (owner === TURQ && m.toR === 0) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Static evaluation. Positive = good for RED (AI).
+   * Higher progress weight, threat detection, reduced capture greed bias.
+   */
+  function evaluate(b) {
+    let score = 0;
+    let turqCount = 0, redCount = 0;
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = b[r][c];
+        if (!p) continue;
+        if (p.owner === RED) {
+          redCount++;
+          // Stronger progress: prefer advancing toward row 8
+          score += (r * 18) + (p.type === 1 ? 6 : 3);
+          score += (2.5 - Math.abs(c - 2.5)) * 1.2;
+        } else {
+          turqCount++;
+          score -= ((8 - r) * 18) + (p.type === 1 ? 6 : 3);
+          score -= (2.5 - Math.abs(c - 2.5)) * 1.2;
+        }
+      }
+    }
+
+    // Material – moderate weight so progress & threats matter more
+    score += (redCount - turqCount) * 38;
+
+    // Near / on goal
+    for (let c = 0; c < COLS; c++) {
+      if (b[7][c] && b[7][c].owner === RED) score += 40;
+      if (b[8][c] && b[8][c].owner === RED) score += 500;
+      if (b[1][c] && b[1][c].owner === TURQ) score -= 40;
+      if (b[0][c] && b[0][c].owner === TURQ) score -= 500;
+    }
+
+    // Immediate win threats (opponent or us can score next move)
+    if (canWinNext(b, TURQ)) score -= 800;
+    if (canWinNext(b, RED)) score += 800;
+
+    return score;
+  }
+
+  /** Move ordering score: wins > stop opponent win > captures > progress */
+  function moveOrderKey(m, maximizing, b) {
+    let key = 0;
+    // Winning move
+    if (maximizing && m.toR === 8) key += 10000;
+    if (!maximizing && m.toR === 0) key += 10000;
+    // Captures (moderate – not greedy)
+    key += m.captures.length * 25;
+    // Progress toward goal
+    key += maximizing ? m.toR * 3 : (8 - m.toR) * 3;
+    // Prefer moving forward-ish type pieces
+    const piece = b[m.fromR][m.fromC];
+    if (piece && piece.type === 2) key += 5;
+    return key;
+  }
+
+  function sortMoves(moves, maximizing, b) {
+    moves.sort((a, bmv) => moveOrderKey(bmv, maximizing, b) - moveOrderKey(a, maximizing, b));
+  }
+
+  /**
+   * Quiescence: from a leaf, only explore capturing moves (and win checks)
+   * up to Q_DEPTH extra plies to avoid horizon effect on exchanges.
+   */
+  function quiesce(b, alpha, beta, maximizing, lastOwner, lastToR, qDepth) {
+    const win = checkWin(b, lastOwner, lastToR);
+    if (win === RED) return 100000 + qDepth;
+    if (win === TURQ) return -100000 - qDepth;
+
+    const standPat = evaluate(b);
+    if (qDepth <= 0) return standPat;
+
+    if (maximizing) {
+      if (standPat >= beta) return beta;
+      if (standPat > alpha) alpha = standPat;
+      const moves = allMoves(RED, b).filter(m => m.captures.length > 0 || m.toR === 8);
+      sortMoves(moves, true, b);
+      for (const m of moves) {
+        const nb = applyMove(b, m);
+        const sc = quiesce(nb, alpha, beta, false, RED, m.toR, qDepth - 1);
+        if (sc > alpha) alpha = sc;
+        if (alpha >= beta) break;
+      }
+      return alpha;
+    } else {
+      if (standPat <= alpha) return alpha;
+      if (standPat < beta) beta = standPat;
+      const moves = allMoves(TURQ, b).filter(m => m.captures.length > 0 || m.toR === 0);
+      sortMoves(moves, false, b);
+      for (const m of moves) {
+        const nb = applyMove(b, m);
+        const sc = quiesce(nb, alpha, beta, true, TURQ, m.toR, qDepth - 1);
+        if (sc < beta) beta = sc;
+        if (alpha >= beta) break;
+      }
+      return beta;
+    }
+  }
+
+  function minimax(b, depth, alpha, beta, maximizing, lastOwner, lastToR) {
+    const win = checkWin(b, lastOwner, lastToR);
+    if (win === RED) return 100000 + depth;
+    if (win === TURQ) return -100000 - depth;
+
+    if (depth === 0) {
+      return quiesce(b, alpha, beta, maximizing, lastOwner, lastToR, Q_DEPTH);
+    }
+
+    const owner = maximizing ? RED : TURQ;
+    const moves = allMoves(owner, b);
+    if (moves.length === 0) return maximizing ? -50000 : 50000;
+    sortMoves(moves, maximizing, b);
+
+    if (maximizing) {
+      let maxEval = -Infinity;
+      for (const m of moves) {
+        const nb = applyMove(b, m);
+        const ev = minimax(nb, depth - 1, alpha, beta, false, RED, m.toR);
+        if (ev > maxEval) maxEval = ev;
+        if (ev > alpha) alpha = ev;
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (const m of moves) {
+        const nb = applyMove(b, m);
+        const ev = minimax(nb, depth - 1, alpha, beta, true, TURQ, m.toR);
+        if (ev < minEval) minEval = ev;
+        if (ev < beta) beta = ev;
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }
+
+  function findBestMove() {
+    const depth = DEPTHS[difficulty];
+    const moves = allMoves(RED, board);
+    if (!moves.length) return null;
+    sortMoves(moves, true, board);
+
+    let best = null, bestScore = -Infinity;
+    for (const m of moves) {
+      const nb = applyMove(board, m);
+      // Instant win
+      if (checkWin(nb, RED, m.toR) === RED) return m;
+      const score = minimax(nb, depth - 1, -Infinity, Infinity, false, RED, m.toR);
+      if (score > bestScore) {
+        bestScore = score;
+        best = m;
+      }
+    }
+    return best;
+  }
+
+  // ---- UI ----
+  const boardEl = document.getElementById('board');
+  const thinkingEl = document.getElementById('thinking');
+  const turnLabel = document.getElementById('turnLabel');
+  const diffBadge = document.getElementById('diffBadge');
+  const langBadge = document.getElementById('langBadge');
+  const thinkingText = document.getElementById('thinkingText');
+
+  function buildBoardDOM() {
+    boardEl.innerHTML = '';
+    cellNodes = [];
+    for (let r = 0; r < ROWS; r++) {
+      cellNodes[r] = [];
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (r === 0) cell.classList.add('home-red');
+        if (r === 8) cell.classList.add('home-turquoise');
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        const key = r + ',' + c;
+        if (WM_LETTERS[key]) {
+          const wm = document.createElement('span');
+          wm.className = 'wm';
+          wm.textContent = WM_LETTERS[key];
+          cell.appendChild(wm);
+        }
+        // coordinate label
+        const coord = document.createElement('span');
+        coord.className = 'coord' + (showCoords ? ' visible' : '');
+        coord.textContent = String.fromCharCode(65 + c) + (r + 1);
+        cell.appendChild(coord);
+
+        cell.addEventListener('click', () => onCellClick(r, c));
+        boardEl.appendChild(cell);
+        cellNodes[r][c] = cell;
+      }
+    }
+  }
+
+  function pieceHTML(piece) {
+    const nums = MOVE_NUMS[piece.type];
+    const isTurq = piece.owner === TURQ;
+    const map = isTurq
+      ? { F: 'top', B: 'bot', L: 'left', R: 'right' }
+      : { F: 'bot', B: 'top', L: 'right', R: 'left' };
+    let html = '';
+    for (const d of ['F', 'L', 'B', 'R']) {
+      const pos = map[d];
+      const isFront = (d === 'F');
+      html += `<div class="tri ${pos}${isFront ? ' front' : ''}">${nums[d]}</div>`;
+    }
+    return html;
+  }
+
+  function createPieceEl(piece) {
+    const pEl = document.createElement('div');
+    pEl.className = 'piece ' + piece.owner;
+    pEl.dataset.id = piece.id;
+    pEl.innerHTML = pieceHTML(piece);
+    return pEl;
+  }
+
+  /**
+   * Single source of truth for board DOM.
+   * Preserves piece DOM elements by id when they move.
+   */
+  function renderBoard() {
+    // Desired: id -> {r, c, piece}
+    const desired = new Map();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = board[r][c];
+        if (p) desired.set(p.id, { r, c, piece: p });
+      }
+    }
+
+    // Remove captured / gone pieces
+    for (const [id, el] of [...pieceById.entries()]) {
+      if (!desired.has(id)) {
+        el.remove();
+        pieceById.delete(id);
+      }
+    }
+
+    // Place or move remaining pieces
+    for (const [id, info] of desired) {
+      let el = pieceById.get(id);
+      if (!el) {
+        el = createPieceEl(info.piece);
+        pieceById.set(id, el);
+      }
+      const cell = cellNodes[info.r][info.c];
+      if (el.parentElement !== cell) {
+        cell.appendChild(el);
+      }
+      // selection
+      if (selected && selected.r === info.r && selected.c === info.c) {
+        el.classList.add('selected');
+      } else {
+        el.classList.remove('selected');
+      }
+    }
+
+    // Highlights
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = cellNodes[r][c];
+        cell.classList.remove('selectable', 'selected', 'move-target', 'capture-target');
+        const piece = board[r][c];
+        if (piece && !gameOver && current === TURQ && piece.owner === TURQ && !aiThinking) {
+          cell.classList.add('selectable');
+        }
+        if (selected && selected.r === r && selected.c === c) {
+          cell.classList.add('selected');
+        }
+        const move = legalMoves.find(m => m.r === r && m.c === c);
+        if (move) {
+          cell.classList.add(move.captures.length ? 'capture-target' : 'move-target');
+        }
+        // coords visibility
+        const coordEl = cell.querySelector('.coord');
+        if (coordEl) {
+          if (showCoords) coordEl.classList.add('visible');
+          else coordEl.classList.remove('visible');
+        }
+      }
+    }
+    updateStatus();
+  }
+
+  function updateStatus() {
+    if (gameOver) {
+      turnLabel.textContent = winner === TURQ ? t('winYou') : t('winAI');
+      turnLabel.className = 'turn ' + (winner === TURQ ? 'turquoise' : 'red');
+    } else {
+      turnLabel.textContent = current === TURQ ? t('yourTurn') : t('aiTurn');
+      turnLabel.className = 'turn ' + current;
+    }
+    diffBadge.textContent = difficulty + 1;
+    // Badge shows the language you will switch TO
+    langBadge.textContent = lang === 'cs' ? 'EN' : 'CS';
+    thinkingText.textContent = t('thinking');
+  }
+
+  function onCellClick(r, c) {
+    if (gameOver || aiThinking || current !== TURQ) return;
+    const piece = board[r][c];
+    if (piece && piece.owner === TURQ) {
+      selected = { r, c };
+      legalMoves = getMovesForPiece(r, c);
+      renderBoard();
+      return;
+    }
+    if (selected) {
+      const move = legalMoves.find(m => m.r === r && m.c === c);
+      if (move) {
+        doMove(selected.r, selected.c, move.r, move.c, move.captures, move.dir, move.steps);
+        return;
+      }
+    }
+    selected = null;
+    legalMoves = [];
+    renderBoard();
+  }
+
+  function coordLabel(r, c) {
+    return String.fromCharCode(65 + c) + (r + 1);
+  }
+
+  // ---- Structured log (language-independent data) ----
+  function logMeta(kind, data) {
+    moveLog.unshift({ type: 'meta', kind, data });
+  }
+
+  function logMove(owner, fromR, fromC, toR, toC, captures, dir, steps) {
+    moveNumber++;
+    moveLog.unshift({
+      type: 'move',
+      num: moveNumber,
+      owner,
+      fromR, fromC, toR, toC,
+      captures: captures.map(c => ({ r: c.r, c: c.c })),
+      dir, steps
+    });
+  }
+
+  function logEnd(winOwner) {
+    logMeta('end', { winner: winOwner });
+  }
+
+  function formatLogEntry(e) {
+    if (e.type === 'meta') {
+      if (e.kind === 'start') {
+        const name = e.data.starter === TURQ
+          ? (lang === 'cs' ? 'Tyrkysová' : 'Turquoise')
+          : (lang === 'cs' ? 'Červená (AI)' : 'Red (AI)');
+        return t('gameStart') + ' — ' + name + ' ' + t('starts') +
+          ' · ' + t('difficulty') + ': ' + DIFF_NAMES[lang][e.data.diff] +
+          ' (' + t('depth') + ' ' + e.data.depth + ')';
+      }
+      if (e.kind === 'diff') {
+        return t('diffChanged') + ': ' + DIFF_NAMES[lang][e.data.diff] +
+          ' (' + t('depth') + ' ' + e.data.depth + ')';
+      }
+      if (e.kind === 'end') {
+        return t('gameEnd') + ' — ' + (e.data.winner === TURQ ? t('winnerYou') : t('winnerAI'));
+      }
+      return '';
+    }
+    // move
+    const num = String(e.num).padStart(2, '0');
+    const sqClass = e.owner === TURQ ? 't' : 'r';
+    const from = coordLabel(e.fromR, e.fromC);
+    const to = coordLabel(e.toR, e.toC);
+    const capStr = e.captures.length
+      ? ' ' + e.captures.map(cap => 'x' + coordLabel(cap.r, cap.c)).join(' ')
+      : '';
+    return {
+      html: `${num}. <span class="sq ${sqClass}"></span> ${from}:${to} (${e.dir}${e.steps})${capStr}`,
+      text: `${num}. ${from}:${to} (${e.dir}${e.steps})${capStr}`
+    };
+  }
+
+  function doMove(fromR, fromC, toR, toC, captures, dir, steps) {
+    const owner = board[fromR][fromC].owner;
+    logMove(owner, fromR, fromC, toR, toC, captures, dir || '?', steps || 0);
+
+    // ONLY change state – renderBoard is the single DOM authority
+    board = applyMove(board, { fromR, fromC, toR, toC, captures });
+    selected = null;
+    legalMoves = [];
+
+    const win = checkWin(board, current, toR);
+    if (win) {
+      gameOver = true;
+      winner = win;
+      logEnd(win);
+      renderBoard();
+      const stillHasOpp = board.some(row => row.some(p => p && p.owner !== win));
+      let msg;
+      if (win === TURQ) msg = stillHasOpp ? t('winYou') : t('winCaptureYou');
+      else msg = stillHasOpp ? t('winAI') : t('winCaptureAI');
+      toast(msg, win === TURQ ? 'win' : 'error');
+      return;
+    }
+
+    const stillHas = (o) => board.some(row => row.some(p => p && p.owner === o));
+    if (!stillHas(RED)) {
+      gameOver = true; winner = TURQ; logEnd(TURQ);
+      renderBoard(); toast(t('winCaptureYou'), 'win'); return;
+    }
+    if (!stillHas(TURQ)) {
+      gameOver = true; winner = RED; logEnd(RED);
+      renderBoard(); toast(t('winCaptureAI'), 'error'); return;
+    }
+
+    current = current === TURQ ? RED : TURQ;
+
+    if (current === RED && !gameOver) {
+        aiThinking = true;
+    }
+
+    renderBoard();
+
+    if (current === RED && !gameOver) {
+        startAIThinking();
+    }
+  }
+
+  function startAIThinking() {
+    if (gameOver || current !== RED) return;
+
+    aiThinking = true;
+
+    // Overlay NEZOBRAZUJEME.
+    // AI výpočet probíhá synchronně a nechceme žádné probliknutí.
+    aiMove();
+}
+
+
+  function aiMove() {
+    if (gameOver || current !== RED) {
+        aiThinking = false;
+        thinkingEl.classList.remove('visible');
+        return;
+    }
+
+    const best = findBestMove();
+
+    // AI už nepřemýšlí – overlay musí být vždy skrytý.
+    aiThinking = false;
+    thinkingEl.classList.remove('visible');
+
+    if (!best) {
+        gameOver = true;
+        winner = TURQ;
+        logEnd(TURQ);
+        renderBoard();
+        toast(t('winYou'), 'win');
+        return;
+    }
+
+    doMove(
+        best.fromR,
+        best.fromC,
+        best.toR,
+        best.toC,
+        best.captures,
+        best.dir,
+        best.steps
+    );
+}
+
+  function toast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast' + (type ? ' ' + type : '');
+    el.textContent = msg;
+    document.getElementById('toasts').appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity 0.35s';
+      setTimeout(() => el.remove(), 350);
+    }, 2800);
+  }
+
+  function showHelp() {
+    const panel = document.getElementById('helpPanel');
+    panel.innerHTML = `
+      <h2>${t('helpTitle')}</h2>
+      <p class="credit">${t('credit')}</p>
+      <h3>${t('obj')}</h3><p>${t('objText')}</p>
+      <h3>${t('opening')}</h3><p>${t('openingText')}</p>
+      <h3>${t('setup')}</h3><p>${t('setupText')}</p>
+      <p>${t('type1')}</p><p>${t('type2')}</p>
+      <h3>${t('moves')}</h3><p>${t('movesText')}</p>
+      <h3>${t('jump')}</h3><p>${t('jumpText')}</p>
+      <button class="close-btn" id="helpClose">${t('close')}</button>
+    `;
+    document.getElementById('helpOverlay').classList.add('visible');
+    document.getElementById('helpClose').onclick = () => {
+      document.getElementById('helpOverlay').classList.remove('visible');
+    };
+  }
+
+  function showLog() {
+    document.getElementById('logTitle').textContent = t('logTitle');
+    const body = document.getElementById('logBody');
+    if (moveLog.length === 0) {
+      body.innerHTML = `<div class="log-empty">${t('logEmpty')}</div>`;
+    } else {
+      body.innerHTML = moveLog.map(e => {
+        if (e.type === 'meta') {
+          return `<div class="entry meta">${formatLogEntry(e)}</div>`;
+        }
+        const f = formatLogEntry(e);
+        return `<div class="entry">${f.html}</div>`;
+      }).join('');
+    }
+    document.getElementById('logOverlay').classList.add('visible');
+  }
+
+  function copyLog() {
+    const text = moveLog.length
+      ? moveLog.map(e => {
+          if (e.type === 'meta') return formatLogEntry(e);
+          return formatLogEntry(e).text;
+        }).join('\n')
+      : t('logEmpty');
+    navigator.clipboard.writeText(text).then(() => toast(t('copied'))).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast(t('copied'));
+    });
+  }
+
+  function saveGame() {
+    const data = {
+      board, current, gameOver, winner, difficulty, lang,
+      moveLog, moveNumber, starter, nextPieceId, showCoords
+    };
+    try {
+      localStorage.setItem('zensu_save', JSON.stringify(data));
+      toast(t('saved'));
+    } catch (e) { toast('Save failed', 'error'); }
+  }
+
+  function loadGame() {
+    try {
+      const raw = localStorage.getItem('zensu_save');
+      if (!raw) { toast(t('noSave'), 'error'); return; }
+      const data = JSON.parse(raw);
+      board = data.board;
+      current = data.current;
+      gameOver = data.gameOver;
+      winner = data.winner;
+      difficulty = data.difficulty ?? 1;
+      lang = data.lang || 'cs';
+      moveLog = data.moveLog || [];
+      moveNumber = data.moveNumber || 0;
+      starter = data.starter || TURQ;
+      nextPieceId = data.nextPieceId || 100;
+      showCoords = !!data.showCoords;
+      selected = null;
+      legalMoves = [];
+      aiThinking = false;
+      thinkingEl.classList.remove('visible');
+      // rebuild piece map from board
+      for (const el of pieceById.values()) el.remove();
+      pieceById.clear();
+      renderBoard();
+      toast(t('loaded'));
+      if (current === RED && !gameOver) {
+        aiThinking = true;
+        //thinkingEl.classList.add('visible');
+        setTimeout(aiMove, 300);
+      }
+    } catch (e) { toast(t('noSave'), 'error'); }
+  }
+
+  // Menu handlers
+  document.getElementById('btnSave').onclick = saveGame;
+  document.getElementById('btnLoad').onclick = loadGame;
+  document.getElementById('btnDiff').onclick = () => {
+    difficulty = (difficulty + 1) % 3;
+    updateStatus();
+    logMeta('diff', { diff: difficulty, depth: DEPTHS[difficulty] });
+    toast(t('difficulty') + ': ' + DIFF_NAMES[lang][difficulty]);
+  };
+  document.getElementById('btnReset').onclick = () => {
+    setupBoard(true); // alternate starter
+    renderBoard();
+    toast(t('reset'));
+    if (current === RED) {
+        startAIThinking();
+    }
+  };
+  document.getElementById('btnLog').onclick = showLog;
+  document.getElementById('btnHelp').onclick = showHelp;
+  document.getElementById('btnLang').onclick = () => {
+    lang = lang === 'cs' ? 'en' : 'cs';
+    document.documentElement.lang = lang;
+    updateStatus();
+  };
+  document.getElementById('btnCopyLog').onclick = copyLog;
+
+  // Invisible coord toggle on top-left (A1 area)
+  document.getElementById('coordToggle').onclick = (e) => {
+    e.stopPropagation();
+    showCoords = !showCoords;
+    // update all coord labels without full piece re-render
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const coordEl = cellNodes[r][c].querySelector('.coord');
+        if (coordEl) {
+          if (showCoords) coordEl.classList.add('visible');
+          else coordEl.classList.remove('visible');
+        }
+      }
+    }
+    toast(showCoords ? t('coordsOn') : t('coordsOff'));
+  };
+
+  document.getElementById('helpOverlay').addEventListener('click', e => {
+    if (e.target.id === 'helpOverlay') e.target.classList.remove('visible');
+  });
+  document.getElementById('logOverlay').addEventListener('click', e => {
+    if (e.target.id === 'logOverlay') e.target.classList.remove('visible');
+  });
+
+  // Start – load last starter, do NOT alternate on first page load
+  starter = loadStarter();
+  setupBoard(false);
+  buildBoardDOM();
+  renderBoard();
+  if (current === RED) {
+    aiThinking = true;
+    //thinkingEl.classList.add('visible');
+    setTimeout(aiMove, 250);
+  }
+})();
+</script>
+</body>
+</html>
