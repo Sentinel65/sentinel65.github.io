@@ -1481,11 +1481,16 @@ header {
   };
   document.getElementById('btnCopyLog').onclick = copyLog;
 
-  // Invisible coord toggle on top-left (A1 area)
+  // Invisible coord toggle on top-left (A1 area).
+  // Only toggles coordinates when no player piece is selected;
+  // otherwise forwards the click to the board (so a move onto A1 works).
   document.getElementById('coordToggle').onclick = (e) => {
     e.stopPropagation();
+    if (selected && !gameOver && current === TURQ && !aiThinking) {
+      onCellClick(0, 0);
+      return;
+    }
     showCoords = !showCoords;
-    // update all coord labels without full piece re-render
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const coordEl = cellNodes[r][c].querySelector('.coord');
