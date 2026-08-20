@@ -13,7 +13,7 @@
   --accent: #00b894;
   --danger: #d63031;
   --text: #f5f6fa;
-  --player: #6c5ce7;
+  --player: #e6b800;
   --ai: #e84393;
   --cell: min(14.5vw, 58px);
   --gap: 3px;
@@ -58,7 +58,7 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   font-size: .88rem; font-weight: 600; user-select: none;
 }
 .bag.player { border: 2px solid var(--player); color: #dfe6e9; cursor: pointer; }
-.bag.player:hover { background: #3d2d5c; }
+.bag.player:hover { background: #4a4020; }
 .bag.player:active { transform: scale(.97); }
 .bag.ai { border: 2px solid var(--ai); color: #dfe6e9; }
 .bag .icon { font-size: 1.2rem; }
@@ -93,8 +93,8 @@ h1.coords-on { outline: 1px dashed #00b89455; }
 .cell.setup-ok { background: #00b89433 !important; box-shadow: inset 0 0 0 2px var(--accent); }
 .cell.cap-gone { box-shadow: inset 0 0 0 3px #e74c3c !important; background: #e74c3c22 !important; }
 .tile.last-move-tile {
-  border-color: #e67e22 !important;
-  box-shadow: 0 0 0 2px #e67e22, 0 2px 8px rgba(230,126,34,.55) !important;
+  border-color: #6c5ce7 !important;
+  box-shadow: 0 0 0 2px #6c5ce7, 0 2px 8px rgba(108,92,231,.55) !important;
 }
 .tile.capture-target {
   border-color: #00b894 !important;
@@ -113,7 +113,7 @@ h1.coords-on { outline: 1px dashed #00b89455; }
 .tile.player {
   background: #f5e68c; /* světle žlutá */
   border: 2px solid var(--player);
-  box-shadow: 0 0 0 1px #a29bfe, 0 2px 6px rgba(0,0,0,.5);
+  box-shadow: 0 0 0 1px #f0d060, 0 2px 6px rgba(0,0,0,.5);
 }
 .tile.ai {
   background: #f5b8c8; /* světle růžová */
@@ -176,6 +176,12 @@ h1.coords-on { outline: 1px dashed #00b89455; }
 .modal-body.help-mode {
   white-space: normal; font-family: system-ui, sans-serif;
 }
+.log-sq {
+  display: inline-block; width: 0.85em; height: 0.85em;
+  border-radius: 2px; vertical-align: -0.05em; margin-right: 0.15em;
+}
+.log-sq.p { background: #e6b800; }
+.log-sq.a { background: #e84393; }
 .modal .close, .modal .copy-btn {
   width: 36px; height: 36px; border: none; border-radius: 8px;
   background: #444; color: #fff; font-size: 1.1rem; cursor: pointer;
@@ -236,7 +242,7 @@ body.replay-mode .bag.player { pointer-events: none; opacity: .45; }
 }
 .help-wrap h3:first-child { margin-top: 0; }
 .help-cred { font-size: .78rem; color: #888; margin: -4px 0 12px; }
-.help-wrap .c-orange { color: #e67e22; font-weight: 700; }
+.help-wrap .c-purple { color: #6c5ce7; font-weight: 700; }
 .help-wrap .c-green { color: #00b894; font-weight: 700; }
 .help-wrap .c-red { color: #e74c3c; font-weight: 700; }
 .help-wrap p { margin: 0 0 8px; line-height: 1.45; color: #dfe6e9; }
@@ -442,7 +448,7 @@ const NAMES = {
 <ul class="rules">
 <li>Klik na název <b>The Duke</b> – zobrazí / skryje souřadnice.</li>
 <li><b>▷</b> přehrávač tahů z logu (během něj je hra zablokovaná).</li>
-<li><span class="c-orange">Oranžový</span> rámeček = pole posledního tahu.</li>
+<li><span class="c-purple">Fialový</span> rámeček = pole posledního tahu.</li>
 <li><span class="c-green">Zelený</span> rámeček = pole platného tahu.</li>
 <li><span class="c-red">Červený</span> rámeček = pole sebraného kamene (Strike).</li>
 </ul>
@@ -506,7 +512,7 @@ const NAMES = {
 <ul class="rules">
 <li>Click the title <b>The Duke</b> – show / hide coordinates.</li>
 <li><b>▷</b> move replay from the log (play is locked while active).</li>
-<li><span class="c-orange">Orange</span> border = last move square.</li>
+<li><span class="c-purple">Purple</span> border = last move square.</li>
 <li><span class="c-green">Green</span> border = legal move square.</li>
 <li><span class="c-red">Red</span> border = captured piece square (Strike).</li>
 </ul>
@@ -611,21 +617,25 @@ function addLogMove(owner, type, fx, fy, tx, ty, capType, stay){
 }
 function addLogLevy(owner, type, x, y, left){ logLines.unshift({n:nextLogN(), k:"levy", o:owner, type, x, y, left}); if(logLines.length>200) logLines.pop(); }
 
-function formatLogLine(e){
+function logSq(owner){
+  return '<span class="log-sq ' + (owner==="P"?"p":"a") + '"></span>';
+}
+function formatLogLine(e, plain){
   const num = (e.n!=null ? String(e.n).padStart(2,"0")+". " : "");
-  if(e.k==="sys"){ const st = e.key ? (NAMES[lang][e.key]||e.key) : (e.t||""); return num + "ℹ️  " + st; }
-  if(e.k==="place") return num + (e.o==="P" ? "🟪" : "🟥") + " " + (NAMES[lang][e.type]||e.type) + " → " + sq(e.x,e.y);
-  if(e.k==="levy") return num + (e.o==="P" ? "🟪" : "🟥") + " # " + (NAMES[lang][e.type]||e.type) + " → " + sq(e.x,e.y) + " #" + e.left;
+  const cP = plain ? "■" : logSq("P");
+  const cA = plain ? "■" : logSq("A");
+  const c = (o) => o==="P" ? cP : cA;
+  if(e.k==="sys"){ const st = e.key ? (NAMES[lang][e.key]||e.key) : (e.t||""); return num + (plain?"ℹ️  ":"ℹ️  ") + st; }
+  if(e.k==="place") return num + c(e.o) + " " + (NAMES[lang][e.type]||e.type) + " → " + sq(e.x,e.y);
+  if(e.k==="levy") return num + c(e.o) + " # " + (NAMES[lang][e.type]||e.type) + " → " + sq(e.x,e.y) + " #" + e.left;
   if(e.k==="move"){
-    const c = e.o==="P" ? "🟪" : "🟥";
     const name = NAMES[lang][e.type]||e.type;
-    const opp = e.o==="P" ? "🟥" : "🟪";
+    const opp = e.o==="P" ? cA : cP;
     if(e.stay && e.cap){
-      // Strike: stays on square, captures elsewhere — c5:c5xc3
-      return num + c + " " + name + " " + sq(e.fx,e.fy) + ":" + sq(e.fx,e.fy) + "x" + sq(e.tx,e.ty) + " " + opp + " " + (NAMES[lang][e.cap]||e.cap);
+      return num + c(e.o) + " " + name + " " + sq(e.fx,e.fy) + ":" + sq(e.fx,e.fy) + "x" + sq(e.tx,e.ty) + " " + opp + " " + (NAMES[lang][e.cap]||e.cap);
     }
-    if(e.cap) return num + c + " " + name + " " + sq(e.fx,e.fy) + "x" + sq(e.tx,e.ty) + " " + opp + " " + (NAMES[lang][e.cap]||e.cap);
-    return num + c + " " + name + " " + sq(e.fx,e.fy) + ":" + sq(e.tx,e.ty);
+    if(e.cap) return num + c(e.o) + " " + name + " " + sq(e.fx,e.fy) + "x" + sq(e.tx,e.ty) + " " + opp + " " + (NAMES[lang][e.cap]||e.cap);
+    return num + c(e.o) + " " + name + " " + sq(e.fx,e.fy) + ":" + sq(e.tx,e.ty);
   }
   return "";
 }
@@ -964,26 +974,21 @@ function evaluate(){
   if(!pDuke) return 100000;
   for(let y=0;y<6;y++) for(let x=0;x<6;x++){
     const p=board[y][x]; if(!p) continue;
-    const v=PIECE_VAL[p.type]||2, sign=p.owner==="A"?1:-1;
-    score+=sign*v*10;
-    const mob=generateMovesFor(x,y).length;
-    score+=sign*mob*0.4;
-    // center preference
-    score+=sign*(3-Math.abs(x-2.5)-Math.abs(y-2.5))*0.3;
-  }
-  // Critical: Duke safety
-  if(isSquareAttackedBy(aDuke.x, aDuke.y, "P")) score -= 80;
-  if(isSquareAttackedBy(pDuke.x, pDuke.y, "A")) score += 50;
-  // Prefer capturing enemy Duke opportunity
-  const aMoves=getAllLegalMoves("A");
-  for(const m of aMoves){
-    if(m.capture){
-      const t=board[m.y]&&board[m.y][m.x];
-      if(t&&t.type==="Duke") score += 500;
-      else if(t) score += (PIECE_VAL[t.type]||2)*1.5;
+    const v=PIECE_VAL[p.type]||2;
+    const sign=p.owner==="A"?1:-1;
+    score += sign * v * 12;
+    // hanging pieces: attacked by opponent → big penalty
+    const enemy = p.owner==="A" ? "P" : "A";
+    if(p.type!=="Duke" && isSquareAttackedBy(x,y,enemy)){
+      score -= sign * v * 9; // almost cancels the piece value if hanging
     }
+    score += sign * generateMovesFor(x,y).length * 0.25;
+    score += sign * (3-Math.abs(x-2.5)-Math.abs(y-2.5)) * 0.2;
   }
-  score += bags.A.length*0.5 - bags.P.length*0.5;
+  if(isSquareAttackedBy(aDuke.x, aDuke.y, "P")) score -= 120;
+  if(isSquareAttackedBy(pDuke.x, pDuke.y, "A")) score += 70;
+  // bag pieces are potential, not free material on the board
+  score += bags.A.length * 1.2 - bags.P.length * 1.2;
   return score;
 }
 function snapshotBoard(){return{board:board.map(r=>r.map(c=>c?{...c}:null)),bags:{P:bags.P.slice(),A:bags.A.slice()},pieceId};}
@@ -1014,28 +1019,44 @@ function aiMove(){
       toast(lang==="cs"?"AI nemá tah":"AI has no move");
       render(); return;
     }
-    // Prioritize: capture Duke > other captures > rest
-    moves.sort((a,b)=>{
-      const capScore = (m)=>{
-        if(!m.capture) return 0;
+    // Root priority: capture Duke >> captures >> safe moves >> Levy >> suicidal Levy
+    function rootPri(m){
+      if(m.capture){
         const t=board[m.y]&&board[m.y][m.x];
-        if(t&&t.type==="Duke") return 100;
-        return 10 + (t ? (PIECE_VAL[t.type]||2) : 0);
-      };
-      return capScore(b)-capScore(a) + (Math.random()-0.5);
-    });
+        if(t&&t.type==="Duke") return 100000;
+        return 5000 + (t ? (PIECE_VAL[t.type]||2)*100 : 0);
+      }
+      if(m.type==="Levy"){
+        // never prefer levying onto a square the player can take immediately
+        if(isSquareAttackedBy(m.x,m.y,"P")) return -8000;
+        return -200;
+      }
+      return 0;
+    }
+    moves.sort((a,b)=> rootPri(b)-rootPri(a) || (Math.random()-0.5));
     let best=moves[0], bestScore=-Infinity;
-    const startT=performance.now(), maxTime=1400;
-    const depth = moves.length<=12 ? 4 : 3;
+    const startT=performance.now(), maxTime=1600;
+    const depth = moves.length<=14 ? 4 : 3;
     for(const m of moves){
       if(performance.now()-startT>maxTime) break;
       const snap=snapshotBoard();
       applyMoveAI("A",m);
-      // immediate win
       if(!dukePos("P")){ restoreBoard(snap); best=m; bestScore=100000; break; }
-      const score=minimax(depth,-Infinity,Infinity,false);
+      let score=minimax(depth,-Infinity,Infinity,false);
+      // extra root penalty for suicidal levy (search may be shallow)
+      if(m.type==="Levy" && isSquareAttackedBy(m.x,m.y,"P")) score -= 400;
+      // extra root bonus for real captures
+      if(m.capture){
+        const t=snap.board[m.y]&&snap.board[m.y][m.x];
+        if(t) score += (PIECE_VAL[t.type]||2)*8;
+      }
       restoreBoard(snap);
       if(score>bestScore){ bestScore=score; best=m; }
+    }
+    // if best is still a suicidal levy and a non-levy exists, pick best non-levy
+    if(best && best.type==="Levy" && isSquareAttackedBy(best.x,best.y,"P")){
+      const alt=moves.find(m=>m.type!=="Levy");
+      if(alt) best=alt;
     }
     if(best.type==="Levy"){
       doLevy("A",best.x,best.y);
@@ -1141,7 +1162,7 @@ document.getElementById("btnLang").onclick=()=>{
   const logBody=document.getElementById("logBody");
   if(document.getElementById("logModal").classList.contains("show")){
     document.getElementById("logTitle").textContent=NAMES[lang].logTitle;
-    logBody.textContent = logLines.length ? logLines.map(formatLogLine).join("\n") : (lang==="cs"?"(prázdný)":"(empty)");
+    logBody.innerHTML = logLines.length ? logLines.map(e=>formatLogLine(e)).join("\n") : (lang==="cs"?"(prázdný)":"(empty)");
   }
   if(document.getElementById("helpModal").classList.contains("show")){
     document.getElementById("helpTitle").textContent=NAMES[lang].helpTitle;
@@ -1160,13 +1181,13 @@ document.getElementById("logModal").addEventListener("click", e => { if(e.target
 
 document.getElementById("btnLog").onclick=()=>{
   document.getElementById("logTitle").textContent=NAMES[lang].logTitle;
-  document.getElementById("logBody").textContent = logLines.length ? logLines.map(formatLogLine).join("\n") : (lang==="cs"?"(prázdný)":"(empty)");
+  document.getElementById("logBody").innerHTML = logLines.length ? logLines.map(e=>formatLogLine(e)).join("\n") : (lang==="cs"?"(prázdný)":"(empty)");
   document.getElementById("logModal").classList.add("show");
 };
 document.getElementById("logClose").onclick=()=>document.getElementById("logModal").classList.remove("show");
 document.getElementById("logCloseX").onclick=()=>document.getElementById("logModal").classList.remove("show");
 document.getElementById("btnCopyLog").onclick=()=>{
-  const text=logLines.map(formatLogLine).join("\n");
+  const text=logLines.map(e=>formatLogLine(e,true)).join("\n");
   navigator.clipboard.writeText(text).then(()=>toast(NAMES[lang].copied,"ok")).catch(()=>{
     const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
     document.execCommand("copy"); document.body.removeChild(ta); toast(NAMES[lang].copied,"ok");
@@ -1212,7 +1233,7 @@ function updateReplayInfo(){
   if(!el) return;
   const h = history[replayIdx];
   let detail = "";
-  if(h && h.logEntry) detail = " · " + formatLogLine(h.logEntry).replace(/^\d+\.\s*/, "");
+  if(h && h.logEntry) detail = " · " + formatLogLine(h.logEntry, true).replace(/^\d+\.\s*/, "");
   else if(h && h.note) detail = " · " + h.note;
   el.textContent = (history.length ? (replayIdx+1) : 0) + " / " + history.length + detail;
 }
