@@ -26,7 +26,7 @@ header {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 h1 {
-  font-size: clamp(1.05rem, 4vw, 1.35rem); font-weight: 700; color: var(--accent);
+  font-size: clamp(1.35rem, 5.2vw, 1.85rem); font-weight: 700; color: var(--accent);
   cursor: default; user-select: none; letter-spacing: .02em;
   padding: 2px 8px; border-radius: 6px;
 }
@@ -101,9 +101,9 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   box-shadow: 0 0 0 2px #00b894, 0 2px 8px rgba(0,184,148,.45) !important;
 }
 .coord {
-  position: absolute; bottom: 1px; right: 2px;
-  font-size: calc(var(--cell) * 0.16); color: #888; opacity: .7;
-  pointer-events: none; font-weight: 600; z-index: 1;
+  position: absolute; bottom: 2px; right: 3px;
+  font-size: calc(var(--cell) * 0.22); color: #bbb; opacity: .9;
+  pointer-events: none; font-weight: 700; z-index: 1;
 }
 .tile {
   width: 96%; height: 96%; border-radius: 4px; position: relative; overflow: hidden;
@@ -120,6 +120,29 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   border: 2px solid var(--ai);
   box-shadow: 0 0 0 1px #fd79a8, 0 2px 6px rgba(0,0,0,.5);
   transform: rotate(180deg);
+}
+.cell { perspective: 500px; }
+.tile {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.tile.player.flipping {
+  animation: flipPlayer 0.48s ease-in-out;
+}
+.tile.ai.flipping {
+  animation: flipAi 0.48s ease-in-out;
+}
+@keyframes flipPlayer {
+  0%   { transform: rotateY(0deg); }
+  45%  { transform: rotateY(90deg); }
+  55%  { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes flipAi {
+  0%   { transform: rotate(180deg) rotateY(0deg); }
+  45%  { transform: rotate(180deg) rotateY(90deg); }
+  55%  { transform: rotate(180deg) rotateY(90deg); }
+  100% { transform: rotate(180deg) rotateY(0deg); }
 }
 .duke-crown {
   position: absolute;
@@ -565,6 +588,7 @@ let replayMode = false;
 let replayIdx = 0;
 let replayTimer = null;
 let liveSnapshot = null;
+let flipAnim = null; // {x,y} tile that just flipped
 
 function getTileSrc(type, side){
   const pack = (lang==="en" && typeof IMG_EN!=="undefined" && IMG_EN[type]) ? IMG_EN : IMG;
@@ -809,7 +833,7 @@ function pushHistory(note){
     logEntry: logEntry ? {...logEntry} : null
   });
 }
-function restoreHistory(i){
+function restoreHistory(i, opts){
   if(i<0 || i>=history.length) return;
   const h = history[i];
   board = h.board.map(r => r.map(c => c ? {...c} : null));
@@ -820,6 +844,14 @@ function restoreHistory(i){
   lastCaptureCell = h.lastCaptureCell ? {...h.lastCaptureCell} : null;
   selected=null; legalMoves=[];
   replayIdx = i;
+  // Flip only after a real piece move (not Levy / setup / system)
+  if(opts && opts.flip && lastMoveCells.length){
+    const le = h.logEntry;
+    if(le && le.k==="move"){
+      const dest = lastMoveCells[lastMoveCells.length-1];
+      triggerFlip(dest.x, dest.y);
+    }
+  }
   render();
   updateReplayInfo();
 }
@@ -837,6 +869,7 @@ function render(){
       const t=document.createElement("div");
       let tcls = "tile "+(p.owner==="P"?"player":"ai");
       if(lastMoveCells.some(c=>c.x===x&&c.y===y)) tcls += " last-move-tile";
+      if(flipAnim && flipAnim.x===x && flipAnim.y===y) tcls += " flipping";
       const lmCap = legalMoves.find(m=>m.x===x&&m.y===y&&(m.capture||m.type==="Strike"));
       if(lmCap) tcls += " capture-target";
       t.className = tcls;
@@ -934,9 +967,11 @@ function onCellClick(x,y){
       if(m.stay){
         lastMoveCells = [{x:fx,y:fy}];
         lastCaptureCell = m.capture ? {x:m.x,y:m.y} : null;
+        triggerFlip(fx, fy);
       } else {
         lastMoveCells = [{x:fx,y:fy},{x:m.x,y:m.y}];
         lastCaptureCell = null;
+        triggerFlip(m.x, m.y);
       }
       addLogMove("P", fromP.type, fx, fy, m.x, m.y, capType, m.stay);
       selected=null; legalMoves=[];
@@ -949,6 +984,10 @@ function onCellClick(x,y){
   }
 }
 
+function triggerFlip(x,y){
+  flipAnim = {x,y};
+  setTimeout(()=>{ if(flipAnim && flipAnim.x===x && flipAnim.y===y){ flipAnim=null; } }, 500);
+}
 function doMove(fromX,fromY,m){
   const p=board[fromY][fromX];
   if(!p) return;
@@ -1097,13 +1136,16 @@ function aiMove(){
           if(best.capture && board[best.y]) board[best.y][best.x]=null;
           lastMoveCells = [{x:fx,y:fy}];
           lastCaptureCell = best.capture ? {x:best.x,y:best.y} : null;
+          p.side=1-p.side;
+          triggerFlip(fx, fy);
         } else {
           if(best.capture && board[best.y]) board[best.y][best.x]=null;
           board[best.y][best.x]=p; board[fy][fx]=null;
           lastMoveCells = [{x:fx,y:fy},{x:best.x,y:best.y}];
           lastCaptureCell = null;
+          p.side=1-p.side;
+          triggerFlip(best.x, best.y);
         }
-        p.side=1-p.side;
         addLogMove("A", p.type, fx, fy, best.x, best.y, capType, best.stay);
       }
     }
@@ -1328,15 +1370,15 @@ function toggleReplayMode(){
 function rpStep(delta){
   stopReplay();
   const ni = Math.max(0, Math.min(history.length-1, replayIdx+delta));
-  restoreHistory(ni);
+  restoreHistory(ni, {flip: delta!==0});
 }
 function rpPlayToggle(){
   if(replayTimer){ stopReplay(); return; }
   document.getElementById("rpPlay").textContent="⏸";
   replayTimer = setInterval(()=>{
     if(replayIdx >= history.length-1){ stopReplay(); return; }
-    restoreHistory(replayIdx+1);
-  }, 900);
+    restoreHistory(replayIdx+1, {flip:true});
+  }, 950);
 }
 
 document.getElementById("btnReplay").onclick = ()=> toggleReplayMode();
