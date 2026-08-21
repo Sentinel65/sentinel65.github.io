@@ -116,6 +116,34 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   border-color: #6c5ce7 !important;
   box-shadow: 0 0 0 2px #6c5ce7, 0 2px 8px rgba(108,92,231,.55) !important;
 }
+.tile.command-source {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(255,255,255,.45) !important;
+}
+.tile.duke-threatened,
+.tile.last-move-tile.duke-threatened,
+.tile.player.duke-threatened,
+.tile.ai.duke-threatened {
+  border-color: #e74c3c !important;
+  animation: dukeThreatBlink 0.75s ease-in-out infinite;
+  z-index: 4;
+}
+@keyframes dukeThreatBlink {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #e74c3c, 0 0 12px rgba(231,76,60,.85), 0 0 0 1px #e74c3c inset;
+  }
+  50% {
+    box-shadow: 0 0 0 4px #ffeaa7, 0 0 18px rgba(255,234,167,.95), 0 0 0 1px #fdcb6e inset;
+  }
+}
+.cell.duke-cell-threat {
+  box-shadow: inset 0 0 0 2px #e74c3c88 !important;
+  animation: cellThreatPulse 0.75s ease-in-out infinite;
+}
+@keyframes cellThreatPulse {
+  0%, 100% { background-color: #e74c3c22 !important; }
+  50% { background-color: #fdcb6e33 !important; }
+}
 .tile.capture-target {
   border-color: #00b894 !important;
   box-shadow: 0 0 0 2px #00b894, 0 2px 8px rgba(0,184,148,.45) !important;
@@ -520,19 +548,23 @@ const NAMES = {
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10.00,2.00 11.80,6.88 16.93,6.00 13.60,10.00 16.93,14.00 11.80,13.12 10.00,18.00 8.20,13.12 3.07,14.00 6.40,10.00 3.07,6.00 8.20,6.88" fill="#fff" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/></svg></div><div class="leg-txt"><b>Strike</b> – útok na pole; kámen <b>zůstává stát</b>, soupeř zmizí, útočník se otočí.</div></div>
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10,2.5 17.5,16.5 2.5,16.5" fill="#111"/></svg></div><div class="leg-txt"><b>Slide</b> – skluz o libovolný počet volných polí ve směru; u překážky může zajmout.</div></div>
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10,3 16.8,16 3.2,16" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round"/></svg></div><div class="leg-txt"><b>Jump Slide</b> – jako skluz, ale začíná až od 2. pole.</div></div>
+<div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="3,6 9,10 3,14" fill="#111"/><polygon points="17,6 11,10 17,14" fill="#111"/></svg></div><div class="leg-txt"><b>Command</b> – dvě černé šipky (Generál / Maršál). Místo tahu velitele přesuneš <b>jiný vlastní kámen</b> z jednoho pole se symbolem na jiné. Velitel se <b>otočí</b>, přesunutý kámen ne. Může zajmout.</div></div>
 </div>
 <h3>Ovládání</h3>
 <ul class="rules">
 <li>Klik na název <b>The Duke</b> – zobrazí / skryje souřadnice.</li>
 <li><b>▷</b> přehrávač tahů z logu (během něj je hra zablokovaná).</li>
+<li><b>⛶</b> zvětšení desky (posun tahem prstu / myší; vystředí na poslední tah).</li>
 <li><span class="c-purple">Fialový</span> rámeček = pole posledního tahu.</li>
 <li><span class="c-green">Zelený</span> rámeček = pole platného tahu.</li>
 <li><span class="c-red">Červený</span> rámeček = pole sebraného kamene (Strike).</li>
+<li><span style="color:#fff;font-weight:700">Bílý</span> rámeček = vlastní kámen v dosahu Command.</li>
 </ul>
 <h3>Zvětšení kamene</h3>
 <ul class="rules">
-<li><b>Dvojklik</b> (nebo dvojité klepnutí) na kámen zobrazí jeho zvětšený náhled se vzorem tahů.</li>
-<li>Funguje i během přehrávače. Zavřeš klepnutím kamkoli mimo.</li>
+<li><b>⛶</b> v menu – zvětšení celé desky v pevném okně, posun všemi směry.</li>
+<li><b>Dvojklik</b> na kámen – zvětšený náhled vzoru tahů.</li>
+<li>Funguje i během přehrávače. Náhled zavřeš klepnutím mimo.</li>
 </ul>
 </div>`,
     logTitle:"Log tahů",
@@ -584,19 +616,23 @@ const NAMES = {
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10.00,2.00 11.80,6.88 16.93,6.00 13.60,10.00 16.93,14.00 11.80,13.12 10.00,18.00 8.20,13.12 3.07,14.00 6.40,10.00 3.07,6.00 8.20,6.88" fill="#fff" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/></svg></div><div class="leg-txt"><b>Strike</b> – attack a square; tile <b>stays</b>, enemy is removed, attacker flips.</div></div>
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10,2.5 17.5,16.5 2.5,16.5" fill="#111"/></svg></div><div class="leg-txt"><b>Slide</b> – any number of empty squares; may capture a blocker.</div></div>
 <div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="10,3 16.8,16 3.2,16" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round"/></svg></div><div class="leg-txt"><b>Jump Slide</b> – like slide but starts from the 2nd square.</div></div>
+<div class="leg-row"><div class="leg-sym"><svg viewBox="0 0 20 20" aria-hidden="true"><polygon points="3,6 9,10 3,14" fill="#111"/><polygon points="17,6 11,10 17,14" fill="#111"/></svg></div><div class="leg-txt"><b>Command</b> – two black arrows (General / Marshall). Instead of moving the commander, move <b>another friendly tile</b> between Command squares. The commander <b>flips</b>; the moved tile does not. May capture.</div></div>
 </div>
 <h3>Controls</h3>
 <ul class="rules">
 <li>Click the title <b>The Duke</b> – show / hide coordinates.</li>
 <li><b>▷</b> move replay from the log (play is locked while active).</li>
+<li><b>⛶</b> board zoom (pan by drag; centers on last move).</li>
 <li><span class="c-purple">Purple</span> border = last move square.</li>
 <li><span class="c-green">Green</span> border = legal move square.</li>
 <li><span class="c-red">Red</span> border = captured piece square (Strike).</li>
+<li><span style="color:#fff;font-weight:700">White</span> border = friendly tile in Command range.</li>
 </ul>
 <h3>Tile zoom</h3>
 <ul class="rules">
-<li><b>Double-click</b> (or double-tap) a tile to show an enlarged view of its move pattern.</li>
-<li>Works during replay too. Close by tapping anywhere outside.</li>
+<li><b>⛶</b> in the menu – enlarge the whole board in a fixed window; pan in all directions.</li>
+<li><b>Double-click</b> a tile – enlarged move-pattern preview.</li>
+<li>Works during replay too. Close the preview by tapping outside.</li>
 </ul>
 </div>`,
     logTitle:"Move log",
@@ -647,13 +683,60 @@ function isFriendly(x,y,o){const p=getPiece(x,y);return p&&p.owner===o;}
 function clearPath(x1,y1,x2,y2){const dx=Math.sign(x2-x1),dy=Math.sign(y2-y1);if(dx===0&&dy===0)return true;let cx=x1+dx,cy=y1+dy;while(cx!==x2||cy!==y2){if(!inBounds(cx,cy)||getPiece(cx,cy))return false;cx+=dx;cy+=dy;}return true;}
 function sq(x,y){return String.fromCharCode(97+x)+(6-y);}
 
+function hasCommandFace(p){
+  const data=PIECES[p.type];
+  if(!data || !data.command) return false;
+  // Command symbols are on the "other" face (side 1) for General / Marshall
+  return p.side===1;
+}
+/** True if (x,y) is a Command square of some friendly commander with Command face up. */
+function isOnFriendlyCommandSquare(x, y, owner){
+  for(let cy=0; cy<6; cy++) for(let cx=0; cx<6; cx++){
+    if(cx===x && cy===y) continue; // not the commander tile itself as "commanded"
+    const c = board[cy][cx];
+    if(!c || c.owner!==owner || !hasCommandFace(c)) continue;
+    if(getCommandSquares(cx, cy).some(s=>s.x===x && s.y===y)) return true;
+  }
+  return false;
+}
+function getCommandSquares(cx,cy){
+  const p=getPiece(cx,cy); if(!p || !hasCommandFace(p)) return [];
+  const data=PIECES[p.type], owner=p.owner, out=[];
+  for(const[destStr,movType] of data.command){
+    if(movType!=="Command") continue;
+    const steps=parseDest(destStr); if(!steps.length) continue;
+    const[nx,ny]=applySteps(cx,cy,steps,owner);
+    if(inBounds(nx,ny)) out.push({x:nx,y:ny});
+  }
+  return out;
+}
+function getCommandMoves(cx,cy){
+  const p=getPiece(cx,cy); if(!p || !hasCommandFace(p)) return [];
+  const squares=getCommandSquares(cx,cy);
+  const owner=p.owner, moves=[];
+  for(const from of squares){
+    const unit=getPiece(from.x,from.y);
+    if(!unit || unit.owner!==owner) continue;
+    if(from.x===cx && from.y===cy) continue;
+    for(const to of squares){
+      if(to.x===from.x && to.y===from.y) continue;
+      if(isFriendly(to.x,to.y,owner)) continue;
+      moves.push({
+        type:"Command", fromX:from.x, fromY:from.y, x:to.x, y:to.y,
+        commanderX:cx, commanderY:cy,
+        capture:isEnemy(to.x,to.y,owner)
+      });
+    }
+  }
+  return moves;
+}
 function generateMovesFor(x,y){
   const p=getPiece(x,y);if(!p)return[];
   const data=PIECES[p.type];if(!data)return[];
-  let targets=(p.side===0?data.start:data.other)||[];
-  if(data.command&&p.side===1)targets=targets.concat(data.command);
+  const targets=(p.side===0?data.start:data.other)||[];
   const moves=[],owner=p.owner;
   for(const[destStr,movType] of targets){
+    if(movType==="Command") continue;
     const steps=parseDest(destStr);if(!steps.length)continue;
     if(movType==="Slide"||movType==="JumpSlide"){
       const[tx,ty]=applySteps(x,y,steps,owner);const dx=Math.sign(tx-x),dy=Math.sign(ty-y);if(dx===0&&dy===0)continue;
@@ -679,7 +762,10 @@ function getAllLegalMoves(owner){
   const res=[];
   for(let y=0;y<6;y++)for(let x=0;x<6;x++){
     const p=board[y][x];
-    if(p&&p.owner===owner) res.push(...generateMovesFor(x,y));
+    if(p&&p.owner===owner){
+      res.push(...generateMovesFor(x,y));
+      res.push(...getCommandMoves(x,y));
+    }
   }
   if(bags[owner].length){
     let dukeX,dukeY;
@@ -917,8 +1003,18 @@ function render(){
       let tcls = "tile "+(p.owner==="P"?"player":"ai");
       if(lastMoveCells.some(c=>c.x===x&&c.y===y)) tcls += " last-move-tile";
       if(flipAnim && flipAnim.x===x && flipAnim.y===y) tcls += " flipping";
-      const lmCap = legalMoves.find(m=>m.x===x&&m.y===y&&(m.capture||m.type==="Strike"));
+      const lmCap = legalMoves.find(m=>m.x===x&&m.y===y&&(m.capture||m.type==="Strike"||m.type==="Command"));
       if(lmCap) tcls += " capture-target";
+      // Always show white border on own units standing on a friendly Commander's Command squares
+      if(p.owner==="P" && isOnFriendlyCommandSquare(x, y, "P")) tcls += " command-source";
+      if(p.owner==="A" && isOnFriendlyCommandSquare(x, y, "A")) tcls += " command-source";
+      if(p.type==="Duke"){
+        const enemy = p.owner==="P" ? "A" : "P";
+        if(isSquareAttackedBy(x, y, enemy)){
+          tcls += " duke-threatened";
+          cell.classList.add("duke-cell-threat");
+        }
+      }
       t.className = tcls;
       const img=document.createElement("img");
       img.src=getTileSrc(p.type, p.side);
@@ -936,10 +1032,19 @@ function render(){
     if(selected&&selected.x===x&&selected.y===y) cell.classList.add("selected");
     const lm=legalMoves.find(m=>m.x===x&&m.y===y);
     if(lm){
-      if(lm.capture||lm.type==="Strike"){
+      if(lm.type==="Command"){
+        if(lm.capture) { /* occupied enemy: tile gets capture-target */ }
+        else cell.classList.add("highlight");
+      } else if(lm.capture||lm.type==="Strike"){
         if(!p) cell.classList.add("capture-empty");
-        // capture on occupied square: green on tile (handled above)
       } else cell.classList.add("highlight");
+    }
+    // Empty Command squares while commander selected (preview of range)
+    if(selected && selected.x!=null && !selected.commandUnit && !p){
+      const cmdP = getPiece(selected.x, selected.y);
+      if(cmdP && hasCommandFace(cmdP) && getCommandSquares(selected.x, selected.y).some(s=>s.x===x&&s.y===y)){
+        cell.classList.add("highlight");
+      }
     }
     if(lastCaptureCell && lastCaptureCell.x===x && lastCaptureCell.y===y && !p)
       cell.classList.add("cap-gone");
@@ -1085,17 +1190,62 @@ function onCellClick(x,y){
     }
     return;
   }
-  if(selected&&selected.x===x&&selected.y===y){ selected=null; legalMoves=[]; render(); return; }
+
+  // Deselect commander
+  if(selected && selected.x===x && selected.y===y && !selected.commandUnit){
+    selected=null; legalMoves=[]; render(); return;
+  }
+
+  // Commander selected → click friendly on command square to pick unit
+  if(selected && !selected.commandUnit){
+    const cmdAll = getCommandMoves(selected.x, selected.y);
+    const fromHere = cmdAll.filter(m=>m.fromX===x && m.fromY===y);
+    if(fromHere.length){
+      selected = {x:selected.x, y:selected.y, commandUnit:{x,y}};
+      legalMoves = fromHere;
+      lastCaptureCell = null;
+      render(); return;
+    }
+  }
+
+  // Unit chosen for Command → destination
+  if(selected && selected.commandUnit){
+    const m = legalMoves.find(m=>m.x===x && m.y===y && m.type==="Command");
+    if(m){
+      const unit = getPiece(m.fromX, m.fromY);
+      const cmd = getPiece(m.commanderX, m.commanderY);
+      if(!unit || !cmd){ selected=null; legalMoves=[]; render(); return; }
+      const capType = m.capture && getPiece(m.x,m.y) ? getPiece(m.x,m.y).type : null;
+      executeCommand(m);
+      lastMoveCells = [{x:m.fromX,y:m.fromY},{x:m.x,y:m.y},{x:m.commanderX,y:m.commanderY}];
+      lastCaptureCell = null;
+      triggerFlip(m.commanderX, m.commanderY);
+      addLogMove("P", unit.type, m.fromX, m.fromY, m.x, m.y, capType, false);
+      selected=null; legalMoves=[];
+      pushHistory("P");
+      if(!board.flat().some(t=>t&&t.type==="Duke"&&t.owner==="A")){
+        gameOver="P"; setStatus(NAMES[lang].status.win); addLogSys("sysWinP"); pushHistory("win"); toast(NAMES[lang].status.win,"ok");
+      }
+      if(!gameOver) endTurn(); else render();
+      return;
+    }
+    // cancel sub-selection
+    selected = {x:selected.x, y:selected.y};
+    legalMoves = generateMovesFor(selected.x, selected.y);
+    // if clicked another own piece, reselect below
+    const p2=getPiece(x,y);
+    if(!(p2 && p2.owner==="P")){ render(); return; }
+  }
+
   const p=getPiece(x,y);
   if(p && p.owner==="P"){
     selected={x,y};
     legalMoves = generateMovesFor(x,y);
-    // selecting a piece clears the red "captured empty" marker
     lastCaptureCell = null;
     render(); return;
   }
   if(selected){
-    const m=legalMoves.find(m=>m.x===x&&m.y===y);
+    const m=legalMoves.find(m=>m.x===x&&m.y===y && m.type!=="Command");
     if(m){
       const fx=selected.x, fy=selected.y;
       const fromP=getPiece(fx,fy);
@@ -1127,6 +1277,16 @@ function triggerFlip(x,y){
   setTimeout(()=>{ if(flipAnim && flipAnim.x===x && flipAnim.y===y){ flipAnim=null; } }, 520);
 }
 function clearFlip(){ flipAnim = null; }
+function executeCommand(m){
+  const unit=board[m.fromY][m.fromX];
+  const commander=board[m.commanderY][m.commanderX];
+  if(!unit || !commander) return;
+  if(m.capture) board[m.y][m.x]=null;
+  board[m.y][m.x]=unit;
+  board[m.fromY][m.fromX]=null;
+  // commanded unit does NOT flip; commander flips
+  commander.side = 1 - commander.side;
+}
 function doMove(fromX,fromY,m){
   const p=board[fromY][fromX];
   if(!p) return;
@@ -1163,9 +1323,12 @@ function isSquareAttackedBy(x,y,attacker){
   for(let yy=0;yy<6;yy++) for(let xx=0;xx<6;xx++){
     const p=board[yy][xx];
     if(!p||p.owner!==attacker) continue;
-    const moves=generateMovesFor(xx,yy);
-    for(const m of moves){
-      if(m.x===x&&m.y===y&&(m.capture||m.type==="Strike"||m.type==="Move"||m.type==="Jump"||m.type==="Slide"||m.type==="JumpSlide")) return true;
+    for(const m of generateMovesFor(xx,yy)){
+      if(m.x===x && m.y===y) return true;
+    }
+    // Command can capture onto the square
+    for(const m of getCommandMoves(xx,yy)){
+      if(m.x===x && m.y===y && m.capture) return true;
     }
   }
   return false;
@@ -1198,6 +1361,10 @@ function snapshotBoard(){return{board:board.map(r=>r.map(c=>c?{...c}:null)),bags
 function restoreBoard(s){board=s.board;bags=s.bags;pieceId=s.pieceId;}
 function applyMoveAI(owner,m){
   if(m.type==="Levy"){ if(bags[owner].length){ const type=bags[owner].pop(); board[m.y][m.x]=createPiece(type,owner,0);} return; }
+  if(m.type==="Command"){
+    executeCommand(m);
+    return;
+  }
   const p=board[m.fromY][m.fromX]; if(!p) return;
   if(m.stay){ if(m.capture) board[m.y][m.x]=null; }
   else { if(m.capture) board[m.y][m.x]=null; board[m.y][m.x]=p; board[m.fromY][m.fromX]=null; }
@@ -1269,6 +1436,15 @@ function aiMove(){
       lastCaptureCell = null;
       const placed=board[best.y]&&board[best.y][best.x];
       if(placed) addLogLevy("A", placed.type, best.x, best.y, bags.A.length);
+    } else if(best.type==="Command"){
+      const unit=board[best.fromY]&&board[best.fromY][best.fromX];
+      let capType=null;
+      if(best.capture){ const victim=board[best.y]&&board[best.y][best.x]; if(victim) capType=victim.type; }
+      executeCommand(best);
+      lastMoveCells = [{x:best.fromX,y:best.fromY},{x:best.x,y:best.y},{x:best.commanderX,y:best.commanderY}];
+      lastCaptureCell = null;
+      triggerFlip(best.commanderX, best.commanderY);
+      if(unit) addLogMove("A", unit.type, best.fromX, best.fromY, best.x, best.y, capType, false);
     } else {
       const fx=best.fromX, fy=best.fromY, p=board[fy]&&board[fy][fx];
       if(p){
@@ -1476,8 +1652,8 @@ function toggleReplayMode(){
     btn.classList.add("active");
     document.body.classList.add("replay-mode");
     selected=null; legalMoves=[];
-    replayIdx = 0;
-    restoreHistory(0);
+    replayIdx = Math.max(0, history.length - 1);
+    restoreHistory(replayIdx);
     setStatus(lang==="cs"?"Přehrávač aktivní – hra blokována":"Replay active – play locked");
   } else {
     // EXIT replay — restore exact live state (not history)
