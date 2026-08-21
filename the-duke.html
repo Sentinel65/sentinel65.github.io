@@ -68,17 +68,37 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   min-height: 1.4em; line-height: 1.35;
 }
 
-#board {
-  display: grid;
-  grid-template-columns: repeat(6, var(--cell));
-  grid-template-rows: repeat(6, var(--cell));
-  gap: var(--gap);
-  background: var(--board-bg);
-  padding: var(--gap);
-  border-radius: 8px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.55);
-  touch-action: manipulation;
+#boardViewport {
+  position: relative; width: 100%;
+  max-width: calc(6 * var(--cell) + 7 * var(--gap) + 8px);
+  height: min(66vh, calc(6 * var(--cell) + 18px)); min-height: 220px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; background: #09090e;
+  box-shadow: inset 0 0 0 1px #ffffff08, 0 4px 24px rgba(0,0,0,.35);
+  touch-action: none; overscroll-behavior: contain; user-select: none;
 }
+#boardViewport::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit; box-shadow: inset 0 0 18px rgba(0,0,0,.28);
+}
+#board {
+  --board-scale: 1;
+  position: absolute; left: 50%; top: 50%;
+  display: grid; grid-template-columns: repeat(6, var(--cell)); grid-template-rows: repeat(6, var(--cell));
+  gap: var(--gap); background: var(--board-bg); padding: var(--gap); border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.55);
+  transform: translate(calc(-50% + var(--pan-x, 0px)), calc(-50% + var(--pan-y, 0px))) scale(var(--board-scale));
+  transform-origin: center center; touch-action: none; will-change: transform;
+}
+#boardViewport.zoomed #board { --board-scale: 1.5; }
+#boardViewport.zoomed { cursor: grab; }
+#boardViewport.dragging { cursor: grabbing; }
+#boardViewport .pan-hint {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 10;
+  padding: 4px 9px; border-radius: 8px; background: rgba(0,0,0,.58); color: #aaa;
+  font-size: .68rem; pointer-events: none; opacity: 0; transition: opacity .2s;
+}
+#boardViewport.zoomed .pan-hint { opacity: .75; }
 .cell {
   width: var(--cell); height: var(--cell);
   background: var(--cell-bg);
@@ -228,6 +248,7 @@ h1.coords-on { outline: 1px dashed #00b89455; }
 }
 @media (max-width: 480px) {
   :root { --cell: min(15.5vw, 64px); }
+  #boardViewport { height: calc(6 * var(--cell) + 7 * var(--gap) + 8px); min-height: 0; }
 }
 
 /* Replay player */
@@ -339,6 +360,7 @@ body.replay-mode .bag.player { pointer-events: none; opacity: .45; }
     <button class="btn" id="btnLoad" title="Načíst">⇧</button>
     <button class="btn" id="btnRestart" title="Restart">↻</button>
     <button class="btn" id="btnLog" title="Log">☰</button>
+    <button class="btn" id="btnBoardZoom" title="Zvětšit desku">⛶</button>
     <button class="btn lang" id="btnLang">EN</button>
     <button class="btn" id="btnReplay" title="Přehrávač">▷</button>
     <button class="btn" id="btnHelp" title="Nápověda">?</button>
@@ -357,7 +379,10 @@ body.replay-mode .bag.player { pointer-events: none; opacity: .45; }
   </div>
 </div>
 
-<div id="board"></div>
+<div id="boardViewport">
+  <div id="board"></div>
+  <div class="pan-hint">↔ tažením posuň desku</div>
+</div>
 
 <div id="replayBar">
   <div class="replay-controls">
@@ -593,6 +618,11 @@ let phase, setupPieces, setupPlaced, logLines, firstPlayer, logSeq=0;
 let lastMoveCells = []; // orange on mover tile(s)
 let lastCaptureCell = null; // red empty square after Strike
 let history = []; // snapshots for replay: {board, bags, turn, gameOver, lastMoveCells, note}
+let boardZoomed = false;
+let boardZoomScale = 1; // 1 = vypnuto, 1.3 = první stupeň, 1.5 = druhý stupeň
+let boardPanX = 0, boardPanY = 0;
+let boardAutoCenter = false;
+let boardPan = null;
 let replayMode = false;
 let replayIdx = 0;
 let replayTimer = null;
@@ -866,12 +896,15 @@ function restoreHistory(i, opts){
       clearFlip();
     }
   }
+  boardAutoCenter=true;
   render();
   updateReplayInfo();
 }
 
 function render(){
-  const el=document.getElementById("board"); el.innerHTML="";
+  const el=document.getElementById("board");
+  if(!el) return;
+  el.innerHTML="";
   const setupLegal = phase==="setupP" ? getSetupLegal() : [];
   for(let y=0;y<6;y++) for(let x=0;x<6;x++){
     const cell=document.createElement("div");
@@ -911,15 +944,18 @@ function render(){
     if(lastCaptureCell && lastCaptureCell.x===x && lastCaptureCell.y===y && !p)
       cell.classList.add("cap-gone");
     if(phase==="setupP"&&setupLegal.some(s=>s.x===x&&s.y===y)) cell.classList.add("setup-ok");
-    // single click = move/select (delayed); double-tap = zoom (works in replay too)
+    // Single click = move/select. Double click on a tile keeps the existing
+    // tile-zoom behavior; board zoom is controlled only by the menu button.
     let tapTimer=null;
     cell.addEventListener("click", e=>{
+      if(boardPan && boardPan.moved){ return; }
+      if(window.__suppressBoardCellClick){ window.__suppressBoardCellClick=false; return; }
       if(tapTimer){
         clearTimeout(tapTimer);
         tapTimer=null;
         e.preventDefault();
         e.stopPropagation();
-        showTileZoom(x,y);
+        if(getPiece(x,y)) showTileZoom(x,y);
         return;
       }
       tapTimer=setTimeout(()=>{
@@ -934,6 +970,93 @@ function render(){
   const playerActive = (phase==="setupP") || (phase==="play" && turn==="P" && !gameOver);
   document.getElementById("bagPlayer").classList.toggle("disabled", !playerActive || (phase==="play" && !bags.P.length));
   document.getElementById("bagAI").classList.toggle("disabled", !(phase==="setupA" || (phase==="play" && turn==="A" && !gameOver)));
+  if(boardAutoCenter){
+    boardAutoCenter = false;
+    requestAnimationFrame(()=>centerBoardOnLastMove());
+  }
+}
+
+function applyBoardTransform(){
+  const vp=document.getElementById("boardViewport"), boardEl=document.getElementById("board");
+  if(!vp || !boardEl) return;
+  vp.classList.toggle("zoomed", boardZoomed);
+  boardEl.style.setProperty("--pan-x", boardPanX + "px");
+  boardEl.style.setProperty("--pan-y", boardPanY + "px");
+}
+function toggleBoardZoom(){
+  boardZoomed=!boardZoomed;
+  if(!boardZoomed){ boardPanX=0; boardPanY=0; }
+  applyBoardTransform();
+  const btn=document.getElementById("btnBoardZoom");
+  if(btn){
+    btn.classList.toggle("active", boardZoomed);
+    btn.title = boardZoomed ? (lang==="cs" ? "Zmenšit desku" : "Zoom out board") : (lang==="cs" ? "Zvětšit desku" : "Zoom board");
+    btn.setAttribute("aria-pressed", boardZoomed ? "true" : "false");
+  }
+  if(boardZoomed && lastMoveCells.length) requestAnimationFrame(centerBoardOnLastMove);
+}
+function updateBoardZoomButton(){
+  const btn=document.getElementById("btnBoardZoom");
+  if(!btn) return;
+  const cs=lang==="cs";
+  btn.classList.toggle("active", boardZoomed);
+  btn.textContent = boardZoomScale===1 ? "⛶" : (boardZoomScale.toFixed(1)+"×");
+  btn.title = boardZoomScale===1
+    ? (cs ? "Zoom desky: vypnuto → 1,3×" : "Board zoom: off → 1.3×")
+    : (boardZoomScale===1.3
+      ? (cs ? "Zoom desky: 1,3× → 1,5×" : "Board zoom: 1.3× → 1.5×")
+      : (cs ? "Zoom desky: 1,5× → vypnout" : "Board zoom: 1.5× → off"));
+  btn.setAttribute("aria-label", btn.title);
+  btn.setAttribute("aria-pressed", boardZoomed ? "true" : "false");
+}
+function clampBoardPan(){
+  const vp=document.getElementById("boardViewport"), boardEl=document.getElementById("board");
+  if(!vp || !boardEl || !boardZoomed) return;
+  const r=boardEl.getBoundingClientRect(), v=vp.getBoundingClientRect();
+  const maxX=Math.max(0,(r.width-v.width)/2), maxY=Math.max(0,(r.height-v.height)/2);
+  boardPanX=Math.max(-maxX,Math.min(maxX,boardPanX));
+  boardPanY=Math.max(-maxY,Math.min(maxY,boardPanY));
+}
+function centerBoardOnLastMove(){
+  if(!boardZoomed || !lastMoveCells.length) return;
+  const vp=document.getElementById("boardViewport"), boardEl=document.getElementById("board");
+  if(!vp || !boardEl) return;
+  const t=lastMoveCells[lastMoveCells.length-1];
+  const cell=boardEl.querySelector(`.cell[data-x="${t.x}"][data-y="${t.y}"]`);
+  if(!cell) return;
+  const c=cell.getBoundingClientRect(), v=vp.getBoundingClientRect();
+  boardPanX+=(v.left+v.width/2)-(c.left+c.width/2);
+  boardPanY+=(v.top+v.height/2)-(c.top+c.height/2);
+  clampBoardPan(); applyBoardTransform();
+}
+function setupBoardPan(){
+  const vp=document.getElementById("boardViewport");
+  if(!vp || vp.dataset.panReady) return;
+  vp.dataset.panReady="1";
+
+  vp.addEventListener("pointerdown",e=>{
+    if(!boardZoomed || e.button!==0) return;
+    boardPan={id:e.pointerId,x:e.clientX,y:e.clientY,startX:boardPanX,startY:boardPanY,moved:false};
+  });
+  vp.addEventListener("pointermove",e=>{
+    if(!boardPan || e.pointerId!==boardPan.id) return;
+    const dx=e.clientX-boardPan.x,dy=e.clientY-boardPan.y;
+    if(Math.abs(dx)+Math.abs(dy)>6){
+      if(!boardPan.moved){
+        boardPan.moved=true;
+        window.__suppressBoardCellClick=true;
+        try{e.preventDefault();}catch(_){}
+        vp.classList.add("dragging");
+      }
+      boardPanX=boardPan.startX+dx; boardPanY=boardPan.startY+dy;
+      clampBoardPan(); applyBoardTransform();
+    }
+  });
+  const finish=e=>{
+    if(!boardPan || e.pointerId!==boardPan.id) return;
+    boardPan=null; vp.classList.remove("dragging");
+  };
+  vp.addEventListener("pointerup",finish); vp.addEventListener("pointercancel",finish);
 }
 
 function setStatus(msg, cls=""){
@@ -1020,8 +1143,9 @@ function doLevy(owner,x,y){
 }
 function endTurn(){
   selected=null; legalMoves=[];
-  if(gameOver){ render(); return; }
+  if(gameOver){ boardAutoCenter=true; render(); return; }
   turn = turn==="P" ? "A" : "P";
+  boardAutoCenter=true;
   render();
   if(turn==="A"){ setStatus(NAMES[lang].status.ai,"ai-thinking"); setTimeout(aiMove,60); }
   else setStatus(NAMES[lang].status.your);
@@ -1178,6 +1302,7 @@ function aiMove(){
   finally {
     selected=null; legalMoves=[];
     if(!gameOver){ turn="P"; setStatus(NAMES[lang].status.your); }
+    boardAutoCenter=true;
     render();
   }
 }
@@ -1213,6 +1338,7 @@ document.getElementById("btnRestart").onclick=()=>{
 function updateLangButton(){
   // show the language you can SWITCH TO
   document.getElementById("btnLang").textContent = (lang==="cs" ? "EN" : "CS");
+  updateBoardZoomButton();
 }
 function refreshStatusForLang(){
   if(replayMode){
@@ -1267,6 +1393,8 @@ document.getElementById("btnLog").onclick=()=>{
   document.getElementById("logBody").innerHTML = logLines.length ? logLines.map(e=>formatLogLine(e)).join("\n") : (lang==="cs"?"(prázdný)":"(empty)");
   document.getElementById("logModal").classList.add("show");
 };
+document.getElementById("btnBoardZoom").onclick=()=>toggleBoardZoom();
+updateBoardZoomButton();
 document.getElementById("logClose").onclick=()=>document.getElementById("logModal").classList.remove("show");
 document.getElementById("logCloseX").onclick=()=>document.getElementById("logModal").classList.remove("show");
 document.getElementById("btnCopyLog").onclick=()=>{
@@ -1407,6 +1535,8 @@ document.getElementById("rpPlay").onclick = ()=> rpPlayToggle();
 
 
 updateLangButton();
+setupBoardPan();
+applyBoardTransform();
 startSetup();
 </script>
 </body>
