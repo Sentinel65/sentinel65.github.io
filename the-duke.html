@@ -124,30 +124,8 @@ h1.coords-on { outline: 1px dashed #00b89455; }
   border-color: #ffffff !important;
   box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(255,255,255,.45) !important;
 }
-.tile.duke-threatened,
-.tile.last-move-tile.duke-threatened,
-.tile.player.duke-threatened,
-.tile.ai.duke-threatened {
-  border-color: #e74c3c !important;
-  animation: dukeThreatBlink 0.75s ease-in-out infinite;
-  z-index: 4;
-}
-@keyframes dukeThreatBlink {
-  0%, 100% {
-    box-shadow: 0 0 0 3px #e74c3c, 0 0 12px rgba(231,76,60,.85), 0 0 0 1px #e74c3c inset;
-  }
-  50% {
-    box-shadow: 0 0 0 4px #ffeaa7, 0 0 18px rgba(255,234,167,.95), 0 0 0 1px #fdcb6e inset;
-  }
-}
-.cell.duke-cell-threat {
-  box-shadow: inset 0 0 0 2px #e74c3c88 !important;
-  animation: cellThreatPulse 0.75s ease-in-out infinite;
-}
-@keyframes cellThreatPulse {
-  0%, 100% { background-color: #e74c3c22 !important; }
-  50% { background-color: #fdcb6e33 !important; }
-}
+
+
 .tile.capture-target {
   border-color: #00b894 !important;
   box-shadow: 0 0 0 2px #00b894, 0 2px 8px rgba(0,184,148,.45) !important;
@@ -430,6 +408,30 @@ body.replay-mode .bag.player { pointer-events: none; opacity: .45; }
 #tileZoom .zoom-name { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
 #tileZoom .zoom-hint { font-size: .78rem; color: #888; }
 
+
+
+
+
+/* Duke under attack — JS toggles .duke-threat-on for reliable blink */
+.tile.duke-threatened {
+  border: 3px solid #e74c3c !important;
+  box-shadow: 0 0 0 3px #e74c3c, 0 0 14px rgba(231,76,60,.85) !important;
+  z-index: 8 !important;
+}
+.tile.duke-threatened.duke-threat-on {
+  border-color: #ffeaa7 !important;
+  box-shadow: 0 0 0 5px #fdcb6e, 0 0 20px rgba(253,203,110,.95) !important;
+}
+.cell.duke-cell-threat {
+  box-shadow: inset 0 0 0 4px #e74c3c !important;
+  background-color: rgba(231,76,60,0.22) !important;
+  z-index: 3 !important;
+}
+.cell.duke-cell-threat.duke-threat-on {
+  box-shadow: inset 0 0 0 4px #fdcb6e !important;
+  background-color: rgba(253,203,110,0.32) !important;
+}
+
 </style>
 </head>
 <body>
@@ -611,7 +613,7 @@ const PIECES = {
   Ranger:{start:[["U","Slide"],["D","Slide"],["UUR","Jump"],["UUL","Jump"],["RRU","Jump"],["LLU","Jump"]],other:[["UR","Slide"],["UL","Slide"],["DDR","Jump"],["DDL","Jump"]]},
   Seer:{start:[["UR","Move"],["UL","Move"],["DR","Move"],["DL","Move"],["UU","Jump"],["DD","Jump"],["RR","Jump"],["LL","Jump"]],other:[["U","Move"],["D","Move"],["R","Move"],["L","Move"],["UURR","Jump"],["UULL","Jump"],["DDRR","Jump"],["DDLL","Jump"]]},
   Wizard:{start:[["U","Move"],["D","Move"],["R","Move"],["L","Move"],["UR","Move"],["UL","Move"],["DR","Move"],["DL","Move"]],other:[["UU","Jump"],["DD","Jump"],["RR","Jump"],["LL","Jump"],["UURR","Jump"],["UULL","Jump"],["DDRR","Jump"],["DDLL","Jump"]]},
-  Duchess:{start:[["L","Move"],["R","Move"],["D","Move"]],other:[["L","Move"],["R","Move"],["D","Move"]],command:[["UL","Command"],["U","Command"],["UR","Command"],["L","Command"],["R","Command"]]},
+  Duchess:{start:[["L","Move"],["R","Move"],["D","Move"]],other:[["L","Move"],["R","Move"],["D","Move"]],command:[["L","Command"],["LL","Command"],["R","Command"],["RR","Command"]]},
   Pikeneur:{start:[["U","Move"],["UU","JumpSlide"]],other:[["U","Move"],["UU","Strike"],["D","Slide"]]},
   Adventurer:{start:[["UULL","Jump"],["UURR","Jump"],["DDLL","Jump"],["DDRR","Jump"]],other:[["UL","Strike"],["UR","Move"],["DL","Move"],["DR","Strike"]]},
   Halberdier:{start:[["L","Move"],["R","Move"],["D","Move"],["UULL","Move"],["UURR","Move"]],other:[["U","Strike"],["UL","Move"],["UR","Move"],["D","Move"],["DD","Jump"]]}
@@ -792,18 +794,21 @@ let replayMode = false;
 let replayIdx = 0;
 let replayTimer = null;
 let liveSnapshot = null;
-let flipAnim = null; // {x,y} tile that just flipped
+let flipAnim = null;
+let threatBlinkTimer = null;
+let threatBlinkOn = false; // {x,y} tile that just flipped
 
 function getTileSrc(type, side, owner){
+  const s = (Number(side)|0) ? 1 : 0;
   // EN: English labels; CS: cream for player, red for AI
   if(lang==="en" && typeof IMG_EN!=="undefined" && IMG_EN[type]){
-    return IMG_EN[type][side] || "";
+    return IMG_EN[type][s] || "";
   }
   if(owner==="A" && typeof IMG_AI!=="undefined" && IMG_AI[type]){
-    return IMG_AI[type][side] || "";
+    return IMG_AI[type][s] || "";
   }
   const srcs = IMG[type];
-  return srcs ? srcs[side] : "";
+  return srcs ? srcs[s] : "";
 }
 const DIR={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0],UR:[1,-1],UL:[-1,-1],DR:[1,1],DL:[-1,1]};
 
@@ -821,8 +826,10 @@ function sq(x,y){return String.fromCharCode(97+x)+(6-y);}
 function hasCommandFace(p){
   const data=PIECES[p.type];
   if(!data || !data.command) return false;
-  // Command symbols are on the "other" face (side 1) for General / Marshall
-  return p.side===1;
+  // Duchess: both faces identical — Command always active
+  if(p.type==="Duchess") return true;
+  // General / Marshall: Command on the other face (side 1)
+  return ((Number(p.side)|0)?1:0)===1;
 }
 /** True if (x,y) is a Command square of some friendly commander with Command face up. */
 function isOnFriendlyCommandSquare(x, y, owner){
@@ -868,7 +875,7 @@ function getCommandMoves(cx,cy){
 function generateMovesFor(x,y){
   const p=getPiece(x,y);if(!p)return[];
   const data=PIECES[p.type];if(!data)return[];
-  const targets=(p.side===0?data.start:data.other)||[];
+  const sideN=(Number(p.side)|0)?1:0; const targets=(sideN===0?data.start:data.other)||[];
   const moves=[],owner=p.owner;
   for(const[destStr,movType] of targets){
     if(movType==="Command") continue;
@@ -1167,6 +1174,17 @@ function hideTileZoom(){
   if(overlay) overlay.classList.remove("show");
 }
 
+
+function ensureThreatBlink(){
+  if(threatBlinkTimer) return;
+  threatBlinkTimer = setInterval(()=>{
+    threatBlinkOn = !threatBlinkOn;
+    document.querySelectorAll(".duke-threatened, .duke-cell-threat").forEach(el=>{
+      el.classList.toggle("duke-threat-on", threatBlinkOn);
+    });
+  }, 450);
+}
+
 function render(){
   const el=document.getElementById("board");
   if(!el) return;
@@ -1189,14 +1207,17 @@ function render(){
       const isSel = selected && selected.x===x && selected.y===y;
       if(!isSel && p.owner==="P" && isOnFriendlyCommandSquare(x, y, "P")) tcls += " command-source";
       if(!isSel && p.owner==="A" && isOnFriendlyCommandSquare(x, y, "A")) tcls += " command-source";
+      let dukeThreat = false;
       if(p.type==="Duke"){
         const enemy = p.owner==="P" ? "A" : "P";
-        if(isSquareAttackedBy(x, y, enemy)){
-          tcls += " duke-threatened";
-          cell.classList.add("duke-cell-threat");
-        }
+        dukeThreat = isSquareAttackedBy(x, y, enemy);
+        if(dukeThreat) tcls += " duke-threatened";
       }
       t.className = tcls;
+      if(dukeThreat){
+        t.classList.add("duke-threatened");
+        cell.classList.add("duke-cell-threat");
+      }
       const img=document.createElement("img");
       img.src=getTileSrc(p.type, p.side, p.owner);
       img.alt=NAMES[lang][p.type]||p.type;
@@ -1255,6 +1276,25 @@ function render(){
   const playerActive = (phase==="setupP") || (phase==="play" && turn==="P" && !gameOver);
   document.getElementById("bagPlayer").classList.toggle("disabled", !playerActive || (phase==="play" && !bags.P.length));
   document.getElementById("bagAI").classList.toggle("disabled", !(phase==="setupA" || (phase==="play" && turn==="A" && !gameOver)));
+  // Force Duke threat highlights (cell + tile) after full board build
+  let anyThreat = false;
+  for(let y=0;y<6;y++) for(let x=0;x<6;x++){
+    const p=board[y]&&board[y][x];
+    if(!p || p.type!=="Duke") continue;
+    const enemy = p.owner==="P" ? "A" : "P";
+    if(!isSquareAttackedBy(x,y,enemy)) continue;
+    anyThreat = true;
+    const cell = el.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+    if(!cell) continue;
+    cell.classList.add("duke-cell-threat");
+    if(threatBlinkOn) cell.classList.add("duke-threat-on");
+    const tile = cell.querySelector(".tile");
+    if(tile){
+      tile.classList.add("duke-threatened");
+      if(threatBlinkOn) tile.classList.add("duke-threat-on");
+    }
+  }
+  if(anyThreat) ensureThreatBlink();
   if(boardAutoCenter){
     boardAutoCenter = false;
     requestAnimationFrame(()=>centerBoardOnLastMove());
@@ -1550,8 +1590,18 @@ function evaluate(){
     const escapes = generateMovesFor(aDuke.x, aDuke.y).filter(m => !isSquareAttackedBy(m.x, m.y, "P"));
     if(!escapes.length) score -= 400;
   }
-  // bag pieces are potential, not free material on the board
-  score += bags.A.length * 1.2 - bags.P.length * 1.2;
+  // Development: pieces on board matter more than bag stock
+  let onA=0, onP=0;
+  for(let y=0;y<6;y++) for(let x=0;x<6;x++){
+    const p=board[y][x]; if(!p) continue;
+    if(p.owner==="A") onA++; else onP++;
+  }
+  // Prefer having forces on the board (bag is only potential ~3 pts each)
+  score += onA * 6 - onP * 6;
+  score += bags.A.length * 0.4 - bags.P.length * 0.4;
+  // Mild bonus to keep developing while board is sparse
+  if(onA < 5 && bags.A.length) score -= 8; // encourage AI to levy when thin
+  if(onP < 5 && bags.P.length) score += 4;
   return score;
 }
 function snapshotBoard(){return{board:board.map(r=>r.map(c=>c?{...c}:null)),bags:{P:bags.P.slice(),A:bags.A.slice()},pieceId};}
@@ -1573,6 +1623,9 @@ function applyMoveAI(owner,m){
   p.side=1-p.side;
 }
 function minimax(depth,alpha,beta,maximizing){
+  // Terminal: Duke captured
+  if(!dukePos("A")) return -100000;
+  if(!dukePos("P")) return 100000;
   if(depth===0) return evaluate();
   const owner=maximizing?"A":"P";
   const moves=getAllLegalMoves(owner);
@@ -1592,7 +1645,25 @@ function aiMove(){
       toast(lang==="cs"?"AI nemá tah":"AI has no move");
       render(); return;
     }
-    // Root priority: capture Duke >> captures >> safe moves >> Levy >> suicidal Levy
+
+    function sameMove(a,b){
+      if(!a||!b||a.type!==b.type) return false;
+      if(a.type==="Levy") return a.x===b.x && a.y===b.y;
+      if(a.type==="Command") return a.fromX===b.fromX && a.fromY===b.fromY && a.x===b.x && a.y===b.y && a.commanderX===b.commanderX && a.commanderY===b.commanderY;
+      return a.fromX===b.fromX && a.fromY===b.fromY && a.x===b.x && a.y===b.y && !!a.stay===!!b.stay;
+    }
+    function leavesDukeSafe(m){
+      const snap=snapshotBoard();
+      applyMoveAI("A", m);
+      const d=dukePos("A");
+      const ok = !!(d && !isSquareAttackedBy(d.x, d.y, "P"));
+      restoreBoard(snap);
+      return ok;
+    }
+    function countOnBoard(owner){
+      let n=0; for(let y=0;y<6;y++) for(let x=0;x<6;x++){ const p=board[y][x]; if(p&&p.owner===owner) n++; }
+      return n;
+    }
     function rootPri(m){
       if(m.capture){
         const t=board[m.y]&&board[m.y][m.x];
@@ -1600,101 +1671,91 @@ function aiMove(){
         return 5000 + (t ? (PIECE_VAL[t.type]||2)*100 : 0);
       }
       if(m.type==="Levy"){
-        // never prefer levying onto a square the player can take immediately
         if(isSquareAttackedBy(m.x,m.y,"P")) return -8000;
-        return -200;
+        // Prefer bringing forces when AI has few pieces on board
+        const n = countOnBoard("A");
+        if(n <= 3) return 1200;
+        if(n <= 5) return 400;
+        if(n <= 7) return 80;
+        return -50;
       }
       return 0;
     }
-    moves.sort((a,b)=> rootPri(b)-rootPri(a) || (Math.random()-0.5));
-    let best=moves[0], bestScore=-Infinity;
-    const startT=performance.now(), maxTime=2800;
-    // Deeper when few moves; always at least 4
-    const depth = moves.length<=10 ? 5 : (moves.length<=18 ? 4 : 3);
-    // If own Duke is already attacked, only consider moves that resolve the threat
+
     const dukeNow = dukePos("A");
-    const inCheck = dukeNow && isSquareAttackedBy(dukeNow.x, dukeNow.y, "P");
-    let candidateMoves = moves;
+    const inCheck = !!(dukeNow && isSquareAttackedBy(dukeNow.x, dukeNow.y, "P"));
+
+    // Candidate set: if in check, ONLY moves that save the Duke (when any exist)
+    let pool = moves.slice();
     if(inCheck){
-      const resolving = [];
-      for(const m of moves){
-        const snap=snapshotBoard();
-        applyMoveAI("A", m);
-        const d=dukePos("A");
-        const safe = d && !isSquareAttackedBy(d.x, d.y, "P");
-        restoreBoard(snap);
-        if(safe) resolving.push(m);
-      }
-      if(resolving.length) candidateMoves = resolving;
+      const resolving = moves.filter(leavesDukeSafe);
+      if(resolving.length) pool = resolving;
     }
-    for(const m of candidateMoves){
+    // When not in check: keep all moves (including Levy); hanging-Duke handled by score penalty
+
+    pool.sort((a,b)=> rootPri(b)-rootPri(a) || (Math.random()-0.5));
+
+    let best=pool[0], bestScore=-Infinity;
+    const startT=performance.now(), maxTime=3000;
+    const depth = pool.length<=10 ? 5 : (pool.length<=16 ? 4 : 3);
+
+    for(const m of pool){
       if(performance.now()-startT>maxTime) break;
       const snap=snapshotBoard();
       applyMoveAI("A",m);
+      // Instant win / loss
       if(!dukePos("P")){ restoreBoard(snap); best=m; bestScore=100000; break; }
+      if(!dukePos("A")){ restoreBoard(snap); continue; } // never pick suicide
       let score=minimax(depth,-Infinity,Infinity,false);
-      // extra root penalty for suicidal levy (search may be shallow)
-      if(m.type==="Levy" && isSquareAttackedBy(m.x,m.y,"P")) score -= 400;
-      // extra root bonus for real captures
+      if(m.type==="Levy" && isSquareAttackedBy(m.x,m.y,"P")) score -= 500;
       if(m.capture){
         const t=snap.board[m.y]&&snap.board[m.y][m.x];
-        if(t) score += (PIECE_VAL[t.type]||2)*8;
+        if(t) score += (PIECE_VAL[t.type]||2)*10;
       }
+      // Root: extra penalty if still leave Duke hanging (should be rare if pool filtered)
+      const d=dukePos("A");
+      if(d && isSquareAttackedBy(d.x,d.y,"P")) score -= 800;
       restoreBoard(snap);
       if(score>bestScore){ bestScore=score; best=m; }
     }
-    // Prefer moves that do not leave own Duke capturable
-    {
-      const safe = [];
-      for(const m of moves){
-        const snap=snapshotBoard();
-        applyMoveAI("A", m);
-        const d=dukePos("A");
-        const ok = d && !isSquareAttackedBy(d.x, d.y, "P");
-        restoreBoard(snap);
-        if(ok) safe.push(m);
-      }
+
+    // Final guard: if best still hangs Duke and a safe move exists, force a safe one
+    if(best && !leavesDukeSafe(best)){
+      const safe = moves.filter(leavesDukeSafe);
       if(safe.length){
-        const bestSafe = safe.includes(best) ? best : null;
-        if(!bestSafe){
-          // re-score safe only
-          let bs=-Infinity, bm=safe[0];
-          for(const m of safe){
-            const snap=snapshotBoard();
-            applyMoveAI("A",m);
-            let score=minimax(Math.min(depth,3),-Infinity,Infinity,false);
-            restoreBoard(snap);
-            if(score>bs){ bs=score; bm=m; }
-          }
-          best=bm; bestScore=bs;
+        safe.sort((a,b)=> rootPri(b)-rootPri(a));
+        best = safe[0];
+        let bs=-Infinity;
+        for(const m of safe.slice(0,12)){
+          const snap=snapshotBoard();
+          applyMoveAI("A",m);
+          let score=minimax(3,-Infinity,Infinity,false);
+          restoreBoard(snap);
+          if(score>bs){ bs=score; best=m; }
         }
       }
     }
-    // if best is still a suicidal levy and a non-levy exists, pick best non-levy
-    if(best && best.type==="Levy" && isSquareAttackedBy(best.x,best.y,"P")){
-      const alt=moves.find(m=>m.type!=="Levy");
-      if(alt) best=alt;
-    }
+
     if(best.type==="Levy"){
       clearFlip();
       doLevy("A",best.x,best.y);
       lastMoveCells = [{x:best.x,y:best.y}];
       lastCaptureCell = null;
-      const placed=board[best.y]&&board[best.y][best.x];
+      const placed=board[best.y][best.x];
       if(placed) addLogLevy("A", placed.type, best.x, best.y, bags.A.length, 0);
     } else if(best.type==="Command"){
-      const unit=board[best.fromY]&&board[best.fromY][best.fromX];
+      const unit=getPiece(best.fromX,best.fromY);
+      const cmdP=getPiece(best.commanderX,best.commanderY);
       let capType=null;
-      if(best.capture){ const victim=board[best.y]&&board[best.y][best.x]; if(victim) capType=victim.type; }
+      if(best.capture){ const v=getPiece(best.x,best.y); if(v) capType=v.type; }
+      const unitSide=unit?unit.side:0;
+      const cmdSide=cmdP?cmdP.side:0;
       executeCommand(best);
-      lastMoveCells = [{x:best.fromX,y:best.fromY},{x:best.x,y:best.y},{x:best.commanderX,y:best.commanderY}];
-      lastCaptureCell = null;
-      triggerFlip(best.commanderX, best.commanderY);
-      if(unit){
-        const cmdP = getPiece(best.commanderX, best.commanderY);
-        addLogMove("A", unit.type, best.fromX, best.fromY, best.x, best.y, capType, false, unit.side,
-          {ctype:(cmdP&&cmdP.type)||"Marshall", cx:best.commanderX, cy:best.commanderY, side:cmdP?cmdP.side:0});
-      }
+      lastMoveCells=[{x:best.fromX,y:best.fromY},{x:best.x,y:best.y}];
+      lastCaptureCell=best.capture?{x:best.x,y:best.y}:null;
+      if(cmdP) triggerFlip(best.commanderX,best.commanderY);
+      addLogMove("A", unit.type, best.fromX, best.fromY, best.x, best.y, capType, false, unit.side,
+        {ctype:(cmdP&&cmdP.type), cx:best.commanderX, cy:best.commanderY, side:cmdP?cmdP.side:cmdSide});
     } else {
       const fx=best.fromX, fy=best.fromY, p=board[fy]&&board[fy][fx];
       if(p){
@@ -1717,21 +1778,26 @@ function aiMove(){
         addLogMove("A", p.type, fx, fy, best.x, best.y, capType, best.stay, p.side);
       }
     }
-    // Always store the move/levy in history first
     turn = "P";
     pushHistory(best.type==="Levy" ? "A-levy" : "A");
     if(!board.flat().some(t=>t&&t.type==="Duke"&&t.owner==="P")){
       gameOver="A"; setStatus(NAMES[lang].status.lose); addLogSys("sysWinA");
       pushHistory("win"); recordGameResult("A"); toast(NAMES[lang].status.lose,"err");
+    } else if(!board.flat().some(t=>t&&t.type==="Duke"&&t.owner==="A")){
+      gameOver="P"; setStatus(NAMES[lang].status.win); addLogSys("sysWinP");
+      pushHistory("win"); recordGameResult("P"); toast(NAMES[lang].status.win,"ok");
     }
-  } catch(err){ console.error(err); } 
+  } catch(err){ console.error(err); }
   finally {
     selected=null; legalMoves=[];
     if(!gameOver){ turn="P"; setStatus(NAMES[lang].status.your); }
     boardAutoCenter=true;
     render();
+    // Threat blink after AI: ensure highlight after flip completes
+    setTimeout(()=>{ try { render(); } catch(e){} }, 560);
   }
 }
+
 
 /* ===== UI ===== */
 document.getElementById("btnSave").onclick=()=>{
@@ -1747,8 +1813,15 @@ document.getElementById("btnLoad").onclick=()=>{
     phase=d.phase||"play"; firstPlayer=d.firstPlayer||"P"; logLines=d.logLines||[]; logSeq=d.logSeq||(logLines.reduce((m,e)=>Math.max(m,e.n||0),0));
     setupPieces=d.setupPieces||[]; setupPlaced=d.setupPlaced||[];
     history=d.history||[]; lastMoveCells=d.lastMoveCells||[]; lastCaptureCell=d.lastCaptureCell||null;
+    // Normalize piece sides to 0|1 integers (JSON / old saves may differ)
+    if(board) for(let y=0;y<6;y++) for(let x=0;x<6;x++){
+      const p=board[y]&&board[y][x];
+      if(p){ p.side = (Number(p.side)|0) ? 1 : 0; if(p.owner!=="A") p.owner="P"; }
+    }
     if(!history.length) pushHistory("loaded");
-    selected=null; legalMoves=[]; render();
+    selected=null; legalMoves=[]; clearFlip();
+    render();
+    setTimeout(()=>{ try{ render(); }catch(e){} }, 50);
     if(phase==="setupP") setStatus(NAMES[lang].status.place + (NAMES[lang][(setupPieces&&setupPieces[0])||"Duke"]));
     else if(phase==="setupA"){ setStatus(NAMES[lang].status.setupA); setTimeout(aiSetup,300); }
     else if(turn==="A"&&!gameOver){ setStatus(NAMES[lang].status.ai,"ai-thinking"); setTimeout(aiMove,80); }
