@@ -62,12 +62,14 @@
   }
   .menu {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 5px;
     justify-content: center;
     align-items: center;
     margin-bottom: 8px;
-    padding: 4px 8px;
+    padding: 4px 4px;
+    width: 100%;
+    max-width: 480px;
   }
   .icon-btn {
     background: var(--gray);
@@ -346,11 +348,14 @@
     opacity: 1;
     transform: translateY(0);
   }
-  @media (max-width: 400px) {
-    .title-text { font-size: 1.45rem; }
-    .title-deco { font-size: 1.15rem; }
-    .icon-btn { width: 32px; height: 32px; font-size: 0.95rem; }
-    .lang-btn { font-size: 0.65rem; }
+  @media (max-width: 480px) {
+    .title-text { font-size: 1.4rem; }
+    .title-deco { font-size: 1.1rem; }
+    .menu { gap: 3px; padding: 2px 2px; }
+    .lang-btn { font-size: 0.68rem; }
+  }
+  @media (max-width: 360px) {
+    .menu { gap: 2px; }
   }
 </style>
 </head>
@@ -1087,7 +1092,8 @@ function toggleLang(){
 function updateLangUI(){
   // button shows the *other* language (what you switch to), or current?
   // User: "místo vlajky dej CS nebo EN" – show current language code
-  document.getElementById("btnLang").textContent = lang === "cs" ? "CS" : "EN";
+  // show the language you would switch to
+  document.getElementById("btnLang").textContent = lang === "cs" ? "EN" : "CS";
   document.documentElement.lang = lang;
 }
 
