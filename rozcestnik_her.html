@@ -59,8 +59,15 @@
             flex-wrap: wrap;
         }
 
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+            display: flex;
+            align-items: center;
+        }
+
         .search-bar, .sort-select {
-            padding: 0.8rem 1.5rem;
             border-radius: 30px;
             border: 1px solid var(--border);
             background-color: #0b1120;
@@ -71,11 +78,46 @@
         }
 
         .search-bar {
-            flex: 1;
-            min-width: 250px;
+            width: 100%;
+            padding: 0.8rem 3rem 0.8rem 1.5rem;
+        }
+
+        .search-badge {
+            position: absolute;
+            right: 1rem;
+            background-color: #ffffff;
+            color: var(--border);
+            font-weight: bold;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+            line-height: 1;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .search-clear:hover {
+            color: var(--text-color);
         }
 
         .sort-select {
+            padding: 0.8rem 1.5rem;
             cursor: pointer;
             min-width: 200px;
             appearance: none;
@@ -250,7 +292,11 @@
         <header>
             <h1>Rozcestník her</h1>
             <div class="controls">
-                <input type="text" id="searchInput" class="search-bar" placeholder="Hledat hru podle názvu...">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" class="search-bar" placeholder="Hledání hry podle názvu...">
+                    <span id="searchCounter" class="search-badge"></span>
+                    <button id="searchClear" class="search-clear" title="Vymazat hledání">&times;</button>
+                </div>
                 <select id="sortSelect" class="sort-select">
                     <option value="alpha">Seřadit abecedně (A-Z)</option>
                     <option value="plays">Seřadit podle spuštění</option>
@@ -275,8 +321,6 @@
         let playCounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
         // Načtení posledního zvoleného řazení
         const savedSort = localStorage.getItem(SORT_STORAGE_KEY) || 'alpha';
-        //vymaže uloženou volbu řazení 
-        //localStorage.removeItem('rozcestnik_sort_order');
 
         // Databáze her s doplněnými přímými odkazy na BGG
         const games = [
@@ -316,10 +360,16 @@
 
         const container = document.getElementById('gamesContainer');
         const searchInput = document.getElementById('searchInput');
+        const searchCounter = document.getElementById('searchCounter');
+        const searchClear = document.getElementById('searchClear');
         const sortSelect = document.getElementById('sortSelect');
         const emptyState = document.getElementById('emptyState');
+        
         // Obnov poslední zvolené řazení
         sortSelect.value = savedSort;
+
+        // Nastavení počtu her na začátku
+        searchCounter.textContent = games.length;
 
         // Funkce pro logování spuštění hry
         window.trackPlay = function(gameId) {
@@ -374,7 +424,7 @@
                 card.innerHTML = `
                     <div class="card-img">
                         <img src="${IMG_DIR}${game.img}" alt="${game.title}" 
-                             onerror="handleImageError(this, '${game.fallback}', '${game.title.replace(/'/g, "\\'")}')">
+                             onerror="handleImageError(this, '${game.fallback}', '${game.title.replace(/'/g, "\'")}')">
                     </div>
                     <div class="card-body">
                         <h3 class="card-title">
@@ -410,17 +460,38 @@
         }
 
         // Event listenery
-        searchInput.addEventListener('input', updateDisplay);
-        sortSelect.addEventListener('change', () => {
-    localStorage.setItem(SORT_STORAGE_KEY, sortSelect.value);
-    updateDisplay();
-});
+        searchInput.addEventListener('input', () => {
+            updateDisplay();
+            
+            // Přepínání počítadla a křížku
+            if (searchInput.value.length > 0) {
+                searchCounter.style.display = 'none';
+                searchClear.style.display = 'block';
+            } else {
+                searchCounter.style.display = 'flex';
+                searchClear.style.display = 'none';
+            }
+        });
 
-        // Inicializace - první spuštění (implicitně abecedně, díky getSortedGames a výchozí hodnotě selectu)
+        // Vymazání vyhledávání
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            updateDisplay();
+            searchInput.focus();
+            
+            searchCounter.style.display = 'flex';
+            searchClear.style.display = 'none';
+        });
+
+        sortSelect.addEventListener('change', () => {
+            localStorage.setItem(SORT_STORAGE_KEY, sortSelect.value);
+            updateDisplay();
+        });
+
+        // Inicializace - první spuštění
         updateDisplay();
         
-        // Pomocník pro to, když se uživatel vrátí na stránku z otevřené hry - 
-        // vynutí překreslení pro aktualizaci počtadel a pořadí
+        // Pomocník pro to, když se uživatel vrátí na stránku z otevřené hry
         window.addEventListener('focus', () => {
             const newPlayCounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
             // Pokud se počet změní, překreslíme
@@ -429,8 +500,7 @@
                 if (sortSelect.value === 'plays') {
                     updateDisplay();
                 } else {
-                    // Jenom aktualizujeme čísla v badge bez přeskupování layoutu,
-                    // aby obrazovka neposkočila před očima
+                    // Jenom aktualizujeme čísla v badge bez přeskupování layoutu
                     games.forEach(g => {
                         const b = document.getElementById(`badge-${g.id}`);
                         if(b) {
