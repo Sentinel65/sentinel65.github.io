@@ -196,10 +196,11 @@ h1.coords-on { outline: 1px dashed #00b89455; }
 /* Toast */
 #toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-  background: #2d3436; color: var(--text); padding: 12px 20px; border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0,0,0,.5); font-size: .9rem; font-weight: 500;
+  background: #2d3436; color: var(--text); padding: 10px 18px; border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.5); font-size: .85rem; font-weight: 500;
   z-index: 200; opacity: 0; transition: transform .3s, opacity .3s;
-  max-width: 90vw; text-align: center; border: 1px solid #444;
+  width: max-content; max-width: calc(100vw - 24px);
+  white-space: nowrap; text-align: center; border: 1px solid #444;
   pointer-events: none;
 }
 #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -684,7 +685,7 @@ const NAMES = {
 <li><b>Dvojklik</b> na kámen – zvětšený náhled vzoru tahů.</li>
 <li>Funguje i během přehrávače. Náhled zavřeš klepnutím mimo.</li>
 </ul>
-<h3 class="help-collapse" data-collapse="1">▶ Seznam kamenů ve hře</h3>
+<h3 class="help-collapse" data-collapse="1">▶ Seznam kamenů v pytli (CS: 22 / EN: 16)</h3>
 <div class="help-collapse-body"><div class="tile-list-dyn"></div></div>
 </div>`,
     logTitle:"Log tahů",
@@ -763,7 +764,7 @@ const NAMES = {
 <li><b>Double-click</b> a tile – enlarged move-pattern preview.</li>
 <li>Works during replay too. Close the preview by tapping outside.</li>
 </ul>
-<h3 class="help-collapse" data-collapse="1">▶ Troop list</h3>
+<h3 class="help-collapse" data-collapse="1">▶ Troop list (EN: 16 / CS: 22)</h3>
 <div class="help-collapse-body"><div class="tile-list-dyn"></div></div>
 </div>`,
     logTitle:"Move log",
@@ -1017,7 +1018,7 @@ function startSetup(){
   document.getElementById("btnReplay").classList.remove("active");
 
   setupPlaced=[]; setupPieces=["Duke","Footman","Footman"];
-  const bagList=["Footman","Pikeman","Pikeman","Pikeman","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","Dragoon","Assassin","LongBowman","Duchess","Pikeneur","Adventurer","Halberdier","Halberdier","Halberdier"];
+  const bagList=getBagList();
   bags={P:shuffleBag(bagList.slice()), A:shuffleBag(bagList.slice())};
 
   const last = localStorage.getItem("dukeFirst") || "A";
@@ -1660,6 +1661,11 @@ function aiMove(){
       restoreBoard(snap);
       return ok;
     }
+    function isWinningMove(m){
+      if(!m.capture) return false;
+      const t=board[m.y]&&board[m.y][m.x];
+      return !!(t && t.type==="Duke" && t.owner==="P");
+    }
     function countOnBoard(owner){
       let n=0; for(let y=0;y<6;y++) for(let x=0;x<6;x++){ const p=board[y][x]; if(p&&p.owner===owner) n++; }
       return n;
@@ -1667,12 +1673,11 @@ function aiMove(){
     function rootPri(m){
       if(m.capture){
         const t=board[m.y]&&board[m.y][m.x];
-        if(t&&t.type==="Duke") return 100000;
-        return 5000 + (t ? (PIECE_VAL[t.type]||2)*100 : 0);
+        if(t&&t.type==="Duke") return 1000000;
+        return 8000 + (t ? (PIECE_VAL[t.type]||2)*400 : 0);
       }
       if(m.type==="Levy"){
         if(isSquareAttackedBy(m.x,m.y,"P")) return -8000;
-        // Prefer bringing forces when AI has few pieces on board
         const n = countOnBoard("A");
         if(n <= 3) return 1200;
         if(n <= 5) return 400;
@@ -1682,56 +1687,63 @@ function aiMove(){
       return 0;
     }
 
-    const dukeNow = dukePos("A");
-    const inCheck = !!(dukeNow && isSquareAttackedBy(dukeNow.x, dukeNow.y, "P"));
+    let best=moves[0], bestScore=-Infinity;
 
-    // Candidate set: if in check, ONLY moves that save the Duke (when any exist)
-    let pool = moves.slice();
-    if(inCheck){
-      const resolving = moves.filter(leavesDukeSafe);
-      if(resolving.length) pool = resolving;
-    }
-    // When not in check: keep all moves (including Levy); hanging-Duke handled by score penalty
-
-    pool.sort((a,b)=> rootPri(b)-rootPri(a) || (Math.random()-0.5));
-
-    let best=pool[0], bestScore=-Infinity;
-    const startT=performance.now(), maxTime=3000;
-    const depth = pool.length<=10 ? 5 : (pool.length<=16 ? 4 : 3);
-
-    for(const m of pool){
-      if(performance.now()-startT>maxTime) break;
-      const snap=snapshotBoard();
-      applyMoveAI("A",m);
-      // Instant win / loss
-      if(!dukePos("P")){ restoreBoard(snap); best=m; bestScore=100000; break; }
-      if(!dukePos("A")){ restoreBoard(snap); continue; } // never pick suicide
-      let score=minimax(depth,-Infinity,Infinity,false);
-      if(m.type==="Levy" && isSquareAttackedBy(m.x,m.y,"P")) score -= 500;
-      if(m.capture){
-        const t=snap.board[m.y]&&snap.board[m.y][m.x];
-        if(t) score += (PIECE_VAL[t.type]||2)*10;
+    // 1) Win first: capture player's Duke (even if own Duke is under attack)
+    const winning = moves.filter(isWinningMove);
+    if(winning.length){
+      best = winning[0];
+      bestScore = 1000000;
+    } else {
+      const dukeNow = dukePos("A");
+      const inCheck = !!(dukeNow && isSquareAttackedBy(dukeNow.x, dukeNow.y, "P"));
+      let pool = moves.slice();
+      if(inCheck){
+        const resolving = moves.filter(leavesDukeSafe);
+        if(resolving.length) pool = resolving;
       }
-      // Root: extra penalty if still leave Duke hanging (should be rare if pool filtered)
-      const d=dukePos("A");
-      if(d && isSquareAttackedBy(d.x,d.y,"P")) score -= 800;
-      restoreBoard(snap);
-      if(score>bestScore){ bestScore=score; best=m; }
-    }
+      pool.sort((a,b)=> rootPri(b)-rootPri(a) || (Math.random()-0.5)*0.01);
 
-    // Final guard: if best still hangs Duke and a safe move exists, force a safe one
-    if(best && !leavesDukeSafe(best)){
-      const safe = moves.filter(leavesDukeSafe);
-      if(safe.length){
-        safe.sort((a,b)=> rootPri(b)-rootPri(a));
-        best = safe[0];
-        let bs=-Infinity;
-        for(const m of safe.slice(0,12)){
-          const snap=snapshotBoard();
-          applyMoveAI("A",m);
-          let score=minimax(3,-Infinity,Infinity,false);
-          restoreBoard(snap);
-          if(score>bs){ bs=score; best=m; }
+      best=pool[0]; bestScore=-Infinity;
+      const startT=performance.now(), maxTime=3000;
+      const depth = pool.length<=10 ? 5 : (pool.length<=16 ? 4 : 3);
+
+      for(const m of pool){
+        if(performance.now()-startT>maxTime) break;
+        const snap=snapshotBoard();
+        applyMoveAI("A",m);
+        if(!dukePos("P")){ restoreBoard(snap); best=m; bestScore=1000000; break; }
+        if(!dukePos("A")){ restoreBoard(snap); continue; }
+        let score=minimax(depth,-Infinity,Infinity,false);
+        if(m.type==="Levy" && isSquareAttackedBy(m.x,m.y,"P")) score -= 500;
+        if(m.capture){
+          const t=snap.board[m.y]&&snap.board[m.y][m.x];
+          if(t) score += (PIECE_VAL[t.type]||2)*35;
+        }
+        const d=dukePos("A");
+        if(d && isSquareAttackedBy(d.x,d.y,"P")) score -= 800;
+        restoreBoard(snap);
+        if(score>bestScore){ bestScore=score; best=m; }
+      }
+
+      // Don't leave own Duke hanging — never overrides a winning move
+      if(best && !isWinningMove(best) && !leavesDukeSafe(best)){
+        const safe = moves.filter(leavesDukeSafe);
+        if(safe.length){
+          safe.sort((a,b)=> rootPri(b)-rootPri(a));
+          let bs=-Infinity, bm=safe[0];
+          for(const m of safe.slice(0,14)){
+            const snap=snapshotBoard();
+            applyMoveAI("A",m);
+            let score=minimax(3,-Infinity,Infinity,false);
+            if(m.capture){
+              const t=snap.board[m.y]&&snap.board[m.y][m.x];
+              if(t) score += (PIECE_VAL[t.type]||2)*35;
+            }
+            restoreBoard(snap);
+            if(score>bs){ bs=score; bm=m; }
+          }
+          best=bm; bestScore=bs;
         }
       }
     }
@@ -1970,8 +1982,20 @@ function rpPlayToggle(){
   }, 950);
 }
 
-const TROOP_COUNTS = {Duke:1,Duchess:1,Footman:3,Pikeman:3,Pikeneur:1,Halberdier:3,Knight:1,Wizard:1,Ranger:1,Seer:1,General:1,Priest:1,Champion:1,Marshall:1,Bowman:1,LongBowman:1,Dragoon:1,Assassin:1,Adventurer:1};
-const TROOP_ORDER = ["Duke","Duchess","Footman","Pikeman","Pikeneur","Halberdier","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","LongBowman","Dragoon","Assassin","Adventurer"];
+// CS expansion set = 25 tiles; EN base set = 19 tiles
+const TROOP_COUNTS_CS = {Duke:1,Duchess:1,Footman:3,Pikeman:3,Pikeneur:1,Halberdier:3,Knight:1,Wizard:1,Ranger:1,Seer:1,General:1,Priest:1,Champion:1,Marshall:1,Bowman:1,LongBowman:1,Dragoon:1,Assassin:1,Adventurer:1};
+const TROOP_ORDER_CS = ["Duke","Duchess","Footman","Pikeman","Pikeneur","Halberdier","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","LongBowman","Dragoon","Assassin","Adventurer"];
+const TROOP_COUNTS_EN = {Duke:1,Footman:3,Pikeman:3,Knight:1,Wizard:1,Ranger:1,Seer:1,General:1,Priest:1,Champion:1,Marshall:1,Bowman:1,LongBowman:1,Dragoon:1,Assassin:1};
+const TROOP_ORDER_EN = ["Duke","Footman","Pikeman","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","LongBowman","Dragoon","Assassin"];
+function getTroopOrder(){ return lang==="en" ? TROOP_ORDER_EN : TROOP_ORDER_CS; }
+function getTroopCounts(){ return lang==="en" ? TROOP_COUNTS_EN : TROOP_COUNTS_CS; }
+/** Bag contents for new game (setup Duke+2 Footmen are outside the bag) */
+function getBagList(){
+  if(lang==="en"){
+    return ["Footman","Pikeman","Pikeman","Pikeman","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","Dragoon","Assassin","LongBowman"];
+  }
+  return ["Footman","Pikeman","Pikeman","Pikeman","Knight","Wizard","Ranger","Seer","General","Priest","Champion","Marshall","Bowman","Dragoon","Assassin","LongBowman","Duchess","Pikeneur","Adventurer","Halberdier","Halberdier","Halberdier"];
+}
 
 function loadStats(){
   try { return JSON.parse(localStorage.getItem("dukeStats")||'{"played":0,"wins":0,"losses":0}'); }
@@ -2033,10 +2057,12 @@ function replayLastGame(last){
 }
 function fillTileList(root){
   if(!root) return;
+  const order = getTroopOrder();
+  const counts = getTroopCounts();
   let h = '<div class="troop-list">';
-  for(const t of TROOP_ORDER){
+  for(const t of order){
     const name = NAMES[lang][t]||t;
-    const cnt = TROOP_COUNTS[t]||1;
+    const cnt = counts[t]||1;
     const src0 = getTileSrc(t, 0, "P");
     const src1 = getTileSrc(t, 1, "P");
     h += '<div class="troop-row">';
@@ -2062,7 +2088,7 @@ function bindHelpCollapse(){
         body.classList.toggle("show", open);
         body.style.display = open ? "block" : "none";
       }
-      const title = (lang==="cs") ? "Seznam kamenů ve hře" : "Troop list";
+      const title = (lang==="cs") ? "Seznam kamenů ve hře (CS: 25 / EN: 19)" : "Troop list";
       h.textContent = (open ? "▼ " : "▶ ") + title;
     };
   });
@@ -2074,23 +2100,15 @@ document.getElementById("titleBtn").onclick=()=>{
   render();
 };
 document.getElementById("btnLang").onclick=()=>{
+  // CS has 25 tiles, EN has 19 — switching language restarts the game with the correct set
   lang = lang==="cs" ? "en" : "cs";
   document.documentElement.lang = lang;
   updateLangButton();
-  render();
-  refreshStatusForLang();
-  const logBody=document.getElementById("logBody");
-  if(document.getElementById("logModal").classList.contains("show")){
-    document.getElementById("logTitle").textContent=NAMES[lang].logTitle;
-    logBody.innerHTML = logLines.map(e=>formatLogLine(e)).join("<br>");
-  }
-  if(document.getElementById("helpModal").classList.contains("show")){
-    document.getElementById("helpTitle").textContent=NAMES[lang].helpTitle;
-    document.getElementById("helpBody").innerHTML=NAMES[lang].help;
-    document.getElementById("helpBody").classList.add("help-mode");
-    fillTileList(document.querySelector("#helpBody .tile-list-dyn"));
-    bindHelpCollapse();
-  }
+  // Close modals that would show stale content
+  document.getElementById("logModal").classList.remove("show");
+  document.getElementById("helpModal").classList.remove("show");
+  startSetup();
+  toast(lang==="cs" ? "Jazyk: čeština – nová hra (22 kamenů)" : "Language: English – new game (16 tiles)", "ok");
 };
 
 document.getElementById("btnHelp").onclick=()=>{
