@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RENGE</title>
+<style>
+:root{
+  --bg:#0c1420; --panel:#152236; --gold:#d8ad4d; --gold2:#f0cf73;
+  --text:#edf3fb; --muted:#9fb0c5; --shadow:0 14px 45px rgba(0,0,0,.38);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#1a2a40 0,#0c1420 55%,#080e16 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+body{display:flex;justify-content:center}
+.app{width:min(1200px,100%);padding:12px 14px 28px}
+.header{text-align:center;margin:0 auto 10px}
+.title{user-select:none;font-family:Georgia,serif;font-size:clamp(28px,5vw,48px);letter-spacing:.16em;color:var(--gold2);text-shadow:0 3px 12px #000;margin:0;line-height:1.05}
+.subtitle{font-size:11px;letter-spacing:.22em;color:var(--muted);margin-top:4px;display:block}
+.menu{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;padding:7px;border:1px solid #2d425c;border-radius:16px;background:linear-gradient(180deg,#192a41,#111d2d);box-shadow:var(--shadow);position:sticky;top:5px;z-index:50}
+.menuBtn{
+  width:47px;height:47px;border:1px solid #3a5573;border-radius:12px;background:#18283e;color:#dce8f6;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.16s;position:relative;
+  padding:0;line-height:1;
+}
+.menuBtn:hover{background:#223853;border-color:#5f82a8;transform:translateY(-1px)}
+.menuBtn.active{background:#294b70;border-color:var(--gold);box-shadow:0 0 0 1px #9b7934 inset}
+.menuBtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;display:block;flex-shrink:0}
+.menuBtn .label{position:absolute;top:100%;margin-top:4px;background:#08111c;border:1px solid #304863;padding:3px 6px;border-radius:5px;font-size:9px;white-space:nowrap;opacity:0;pointer-events:none}
+.menuBtn:hover .label{opacity:1}
+.boardSwitch{min-width:68px;width:auto;padding:0 10px;font-size:12px;font-weight:700;color:var(--gold2)}
+.status{display:flex;justify-content:center;gap:14px;align-items:center;flex-wrap:wrap;margin:10px auto 8px;color:var(--muted);font-size:13px}
+.status strong{color:var(--text)}
+.turnDot{width:11px;height:11px;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:5px;box-shadow:0 0 9px rgba(255,255,255,.25)}
+.turnDot.white{background:#fff;border:1px solid #cbd5e1}
+.turnDot.black{background:#050505;border:1px solid #8392a5}
+.thinking{display:none;color:#f4d67f;font-weight:700;animation:pulse 1s infinite}
+.thinking.show{display:inline}
+@keyframes pulse{50%{opacity:.38}}
+
+.boardOuter{
+  display:grid;
+  grid-template-columns:22px 1fr;
+  grid-template-rows:1fr 18px;
+  gap:2px 4px;
+  width:min(82vw,610px);
+  margin:0 auto;
+  align-items:stretch;
+}
+.boardOuter.large{width:min(94vw,920px)}
+.axisY{
+  grid-column:1; grid-row:1;
+  display:grid;
+  grid-template-rows:repeat(var(--size,4),1fr);
+  align-items:center;
+  justify-items:center;
+  color:#9fb0c5;
+  font-weight:800;
+  font-size:11px;
+  user-select:none;
+}
+.boardArea{
+  grid-column:2; grid-row:1;
+  background:#f3f0e8;
+  border:2px solid #182432;
+  border-radius:4px;
+  overflow:hidden;
+}
+.board{display:grid;width:100%;aspect-ratio:1/1;background:#f3f0e8}
+.axisX{
+  grid-column:2; grid-row:2;
+  display:grid;
+  grid-template-columns:repeat(var(--size,4),1fr);
+  text-align:center;
+  color:#9fb0c5;
+  font-weight:800;
+  font-size:11px;
+  user-select:none;
+  align-items:center;
+}
+
+.cell{
+  position:relative;border-right:1px solid #27323c;border-bottom:1px solid #27323c;
+  background:linear-gradient(135deg,#faf9f4,#e7e4db);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0;
+}
+.cell:hover{background:#e5edf5}
+.cell.selected{box-shadow:inset 0 0 0 3px #e1b84f;background:#fff8db;z-index:2}
+.cell.legal{background:#e8f5ff;box-shadow:inset 0 0 0 2px #62a2d8;cursor:pointer}
+.cell.legal::after{content:"";width:22%;height:22%;border-radius:50%;background:#62a2d8;opacity:.65}
+.cell.last{box-shadow:inset 0 0 0 3px #2ecc71;background:#e8f8ef}
+.cell.winCell{
+  box-shadow:inset 0 0 0 3px #f1c40f;
+  background:#fff8d6;
+  animation:winPulse 1s ease-in-out infinite;
+}
+@keyframes winPulse{
+  0%,100%{box-shadow:inset 0 0 0 3px #f1c40f}
+  50%{box-shadow:inset 0 0 0 5px #f39c12}
+}
+
+.token{
+  width:76%;height:76%;position:relative;
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));
+  z-index:4;transform-origin:50% 50%;transition:transform .18s ease;
+  border-radius:4px;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.35),
+    0 4px 10px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -2px 4px rgba(0,0,0,.18);
+}
+.token .tri{position:absolute;inset:0}
+.token .n{clip-path:polygon(50% 50%,0 0,100% 0)}
+.token .e{clip-path:polygon(50% 50%,100% 0,100% 100%)}
+.token .s{clip-path:polygon(50% 50%,100% 100%,0 100%)}
+.token .w{clip-path:polygon(50% 50%,0 100%,0 0)}
+.token .core{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:39%;height:39%;border-radius:50%;
+  border:2px solid rgba(255,255,255,.72);z-index:2;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,.4),
+    inset 0 1px 2px rgba(255,255,255,.45),
+    inset 0 -1px 2px rgba(0,0,0,.25);
+}
+.token.black .core{
+  background:radial-gradient(circle at 35% 30%, #3a3a3a, #06080b 70%);
+}
+.token.white .core{
+  background:radial-gradient(circle at 35% 30%, #ffffff, #e8e8e4 75%);
+}
+.turnMark{position:absolute;inset:16%;z-index:1;pointer-events:none}
+.turnMark:before,.turnMark:after{content:"";position:absolute;background:#2d78b9;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.turnMark.ne:before{left:0;top:0;width:15%;height:100%}.turnMark.ne:after{left:0;top:0;width:100%;height:15%}
+.turnMark.nw:before{right:0;top:0;width:15%;height:100%}.turnMark.nw:after{right:0;top:0;width:100%;height:15%}
+.turnMark.se:before{left:0;bottom:0;width:15%;height:100%}.turnMark.se:after{left:0;bottom:0;width:100%;height:15%}
+.turnMark.sw:before{right:0;bottom:0;width:15%;height:100%}.turnMark.sw:after{right:0;bottom:0;width:100%;height:15%}
+.crossMark{position:absolute;inset:25%;z-index:1;pointer-events:none}
+.crossMark:before,.crossMark:after{content:"";position:absolute;background:#3d81bd;border-radius:2px}
+.crossMark:before{left:0;right:0;top:35%;bottom:35%}
+.crossMark:after{top:0;bottom:0;left:35%;right:35%}
+
+.startHint {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  opacity: 0.45; /* Poloprůhledné, aby to nerušilo */
+  pointer-events: none; /* Aby neblokovalo klikání na pole */
+  z-index: 1;
+}
+
+.playback{
+  display:none;width:min(820px,100%);margin:10px auto 0;padding:10px 12px;border-radius:14px;
+  background:#13253a;border:1px solid #4a6480;box-shadow:var(--shadow)
+}
+.playback.active{display:block}
+.playbackRow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.pbBtns{display:flex;gap:5px;align-items:center}
+.pbCount{color:#9eb1c6;font-size:13px;font-weight:700;min-width:70px;text-align:right}
+.smallBtn{border:1px solid #3b5673;background:#1b3049;color:#e8f1fb;border-radius:8px;padding:6px 9px;cursor:pointer}
+.smallBtn:hover{background:#294865}
+.pbNote{text-align:center;color:#9eb1c6;font-size:11px;margin-top:6px}
+
+.rotPicker{
+  display:none;position:fixed;left:50%;bottom:80px;transform:translateX(-50%);
+  background:#102238;border:1px solid #527397;border-radius:12px;padding:12px 16px;
+  z-index:150;box-shadow:var(--shadow);text-align:center;
+}
+.rotPicker.show{display:block}
+.rotPicker p{margin:0 0 8px;font-size:13px;color:#cde}
+.rotPicker .btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.rotPicker button{
+  border:1px solid #3b5673;background:#1b3049;color:#e8f1fb;border-radius:8px;
+  padding:8px 12px;cursor:pointer;font-weight:700;min-width:52px
+}
+.rotPicker button:hover{background:#294865;border-color:var(--gold)}
+
+.modal{position:fixed;inset:0;background:rgba(1,7,13,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:18px;backdrop-filter:blur(3px)}
+.modal.open{display:flex}
+.modalBox{width:min(720px,100%);max-height:min(82vh,760px);overflow:auto;background:#15253a;border:1px solid #47617d;border-radius:16px;box-shadow:0 30px 80px #000;padding:0}
+.modalHead{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#122237;border-bottom:1px solid #304964;z-index:2}
+.modalHead h2{font-family:Georgia,serif;color:var(--gold2);font-size:20px;margin:0}
+.modalActions{display:flex;gap:6px}
+.iconBtn{width:34px;height:34px;border:1px solid #3b5673;border-radius:8px;background:#1b3049;color:#eaf2fb;cursor:pointer}
+.iconBtn:hover{background:#294865}
+.modalBody{padding:15px}
+.log{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;
+  white-space:pre-wrap;color:#1a1a1a;background:#c8c8c8;border:1px solid #888;border-radius:10px;padding:12px
+}
+.help h3{color:var(--gold2);margin:14px 0 5px}.help p,.help li{color:#c1cfdd;font-size:13px;line-height:1.55}
+.toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#102238;border:1px solid #527397;color:#f0f5fa;border-radius:10px;padding:9px 13px;z-index:200;box-shadow:var(--shadow);transition:.2s;font-size:12px}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.winBanner{
+  display:none;text-align:center;margin:10px auto 0;width:min(720px,100%);padding:11px;border-radius:12px;
+  background:#173b31;border:1px solid #53b98b;color:#baf0d8;font-weight:800;
+  transition:opacity .3s;
+}
+.winBanner.show{display:block}
+@media (max-width:700px){
+  .app{padding:7px 7px 18px}
+  .menu{gap:5px;padding:5px;border-radius:13px}
+  .menuBtn{width:43px;height:43px;border-radius:10px}
+  .boardOuter,.boardOuter.large{width:min(96vw,520px)}
+  .axisY{font-size:9px}
+  .axisX{font-size:9px}
+}
+@media (max-width:420px){
+  .title{font-size:30px}.subtitle{font-size:8px}
+  .menuBtn{width:40px;height:40px}.menuBtn svg{width:20px;height:20px}
+  .boardOuter,.boardOuter.large{width:96vw}
+  .cell.legal::after{width:17%;height:17%}
+}
+@media (min-width:701px) and (max-height:900px){
+  .app{padding-top:5px;padding-bottom:10px}
+  .title{font-size:32px}
+  .menu{padding:5px;gap:5px}.menuBtn{width:42px;height:42px}
+  .boardOuter{width:min(68vh,610px)}
+  .boardOuter.large{width:min(78vh,860px)}
+  .status{margin:6px auto 5px}
+}
+@media (min-width:701px) and (max-height:760px){
+  .title{font-size:27px}
+  .menuBtn{width:39px;height:39px}.menuBtn svg{width:19px;height:19px}
+  .boardOuter{width:min(60vh,520px)}
+  .boardOuter.large{width:min(70vh,720px)}
+  .status{font-size:11px;margin:4px auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <h1 class="title">RENGE</h1>
+    <div class="subtitle">STRATEGIE • SMĚR • BARVY</div>
+  </header>
+
+  <nav class="menu" aria-label="Herní menu">
+    <button class="menuBtn" id="saveBtn" title="Uložit hru">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg><span class="label">Uložit</span>
+    </button>
+    <button class="menuBtn" id="loadBtn" title="Načíst hru">
+      <svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M8 13l4-4 4 4"/><path d="M5 5h14"/></svg><span class="label">Načíst</span>
+    </button>
+    <button class="menuBtn" id="restartBtn" title="Restartovat">
+      <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5.3"/><path d="M20 4v7h-7"/></svg><span class="label">Restart</span>
+    </button>
+    <button class="menuBtn" id="logBtn" title="Log hry">
+      <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span class="label">Log</span>
+    </button>
+    <button class="menuBtn" id="playBtn" title="Přehrávač tahů">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span class="label">Přehrávač</span>
+    </button>
+    <button class="menuBtn boardSwitch" id="boardBtn" title="Přepnout velikost desky">4×4</button>
+    <button class="menuBtn" id="hintBtn" title="Nápověda">
+      <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M8 14c-1.2-.9-2-2.3-2-4a6 6 0 1 1 12 0c0 1.7-.8 3.1-2 4-.8.6-1 1.1-1 2h-6c0-.9-.2-1.4-1-2z"/></svg><span class="label">Nápověda</span>
+    </button>
+  </nav>
+
+  <div class="status">
+    <span id="turnStatus"></span>
+    <span id="moveStatus"></span>
+    <span id="thinking" class="thinking">AI přemýšlí…</span>
+  </div>
+
+  <div id="boardOuter" class="boardOuter">
+    <div id="axisY" class="axisY"></div>
+    <div class="boardArea">
+      <div id="board" class="board"></div>
+    </div>
+    <div id="axisX" class="axisX"></div>
+  </div>
+
+  <div id="winBanner" class="winBanner"></div>
+
+  <section id="playback" class="playback" aria-label="Přehrávač tahů">
+    <div class="playbackRow">
+      <div class="pbBtns">
+        <button class="smallBtn" id="pbFirst">⏮</button>
+        <button class="smallBtn" id="pbPrev">◀</button>
+        <button class="smallBtn" id="pbPlay">▶</button>
+        <button class="smallBtn" id="pbNext">▶</button>
+        <button class="smallBtn" id="pbLast">⏭</button>
+      </div>
+      <span class="pbCount" id="pbLabel">0 / 0</span>
+    </div>
+    <div class="pbNote">Deska je během přehrávání uzamčena.</div>
+  </section>
+</div>
+
+<div id="rotPicker" class="rotPicker">
+  <p>Kříž – zvol orientaci žetonu</p>
+  <div class="btns" id="rotBtns">
+    <button type="button" data-rot="0">0°</button>
+    <button type="button" data-rot="90">90°</button>
+    <button type="button" data-rot="180">180°</button>
+    <button type="button" data-rot="270">270°</button>
+  </div>
+</div>
+
+<div id="logModal" class="modal">
+  <div class="modalBox" role="dialog" aria-modal="true">
+    <div class="modalHead">
+      <h2>LOG HRY</h2>
+      <div class="modalActions">
+        <button class="iconBtn" id="copyLog" title="Kopírovat log">⧉</button>
+        <button class="iconBtn" id="closeLog" title="Zavřít">×</button>
+      </div>
+    </div>
+    <div class="modalBody"><div id="logContent" class="log"></div></div>
+  </div>
+</div>
+
+<div id="helpModal" class="modal">
+  <div class="modalBox" role="dialog" aria-modal="true">
+    <div class="modalHead">
+      <h2>JAK SE HRAJE RENGE</h2>
+
+      <div class="modalActions"><button class="iconBtn" id="closeHelp">×</button></div>
+    </div>
+
+        <div class="modalBody help">
+        <p style="margin:4px 0 0;font-size:12px;font-style:italic;color:#9fb0c5;">© 2022 Designer: Halis Büyükbayraktar</p>
+      <p><b>RENGE</b> je strategická hra pro 2 hráče o barvách, směrech a precizním plánování.<br> Hraješ za <b>bílého</b> (○), AI za <b>černého</b> (●).</p>
+
+      <h3>Cíl hry</h3>
+      <p>Vyhraješ, když svým tahem postavíš žeton <b>vedle soupeřova</b> tak, že barvy na dotýkajících se stranách jsou <b>stejné</b>. Hráč, který této pozice dosáhne, okamžitě vítězí.</p>
+
+      <h3>Žetony</h3>
+      <p>Každý žeton má uprostřed kolečko (bílé / černé) a na stranách barevné trojúhelníky:</p>
+      <ul>
+        <li><b>Černý:</b> dole červená, vlevo modrá, nahoře žlutá, vpravo zelená</li>
+        <li><b>Bílý:</b> dole zelená, vlevo červená, nahoře modrá, vpravo žlutá</li>
+      </ul>
+      <p>Po otočení se mění, která barva míří kterým směrem.</p>
+
+      <h3>Pohyb</h3>
+      <ul>
+        <li>Žeton se posouvá ortogonálně (nahoru, dolů, vlevo, vpravo) o <b>1 pole</b>.</li>
+        <li>Obsazené pole nelze použít.</li>
+        <li>Dokud nikdo nevytvoří vítěznou pozici, hraje se střídavě posouváním žetonů.</li>
+      </ul>
+
+      <h3>Rohová a L-pole (modré vingly)</h3>
+      <p>Po vstupu na rohové / L-pole se žeton <b>automaticky otočí o 90°</b> podle směru, odkud přišel (doleva nebo doprava podle tvaru vinglu). Otočí se celý žeton včetně barev.</p>
+      <p><b>4×4:</b> rohy a1, a4, d1, d4.<br>
+      <b>13×13:</b> a1, c3, m1, k3, a13, c11, m13, k11.</p>
+
+      <h3>Kříže (jen 13×13)</h3>
+      <p>Pole <b>d7, g4, g10, j7</b> – po vstupu zvolíš orientaci žetonu: <b>0° / 90° / 180° / 270°</b>. AI si rotaci vybere sama.</p>
+
+      <h3>Rozdíly desek</h3>
+      <ul>
+        <li><b>4×4</b> – 4 žetony pro každého hráče, 4 rohová pole. Rychlá, přehledná hra. Ideální pro mobil i začátek.</li>
+        <li><b>13×13</b> – 24 žetonů pro každého, 8 L-polí + 4 kříže. Mnohem hlubší strategie a delší partie. Dostupné na PC a tabletu.</li>
+      </ul>
+      <p><b>Na mobilu</b> (úzký displej) je k dispozici <b>pouze deska 4×4</b> – přepínač velikosti se skryje.</p>
+
+      <h3>Ovládání</h3>
+      <ul>
+        <li>Klikni na svůj žeton, pak na zvýrazněné sousední pole.</li>
+        <li><b>Uložit / Načíst</b> – localStorage prohlížeče.</li>
+        <li><b>Log</b> – historie tahů (nejnovější nahoře), lze zkopírovat.</li>
+        <li><b>Přehrávač</b> – přehrání partie; deska je během přehrávání uzamčená.</li>
+        <li>Souřadnice jsou trvale vlevo (čísla) a pod deskou (písmena); <b>a1 = levý spodní roh</b>.</li>
+      </ul>
+
+      <h3>AI</h3>
+      <p>Černý hraje minimax s alpha-beta prořezáváním (hloubka 4). Na 13×13 může tah chvíli trvat.</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const DIRS = {
+  N:{dr:1,dc:0},
+  E:{dr:0,dc:1},
+  S:{dr:-1,dc:0},
+  W:{dr:0,dc:-1}
+};
+const DIR_ORDER = ["N","E","S","W"];
+const LEFT  = {N:"W",W:"S",S:"E",E:"N"};
+const RIGHT = {N:"E",E:"S",S:"W",W:"N"};
+
+const BASE_COLORS = {
+  black:{N:"#f0cf23", E:"#21b878", S:"#e53232", W:"#2289d0"},
+  white:{N:"#2289d0", E:"#f0cf23", S:"#21b878", W:"#e53232"}
+};
+const COLOR_NAMES = {
+  black:{N:"yellow",E:"green",S:"red",W:"blue"},
+  white:{N:"blue",E:"yellow",S:"green",W:"red"}
+};
+
+const SMALL_SPECIAL = {
+  "a1":{type:"turn", cls:"se", turns:{W:"N",S:"E"}},
+  "a4":{type:"turn", cls:"ne", turns:{W:"S",N:"E"}},
+  "d4":{type:"turn", cls:"nw", turns:{E:"S",N:"W"}},
+  "d1":{type:"turn", cls:"sw", turns:{E:"N",S:"W"}}
+};
+
+/* c3↔c11, k3↔k11 */
+const LARGE_SPECIAL = {
+  /* levý spodní */
+  "a1":  {type:"turn", cls:"se", turns:{W:"N", S:"E"}},
+  "k11": {type:"turn", cls:"se", turns:{W:"N", S:"E"}},
+
+  /* pravý horní */
+  "c3":  {type:"turn", cls:"nw", turns:{E:"S", N:"W"}},
+  "m13": {type:"turn", cls:"nw", turns:{E:"S", N:"W"}},
+
+  /* levý horní */
+  "a13": {type:"turn", cls:"ne", turns:{W:"S", N:"E"}},
+  "k3":  {type:"turn", cls:"ne", turns:{W:"S", N:"E"}},
+
+  /* pravý spodní */
+  "c11": {type:"turn", cls:"sw", turns:{E:"N", S:"W"}},
+  "m1":  {type:"turn", cls:"sw", turns:{E:"N", S:"W"}},
+
+  /* kříže */
+  "d7":  {type:"cross"},
+  "g4":  {type:"cross"},
+  "g10": {type:"cross"},
+  "j7":  {type:"cross"}
+};
+
+const SMALL_SETUP = {
+  black:["a3","b2","c3","d2"],
+  white:["a2","b3","c2","d3"]
+};
+const LARGE_SETUP = {
+  black:[
+    "a9","c9","e9","g9","i9","k9","m9",
+    "b5","d5","f5","h5","j5","l5",
+    "e2","e4","e6","e8","e10","e12",
+    "i1","i3","i7","i11","i13"
+  ],
+  white:[
+    "b9","d9","f9","h9","j9","l9",
+    "a5","c5","e5","g5","i5","k5","m5",
+    "e1","e3","e7","e11","e13",
+    "i2","i4","i6","i8","i10","i12"
+  ]
+};
+
+let state = null;
+let selectedId = null;
+let playbackActive = false;
+let playbackIndex = 0;
+let liveBeforePlayback = null;
+let aiSearch = null;
+let toastTimer = null;
+let winBannerTimer = null;
+let pendingCross = null;
+let rotPickerCallback = null;
+
+const $ = id => document.getElementById(id);
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+function toast(msg, ms){
+  const el = $("toast");
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), ms || 2300);
+}
+
+function showWinBanner(text){
+  const banner = $("winBanner");
+  banner.textContent = text;
+  banner.classList.add("show");
+  clearTimeout(winBannerTimer);
+  winBannerTimer = setTimeout(()=>{
+    banner.classList.remove("show");
+  }, 3000);
+}
+
+function coordToRC(coord){
+  const c = coord[0].toLowerCase();
+  const n = parseInt(coord.slice(1),10);
+  return {r:n-1, c:c.charCodeAt(0)-97};
+}
+function rcToCoord(r,c){ return String.fromCharCode(97+c)+(r+1); }
+function inBoundsForSize(size,r,c){ return r>=0 && r<size && c>=0 && c<size; }
+
+function createPiece(owner, coord, id){
+  const p = coordToRC(coord);
+  return {id, owner, r:p.r, c:p.c, forced:[], rotation:0};
+}
+
+function createInitialState(size, starter="white"){
+  const setup = size===4 ? SMALL_SETUP : LARGE_SETUP;
+  const pieces = [];
+  const seen = new Set();
+  let id = 0;
+  for(const owner of ["black","white"]){
+    for(const coord of setup[owner]){
+      if(seen.has(coord)) continue;
+      seen.add(coord);
+      pieces.push(createPiece(owner, coord, owner[0].toUpperCase()+(++id)));
+    }
+  }
+  return {size, pieces, current:starter, starter, winner:null, moveNo:0, lastMove:null, historyMoves:[], snapshots:[]};
+}
+
+function nextStarter(){
+  const current = localStorage.getItem("renge-next-starter");
+  const starter = current==="black" ? "black" : "white";
+  localStorage.setItem("renge-next-starter", starter==="white"?"black":"white");
+  return starter;
+}
+
+function boardSnapshot(s){
+  return {size:s.size, pieces:deepClone(s.pieces), current:s.current, winner:s.winner, moveNo:s.moveNo, lastMove:deepClone(s.lastMove)};
+}
+function setupHistory(s){ s.snapshots = [boardSnapshot(s)]; }
+function pieceAt(s,r,c){ return s.pieces.find(p=>p.r===r && p.c===c); }
+
+function getSpecial(size,r,c){
+  const coord = rcToCoord(r,c);
+  return (size===4 ? SMALL_SPECIAL : LARGE_SPECIAL)[coord] || null;
+}
+
+function cornerRotation(size,r,c,movingDir){
+  const sp = getSpecial(size,r,c);
+  if(!sp || sp.type!=="turn") return 0;
+  const exitDir = sp.turns?.[movingDir];
+  if(!exitDir) return 0;
+  if(RIGHT[movingDir]===exitDir) return 90;
+  if(LEFT[movingDir]===exitDir) return -90;
+  return 0;
+}
+
+function isCross(size,r,c){
+  const sp = getSpecial(size,r,c);
+  return !!(sp && sp.type==="cross");
+}
+
+function legalMoves(s,player,limit=9999){
+  const out = [];
+  for(const p of s.pieces){
+    if(p.owner!==player) continue;
+    for(const dir of DIR_ORDER){
+      const d = DIRS[dir];
+      const nr = p.r+d.dr, nc = p.c+d.dc;
+      if(!inBoundsForSize(s.size,nr,nc)) continue;
+      if(pieceAt(s,nr,nc)) continue;
+      out.push({pieceId:p.id, from:{r:p.r,c:p.c}, to:{r:nr,c:nc}, dir});
+      if(out.length>=limit) return out;
+    }
+  }
+  return out;
+}
+
+function applyMove(s,move, chosenRotation){
+  const ns = deepClone(s);
+  const p = ns.pieces.find(x=>x.id===move.pieceId);
+  if(!p) return null;
+  p.r = move.to.r; p.c = move.to.c;
+
+  let rotation = 0;
+  let totalRotation = Number(p.rotation)||0;
+  let crossRot = null;
+
+  if(isCross(ns.size, p.r, p.c)){
+    if(chosenRotation !== undefined && chosenRotation !== null){
+      totalRotation = ((Number(chosenRotation) % 360) + 360) % 360;
+      p.rotation = totalRotation;
+      crossRot = totalRotation;
+    }
+  } else {
+    rotation = cornerRotation(ns.size, p.r, p.c, move.dir);
+    totalRotation = ((totalRotation + rotation + 360) % 360);
+    p.rotation = totalRotation;
+  }
+
+  p.forced = [];
+  ns.moveNo++;
+  const fromCoord = rcToCoord(move.from.r, move.from.c);
+  const toCoord = rcToCoord(move.to.r, move.to.c);
+  ns.lastMove = {
+    n:ns.moveNo, player:s.current, pieceId:p.id,
+    from:fromCoord, to:toCoord, dir:move.dir,
+    rotation: crossRot !== null ? 0 : rotation,
+    totalRotation,
+    crossRot
+  };
+  ns.winner = checkWin(ns, p.owner) ? p.owner : null;
+  if(!ns.winner) ns.current = p.owner==="white" ? "black" : "white";
+  return ns;
+}
+
+function colorOnSide(piece, geometricSide){
+  const rot = Number(piece.rotation)||0;
+  const order = ["N","E","S","W"];
+  const gIdx = order.indexOf(geometricSide);
+  const steps = ((rot % 360) + 360) % 360 / 90;
+  const baseSide = order[(gIdx - steps + 4) % 4];
+  return COLOR_NAMES[piece.owner][baseSide];
+}
+
+function touchingColors(a,b){
+  const dr = b.r-a.r, dc = b.c-a.c;
+  if(Math.abs(dr)+Math.abs(dc)!==1) return false;
+  let sideA, sideB;
+  if(dr===1){sideA="N";sideB="S"}
+  else if(dr===-1){sideA="S";sideB="N"}
+  else if(dc===1){sideA="E";sideB="W"}
+  else {sideA="W";sideB="E"}
+  return colorOnSide(a,sideA) === colorOnSide(b,sideB);
+}
+
+function checkWin(s,player){
+  for(const a of s.pieces){
+    if(a.owner!==player) continue;
+    for(const b of s.pieces){
+      if(b.owner===player) continue;
+      if(touchingColors(a,b)) return true;
+    }
+  }
+  return false;
+}
+
+function findWinPair(s){
+  if(!s.winner) return null;
+  for(const a of s.pieces){
+    if(a.owner!==s.winner) continue;
+    for(const b of s.pieces){
+      if(b.owner===s.winner) continue;
+      if(touchingColors(a,b)) return [rcToCoord(a.r,a.c), rcToCoord(b.r,b.c)];
+    }
+  }
+  return null;
+}
+
+function immediateWin(s,move,rot){
+  const ns = applyMove(s,move,rot);
+  return ns && ns.winner===s.current;
+}
+
+function moveThreatScore(s,move,player,rot){
+  const ns = applyMove(s,move,rot);
+  if(!ns) return -999999;
+  if(ns.winner===player) return 1000000;
+  let score = 0;
+  const p = ns.pieces.find(x=>x.id===move.pieceId);
+  for(const q of ns.pieces){
+    if(q.owner===player) continue;
+    const dr = q.r-p.r, dc = q.c-p.c;
+    if(Math.abs(dr)+Math.abs(dc)!==1) continue;
+    let sa,sb;
+    if(dr===1){sa="N";sb="S"} else if(dr===-1){sa="S";sb="N"} else if(dc===1){sa="E";sb="W"} else {sa="W";sb="E"}
+    if(colorOnSide(p,sa)===colorOnSide(q,sb)) score += 140;
+    else score -= 22;
+  }
+  return score;
+}
+
+function expandMoves(s,player){
+  const base = legalMoves(s,player);
+  const out = [];
+  for(const m of base){
+    if(isCross(s.size, m.to.r, m.to.c)){
+      for(const rot of [0,90,180,270]){
+        out.push({...m, chosenRotation:rot});
+      }
+    } else {
+      out.push({...m, chosenRotation:null});
+    }
+  }
+  return out;
+}
+
+function orderedMoves(s,player,forSearch=true){
+  const moves = expandMoves(s,player);
+  const scored = moves.map(m=>({
+    m,
+    score: moveThreatScore(s,m,player,m.chosenRotation) + (immediateWin(s,m,m.chosenRotation)?1000000:0)
+  }));
+  scored.sort((a,b)=>b.score-a.score);
+  const cap = s.size===13 ? (forSearch?36:9999) : 9999;
+  return scored.slice(0,cap).map(x=>x.m);
+}
+
+function evaluate(s,rootPlayer){
+  const enemy = rootPlayer==="white"?"black":"white";
+  if(s.winner===rootPlayer) return 100000;
+  if(s.winner===enemy) return -100000;
+  const my = s.pieces.filter(p=>p.owner===rootPlayer);
+  const opp = s.pieces.filter(p=>p.owner===enemy);
+  let score = 0;
+  function pot(arr,owner,other){
+    let threat=0,adj=0,center=0,mob=0;
+    for(const p of arr){
+      mob += 4;
+      const dist = Math.abs(p.r-(s.size-1)/2)+Math.abs(p.c-(s.size-1)/2);
+      center += (s.size-dist);
+      for(const q of other){
+        const dr=q.r-p.r, dc=q.c-p.c;
+        if(Math.abs(dr)+Math.abs(dc)!==1) continue;
+        adj++;
+        let sa,sb;
+        if(dr===1){sa="N";sb="S"} else if(dr===-1){sa="S";sb="N"} else if(dc===1){sa="E";sb="W"} else {sa="W";sb="E"}
+        if(colorOnSide(p,sa)===colorOnSide(q,sb)) threat++;
+      }
+    }
+    return {threat,adj,center,mob};
+  }
+  const a = pot(my,rootPlayer,opp);
+  const b = pot(opp,enemy,my);
+  score += (a.threat-b.threat)*620 + (a.adj-b.adj)*28 + (a.mob-b.mob)*7 + (a.center-b.center)*1.3;
+  return score;
+}
+
+function minimax(root,depth,alpha,beta,maximizing,rootPlayer,ctx){
+  if(ctx.timedOut) return evaluate(root,rootPlayer);
+  if(performance.now()>ctx.deadline){ctx.timedOut=true;return evaluate(root,rootPlayer)}
+  if(depth===0 || root.winner) return evaluate(root,rootPlayer);
+  const player = maximizing ? rootPlayer : (rootPlayer==="white"?"black":"white");
+  const moves = orderedMoves(root,player,true);
+  if(!moves.length) return player===rootPlayer ? -90000 : 90000;
+  if(maximizing){
+    let best = -Infinity;
+    for(const m of moves){
+      const ns = applyMove(root,m,m.chosenRotation);
+      const val = minimax(ns,depth-1,alpha,beta,false,rootPlayer,ctx);
+      if(val>best) best=val;
+      if(best>alpha) alpha=best;
+      if(beta<=alpha || ctx.timedOut) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for(const m of moves){
+      const ns = applyMove(root,m,m.chosenRotation);
+      const val = minimax(ns,depth-1,alpha,beta,true,rootPlayer,ctx);
+      if(val<best) best=val;
+      if(best<beta) beta=best;
+      if(beta<=alpha || ctx.timedOut) break;
+    }
+    return best;
+  }
+}
+
+function findBestMove(s,player,depth=4){
+  const start = performance.now();
+  const ctx = {deadline:start+(s.size===13?1700:1400), timedOut:false};
+  const moves = orderedMoves(s,player,true);
+  let best = moves[0]||null, bestScore = -Infinity;
+  for(const m of moves){
+    if(performance.now()>ctx.deadline){ctx.timedOut=true;break}
+    const ns = applyMove(s,m,m.chosenRotation);
+    const val = minimax(ns,depth-1,-Infinity,Infinity,false,player,ctx);
+    if(val>bestScore){bestScore=val;best=m}
+    if(ns && ns.winner===player){best=m;bestScore=100000;break}
+  }
+  return {move:best, score:bestScore, time:performance.now()-start};
+}
+
+function getHintSVG(owner) {
+  const base = BASE_COLORS[owner];
+  const core = owner === "white" ? "#ffffff" : "#1a1a1a";
+  const stroke = owner === "white" ? "#a0aab5" : "#555555";
+  
+  return `<svg viewBox="0 0 100 100" class="startHint">
+    <polygon points="50,10 35,32 65,32" fill="${base.N}" />
+    <polygon points="90,50 68,35 68,65" fill="${base.E}" />
+    <polygon points="50,90 35,68 65,68" fill="${base.S}" />
+    <polygon points="10,50 32,35 32,65" fill="${base.W}" />
+    <circle cx="50" cy="50" r="14" fill="${core}" stroke="${stroke}" stroke-width="3"/>
+  </svg>`;
+}
+
+function render(){
+  const board = $("board");
+  const size = state.size;
+  board.innerHTML = "";
+  board.style.gridTemplateColumns = `repeat(${size},1fr)`;
+  board.style.gridTemplateRows = `repeat(${size},1fr)`;
+
+  const outer = $("boardOuter");
+  outer.style.setProperty("--size", size);
+  outer.classList.toggle("large", size===13);
+
+  const axisY = $("axisY");
+  axisY.innerHTML = "";
+  axisY.style.setProperty("--size", size);
+  for(let rr=0; rr<size; rr++){
+    const rank = size - rr;
+    const el = document.createElement("span");
+    el.textContent = String(rank);
+    axisY.appendChild(el);
+  }
+
+  const axisX = $("axisX");
+  axisX.innerHTML = "";
+  axisX.style.setProperty("--size", size);
+  for(let c=0; c<size; c++){
+    const el = document.createElement("span");
+    el.textContent = String.fromCharCode(97+c);
+    axisX.appendChild(el);
+  }
+
+  const winPair = findWinPair(state);
+  const selected = selectedId;
+
+  for(let rr=0; rr<size; rr++){
+    const r = size - 1 - rr;
+    for(let c=0; c<size; c++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      const coord = rcToCoord(r,c);
+      const sp = getSpecial(size,r,c);
+      if(sp){
+        const mark = document.createElement("div");
+        mark.className = sp.type==="cross" ? "crossMark" : "turnMark "+sp.cls;
+        cell.appendChild(mark);
+      }
+      if(state.lastMove && state.lastMove.to===coord) cell.classList.add("last");
+      if(winPair && (winPair[0]===coord || winPair[1]===coord)) cell.classList.add("winCell");
+      if(selected && !pendingCross){
+        const lm = legalMoves(state,state.current).filter(m=>m.pieceId===selected);
+        if(lm.some(m=>m.to.r===r && m.to.c===c)) cell.classList.add("legal");
+      }
+      
+      const p = pieceAt(state,r,c);
+      if(p){
+        const token = document.createElement("div");
+        token.className = `token ${p.owner}`;
+        token.dataset.id = p.id;
+        const rot = Number(p.rotation)||0;
+        token.style.transform = `rotate(${rot}deg)`;
+        token.title = `${p.owner==="white"?"Bílý":"Černý"} ${p.id} • ${rot}°`;
+
+        // --- ANIMACE ROTACE ---
+        if (state.lastMove && state.lastMove.pieceId === p.id && !state.lastMove.animated) {
+          state.lastMove.animated = true; 
+          
+          let oldRot = rot;
+          
+          if (state.lastMove.rotation) {
+            oldRot = rot - state.lastMove.rotation;
+          } 
+          else if (state.lastMove.crossRot !== null && state.snapshots.length > 1) {
+            const prevSnap = state.snapshots[state.snapshots.length - 2];
+            const oldPiece = prevSnap.pieces.find(x => x.id === p.id);
+            if (oldPiece) oldRot = Number(oldPiece.rotation) || 0;
+            
+            if (rot === 0 && oldRot === 270) oldRot = -90;
+            if (rot === 270 && oldRot === 0) oldRot = 360;
+          }
+
+          if (oldRot !== rot) {
+            token.animate([
+              { transform: `rotate(${oldRot}deg)` },
+              { transform: `rotate(${rot}deg)` }
+            ], {
+              duration: 800,
+              easing: 'ease-in-out'
+            });
+          }
+        }
+        // --- KONEC ANIMACE ---
+
+        const base = BASE_COLORS[p.owner];
+        for(const d of ["n","e","s","w"]){
+          const tri = document.createElement("span");
+          tri.className = "tri "+d;
+          tri.style.background = base[d.toUpperCase()];
+          token.appendChild(tri);
+        }
+        const core = document.createElement("span");
+        core.className = "core";
+        token.appendChild(core);
+        cell.appendChild(token);
+      } else {
+        // --- ZNAČKA NA PRÁZDNÉM STARTOVNÍM POLI ---
+        const setup = size === 4 ? SMALL_SETUP : LARGE_SETUP;
+        let hintOwner = null;
+        
+        if (setup.white.includes(coord)) hintOwner = "white";
+        else if (setup.black.includes(coord)) hintOwner = "black";
+        
+        if (hintOwner) {
+          cell.insertAdjacentHTML("beforeend", getHintSVG(hintOwner));
+        }
+        // ------------------------------------------
+      }
+      
+      cell.addEventListener("click", onCellClick);
+      board.appendChild(cell);
+    }
+  }
+  document.querySelectorAll(".cell").forEach(el=>{
+    if(selectedId && !pendingCross){
+      const p = pieceAt(state, Number(el.dataset.r), Number(el.dataset.c));
+      if(p && p.id===selectedId) el.classList.add("selected");
+    }
+  });
+  updateStatus();
+}
+
+function updateStatus(){
+  const t = $("turnStatus");
+  const who = state.current==="white" ? "Bílý" : "Černý";
+  const dot = state.current==="white" ? "white" : "black";
+  t.innerHTML = `<span class="turnDot ${dot}"></span><strong>${state.winner ? (state.winner==="white"?"Bílý":"Černý")+" vyhrává" : ("Na tahu: "+who)}</strong>`;
+  $("moveStatus").textContent = `Tahů: ${state.moveNo}`;
+  $("thinking").classList.toggle("show", !!aiSearch);
+}
+
+function onCellClick(e){
+  if(pendingCross || playbackActive || aiSearch || state.winner || state.current!=="white") return;
+  const r = Number(e.currentTarget.dataset.r), c = Number(e.currentTarget.dataset.c);
+  const p = pieceAt(state,r,c);
+  if(selectedId){
+    const move = legalMoves(state,"white").find(m=>m.pieceId===selectedId && m.to.r===r && m.to.c===c);
+    if(move){ performHumanMove(move); return; }
+  }
+  if(p && p.owner==="white"){
+    selectedId = p.id;
+    render();
+  } else {
+    selectedId = null;
+    render();
+  }
+}
+
+function hideRotPicker(){
+  $("rotPicker").classList.remove("show");
+  rotPickerCallback = null;
+}
+
+function showRotPicker(cb){
+  hideRotPicker();
+  rotPickerCallback = cb;
+  const box = $("rotPicker");
+  const container = $("rotBtns");
+  // znovu vytvořit tlačítka – čisté handlery
+  container.innerHTML = "";
+  [0,90,180,270].forEach(rot=>{
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.rot = String(rot);
+    btn.textContent = rot + "°";
+    btn.onclick = ()=>{
+      const fn = rotPickerCallback;
+      hideRotPicker();
+      pendingCross = null;
+      if(fn) fn(rot);
+    };
+    container.appendChild(btn);
+  });
+  box.classList.add("show");
+}
+
+function finalizeMove(ns){
+  state = ns;
+  state.historyMoves.push({...state.lastMove});
+  state.snapshots.push(boardSnapshot(state));
+  selectedId = null;
+  pendingCross = null;
+  hideRotPicker();
+  render();
+  updateLog();
+
+  if(state.winner){
+    const name = state.winner==="white" ? "Bílý" : "Černý";
+    showWinBanner("🏆 " + name + " hráč vyhrává!");
+    return;
+  }
+  if(state.current==="black"){
+    if(!legalMoves(state,"black").length){
+      state.winner = "white";
+      render();
+      updateLog();
+      showWinBanner("🏆 Bílý hráč vyhrává!");
+      return;
+    }
+    setTimeout(aiTurn, 800);
+  }
+}
+
+function performHumanMove(move){
+  if(pendingCross) return;
+
+  if(isCross(state.size, move.to.r, move.to.c)){
+    pendingCross = {move};
+    // náhled: žeton na kříži s rotací 0
+    const preview = applyMove(state, move, 0);
+    const baseState = state;
+    state = preview;
+    selectedId = null;
+    render();
+    state = baseState;
+
+    showRotPicker((rot)=>{
+      const ns = applyMove(baseState, move, rot);
+      finalizeMove(ns);
+    });
+    return;
+  }
+
+  const ns = applyMove(state, move, null);
+  finalizeMove(ns);
+}
+
+function aiTurn(){
+  if(state.winner || state.current!=="black" || playbackActive || pendingCross) return;
+  aiSearch = {};
+  render();
+  setTimeout(()=>{
+    const result = findBestMove(state, "black", 4);
+    aiSearch = null;
+    if(!result.move){
+      state.winner = "white";
+      render();
+      updateLog();
+      showWinBanner("🏆 Bílý hráč vyhrává!");
+      return;
+    }
+    const m = result.move;
+    const ns = applyMove(state, m, m.chosenRotation);
+    state = ns;
+    state.historyMoves.push({
+      ...state.lastMove,
+      score: Math.round(result.score),
+      searchMs: Math.round(result.time)
+    });
+    state.snapshots.push(boardSnapshot(state));
+    render();
+    updateLog();
+    if(state.winner){
+      showWinBanner("🏆 Černý hráč (AI) vyhrává!");
+    }
+  }, 30);
+}
+
+function clearPending(){
+  pendingCross = null;
+  hideRotPicker();
+  clearTimeout(winBannerTimer);
+  $("winBanner").classList.remove("show");
+}
+
+function startNew(size){
+  if(playbackActive) deactivatePlayback();
+  clearPending();
+  const starter = nextStarter();
+  state = createInitialState(size, starter);
+  setupHistory(state);
+  selectedId = null;
+  $("boardBtn").textContent = `${size}×${size}`;
+  $("boardBtn").title = `Přepnout na ${size===4?"13×13":"4×4"}`;
+  render();
+  updateLog();
+  const starterName = starter==="white" ? "Bílý" : "Černý (AI)";
+  toast("Nová hra: začíná " + starterName + ".");
+  if(starter==="black") setTimeout(aiTurn, 220);
+}
+
+function restart(){ startNew(state.size); toast("Hra byla restartována."); }
+
+function saveGame(){
+  const payload = {version:5, savedAt:new Date().toISOString(), state:deepClone(state)};
+  localStorage.setItem("renge-save", JSON.stringify(payload));
+  toast("Hra uložena.");
+}
+
+function loadGame(){
+  const raw = localStorage.getItem("renge-save");
+  if(!raw){ toast("Žádná uložená hra nebyla nalezena."); return; }
+  try{
+    const payload = JSON.parse(raw);
+    if(!payload.state || ![4,13].includes(payload.state.size)) throw new Error("Neplatná data");
+    if(playbackActive) deactivatePlayback();
+    clearPending();
+    state = payload.state;
+    selectedId = null;
+    render();
+    updateLog();
+    toast("Hra načtena.");
+  }catch(err){
+    console.error(err);
+    toast("Uložená hra je poškozená.");
+  }
+}
+
+function logText(){
+  const lines = [];
+  /* konec hry nahoře (reverzní log) */
+  if(state.winner){
+    const name = state.winner==="white" ? "Bílý" : "Černý";
+    lines.push("Konec hry – vítězí " + name + " hráč");
+    lines.push("");
+  }
+  if(!state.historyMoves.length){
+    lines.push("(zatím žádný tah)");
+  } else {
+    for(let i = state.historyMoves.length-1; i >= 0; i--){
+      const m = state.historyMoves[i];
+      const num = String(m.n).padStart(3,"0");
+      const circle = m.player==="white" ? "○" : "●";
+      let line = `${num}. ${circle} ${m.from}:${m.to}`;
+      if(m.crossRot !== null && m.crossRot !== undefined){
+        line += ` ×${m.crossRot}°`;
+      } else if(m.rotation){
+        const code = m.rotation > 0 ? "R90" : "L90";
+        line += ` ${code} [${m.totalRotation}°]`;
+      }
+      if(m.score !== undefined) line += ` AI=${m.score}`;
+      if(m.searchMs !== undefined) line += ` ${m.searchMs}ms`;
+      if(state.winner && m.n === state.moveNo) line += " ★";
+      lines.push(line);
+    }
+  }
+  return lines.join("\n");
+}
+
+function updateLog(){
+  $("logContent").textContent = logText();
+  const max = Math.max(0, state.snapshots.length-1);
+  $("pbLabel").textContent = `${playbackIndex} / ${max}`;
+}
+
+function openModal(id){ $(id).classList.add("open"); }
+function closeModal(id){ $(id).classList.remove("open"); }
+
+function copyLog(){
+  const text = logText();
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>toast("Log zkopírován."));
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove(); toast("Log zkopírován.");
+  }
+}
+
+function snapshotToState(snapshot){
+  return {
+    size:snapshot.size, pieces:deepClone(snapshot.pieces), current:snapshot.current,
+    winner:snapshot.winner, moveNo:snapshot.moveNo, lastMove:deepClone(snapshot.lastMove),
+    historyMoves:deepClone(state.historyMoves), snapshots:deepClone(state.snapshots)
+  };
+}
+
+function renderPlayback(){
+  const snap = state.snapshots[playbackIndex];
+  if(!snap) return;
+  const old = state;
+  state = snapshotToState(snap);
+  render();
+  state = old;
+  const max = Math.max(0, state.snapshots.length-1);
+  $("pbLabel").textContent = `${playbackIndex} / ${max}`;
+}
+
+function activatePlayback(){
+  if(playbackActive){ deactivatePlayback(); return; }
+  if(!state.snapshots || state.snapshots.length<2){
+    toast("V logu není žádný tah.");
+    return;
+  }
+  playbackActive = true;
+  liveBeforePlayback = deepClone(state);
+  playbackIndex = state.snapshots.length - 1;
+  $("playback").classList.add("active");
+  $("playBtn").classList.add("active");
+  renderPlayback();
+  toast("Přehrávač aktivní.");
+}
+
+function deactivatePlayback(){
+  if(!playbackActive) return;
+  playbackActive = false;
+  $("playback").classList.remove("active");
+  $("playBtn").classList.remove("active");
+  if(liveBeforePlayback) state = liveBeforePlayback;
+  liveBeforePlayback = null;
+  selectedId = null;
+  render();
+  updateLog();
+}
+
+function setPlayback(i){
+  if(!playbackActive) return;
+  playbackIndex = Math.max(0, Math.min(state.snapshots.length-1, Number(i)));
+  renderPlayback();
+}
+function pbStep(delta){ setPlayback(playbackIndex+delta); }
+let pbTimer = null;
+function pbPlay(){
+  if(!playbackActive) return;
+  if(pbTimer){ clearInterval(pbTimer); pbTimer=null; $("pbPlay").textContent="▶"; return; }
+  $("pbPlay").textContent = "⏸";
+  pbTimer = setInterval(()=>{
+    if(playbackIndex >= state.snapshots.length-1){
+      clearInterval(pbTimer); pbTimer=null; $("pbPlay").textContent="▶"; return;
+    }
+    setPlayback(playbackIndex+1);
+  }, 650);
+}
+
+$("saveBtn").addEventListener("click", saveGame);
+$("loadBtn").addEventListener("click", loadGame);
+$("restartBtn").addEventListener("click", restart);
+$("logBtn").addEventListener("click", ()=>{ updateLog(); openModal("logModal"); });
+$("copyLog").addEventListener("click", copyLog);
+$("closeLog").addEventListener("click", ()=>closeModal("logModal"));
+$("hintBtn").addEventListener("click", ()=>openModal("helpModal"));
+$("closeHelp").addEventListener("click", ()=>closeModal("helpModal"));
+$("playBtn").addEventListener("click", activatePlayback);
+$("pbFirst").addEventListener("click", ()=>setPlayback(0));
+$("pbPrev").addEventListener("click", ()=>pbStep(-1));
+$("pbNext").addEventListener("click", ()=>pbStep(1));
+$("pbLast").addEventListener("click", ()=>setPlayback(state.snapshots.length-1));
+$("pbPlay").addEventListener("click", pbPlay);
+
+$("boardBtn").addEventListener("click", ()=>{
+  if(window.matchMedia("(max-width: 700px)").matches) return;
+  startNew(state.size===4 ? 13 : 4);
+});
+
+document.querySelectorAll(".modal").forEach(m=>{
+  m.addEventListener("click", e=>{ if(e.target===m) m.classList.remove("open"); });
+});
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape"){
+    closeModal("logModal"); closeModal("helpModal");
+    if(playbackActive) deactivatePlayback();
+    if(pendingCross){ /* nechat hráče dokončit výběr */ }
+  }
+});
+
+function enforceMobileBoard(){
+  const mobile = window.matchMedia("(max-width:700px)").matches;
+  $("boardBtn").style.display = mobile ? "none" : "flex";
+  if(mobile && state && state.size!==4) startNew(4);
+}
+window.addEventListener("resize", enforceMobileBoard);
+
+startNew(4);
+enforceMobileBoard();
+</script>
+</body>
+</html>
