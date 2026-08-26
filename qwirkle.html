@@ -697,11 +697,60 @@ html, body {
         <li><strong>Qwirkle</strong> (dokončení řady 6): +6 bonusových bodů.</li>
         <li>V AI režimu: hráč, který dohraje všechny kostičky, +6 bodů.</li>
       </ul>
+
+      <h3>Příklad spojení a bodování</h3>
+      <p style="margin-bottom:8px">Řada sdílí <strong>barvu</strong> (různé tvary) nebo <strong>tvar</strong> (různé barvy). Nová kostička může bodovat ve dvou směrech najednou.</p>
+      <div class="help-diagram" aria-hidden="true">
+        <svg viewBox="0 0 320 168" width="100%" style="max-width:340px;display:block;margin:0 auto 8px;background:rgba(0,0,0,0.2);border-radius:10px;border:1px solid var(--border)">
+          <!-- grid labels -->
+          <text x="16" y="18" fill="#a0a0b0" font-size="11" font-family="sans-serif">stejná barva →</text>
+          <!-- yellow row: circle square triangle -->
+          <rect x="20" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="38" y="52" text-anchor="middle" font-size="22" fill="#eab308">●</text>
+          <rect x="60" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="78" y="52" text-anchor="middle" font-size="22" fill="#eab308">■</text>
+          <rect x="100" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#22c55e" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="118" y="52" text-anchor="middle" font-size="22" fill="#eab308">▲</text>
+          <text x="148" y="50" fill="#86efac" font-size="12" font-weight="700" font-family="sans-serif">+3</text>
+          <!-- same shape column -->
+          <text x="200" y="18" fill="#a0a0b0" font-size="11" font-family="sans-serif">stejný tvar ↓</text>
+          <rect x="220" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="238" y="52" text-anchor="middle" font-size="22" fill="#ef4444">★</text>
+          <rect x="220" y="68" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#22c55e" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="238" y="92" text-anchor="middle" font-size="22" fill="#3b82f6">★</text>
+          <rect x="220" y="108" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="238" y="132" text-anchor="middle" font-size="22" fill="#22c55e">★</text>
+          <text x="266" y="92" fill="#86efac" font-size="12" font-weight="700" font-family="sans-serif">+3</text>
+          <!-- dual score example -->
+          <text x="16" y="100" fill="#a0a0b0" font-size="11" font-family="sans-serif">křížení = body z obou řad</text>
+          <rect x="20" y="110" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="38" y="134" text-anchor="middle" font-size="22" fill="#ef4444">●</text>
+          <rect x="60" y="110" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#f9c74f" stroke-width="2"/>
+          <text x="78" y="134" text-anchor="middle" font-size="22" fill="#ef4444">■</text>
+          <rect x="60" y="70" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="78" y="94" text-anchor="middle" font-size="22" fill="#3b82f6">■</text>
+          <text x="108" y="134" fill="#86efac" font-size="11" font-weight="700" font-family="sans-serif">+2 +2 = 4</text>
+        </svg>
+      </div>
+      <ul>
+        <li><strong>Žlutá řada</strong> (●■▲): 3 kostičky stejné barvy → <strong>3 body</strong>.</li>
+        <li><strong>Řada hvězd</strong> (★): 3 kostičky stejného tvaru → <strong>3 body</strong>.</li>
+        <li><strong>Křížení</strong>: nový červený ■ doplní červenou řadu (2) i řadu čtverců (2) → <strong>4 body</strong>.</li>
+        <li><strong>Qwirkle</strong>: 6. kostička v řadě → délka 6 + bonus 6 = nejméně <strong>12 bodů</strong>.</li>
+      </ul>
       
       <h3>Režimy Hry</h3>
       <ul>
         <li><strong>AI režim:</strong> Hrajete proti počítači (rychlá AI – bere nejlepší dostupný tah).</li>
-        <li><strong>SOLO režim:</strong> Hrajete sami na co nejlepší skóre. První tah musí být nejdelší možná řada. Po každém tahu musíte <strong>odhodit 1 kostičku</strong> (pokud jste nehráli všech 6). Konec hry nastává, když už nelze dobrat do 6. Skóre se sníží o −1 za každou odhozenou kostičku.</li>
+        <li><strong>SOLO režim:</strong> Hrajete sami na co nejlepší skóre. První tah musí být nejdelší možná řada. Po každém tahu musíte <strong>odhodit 1 kostičku</strong> (pokud jste nehráli všech 6). Konec hry nastává, když už nelze dobrat do 6. Skóre se sníží o −1 za každou odhozenou kostičku.
+          <ul style="margin-top:6px;list-style:none;padding-left:0">
+            <li><strong>300+</strong> – Vynikající</li>
+            <li><strong>251–299</strong> – Skvělé</li>
+            <li><strong>201–250</strong> – Velmi dobré</li>
+            <li><strong>150–200</strong> – Ještě to chce cvik</li>
+            <li><strong>pod 150</strong> – Zkuste to znovu</li>
+          </ul>
+        </li>
       </ul>
       
       <h3>Ikony, Log a Ovládání</h3>
@@ -861,6 +910,45 @@ function refreshLogView(){
 
   const html = lines.map(({line, num})=>{
     const n = String(num).padStart(3, '0');
+
+    // 0. Souhrn konce SOLO
+    const souhrn = line.match(/^SOLO:\s*SOUHRN\s*\|\s*(.*)$/);
+    if(souhrn){
+      const parts = souhrn[1];
+      let label = '', detail = parts;
+      if(parts.startsWith('hra:')){
+        label = 'Body z tahů';
+        detail = parts.replace(/^hra:/,'').trim();
+      } else if(parts.startsWith('odhozy_behem:')){
+        label = 'Odhozy během hry';
+        const m2 = parts.match(/odhozy_behem:(\d+)\s*\(([^)]+)\)/);
+        detail = m2 ? `${m2[1]} kostiček (${m2[2]})` : parts;
+      } else if(parts.startsWith('ruka_na_konci:')){
+        label = 'Ruka na konci';
+        const m2 = parts.match(/ruka_na_konci:(\d+)\s*\(([^)]+)\)(?:\s*\|\s*(.*))?/);
+        if(m2){
+          let tilesHtml = '';
+          if(m2[3]){
+            const re = /([●■▲◆★✚]):(\w+)/g; let tm;
+            while((tm = re.exec(m2[3]))){
+              tilesHtml += `<span class="log-tile-item"><span class="log-tile-sym" style="color:${colorMap[tm[2]]||'#ccc'}">${tm[1]}</span></span>`;
+            }
+          }
+          detail = `${m2[1]} kostiček (${m2[2]})${tilesHtml ? ' ' + tilesHtml : ''}`;
+        }
+      } else if(parts.startsWith('penalizace_celkem:')){
+        label = 'Penalizace celkem';
+        detail = parts.replace(/^penalizace_celkem:/,'').trim();
+      } else if(parts.startsWith('vysledek:')){
+        label = 'Výsledek';
+        const m2 = parts.match(/vysledek:(-?\d+)\s*\|\s*(.*)/);
+        detail = m2 ? `<strong style="color:var(--highlight)">${m2[1]}</strong> — ${m2[2]}` : parts;
+      }
+      return `<div class="log-row" style="grid-template-columns:36px 1fr">` +
+        `<span class="log-num">${n}.</span>` +
+        `<span style="font-size:12px;line-height:1.45"><span style="opacity:.75">${label}:</span> ${detail}</span>` +
+        `</div>`;
+    }
     
     // 1. Odhození do koše (SOLO)
     const trash = line.match(/^SOLO:\s*TRASH\s*\|\s*([●■▲◆★✚]):(\w+)$/);
@@ -1680,12 +1768,25 @@ function endAiGame(){
 }
 
 function endSoloGame(){
-  state.discarded.push(...state.hand); state.hand = [];
-  const penalty = state.discarded.length; state.score.solo -= penalty; state.gameOver = true;
+  const handAtEnd = state.hand.map(t => `${t.shape}:${t.color}`);
+  const discardsDuring = state.discarded.length;
+  const handCount = state.hand.length;
+  state.discarded.push(...state.hand);
+  state.hand = [];
+  const penalty = state.discarded.length;
+  const pointsFromPlay = state.score.solo;
+  state.score.solo -= penalty;
+  state.gameOver = true;
   const s = state.score.solo;
   let rating = s>=300?'Vynikající':s>=251?'Skvělé':s>=201?'Velmi dobré':s>=150?'Ještě to chce cvik':'Zkuste to znovu';
-  log(`=== KONEC SOLO === Skóre: ${s} (odhozeno ${penalty}) – ${rating}`);
-  setStatus(`Konec – ${s} bodů – ${rating}`, 'turn-end'); toast(`${s} bodů – ${rating}`, 3000, true);
+  log(`=== KONEC SOLO ===`);
+  log(`SOLO: SOUHRN | hra:+${pointsFromPlay}`);
+  log(`SOLO: SOUHRN | odhozy_behem:${discardsDuring} (−${discardsDuring})`);
+  log(`SOLO: SOUHRN | ruka_na_konci:${handCount} (−${handCount})${handAtEnd.length ? ' | ' + handAtEnd.join('  ') : ''}`);
+  log(`SOLO: SOUHRN | penalizace_celkem:−${penalty}`);
+  log(`SOLO: SOUHRN | vysledek:${s} | ${rating}`);
+  setStatus(`Konec – ${s} bodů – ${rating}`, 'turn-end');
+  toast(`${s} bodů – ${rating}`, 3000, true);
   renderHand(); updateScores();
 }
 
