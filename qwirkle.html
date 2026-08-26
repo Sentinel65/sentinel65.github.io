@@ -312,6 +312,13 @@ html, body {
   border: 2px dashed var(--danger);
   background-color: rgba(255, 255, 255, 0.15);
 }
+.hand-tile.end-penalty {
+  border: 2px dashed var(--danger);
+  background-color: rgba(248, 113, 113, 0.12);
+  opacity: 0.95 !important;
+  cursor: default;
+  pointer-events: none;
+}
 .order-badge {
   position: absolute;
   top: -6px;
@@ -701,10 +708,9 @@ html, body {
       <h3>Příklad spojení a bodování</h3>
       <p style="margin-bottom:8px">Řada sdílí <strong>barvu</strong> (různé tvary) nebo <strong>tvar</strong> (různé barvy). Nová kostička může bodovat ve dvou směrech najednou.</p>
       <div class="help-diagram" aria-hidden="true">
-        <svg viewBox="0 0 320 168" width="100%" style="max-width:340px;display:block;margin:0 auto 8px;background:rgba(0,0,0,0.2);border-radius:10px;border:1px solid var(--border)">
-          <!-- grid labels -->
+        <svg viewBox="0 0 320 210" width="100%" style="max-width:340px;display:block;margin:0 auto 8px;background:rgba(0,0,0,0.2);border-radius:10px;border:1px solid var(--border)">
+          <!-- stejná barva -->
           <text x="16" y="18" fill="#a0a0b0" font-size="11" font-family="sans-serif">stejná barva →</text>
-          <!-- yellow row: circle square triangle -->
           <rect x="20" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
           <text x="38" y="52" text-anchor="middle" font-size="22" fill="#eab308">●</text>
           <rect x="60" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
@@ -712,7 +718,7 @@ html, body {
           <rect x="100" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#22c55e" stroke-width="2" stroke-dasharray="4 2"/>
           <text x="118" y="52" text-anchor="middle" font-size="22" fill="#eab308">▲</text>
           <text x="148" y="50" fill="#86efac" font-size="12" font-weight="700" font-family="sans-serif">+3</text>
-          <!-- same shape column -->
+          <!-- stejný tvar -->
           <text x="200" y="18" fill="#a0a0b0" font-size="11" font-family="sans-serif">stejný tvar ↓</text>
           <rect x="220" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
           <text x="238" y="52" text-anchor="middle" font-size="22" fill="#ef4444">★</text>
@@ -721,15 +727,16 @@ html, body {
           <rect x="220" y="108" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
           <text x="238" y="132" text-anchor="middle" font-size="22" fill="#22c55e">★</text>
           <text x="266" y="92" fill="#86efac" font-size="12" font-weight="700" font-family="sans-serif">+3</text>
-          <!-- dual score example -->
-          <text x="16" y="100" fill="#a0a0b0" font-size="11" font-family="sans-serif">křížení = body z obou řad</text>
-          <rect x="20" y="110" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
-          <text x="38" y="134" text-anchor="middle" font-size="22" fill="#ef4444">●</text>
-          <rect x="60" y="110" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#f9c74f" stroke-width="2"/>
-          <text x="78" y="134" text-anchor="middle" font-size="22" fill="#ef4444">■</text>
-          <rect x="60" y="70" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
-          <text x="78" y="94" text-anchor="middle" font-size="22" fill="#3b82f6">■</text>
-          <text x="108" y="134" fill="#86efac" font-size="11" font-weight="700" font-family="sans-serif">+2 +2 = 4</text>
+          <!-- křížení – kostičky -->
+          <rect x="20" y="118" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="38" y="142" text-anchor="middle" font-size="22" fill="#ef4444">●</text>
+          <rect x="60" y="118" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#f9c74f" stroke-width="2"/>
+          <text x="78" y="142" text-anchor="middle" font-size="22" fill="#ef4444">■</text>
+          <rect x="60" y="78" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="78" y="102" text-anchor="middle" font-size="22" fill="#3b82f6">■</text>
+          <text x="108" y="142" fill="#86efac" font-size="11" font-weight="700" font-family="sans-serif">+2 +2 = 4</text>
+          <!-- popis až POD křížením -->
+          <text x="16" y="178" fill="#a0a0b0" font-size="11" font-family="sans-serif">křížení = body z obou řad</text>
         </svg>
       </div>
       <ul>
@@ -911,42 +918,41 @@ function refreshLogView(){
   const html = lines.map(({line, num})=>{
     const n = String(num).padStart(3, '0');
 
-    // 0. Souhrn konce SOLO
+    // 0. Souhrn konce SOLO (kompaktní, bez zbytečného textu)
     const souhrn = line.match(/^SOLO:\s*SOUHRN\s*\|\s*(.*)$/);
     if(souhrn){
       const parts = souhrn[1];
-      let label = '', detail = parts;
+      let content = '';
       if(parts.startsWith('hra:')){
-        label = 'Body z tahů';
-        detail = parts.replace(/^hra:/,'').trim();
-      } else if(parts.startsWith('odhozy_behem:')){
-        label = 'Odhozy během hry';
-        const m2 = parts.match(/odhozy_behem:(\d+)\s*\(([^)]+)\)/);
-        detail = m2 ? `${m2[1]} kostiček (${m2[2]})` : parts;
-      } else if(parts.startsWith('ruka_na_konci:')){
-        label = 'Ruka na konci';
-        const m2 = parts.match(/ruka_na_konci:(\d+)\s*\(([^)]+)\)(?:\s*\|\s*(.*))?/);
-        if(m2){
-          let tilesHtml = '';
-          if(m2[3]){
-            const re = /([●■▲◆★✚]):(\w+)/g; let tm;
-            while((tm = re.exec(m2[3]))){
-              tilesHtml += `<span class="log-tile-item"><span class="log-tile-sym" style="color:${colorMap[tm[2]]||'#ccc'}">${tm[1]}</span></span>`;
-            }
+        const pts = parts.replace(/^hra:/,'').trim();
+        content = `<span style="opacity:.75">Body ze hry:</span> <strong>${pts}</strong>`;
+      } else if(parts.startsWith('odhozy:')){
+        const m2 = parts.match(/odhozy:(\d+)/);
+        const c = m2 ? m2[1] : '?';
+        content = `<span style="display:inline-flex;align-items:center;gap:6px;color:#f87171">${trashIco}<strong>${c}</strong> = −${c}</span>`;
+      } else if(parts.startsWith('ruka:')){
+        // ruka:-3 | ●:blue  (ASCII i unicode minus)
+        const m2 = parts.match(/ruka:[\-−]?(\d+)(?:\s*\|\s*(.*))?/);
+        let tilesHtml = '';
+        if(m2 && m2[2]){
+          const re = /([●■▲◆★✚]):(\w+)/g; let tm;
+          while((tm = re.exec(m2[2]))){
+            tilesHtml += `<span class="log-tile-item"><span class="log-tile-sym" style="color:${colorMap[tm[2]]||'#ccc'}">${tm[1]}</span></span>`;
           }
-          detail = `${m2[1]} kostiček (${m2[2]})${tilesHtml ? ' ' + tilesHtml : ''}`;
         }
-      } else if(parts.startsWith('penalizace_celkem:')){
-        label = 'Penalizace celkem';
-        detail = parts.replace(/^penalizace_celkem:/,'').trim();
+        const pen = m2 ? parseInt(m2[1],10) : 0;
+        content = `<span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px">${tilesHtml || '<span style="opacity:.5">(prázdná)</span>'}<span style="opacity:.85;margin-left:4px">= −${pen}</span></span>`;
       } else if(parts.startsWith('vysledek:')){
-        label = 'Výsledek';
-        const m2 = parts.match(/vysledek:(-?\d+)\s*\|\s*(.*)/);
-        detail = m2 ? `<strong style="color:var(--highlight)">${m2[1]}</strong> — ${m2[2]}` : parts;
+        const m2 = parts.match(/vysledek:(-?\d+)/);
+        content = `<span style="opacity:.75">Výsledek celkem:</span> <strong style="color:var(--highlight);font-size:14px">${m2?m2[1]:parts}</strong>`;
+      } else if(parts.startsWith('rating:')){
+        return ''; // hodnocení jen ve statusu/toastu, ne v logu
+      } else {
+        content = parts;
       }
       return `<div class="log-row" style="grid-template-columns:36px 1fr">` +
         `<span class="log-num">${n}.</span>` +
-        `<span style="font-size:12px;line-height:1.45"><span style="opacity:.75">${label}:</span> ${detail}</span>` +
+        `<span style="font-size:12px;line-height:1.4;white-space:normal">${content}</span>` +
         `</div>`;
     }
     
@@ -1486,8 +1492,9 @@ function centerOnLastMove(){
 
 function renderHand(){
   const handArea = document.getElementById('hand-area');
+  const endPenalty = state.gameOver && state.mode==='solo' && state.hand.length > 0;
   if (handArea) {
-    if (state.soloMustDiscard) handArea.classList.add('solo-discard-alert');
+    if (state.soloMustDiscard || endPenalty) handArea.classList.add('solo-discard-alert');
     else handArea.classList.remove('solo-discard-alert');
   }
 
@@ -1497,8 +1504,12 @@ function renderHand(){
   state.hand.forEach((t,i)=>{
     const el = document.createElement('div');
     el.className = 'hand-tile ' + COLOR_CLASS[t.color];
-    
-    if(state.selectedTiles.includes(i)) {
+    el.textContent = t.shape;
+    el.title = endPenalty ? (tileLabel(t) + ' (−1 penalizace)') : tileLabel(t);
+
+    if(endPenalty){
+      el.classList.add('end-penalty');
+    } else if(state.selectedTiles.includes(i)) {
       el.classList.add(state.soloMustDiscard || state.exchangeMode ? 'discard-selected' : 'selected');
       const orderIdx = state.selectedTiles.indexOf(i) + 1;
       const badge = document.createElement('div');
@@ -1507,11 +1518,9 @@ function renderHand(){
       if(state.soloMustDiscard || state.exchangeMode) badge.style.background = 'var(--danger)';
       el.appendChild(badge);
     }
-    
-    if(!canClick) el.style.opacity = '0.55';
-    el.textContent = t.shape;
-    el.title = tileLabel(t);
-    el.onclick = () => onHandClick(i);
+
+    if(!canClick && !endPenalty) el.style.opacity = '0.55';
+    if(canClick) el.onclick = () => onHandClick(i);
     handEl.appendChild(el);
   });
   const bagEl = document.getElementById('bag-count');
@@ -1769,24 +1778,28 @@ function endAiGame(){
 
 function endSoloGame(){
   const handAtEnd = state.hand.map(t => `${t.shape}:${t.color}`);
-  const discardsDuring = state.discarded.length;
-  const handCount = state.hand.length;
-  state.discarded.push(...state.hand);
-  state.hand = [];
-  const penalty = state.discarded.length;
+  const discardsDuring = state.discarded.length; // jen dobrovolné odhozy během hry (koš)
+  const handCount = state.hand.length;           // ruka na konci – penalizace, NE do koše
   const pointsFromPlay = state.score.solo;
+  const penalty = discardsDuring + handCount;
   state.score.solo -= penalty;
+  // ruku NEvyprázdňovat – dlaždice zůstanou dole, červeně přerušovaně
   state.gameOver = true;
+  state.soloMustDiscard = false;
+  state.selectedTiles = [];
+  state.exchangeMode = false;
+  state.pendingPlacements = [];
   const s = state.score.solo;
   let rating = s>=300?'Vynikající':s>=251?'Skvělé':s>=201?'Velmi dobré':s>=150?'Ještě to chce cvik':'Zkuste to znovu';
-  log(`=== KONEC SOLO ===`);
-  log(`SOLO: SOUHRN | hra:+${pointsFromPlay}`);
-  log(`SOLO: SOUHRN | odhozy_behem:${discardsDuring} (−${discardsDuring})`);
-  log(`SOLO: SOUHRN | ruka_na_konci:${handCount} (−${handCount})${handAtEnd.length ? ' | ' + handAtEnd.join('  ') : ''}`);
-  log(`SOLO: SOUHRN | penalizace_celkem:−${penalty}`);
-  log(`SOLO: SOUHRN | vysledek:${s} | ${rating}`);
-  setStatus(`Konec – ${s} bodů – ${rating}`, 'turn-end');
-  toast(`${s} bodů – ${rating}`, 3000, true);
+  // zápis zdola nahoru → v reverzním logu shora:
+  // Výsledek → ruka → odhozy → body ze hry
+  log('=== KONEC SOLO ===');
+  log('SOLO: SOUHRN | hra:+' + pointsFromPlay);
+  log('SOLO: SOUHRN | odhozy:' + discardsDuring);
+  log('SOLO: SOUHRN | ruka:-' + handCount + (handAtEnd.length ? ' | ' + handAtEnd.join('  ') : ''));
+  log('SOLO: SOUHRN | vysledek:' + s);
+  setStatus('Konec – ' + s + ' bodů – ' + rating, 'turn-end');
+  toast(s + ' bodů – ' + rating, 3000, true);
   renderHand(); updateScores();
 }
 
@@ -1833,9 +1846,10 @@ function activateReplay(){
   let currentBoard = {};
   let currentScore = { player: 0, ai: 0, solo: 0 };
   let currentLast = [];
+  let currentDiscards = 0; // počet v koši v daném kroku
   
   replay.snapshots.push({
-    board: {}, score: {...currentScore}, lastMoveCells: [], who: 'Začátek'
+    board: {}, score: {...currentScore}, lastMoveCells: [], who: 'Začátek', discards: 0
   });
   
   const placeRegex = /^(Hráč|AI|SOLO):\s*\+(-?\d+)\s*\|\s*(.*)$/;
@@ -1873,12 +1887,19 @@ function activateReplay(){
       whoStr = em[1] + ' (výměna ' + em[2] + ')'; 
       currentLast = [];
     } else if (line.match(trashRegex)) {
-      isMove = true; whoStr = 'SOLO (odhoz)'; currentLast = [];
+      isMove = true;
+      whoStr = 'SOLO (odhoz)';
+      currentLast = [];
+      currentDiscards += 1;
     }
     
     if(isMove){
       replay.snapshots.push({
-        board: JSON.parse(JSON.stringify(currentBoard)), score: {...currentScore}, lastMoveCells: [...currentLast], who: whoStr
+        board: JSON.parse(JSON.stringify(currentBoard)),
+        score: {...currentScore},
+        lastMoveCells: [...currentLast],
+        who: whoStr,
+        discards: currentDiscards
       });
     }
   }
@@ -1887,7 +1908,9 @@ function activateReplay(){
   document.getElementById('btn-replay').classList.add('active');
   document.getElementById('replay-bar').classList.add('visible');
   document.getElementById('board-wrapper').classList.add('locked');
-  updateReplayUI(); setStatus('Přehrávač aktivní');
+  updateReplayUI();
+  showSnapshot(replay.index);
+  setStatus('Přehrávač aktivní');
 }
 
 function deactivateReplay(){
@@ -1902,10 +1925,21 @@ function showSnapshot(i){
   if(i<0 || i>=replay.snapshots.length) return;
   replay.index = i;
   const snap = replay.snapshots[i];
-  const savedBoard = state.board; const savedLast = state.lastMoveCells; const savedScore = state.score;
-  state.board = snap.board; state.lastMoveCells = snap.lastMoveCells; state.score = snap.score;
+  const savedBoard = state.board;
+  const savedLast = state.lastMoveCells;
+  const savedScore = state.score;
+  const savedDiscarded = state.discarded;
+  state.board = snap.board;
+  state.lastMoveCells = snap.lastMoveCells;
+  state.score = snap.score;
+  // koš v přehrávači = počet TRASH kroků do daného tahu (ne finální stav)
+  const nDisc = typeof snap.discards === 'number' ? snap.discards : 0;
+  state.discarded = new Array(nDisc).fill(null);
   renderBoard(); updateScores(); centerOnLastMove();
-  state.board = savedBoard; state.lastMoveCells = savedLast; state.score = savedScore;
+  state.board = savedBoard;
+  state.lastMoveCells = savedLast;
+  state.score = savedScore;
+  state.discarded = savedDiscarded;
   updateReplayUI();
 }
 
