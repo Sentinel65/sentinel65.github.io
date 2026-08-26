@@ -256,6 +256,14 @@ html, body {
   background: rgba(255,255,255,0.08);
   border-color: #fff;
 }
+.tile.hint-spot.hint-best {
+  border-color: var(--success);
+  background: rgba(74,222,128,0.12);
+  box-shadow: 0 0 0 1px rgba(74,222,128,0.35);
+}
+.tile.hint-spot.hint-best .hint-score {
+  color: #bbf7d0;
+}
 .hint-score {
   font-size: 15px;
   font-weight: 900;
@@ -1485,17 +1493,25 @@ function addPlacementTargets(boardEl, minX, minY, maxX, maxY){
   }
 
   const shown = new Set();
+  let topScore = -1;
+  let topCells = []; // buňky nejlepší nápovědy pro vycentrování
   for(const ck of candidates){
     const {x,y}=parseKey(ck);
     if(x<minX||x>maxX||y<minY||y>maxY) continue;
     const best = findBestPlacementAt(x, y, tiles);
     if(!best) continue;
+    if(best.score > topScore){
+      topScore = best.score;
+      topCells = best.placements.map(p=>({x:p.x,y:p.y}));
+    }
     for(const p of best.placements){
       const pk = key(p.x,p.y);
       if(shown.has(pk)) continue;
       shown.add(pk);
       const el = document.createElement('div');
       el.className = 'tile hint-spot';
+      if(best.score === topScore) el.classList.add('hint-best');
+      el.dataset.score = String(best.score);
       el.style.left = ((p.x - minX) * TILE_SIZE) + 'px';
       el.style.top = ((p.y - minY) * TILE_SIZE) + 'px';
       el.title = `Položit sem (+${best.score} bodů)`;
@@ -1503,6 +1519,15 @@ function addPlacementTargets(boardEl, minX, minY, maxX, maxY){
       el.onclick = (e)=>{ e.stopPropagation(); tryPlaceSelectionAt(p.x, p.y); };
       boardEl.appendChild(el);
     }
+  }
+  // zvýraznit jen skutečně nejlepší (po dokončení smyčky)
+  if(topScore >= 0){
+    boardEl.querySelectorAll('.hint-spot').forEach(el=>{
+      if(+el.dataset.score === topScore) el.classList.add('hint-best');
+      else el.classList.remove('hint-best');
+    });
+    // vycentrovat na nápovědu s nejvyšším ziskem
+    centerOnCells(topCells);
   }
 }
 
@@ -1521,27 +1546,32 @@ function tryPlaceSelectionAt(x, y){
   toast(`Náhled +${best.score} – potvrďte`);
   renderBoard();
   renderHand();
+  centerOnCells(best.placements.map(p=>({x:p.x,y:p.y})));
 }
 
-function centerOnLastMove(){
+/** Vycentruje desku na průměr souřadnic buněk (poslední tah / nejlepší nápověda). */
+function centerOnCells(cells){
   const wrapper = document.getElementById('board-wrapper');
-  if(!state.lastMoveCells.length){
-    const bounds = boardBounds();
-    const pad = BOARD_ORIGIN;
+  if(!wrapper) return;
+  const bounds = boardBounds();
+  const pad = BOARD_ORIGIN;
+  if(!cells || !cells.length){
     const cx = (0 - (bounds.minX - pad)) * TILE_SIZE + TILE_SIZE/2;
     const cy = (0 - (bounds.minY - pad)) * TILE_SIZE + TILE_SIZE/2;
     wrapper.scrollLeft = Math.max(0, cx - wrapper.clientWidth/2);
     wrapper.scrollTop = Math.max(0, cy - wrapper.clientHeight/2);
     return;
   }
-  const bounds = boardBounds();
-  const pad = BOARD_ORIGIN;
-  const avgX = state.lastMoveCells.reduce((s,c)=>s+c.x,0)/state.lastMoveCells.length;
-  const avgY = state.lastMoveCells.reduce((s,c)=>s+c.y,0)/state.lastMoveCells.length;
+  const avgX = cells.reduce((s,c)=>s+c.x,0)/cells.length;
+  const avgY = cells.reduce((s,c)=>s+c.y,0)/cells.length;
   const px = (avgX - (bounds.minX - pad)) * TILE_SIZE + TILE_SIZE/2;
   const py = (avgY - (bounds.minY - pad)) * TILE_SIZE + TILE_SIZE/2;
   wrapper.scrollLeft = Math.max(0, px - wrapper.clientWidth/2);
   wrapper.scrollTop = Math.max(0, py - wrapper.clientHeight/2);
+}
+
+function centerOnLastMove(){
+  centerOnCells(state.lastMoveCells);
 }
 
 function renderHand(){
