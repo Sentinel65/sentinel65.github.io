@@ -271,6 +271,13 @@ html, body {
   text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.95);
   pointer-events: none;
 }
+@keyframes fw-label {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6) translateY(8px); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1.12) translateY(0); }
+  75% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-12px); }
+}
+.fw-particle { will-change: transform, opacity; }
 .color-red    { color: #ef4444; }
 .color-orange { color: #f97316; }
 .color-yellow { color: #eab308; }
@@ -1285,6 +1292,7 @@ function validatePlacements(placements, isFirst){
   for(const p of placements) setCell(p.x,p.y,p.tile);
   score = 0;
   const counted = new Set();
+  const qwirkleLines = []; // řady délky 6 pro efekt
   for(const p of placements){
     for(const [dx,dy] of [[1,0],[0,1]]){
       const line = getLine(p.x,p.y,dx,dy);
@@ -1306,12 +1314,13 @@ function validatePlacements(placements, isFirst){
       }
       if(line.length >= 2){
         score += line.length + (line.length===6 ? 6 : 0);
+        if(line.length === 6) qwirkleLines.push(line.map(c=>({x:c.x,y:c.y})));
       }
     }
   }
   if(score === 0) score = placements.length;
   for(const p of placements) removeCell(p.x,p.y);
-  return {ok:true, score};
+  return {ok:true, score, qwirkleLines};
 }
 
 function handGroups(hand){
@@ -1334,11 +1343,11 @@ function generateMoves(hand, isFirst){
   const moves = [];
   if(!hand.length) return moves;
   const seen = new Set();
-  const add = (placements, score, handIndices)=>{
+  const add = (placements, score, handIndices, qwirkleLines)=>{
     const sig = placements.map(p=>`${p.x},${p.y},${p.tile.id}`).sort().join(';');
     if(seen.has(sig)) return;
     seen.add(sig);
-    moves.push({placements, score, handIndices});
+    moves.push({placements, score, handIndices, qwirkleLines: qwirkleLines || []});
   };
 
   if(isFirst){
@@ -1346,18 +1355,18 @@ function generateMoves(hand, isFirst){
       for(const order of [g, [...g].reverse()]){
         const ph = order.map((t,i)=>({x:i, y:0, tile:t.tile}));
         const vh = validatePlacements(ph, true);
-        if(vh.ok) add(ph, vh.score, order.map(t=>t.handIdx));
+        if(vh.ok) add(ph, vh.score, order.map(t=>t.handIdx), vh.qwirkleLines);
         if(order.length>1){
           const pv = order.map((t,i)=>({x:0, y:i, tile:t.tile}));
           const vv = validatePlacements(pv, true);
-          if(vv.ok) add(pv, vv.score, order.map(t=>t.handIdx));
+          if(vv.ok) add(pv, vv.score, order.map(t=>t.handIdx), vv.qwirkleLines);
         }
       }
     }
     hand.forEach((t,i)=>{
       const p=[{x:0,y:0,tile:t}];
       const v=validatePlacements(p,true);
-      if(v.ok) add(p, v.score, [i]);
+      if(v.ok) add(p, v.score, [i], v.qwirkleLines);
     });
     return moves;
   }
@@ -1383,7 +1392,7 @@ function generateMoves(hand, isFirst){
     for(const c of candList){
       const placements = [{x:c.x,y:c.y,tile:t}];
       const v = validatePlacements(placements, false);
-      if(v.ok) add(placements, v.score, [i]);
+      if(v.ok) add(placements, v.score, [i], v.qwirkleLines);
     }
   }
 
@@ -1397,13 +1406,13 @@ function generateMoves(hand, isFirst){
             const placements = order.map((t,i)=>({x:c.x+i-start, y:c.y, tile:t.tile}));
             if(placements.some(p=>getCell(p.x,p.y))) continue;
             const v = validatePlacements(placements, false);
-            if(v.ok) add(placements, v.score, order.map(t=>t.handIdx));
+            if(v.ok) add(placements, v.score, order.map(t=>t.handIdx), v.qwirkleLines);
           }
           for(let start=0; start<order.length; start++){
             const placements = order.map((t,i)=>({x:c.x, y:c.y+i-start, tile:t.tile}));
             if(placements.some(p=>getCell(p.x,p.y))) continue;
             const v = validatePlacements(placements, false);
-            if(v.ok) add(placements, v.score, order.map(t=>t.handIdx));
+            if(v.ok) add(placements, v.score, order.map(t=>t.handIdx), v.qwirkleLines);
           }
         }
       }
@@ -1614,6 +1623,140 @@ function centerOnLastMove(){
   centerOnCells(state.lastMoveCells);
 }
 
+/** Ohňostroj nad řadou Qwirkle (6 stejných barev/tvarů). */
+const QWIRKLE_FW_MS = 3000; // délka efektu / toastu Qwirkle
+
+/** Ohňostroj nad řadou Qwirkle. Vrací Promise, které se vyřeší po skončení. */
+function playQwirkleFireworks(qwirkleLines){
+  if(!qwirkleLines || !qwirkleLines.length) return Promise.resolve();
+  const boardEl = document.getElementById('board');
+  const wrapper = document.getElementById('board-wrapper');
+  if(!boardEl || !wrapper) return Promise.resolve();
+
+  // odstranit předchozí efekt, pokud ještě běží
+  boardEl.querySelectorAll('.fw-layer').forEach(el=>el.remove());
+  wrapper.querySelectorAll('.fw-label').forEach(el=>el.remove());
+
+  const bounds = boardBounds();
+  const pad = BOARD_ORIGIN;
+  const colors = ['#f9c74f','#e94560','#60a5fa','#a855f7','#4ade80','#f97316','#fff','#f472b6'];
+
+  const cells = [];
+  const seen = new Set();
+  for(const line of qwirkleLines){
+    for(const c of line){
+      const k = c.x+','+c.y;
+      if(seen.has(k)) continue;
+      seen.add(k);
+      cells.push(c);
+    }
+  }
+  centerOnCells(cells);
+
+  const layer = document.createElement('div');
+  layer.className = 'fw-layer';
+  layer.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:50;overflow:visible;';
+  boardEl.appendChild(layer);
+
+  function burst(cx, cy, delay){
+    setTimeout(()=>{
+      if(!layer.isConnected) return;
+      const n = 22 + Math.floor(Math.random()*12);
+      for(let i=0;i<n;i++){
+        const p = document.createElement('div');
+        p.className = 'fw-particle';
+        const ang = (Math.PI * 2 * i) / n + Math.random()*0.35;
+        const dist = 36 + Math.random()*64;
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist - 14;
+        const col = colors[Math.floor(Math.random()*colors.length)];
+        const size = 3 + Math.random()*5;
+        p.style.cssText =
+          `position:absolute;left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;` +
+          `border-radius:50%;background:${col};box-shadow:0 0 8px ${col};` +
+          `opacity:1;transform:translate(-50%,-50%);`;
+        layer.appendChild(p);
+        void p.offsetWidth;
+        // stejná rychlost jako u verze 4,2 s
+        p.style.transition = 'transform 1.55s cubic-bezier(.08,.7,.15,1), opacity 1.55s ease-out';
+        p.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.15)`;
+        p.style.opacity = '0';
+      }
+    }, delay);
+  }
+
+  // tempo jako 4,2 s, celkový čas 3 s (poslední výbuch ~1,35 s)
+  cells.forEach((c, idx)=>{
+    const px = (c.x - (bounds.minX - pad)) * TILE_SIZE + TILE_SIZE/2;
+    const py = (c.y - (bounds.minY - pad)) * TILE_SIZE + TILE_SIZE/2;
+    burst(px, py, idx * 90);
+    if(idx === Math.floor(cells.length / 2)){
+      burst(px, py, 350);
+      burst(px, py, 700);
+    }
+  });
+  if(cells.length){
+    const mid = cells[Math.floor(cells.length / 2)];
+    const mx = (mid.x - (bounds.minX - pad)) * TILE_SIZE + TILE_SIZE/2;
+    const my = (mid.y - (bounds.minY - pad)) * TILE_SIZE + TILE_SIZE/2;
+    burst(mx, my, 1050);
+    burst(mx, my, 1350);
+  }
+
+  const label = document.createElement('div');
+  label.className = 'fw-label';
+  label.textContent = 'QWIRKLE!';
+  label.style.cssText =
+    'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:60;' +
+    'font-weight:900;font-size:22px;letter-spacing:0.12em;' +
+    'color:#f9c74f;text-shadow:0 0 12px rgba(249,199,79,0.9),0 2px 8px rgba(0,0,0,0.8);' +
+    'pointer-events:none;animation:fw-label 2.8s ease-out forwards;';
+  wrapper.appendChild(label);
+
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      layer.remove();
+      label.remove();
+      resolve();
+    }, QWIRKLE_FW_MS);
+  });
+}
+
+/** Detekce Qwirkle řad na objektu desky (pro přehrávač). */
+function detectQwirkleOnBoardObj(boardObj, lastCells){
+  if(!lastCells || !lastCells.length) return [];
+  const get = (x,y)=> boardObj[x+','+y] || null;
+  function lineAt(x,y,dx,dy){
+    const cells = [];
+    let cx=x, cy=y;
+    while(get(cx-dx, cy-dy)){ cx-=dx; cy-=dy; }
+    while(true){
+      const t = get(cx,cy);
+      if(!t) break;
+      cells.push({x:cx,y:cy,tile:t});
+      cx+=dx; cy+=dy;
+    }
+    return cells;
+  }
+  const out = [];
+  const seen = new Set();
+  for(const c of lastCells){
+    for(const [dx,dy] of [[1,0],[0,1]]){
+      const line = lineAt(c.x, c.y, dx, dy);
+      if(line.length !== 6) continue;
+      const colors = new Set(line.map(t=>t.tile.color));
+      const shapes = new Set(line.map(t=>t.tile.shape));
+      const ok = (colors.size===1 && shapes.size===6) || (shapes.size===1 && colors.size===6);
+      if(!ok) continue;
+      const lk = line.map(t=>t.x+','+t.y).sort().join('|');
+      if(seen.has(lk)) continue;
+      seen.add(lk);
+      out.push(line.map(t=>({x:t.x,y:t.y})));
+    }
+  }
+  return out;
+}
+
 function renderHand(){
   const handArea = document.getElementById('hand-area');
   const endPenalty = state.gameOver && state.mode==='solo' && state.hand.length > 0;
@@ -1796,41 +1939,79 @@ function confirmMove(){
   if(state.mode==='solo'){
     state.score.solo += v.score;
     log(`SOLO: +${v.score} | ${formatPlacements(placements)}`);
-    toast(`+${v.score} bodů`);
+    toast(v.qwirkleLines && v.qwirkleLines.length ? `QWIRKLE! +${v.score}` : `+${v.score} bodů`,
+      v.qwirkleLines && v.qwirkleLines.length ? QWIRKLE_FW_MS : 2200);
   } else {
     state.score.player += v.score;
     log(`Hráč: +${v.score} | ${formatPlacements(placements)}`);
-    toast(`+${v.score} bodů`);
+    toast(v.qwirkleLines && v.qwirkleLines.length ? `QWIRKLE! +${v.score}` : `+${v.score} bodů`,
+      v.qwirkleLines && v.qwirkleLines.length ? QWIRKLE_FW_MS : 2200);
   }
+  const qLines = (v.qwirkleLines && v.qwirkleLines.length) ? v.qwirkleLines : null;
 
   state.pendingPlacements = []; state.selectedTiles = [];
   const need = 6 - state.hand.length;
   const drawn = drawTiles(need);
   state.hand.push(...drawn);
 
-  if(state.mode==='solo'){
+  function afterSoloMove(){
     logHand();
     if(state.hand.length > 0 && need === 0 && state.hand.length === 6){
       if(state.bag.length===0){ endSoloGame(); return; }
       setStatus('Váš tah (SOLO)', 'turn-solo');
     } else if(state.hand.length > 0){
-      state.soloMustDiscard = true; setStatus('Odhoďte 1 kostičku z ruky', 'turn-solo');
+      state.soloMustDiscard = true;
+      setStatus('Odhoďte 1 kostičku z ruky', 'turn-solo');
       toast('Vyberte 1 kostičku k odhození a potvrďte');
     } else {
       endSoloGame(); return;
     }
+    renderHand(); updateScores(); updateActionButtons();
+  }
+
+  if(state.mode==='solo'){
+    if(qLines){
+      // během Qwirkle nejdřív efekt + toast; odhoz až poté
+      setStatus('QWIRKLE!', 'turn-solo');
+      renderBoard(); renderHand(); updateScores(); centerOnLastMove();
+      playQwirkleFireworks(qLines).then(()=>{
+        if(state.gameOver || state.mode!=='solo') return;
+        afterSoloMove();
+      });
+      return;
+    }
+    afterSoloMove();
   } else {
     if(state.hand.length===0 && state.bag.length===0){
       state.score.player += 6;
       log('Hráč: +6 | EMPTY');
       endAiGame();
+      renderBoard(); renderHand(); updateScores(); centerOnLastMove();
       return;
     }
-    state.turn = 'ai'; setStatus('Konec vašeho tahu → AI přemýšlí…', 'turn-ai');
+    // během Qwirkle efektu zůstává vizuálně hráč; AI až po efektu
+    if(qLines){
+      setStatus('QWIRKLE!', 'turn-player');
+    } else {
+      state.turn = 'ai';
+      setStatus('Konec vašeho tahu → AI přemýšlí…', 'turn-ai');
+    }
   }
 
   renderBoard(); renderHand(); updateScores(); centerOnLastMove();
-  if(state.mode==='ai' && state.turn==='ai') setTimeout(aiTurn, 500);
+  if(state.mode==='ai'){
+    if(qLines){
+      playQwirkleFireworks(qLines).then(()=>{
+        if(state.gameOver || state.mode!=='ai') return;
+        state.turn = 'ai';
+        setStatus('Konec vašeho tahu → AI přemýšlí…', 'turn-ai');
+        renderHand(); updateScores();
+        setTimeout(aiTurn, 350);
+      });
+    } else if(state.turn==='ai'){
+      setTimeout(aiTurn, 350);
+    }
+  }
 }
 
 function cancelSelection(){
@@ -1873,6 +2054,7 @@ function aiTurn(){
   setTimeout(()=>{
     if(state.gameOver || state.mode!=='ai') return;
     const move = pickAiMove(isFirst);
+    let fwPromise = Promise.resolve();
     if(!move){
       const n = state.aiHand.length; state.bag.push(...state.aiHand); state.aiHand = []; shuffle(state.bag); state.aiHand = drawTiles(n);
       log(`AI: výměna ${n} kostiček`); toast(`AI vyměnilo ${n} kostiček`);
@@ -1883,16 +2065,33 @@ function aiTurn(){
       state.score.ai += move.score;
       state.lastMoveCells = move.placements.map(p=>({x:p.x,y:p.y}));
       state.isFirstMove = false;
-      log(`AI: +${move.score} | ${formatPlacements(move.placements)}`); toast(`AI: +${move.score} bodů`);
+      log(`AI: +${move.score} | ${formatPlacements(move.placements)}`);
+      toast(move.qwirkleLines && move.qwirkleLines.length ? `AI: QWIRKLE! +${move.score}` : `AI: +${move.score} bodů`,
+        move.qwirkleLines && move.qwirkleLines.length ? QWIRKLE_FW_MS : 2200);
       const need = 6 - state.aiHand.length; state.aiHand.push(...drawTiles(need));
-      if(state.aiHand.length===0 && state.bag.length===0){
+      const emptyWin = state.aiHand.length===0 && state.bag.length===0;
+      if(emptyWin){
         state.score.ai += 6;
         log('AI: +6 | EMPTY');
-        endAiGame();
-        renderBoard(); updateScores(); centerOnLastMove(); return;
       }
+      renderBoard(); renderHand(); updateScores(); centerOnLastMove();
+      if(move.qwirkleLines && move.qwirkleLines.length){
+        fwPromise = playQwirkleFireworks(move.qwirkleLines);
+      }
+      fwPromise.then(()=>{
+        if(emptyWin){
+          endAiGame();
+          renderBoard(); updateScores(); centerOnLastMove();
+          return;
+        }
+        state.turn = 'player';
+        setStatus('Konec tahu AI → Váš tah', 'turn-player');
+        renderBoard(); renderHand(); updateScores(); centerOnLastMove();
+      });
+      return;
     }
-    state.turn = 'player'; setStatus('Konec tahu AI → Váš tah', 'turn-player');
+    state.turn = 'player';
+    setStatus('Konec tahu AI → Váš tah', 'turn-player');
     renderBoard(); renderHand(); updateScores(); centerOnLastMove();
   }, 280);
 }
@@ -2028,12 +2227,16 @@ function activateReplay(){
     }
     
     if(isMove){
+      const qLines = currentLast.length
+        ? detectQwirkleOnBoardObj(currentBoard, currentLast)
+        : [];
       replay.snapshots.push({
         board: JSON.parse(JSON.stringify(currentBoard)),
         score: {...currentScore},
         lastMoveCells: [...currentLast],
         who: whoStr,
-        discards: currentDiscards
+        discards: currentDiscards,
+        qwirkleLines: qLines
       });
     }
   }
@@ -2048,15 +2251,18 @@ function activateReplay(){
 }
 
 function deactivateReplay(){
-  replay.active = false; replay.playing = false; if(replay.timer) clearInterval(replay.timer);
+  replay.active = false; replay.playing = false;
+  if(replay.timer){ clearTimeout(replay.timer); clearInterval(replay.timer); replay.timer = null; }
+  document.querySelectorAll('.fw-layer, .fw-label').forEach(el=>el.remove());
   document.getElementById('btn-replay').classList.remove('active');
   document.getElementById('replay-bar').classList.remove('visible');
   document.getElementById('board-wrapper').classList.remove('locked');
   renderBoard(); renderHand(); setStatus(state.gameOver ? 'Hra skončila' : 'Váš tah');
 }
 
-function showSnapshot(i){
-  if(i<0 || i>=replay.snapshots.length) return;
+function showSnapshot(i, opts){
+  if(i<0 || i>=replay.snapshots.length) return Promise.resolve();
+  const playFw = !opts || opts.fireworks !== false;
   replay.index = i;
   const snap = replay.snapshots[i];
   const savedBoard = state.board;
@@ -2070,11 +2276,26 @@ function showSnapshot(i){
   const nDisc = typeof snap.discards === 'number' ? snap.discards : 0;
   state.discarded = new Array(nDisc).fill(null);
   renderBoard(); updateScores(); centerOnLastMove();
+  let fw = Promise.resolve();
+  if(playFw && snap.qwirkleLines && snap.qwirkleLines.length){
+    // body za tah z rozdílu skóre oproti předchozímu snímku
+    let pts = 0;
+    if(i > 0){
+      const prev = replay.snapshots[i-1];
+      if(snap.who === 'Hráč') pts = (snap.score.player||0) - (prev.score.player||0);
+      else if(snap.who === 'AI') pts = (snap.score.ai||0) - (prev.score.ai||0);
+      else if(snap.who === 'SOLO') pts = (snap.score.solo||0) - (prev.score.solo||0);
+    }
+    const whoLabel = snap.who === 'AI' ? 'AI: ' : '';
+    toast(whoLabel + 'QWIRKLE!' + (pts > 0 ? ' +' + pts : ''), QWIRKLE_FW_MS);
+    fw = playQwirkleFireworks(snap.qwirkleLines);
+  }
   state.board = savedBoard;
   state.lastMoveCells = savedLast;
   state.score = savedScore;
   state.discarded = savedDiscarded;
   updateReplayUI();
+  return fw;
 }
 
 function updateReplayUI(){
@@ -2208,15 +2429,26 @@ document.getElementById('replay-next').onclick = ()=>showSnapshot(Math.min(repla
 document.getElementById('replay-last').onclick = ()=>showSnapshot(replay.snapshots.length-1);
 document.getElementById('replay-play').onclick = ()=>{
   if(replay.playing){
-    replay.playing=false; clearInterval(replay.timer); document.getElementById('replay-play').textContent='▶';
+    replay.playing=false;
+    if(replay.timer){ clearTimeout(replay.timer); replay.timer = null; }
+    document.getElementById('replay-play').textContent='▶';
   } else {
-    replay.playing=true; document.getElementById('replay-play').textContent='⏸';
-    replay.timer = setInterval(()=>{
+    replay.playing=true;
+    document.getElementById('replay-play').textContent='⏸';
+    const step = ()=>{
+      if(!replay.playing) return;
       if(replay.index >= replay.snapshots.length-1){
-        replay.playing=false; clearInterval(replay.timer); document.getElementById('replay-play').textContent='▶'; return;
+        replay.playing=false;
+        document.getElementById('replay-play').textContent='▶';
+        return;
       }
-      showSnapshot(replay.index+1);
-    }, 900);
+      showSnapshot(replay.index+1).then(()=>{
+        if(!replay.playing) return;
+        // po Qwirkle je pauza delší (efekt už doběhl v Promise)
+        replay.timer = setTimeout(step, 850);
+      });
+    };
+    step();
   }
 };
 
