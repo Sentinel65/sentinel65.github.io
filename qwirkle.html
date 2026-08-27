@@ -304,7 +304,9 @@ html, body {
 }
 #hand {
   display: flex; gap: 6px; flex: 1; justify-content: center;
-  overflow-x: auto; padding: 4px 0;
+  overflow-x: hidden; /* badge na pravé dlaždici nesmí vyvolat posuvník */
+  overflow-y: visible;
+  padding: 8px 12px; /* místo pro order-badge / selected border */
 }
 .hand-tile {
   width: 56px; height: 56px;
@@ -729,7 +731,7 @@ html, body {
       <h3>Příklad spojení a bodování</h3>
       <p style="margin-bottom:8px">Řada sdílí <strong>barvu</strong> (různé tvary) nebo <strong>tvar</strong> (různé barvy). Nová kostička může bodovat ve dvou směrech najednou.</p>
       <div class="help-diagram" aria-hidden="true">
-        <svg viewBox="0 0 320 210" width="100%" style="max-width:340px;display:block;margin:0 auto 8px;background:rgba(0,0,0,0.2);border-radius:10px;border:1px solid var(--border)">
+        <svg viewBox="0 0 320 345" width="100%" style="max-width:340px;display:block;margin:0 auto 8px;background:rgba(0,0,0,0.2);border-radius:10px;border:1px solid var(--border)">
           <!-- stejná barva -->
           <text x="16" y="18" fill="#a0a0b0" font-size="11" font-family="sans-serif">stejná barva →</text>
           <rect x="20" y="28" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
@@ -758,6 +760,37 @@ html, body {
           <text x="108" y="142" fill="#86efac" font-size="11" font-weight="700" font-family="sans-serif">+2 +2 = 4</text>
           <!-- popis až POD křížením -->
           <text x="16" y="178" fill="#a0a0b0" font-size="11" font-family="sans-serif">křížení = body z obou řad</text>
+          <!-- Qwirkle: 6 stejná barva (36×36 jako příklady nahoře) -->
+          <rect x="20" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="38" y="216" text-anchor="middle" font-size="22" fill="#eab308">●</text>
+          <rect x="60" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="78" y="216" text-anchor="middle" font-size="22" fill="#eab308">■</text>
+          <rect x="100" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="118" y="216" text-anchor="middle" font-size="22" fill="#eab308">▲</text>
+          <rect x="140" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="158" y="216" text-anchor="middle" font-size="22" fill="#eab308">◆</text>
+          <rect x="180" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="198" y="216" text-anchor="middle" font-size="22" fill="#eab308">★</text>
+          <rect x="220" y="192" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#f9c74f" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="238" y="216" text-anchor="middle" font-size="22" fill="#eab308">✚</text>
+          <!-- body mezi řadami – shodné pro obě -->
+          <text x="160" y="250" text-anchor="middle" fill="#86efac" font-size="13" font-weight="700" font-family="sans-serif">6 + 6 = 12</text>
+          <!-- Qwirkle: 6 stejný tvar -->
+          <rect x="20" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="38" y="286" text-anchor="middle" font-size="22" fill="#ef4444">★</text>
+          <rect x="60" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="78" y="286" text-anchor="middle" font-size="22" fill="#f97316">★</text>
+          <rect x="100" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="118" y="286" text-anchor="middle" font-size="22" fill="#eab308">★</text>
+          <rect x="140" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="158" y="286" text-anchor="middle" font-size="22" fill="#22c55e">★</text>
+          <rect x="180" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#3a3a5c"/>
+          <text x="198" y="286" text-anchor="middle" font-size="22" fill="#3b82f6">★</text>
+          <rect x="220" y="262" width="36" height="36" rx="6" fill="#2a2a4a" stroke="#f9c74f" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="238" y="286" text-anchor="middle" font-size="22" fill="#a855f7">★</text>
+          <!-- tenký popis pod oběma řadami -->
+          <text x="16" y="318" fill="#a0a0b0" font-size="10" font-family="sans-serif">Qwirkle: 6 kostiček stejné barvy (různé tvary) nebo stejného tvaru</text>
+          <text x="16" y="332" fill="#a0a0b0" font-size="10" font-family="sans-serif">(různé barvy) → 6 bodů za délku + 6 bonus = 12 bodů</text>
         </svg>
       </div>
       <ul>
@@ -884,6 +917,7 @@ let state = {
   hand: [],
   aiHand: [],
   score: { player: 0, ai: 0, solo: 0 },
+  qwirkleCount: { player: 0, ai: 0, solo: 0 },
   discarded: [],
   turn: 'player',
   gameOver: false,
@@ -998,15 +1032,16 @@ function refreshLogView(){
     const n = String(num).padStart(3, '0');
 
     // AI konec – výsledek s pohárem
-    const aiEnd = line.match(/^AI_END\s*\|\s*Hráč:(-?\d+)\s*\|\s*AI:(-?\d+)\s*\|\s*(Hráč|AI|draw)$/);
+    const aiEnd = line.match(/^AI_END\s*\|\s*Hráč:(-?\d+)(?:\[(\d+)\])?\s*\|\s*AI:(-?\d+)(?:\[(\d+)\])?\s*\|\s*(Hráč|AI|draw)$/);
     if(aiEnd){
-      const p = aiEnd[1], a = aiEnd[2], w = aiEnd[3];
+      const p = aiEnd[1], qp = aiEnd[2]||'0', a = aiEnd[3], qa = aiEnd[4]||'0', w = aiEnd[5];
       const pCol = 'var(--player)', aCol = 'var(--ai)';
       const ico = (who) =>
         `<span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center">${whoIco[who].replace('<svg ','<svg width="16" height="16" fill="currentColor" ')}</span>`;
+      const sc = (pts, q) => `<strong>${pts}</strong><span style="opacity:.7;font-size:11px;margin-left:2px">[${q}]</span>`;
       const body = w==='AI'
-        ? `<span style="color:${aCol};display:inline-flex;align-items:center;gap:4px">${ico('AI')}<strong>${a}</strong></span><span style="opacity:.5">:</span><span style="color:${pCol};display:inline-flex;align-items:center;gap:4px;opacity:.85">${ico('Hráč')}<strong>${p}</strong></span>`
-        : `<span style="color:${pCol};display:inline-flex;align-items:center;gap:4px">${ico('Hráč')}<strong>${p}</strong></span><span style="opacity:.5">:</span><span style="color:${aCol};display:inline-flex;align-items:center;gap:4px;${w==='draw'?'':'opacity:.85'}">${ico('AI')}<strong>${a}</strong></span>`;
+        ? `<span style="color:${aCol};display:inline-flex;align-items:center;gap:4px">${ico('AI')}${sc(a,qa)}</span><span style="opacity:.5">:</span><span style="color:${pCol};display:inline-flex;align-items:center;gap:4px;opacity:.85">${ico('Hráč')}${sc(p,qp)}</span>`
+        : `<span style="color:${pCol};display:inline-flex;align-items:center;gap:4px">${ico('Hráč')}${sc(p,qp)}</span><span style="opacity:.5">:</span><span style="color:${aCol};display:inline-flex;align-items:center;gap:4px;${w==='draw'?'':'opacity:.85'}">${ico('AI')}${sc(a,qa)}</span>`;
       return `<div class="log-row" style="grid-template-columns:36px 28px 1fr">` +
         `<span class="log-num">${n}.</span>` +
         `<span class="log-who-tile" style="color:var(--highlight)" title="Vítěz">${trophyIco}</span>` +
@@ -1051,8 +1086,9 @@ function refreshLogView(){
         const pen = m2 ? parseInt(m2[1],10) : 0;
         content = `<span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px">${tilesHtml || '<span style="opacity:.5">(prázdná)</span>'}<span style="opacity:.85;margin-left:4px">= −${pen}</span></span>`;
       } else if(parts.startsWith('vysledek:')){
-        const m2 = parts.match(/vysledek:(-?\d+)/);
-        content = `<span style="opacity:.75">Výsledek celkem:</span> <strong style="color:var(--highlight);font-size:14px">${m2?m2[1]:parts}</strong>`;
+        const m2 = parts.match(/vysledek:(-?\d+)(?:\[(\d+)\])?/);
+        const qPart = m2 && m2[2] != null ? ` <span style="opacity:.7;font-size:12px">[${m2[2]}]</span>` : '';
+        content = `<span style="opacity:.75">Výsledek celkem:</span> <strong style="color:var(--highlight);font-size:14px">${m2?m2[1]:parts}</strong>${qPart}`;
       } else if(parts.startsWith('rating:')){
         return ''; // hodnocení jen ve statusu/toastu, ne v logu
       } else {
@@ -1948,6 +1984,11 @@ function confirmMove(){
       v.qwirkleLines && v.qwirkleLines.length ? QWIRKLE_FW_MS : 2200);
   }
   const qLines = (v.qwirkleLines && v.qwirkleLines.length) ? v.qwirkleLines : null;
+  if(qLines){
+    const nq = qLines.length;
+    if(state.mode==='solo') state.qwirkleCount.solo += nq;
+    else state.qwirkleCount.player += nq;
+  }
 
   state.pendingPlacements = []; state.selectedTiles = [];
   const need = 6 - state.hand.length;
@@ -2076,6 +2117,7 @@ function aiTurn(){
       }
       renderBoard(); renderHand(); updateScores(); centerOnLastMove();
       if(move.qwirkleLines && move.qwirkleLines.length){
+        state.qwirkleCount.ai += move.qwirkleLines.length;
         fwPromise = playQwirkleFireworks(move.qwirkleLines);
       }
       fwPromise.then(()=>{
@@ -2103,7 +2145,8 @@ function endAiGame(){
   const winner = p>a ? 'Hráč' : p<a ? 'AI' : 'draw';
   // chronologicky: KONEC → (bonus už je v logu) → pohár nahoře v reverzním zobrazení
   log('=== KONEC HRY ===');
-  log(`AI_END | Hráč:${p} | AI:${a} | ${winner}`);
+  const qp = state.qwirkleCount.player|0, qa = state.qwirkleCount.ai|0;
+  log(`AI_END | Hráč:${p}[${qp}] | AI:${a}[${qa}] | ${winner}`);
   setStatus(msg, 'turn-end');
   toast(msg, 3000, true);
   renderHand(); updateScores();
@@ -2130,7 +2173,7 @@ function endSoloGame(){
   log('SOLO: SOUHRN | hra:+' + pointsFromPlay);
   log('SOLO: SOUHRN | odhozy:' + discardsDuring);
   log('SOLO: SOUHRN | ruka:-' + handCount + (handAtEnd.length ? ' | ' + handAtEnd.join('  ') : ''));
-  log('SOLO: SOUHRN | vysledek:' + s);
+  log('SOLO: SOUHRN | vysledek:' + s + '[' + (state.qwirkleCount.solo|0) + ']');
   setStatus('Konec – ' + s + ' bodů – ' + rating, 'turn-end');
   toast(s + ' bodů – ' + rating, 3000, true);
   renderHand(); updateScores();
@@ -2142,7 +2185,7 @@ function saveKey(mode){ return mode === 'solo' ? 'qwirkle_save_solo' : 'qwirkle_
 function saveGame(){
   const data = {
     version: 1, mode: state.mode, bag: state.bag, board: state.board, hand: state.hand, aiHand: state.aiHand,
-    score: state.score, discarded: state.discarded, turn: state.turn, gameOver: state.gameOver, log: state.log,
+    score: state.score, qwirkleCount: state.qwirkleCount, discarded: state.discarded, turn: state.turn, gameOver: state.gameOver, log: state.log,
     lastMoveCells: state.lastMoveCells, isFirstMove: state.isFirstMove, moveId: state.moveId, nextStarter: state.nextStarter
   };
   try { localStorage.setItem(saveKey(state.mode), JSON.stringify(data)); toast(state.mode === 'solo' ? 'SOLO hra uložena' : 'AI hra uložena'); log(`--- Hra uložena (${state.mode.toUpperCase()}) ---`); } catch(err){ toast('Uložení selhalo'); }
@@ -2151,7 +2194,7 @@ function saveGame(){
 function applyLoadedData(data){
   Object.assign(state, {
     mode: data.mode || 'ai', bag: data.bag || [], board: data.board || {}, hand: data.hand || [], aiHand: data.aiHand || [],
-    score: data.score || {player:0,ai:0,solo:0}, discarded: data.discarded || [], turn: data.turn || 'player',
+    score: data.score || {player:0,ai:0,solo:0}, qwirkleCount: data.qwirkleCount || {player:0,ai:0,solo:0}, discarded: data.discarded || [], turn: data.turn || 'player',
     gameOver: data.gameOver || false, log: data.log || [], lastMoveCells: data.lastMoveCells || [],
     isFirstMove: data.isFirstMove ?? false, nextStarter: data.nextStarter || 'player',
     selectedTiles: [], pendingPlacements: [], soloMustDiscard: false, exchangeMode: false
@@ -2354,7 +2397,7 @@ function newGame(mode){
   state.mode = mode || state.mode;
   state.bag = createBag(); state.board = {}; state.hand = drawTiles(6);
   state.aiHand = state.mode==='ai' ? drawTiles(6) : [];
-  state.score = {player:0, ai:0, solo:0}; state.discarded = []; state.gameOver = false;
+  state.score = {player:0, ai:0, solo:0}; state.qwirkleCount = {player:0, ai:0, solo:0}; state.discarded = []; state.gameOver = false;
   state.log = []; state.lastMoveCells = []; state.selectedTiles = []; state.pendingPlacements = [];
   state.isFirstMove = true; state.soloMustDiscard = false; state.exchangeMode = false; state.orient = 'h';
   
