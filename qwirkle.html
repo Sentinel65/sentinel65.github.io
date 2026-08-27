@@ -1034,7 +1034,10 @@ function refreshLogView(){
     // AI konec – výsledek s pohárem
     const aiEnd = line.match(/^AI_END\s*\|\s*Hráč:(-?\d+)(?:\[(\d+)\])?\s*\|\s*AI:(-?\d+)(?:\[(\d+)\])?\s*\|\s*(Hráč|AI|draw)$/);
     if(aiEnd){
-      const p = aiEnd[1], qp = aiEnd[2]||'0', a = aiEnd[3], qa = aiEnd[4]||'0', w = aiEnd[5];
+      const p = aiEnd[1], a = aiEnd[3], w = aiEnd[5];
+      // vždy z logu (aktuální / načtený), ne z runtime počítadla
+      const qc = countQwirklesFromLog(state.log);
+      const qp = String(qc.player), qa = String(qc.ai);
       const pCol = 'var(--player)', aCol = 'var(--ai)';
       const ico = (who) =>
         `<span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center">${whoIco[who].replace('<svg ','<svg width="16" height="16" fill="currentColor" ')}</span>`;
@@ -1087,7 +1090,8 @@ function refreshLogView(){
         content = `<span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px">${tilesHtml || '<span style="opacity:.5">(prázdná)</span>'}<span style="opacity:.85;margin-left:4px">= −${pen}</span></span>`;
       } else if(parts.startsWith('vysledek:')){
         const m2 = parts.match(/vysledek:(-?\d+)(?:\[(\d+)\])?/);
-        const qPart = m2 && m2[2] != null ? ` <span style="opacity:.7;font-size:12px">[${m2[2]}]</span>` : '';
+        const qc = countQwirklesFromLog(state.log);
+        const qPart = ` <span style="opacity:.7;font-size:12px">[${qc.solo}]</span>`;
         content = `<span style="opacity:.75">Výsledek celkem:</span> <strong style="color:var(--highlight);font-size:14px">${m2?m2[1]:parts}</strong>${qPart}`;
       } else if(parts.startsWith('rating:')){
         return ''; // hodnocení jen ve statusu/toastu, ne v logu
@@ -1793,6 +1797,36 @@ function detectQwirkleOnBoardObj(boardObj, lastCells){
   return out;
 }
 
+/** Spočítá Qwirkle z tahů v logu (funguje i po načtení uložené hry). */
+function countQwirklesFromLog(logLines){
+  const board = {};
+  const counts = { player: 0, ai: 0, solo: 0 };
+  const placeRe = /^(Hráč|AI|SOLO):\s*\+(-?\d+)\s*\|\s*(.*)$/;
+  const tileRe = /([●■▲◆★✚]):([a-z]+)@\((-?\d+),(-?\d+)\)/g;
+  for(const line of (logLines || [])){
+    const m = line.match(placeRe);
+    if(!m) continue;
+    const who = m[1];
+    const tilesStr = m[3];
+    if(!tilesStr || tilesStr === 'EMPTY') continue;
+    const last = [];
+    tileRe.lastIndex = 0;
+    let tm;
+    while((tm = tileRe.exec(tilesStr))){
+      const shape = tm[1], color = tm[2], x = parseInt(tm[3],10), y = parseInt(tm[4],10);
+      board[x+','+y] = { shape, color };
+      last.push({ x, y });
+    }
+    if(!last.length) continue;
+    const qLines = detectQwirkleOnBoardObj(board, last);
+    if(!qLines.length) continue;
+    if(who === 'Hráč') counts.player += qLines.length;
+    else if(who === 'AI') counts.ai += qLines.length;
+    else if(who === 'SOLO') counts.solo += qLines.length;
+  }
+  return counts;
+}
+
 function renderHand(){
   const handArea = document.getElementById('hand-area');
   const endPenalty = state.gameOver && state.mode==='solo' && state.hand.length > 0;
@@ -2145,8 +2179,9 @@ function endAiGame(){
   const winner = p>a ? 'Hráč' : p<a ? 'AI' : 'draw';
   // chronologicky: KONEC → (bonus už je v logu) → pohár nahoře v reverzním zobrazení
   log('=== KONEC HRY ===');
-  const qp = state.qwirkleCount.player|0, qa = state.qwirkleCount.ai|0;
-  log(`AI_END | Hráč:${p}[${qp}] | AI:${a}[${qa}] | ${winner}`);
+  const qc = countQwirklesFromLog(state.log);
+  log(`AI_END | Hráč:${p}[${qc.player}] | AI:${a}[${qc.ai}] | ${winner}`);
+  state.qwirkleCount = { player: qc.player, ai: qc.ai, solo: 0 };
   setStatus(msg, 'turn-end');
   toast(msg, 3000, true);
   renderHand(); updateScores();
@@ -2173,7 +2208,9 @@ function endSoloGame(){
   log('SOLO: SOUHRN | hra:+' + pointsFromPlay);
   log('SOLO: SOUHRN | odhozy:' + discardsDuring);
   log('SOLO: SOUHRN | ruka:-' + handCount + (handAtEnd.length ? ' | ' + handAtEnd.join('  ') : ''));
-  log('SOLO: SOUHRN | vysledek:' + s + '[' + (state.qwirkleCount.solo|0) + ']');
+  const qc = countQwirklesFromLog(state.log);
+  state.qwirkleCount.solo = qc.solo;
+  log('SOLO: SOUHRN | vysledek:' + s + '[' + qc.solo + ']');
   setStatus('Konec – ' + s + ' bodů – ' + rating, 'turn-end');
   toast(s + ' bodů – ' + rating, 3000, true);
   renderHand(); updateScores();
