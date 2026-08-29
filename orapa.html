@@ -76,10 +76,24 @@ position:sticky;top:0;background:#0f2744;z-index:2}
 .closeBtn{width:34px;height:34px;border:0;background:transparent;border-radius:8px;cursor:pointer;font-size:24px;line-height:1}
 .legend{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#b9c6d8}
 .legend span{display:inline-flex;align-items:center;gap:4px}
-.toast-container {position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999;pointer-events:none;}
-.toast {background:var(--panel2);border-left:4px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:14px;transition:opacity 0.3s;pointer-events:auto;}
+.toast-container {position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999;pointer-events:none;width:min(420px,calc(100vw - 24px));}
+.toast {background:var(--panel2);border-left:4px solid var(--accent);color:var(--text);padding:12px 16px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:14px;transition:opacity 0.3s;pointer-events:auto;width:100%;box-sizing:border-box;text-align:center;}
 .toast.bad {border-left-color:var(--bad);}
 .toast.ok {border-left-color:var(--ok);}
+@keyframes labelPulse {
+  0%,100%{opacity:1; transform:scale(1)}
+  50%{opacity:0.2; transform:scale(1.35)}
+}
+@keyframes cellPulse {
+  0%,100%{stroke-opacity:1; stroke-width:3; fill-opacity:0.55}
+  50%{stroke-opacity:0.15; stroke-width:6; fill-opacity:0.9}
+}
+.label-last{animation:labelPulse 1.6s ease-in-out infinite; transform-origin:center; transform-box:fill-box}
+.cell-last{animation:cellPulse 1.4s ease-in-out infinite}
+@media(max-width:680px){
+ .toast-container{bottom:12px;left:0;right:0;transform:none;width:100%;padding:0 8px;box-sizing:border-box}
+ .toast{width:100%;font-size:13px;padding:10px 12px}
+}
 @media(max-width:1000px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.panel.full{grid-column:1/-1}}
 .sideTabs{margin-bottom:8px}
 .tabPane{min-height:40px}
@@ -165,12 +179,12 @@ position:sticky;top:0;background:#0f2744;z-index:2}
 
 <section class="panel" id="mobileTabsPanel">
   <div class="boardSwitch sideTabs" id="sideTabs">
-    <button class="boardTab active" data-tab="akce" id="tabAkce">Akce</button>
-    <button class="boardTab" data-tab="log" id="tabLog">Log hry</button>
+    <button class="boardTab" data-tab="akce" id="tabAkce">Akce</button>
+    <button class="boardTab active" data-tab="log" id="tabLog">Log hry</button>
     <button class="boardTab" data-tab="pravidla" id="tabPravidla">Barvy</button>
   </div>
 
-  <div class="tabPane" id="paneAkce">
+  <div class="tabPane" id="paneAkce" style="display:none">
     <div id="deductionPanel">
       <div class="guessMode" id="virtualTools"></div>
       <div class="controls" style="margin-top:7px">
@@ -180,7 +194,7 @@ position:sticky;top:0;background:#0f2744;z-index:2}
     </div>
   </div>
 
-  <div class="tabPane" id="paneLog" style="display:none">
+  <div class="tabPane" id="paneLog">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
       <span style="font-weight:700;font-size:13px">Záznam hry</span>
       <div style="display:flex;gap:4px;align-items:center">
@@ -615,12 +629,19 @@ function drawBoard(){
    addLaunch(OX+W*CELL, OY+(r+.5)*CELL, RIGHT_LABELS[r], edgeFill(RIGHT_LABELS[r]), 'right');
  }
  
- // Podbarvení query buněk na virtuální desce
+ // Podbarvení query buněk; poslední dotaz silně pulzuje
+ const lastQ=lastQueryKey();
  if(G.cellQueries){
    for(const [key,col] of Object.entries(G.cellQueries)){
      const [cx,cy]=key.split(',').map(Number);
      const [px,py]=boardPoint(cx,cy);
-     svg.appendChild(svgEl('rect',{x:px,y:py,width:CELL,height:CELL,fill:col,'fill-opacity':0.55,stroke:'#ffffff44','stroke-width':1}));
+     const isLast=lastQ===key;
+     const r=svgEl('rect',{x:px,y:py,width:CELL,height:CELL,fill:col,
+       'fill-opacity':isLast?0.75:0.55,
+       stroke:isLast?'#fbbf24':'#ffffff44',
+       'stroke-width':isLast?3:1});
+     if(isLast) r.classList.add('cell-last');
+     svg.appendChild(r);
    }
  }
  if(G.revealSecret && G.secretPieces){
@@ -632,7 +653,9 @@ function drawBoard(){
    }
  } else {
    for(const p of G.guessPieces) drawVirtualPiece(p);
-   if(G.lastPath) drawPath(G.lastPath);
+   // Laser jen pokud poslední tah není dotaz na buňku
+   const ls=lastShot();
+   if(G.lastPath && !(ls && ls.isQuery)) drawPath(G.lastPath);
  }
 }
 function drawFadedHypothesis(p){
@@ -648,6 +671,25 @@ function addText(x,y,text,size,fill,anchor='start'){
  const t=svgEl('text',{x,y,'font-size':size,fill,'text-anchor':anchor,'font-weight':'bold'});
  t.textContent=text;svg.appendChild(t);
 }
+function lastShot(){
+ return G.shots && G.shots.length ? G.shots[G.shots.length-1] : null;
+}
+function lastShotLabels(){
+ const s=lastShot();
+ if(!s || s.isQuery) return new Set();
+ const set=new Set();
+ if(s.entry) set.add(String(s.entry).toUpperCase());
+ if(s.exit) set.add(String(s.exit).toUpperCase());
+ return set;
+}
+function lastQueryKey(){
+ const s=lastShot();
+ if(!s || !s.isQuery) return null;
+ // entry je např. [3,B] – najít cx,cy z cellQueries posledního tahu
+ // ukládáme v shot.cellKey pokud je, jinak parsovat
+ if(s.cellKey) return s.cellKey;
+ return null;
+}
 function addLaunch(x,y,label,colorFill,side){
  // Čtvercová pole souřadnic kolem desky (stejná velikost jako buňka mřížky)
  const g=svgEl('g',{style:'cursor:pointer'});
@@ -658,11 +700,17 @@ function addLaunch(x,y,label,colorFill,side){
  if(side==='bottom'){ rx=x-CELL/2; ry=y; }
  if(side==='left'){ rx=x-s; ry=y-CELL/2; }
  if(side==='right'){ rx=x; ry=y-CELL/2; }
+ const isLast=lastShotLabels().has(String(label).toUpperCase());
  const bg=svgEl('rect',{x:rx,y:ry,width:side==='top'||side==='bottom'?CELL:s,height:side==='left'||side==='right'?CELL:s,
    fill:fill,stroke:'#1e293b','stroke-width':1,'fill-opacity':colorFill?0.95:0.7});
- const t=svgEl('text',{x:rx+(side==='top'||side==='bottom'?CELL:s)/2,y:ry+(side==='left'||side==='right'?CELL:s)/2+5,
-   'font-size':14,fill:colorFill?'#0f172a':'#f1f5f9','text-anchor':'middle','font-weight':'900','pointer-events':'none'});
- t.textContent=label; g.append(bg,t);
+ const cx=rx+(side==='top'||side==='bottom'?CELL:s)/2;
+ const cy=ry+(side==='left'||side==='right'?CELL:s)/2+5;
+ const t=svgEl('text',{x:cx,y:cy,
+   'font-size':isLast?18:14,fill:isLast?'#0f172a':(colorFill?'#0f172a':'#f1f5f9'),
+   'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
+ t.textContent=label;
+ if(isLast) t.classList.add('label-last');
+ g.append(bg,t);
  g.addEventListener('click',(e)=>{e.stopPropagation(); humanShoot(label);});
  svg.appendChild(g);
 }
@@ -694,7 +742,11 @@ function drawVirtualPiece(p){
  const q=boardPoint(cx,cy), tx=svgEl('text',{x:q[0],y:q[1]+4,'font-size':11,fill:'#fff','text-anchor':'middle','font-weight':'800','pointer-events':'none'});
  tx.textContent=p.color==='red'?'R':p.color==='blue'?'B':p.color==='yellow'?'Y':p.color==='black'?'K':p.color==='transparent'?'P':'W';
  g.appendChild(tx);
- g.addEventListener('pointerdown',e=>{e.stopPropagation(); if(G.editMode) startDrag(e,p.id);});
+ g.addEventListener('pointerdown',e=>{
+   e.stopPropagation();
+   if(G.editMode) startDrag(e,p.id);
+   else showToast('Klikni na tlačítko Editace','info');
+ });
  svg.appendChild(g);
 }
 function oppositeLabel(lab){
@@ -871,14 +923,16 @@ svg.addEventListener('click',evt=>{
   else if(found.color==='red'){ cname='červená'; css=COLORS.red; }
   else if(found.color==='yellow'){ cname='žlutá'; css=COLORS.yellow; }
   else { cname='bílá'; css='#ffffff'; }
-  G.cellQueries[cx+','+cy] = css;
-  const shot={by:'human',entry:lab,exit:'',color:cname,css,isQuery:true,empty:false};
+  const cellKey=cx+','+cy;
+  G.cellQueries[cellKey] = css;
+  const shot={by:'human',entry:lab,exit:'',color:cname,css,isQuery:true,empty:false,cellKey};
   G.shots.push(shot); addShotLog(shot);
   showToast(`${lab} · ${cname}`, 'ok');
  } else {
   const boardCell='#1e3a5f';
-  G.cellQueries[cx+','+cy] = boardCell;
-  const shot={by:'human',entry:lab,exit:'',color:'prázdné',css:boardCell,isQuery:true,empty:true};
+  const cellKey=cx+','+cy;
+  G.cellQueries[cellKey] = boardCell;
+  const shot={by:'human',entry:lab,exit:'',color:'prázdné',css:boardCell,isQuery:true,empty:true,cellKey};
   G.shots.push(shot); addShotLog(shot);
   showToast(`${lab} · prázdné`, 'info');
  }
@@ -926,17 +980,17 @@ function renderVirtualTools(){
    const b=document.createElement('button');
    b.type='button';
    b.title=d.short+(used?' (na desce)':'');
-   b.style.cssText=`border:1px solid ${used?'#6366f1':'#2a4a6e'};background:#1a3352;border-radius:8px;padding:4px;line-height:0;opacity:${used?0.45:1};cursor:${G.editMode&&!used?'pointer':'default'}`;
+   b.style.cssText=`border:1px solid ${used?'#6366f1':'#2a4a6e'};background:#1a3352;border-radius:8px;padding:4px;line-height:0;opacity:${used?0.45:1};cursor:pointer`;
    b.innerHTML=miniSvg(d,36);
-   if(G.editMode && !used){
-     b.onclick=()=>{
-       const pid='g_'+id;
-       G.guessPieces.push({id:pid,defId:id,rot:0,x:2,y:3,color:d.color,flipX:false});
-       G.selectedPiece=pid;
-       renderAll();
-       showToast(d.short+' – táhněte / 1× otočit / 2× překlopit','ok');
-     };
-   }
+   b.onclick=()=>{
+     if(!G.editMode){ showToast('Klikni na tlačítko Editace','info'); return; }
+     if(used){ showToast('Tento drahokam už je na desce.','info'); return; }
+     const pid='g_'+id;
+     G.guessPieces.push({id:pid,defId:id,rot:0,x:2,y:3,color:d.color,flipX:false});
+     G.selectedPiece=pid;
+     renderAll();
+     showToast(d.short+' – táhněte / 1× otočit / 2× překlopit','ok');
+   };
    wrap.appendChild(b);
  });
  el.appendChild(wrap);
@@ -1020,6 +1074,17 @@ function startSoloGame(){
  G.lastPath=null; G.winner=null; G.phase='play'; G.actionMode='laser';
  addLog(`Nová hra · obtížnost ${G.difficulty}`);
  showToast('Nová hra – obtížnost '+G.difficulty,'ok');
+ if(typeof switchSideTab==='function') switchSideTab('log');
+ else {
+   // fallback před definicí switchSideTab
+   const akce=document.getElementById('paneAkce'), log=document.getElementById('paneLog'), prav=document.getElementById('panePravidla');
+   if(akce) akce.style.display='none';
+   if(log) log.style.display='block';
+   if(prav) prav.style.display='none';
+   document.getElementById('tabAkce')?.classList.remove('active');
+   document.getElementById('tabLog')?.classList.add('active');
+   document.getElementById('tabPravidla')?.classList.remove('active');
+ }
  renderAll();
 }
 function generateRandomLayout(ids){
@@ -1332,7 +1397,7 @@ document.getElementById('clearMarksBtn').onclick=()=>{
    G.selectedPiece=null;
    showToast('Odstraněn označený drahokam.','ok');
  } else {
-   showToast('Nejdřív v Editaci označte drahokam.','info');
+   showToast('V módu Editace označte drahokam.','info');
  }
  renderAll();
 };
@@ -1348,7 +1413,7 @@ document.getElementById('guessBtn').onclick=openGuess;
 document.getElementById('diffBtn').onclick=()=>{
   G.difficulty = (G.difficulty % 3) + 1;
   document.getElementById('diffBtn').textContent=String(G.difficulty);
-  showToast('Obtížnost '+G.difficulty+' – nová hra','info');
+  //showToast('Obtížnost '+G.difficulty+' – nová hra','info');
   startSoloGame();
 };
 document.getElementById('saveBtn').onclick=()=>{
@@ -1403,18 +1468,34 @@ document.getElementById('helpBtn').onclick=()=>{
  <p style="font-style:italic">Obdrželi jste zakázku na lokalizaci drahokamů v největším diamantovém dole na světě – Orapa Mine. Pomocí ultrazvukových paprsků, které vyšlete hluboko pod zem, a analýzy jejich návratů můžete určit polohu a typ drahokamů.</p>
  <h3>Herní princip</h3>
  <p>Na desce 10×8 jsou ukryty geometrické drahokamy. Kliknutím na vysílač na okraji hrací desky vyšlete světelnou vlnu. Vlna se od hran objektů odráží; šikmá hrana ji otočí o 90°, vodorovná/svislá hrana ji vrátí zpět. Výsledkem je výstupní bod a výsledná barva.</p>
- <h3>Umístění</h3>
+ <h3>Záložka Akce (umístění drahokamů)</h3>
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
- <li>podle zjištěných dat z vysílání vln vyberte příslušný drahokam</li>
- <li>pro editaci klepněte na drahokam (režim Editace)</li>
+ <li>tlačítko <b>Editace</b> (povolí přidání drahokamu na hrací desku)</li>
+ <li>podle zjištěných dat z vysílání vln kliknutím vyberte příslušný drahokam</li>
+ <li>pro editaci klepněte na drahokam (režim editace = čárkovaně orámovaný drahokam)</li>
  <li>přidržením jej přetáhněte na požadované místo na desce</li>
  <li>při uvolnění se automaticky přichytí k nejbližšímu platnému bodu</li>
  <li>1× klepnutí otočí drahokam o 90° doprava</li>
  <li>2× klepnutí překlopí drahokam přes svislou osu</li>
- <li>červeně zvýrazněná poloha je neplatná</li>
+ <li>tlačítko <b>Smazat označený</b> (smaže označený editovaný drahokam z hrací desky)</li>
  </ul>
  <h3>Pravidla kontroly</h3>
- <p>Objekt nesmí přesahovat desku ani se překrývat; hrany dvou objektů se nesmí přímo dotýkat; rohy se dotýkat mohou.</p>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li>objekt nesmí přesahovat desku ani se překrývat</li>
+ <li>hrany (strany) dvou objektů se nesmí přímo dotýkat</li>
+ <li>drahokamy se mohou dotýkat rohy</li>
+ <li>červeně zvýrazněná poloha je neplatná</li>
+ </ul>
+ <h3>Záložka Log hry</h3>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li>reverzně vypsané jednotlivé výstřely laseru a dotazy</li>
+ <li>formát zápisu: pořadové číslo tahu, vstupní bod, výstupní bod, výsledná barva paprsku laseru</li>
+ <li>tlačítka v záhlaví logu: blesk (mód laser), čtvereček (mód dotazu na konkrétní souřadnici), 2 čtverečky v sobě (zkopírování obsahu logu)</li>
+ </ul>
+ <h3>Záložka Barvy</h3>
+ <p>Výpis jednotlivých kombinací barev při odrazu laseru od drahokamů.</p>
+ <h3>Indikace posledního tahu</h3>
+<p>Poslední tah (výstřel laseru nebo dotaz) je indikován pulzováním názvu (písmeno, číslo) souřadnic (vstupní, výstupní) nebo pulzováním konkrétní buňky na hrací desce.</p>
  <h3>Hodnocení</h3>
  <p>(výstřely + dotazy podle obtížnosti)</p>
  <table class="table" style="font-size:12px">
@@ -1426,7 +1507,11 @@ document.getElementById('helpBtn').onclick=()=>{
  <tr><td>nadšenec</td><td>19–23</td><td>21–25</td><td>22–25</td></tr>
  <tr><td>amatér</td><td>≥24</td><td>≥26</td><td>≥26</td></tr>
  </tbody></table>
- <p style="font-size:11px;color:#94a3b8;margin-top:6px">Obtížnost 1: 5 drahokamů · 2: + průhledný · 3: + černý (pohlcuje)</p>`);
+ <h3>Obtížnost</h3>
+ <p style="margin-top:8px">
+ 1 = celkem 5 základních drahokamů<br>
+ 2 = celkem 6 drahokamů (+ průhledný)<br>
+ 3 = celkem 7 drahokamů (+ černý)</p>`);
 };
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function openModal(title,html){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.add('open')}
