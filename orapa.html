@@ -230,6 +230,7 @@ position:sticky;top:0;background:#0f2744;z-index:2}
   <h2>Moje řešení</h2>
   <div class="controls">
     <button class="controlBtn primary" id="guessBtn">Odevzdat řešení</button>
+    <button class="controlBtn" id="evalBtn" disabled>Vyhodnocení</button>
   </div>
   <div class="helpBox" style="margin-top:7px">Řešení můžete odevzdat kdykoli. Chybné řešení podle pravidel okamžitě prohrává.</div>
 </section>
@@ -1014,9 +1015,12 @@ function renderAll(){
      const num=String(total-i).padStart(2,'0');
      const col = s.css || (s.color==='žlutá'?COLORS.yellow:s.color==='bílá'?COLORS.white:s.color==='modrá'?COLORS.blue:s.color==='červená'?COLORS.red:s.color==='prázdné'?'#1e3a5f':'#94a3b8');
      const hi = i===0 ? 'background:#0f2a22;' : '';
-     const icon = whoIcon(s.by);
+     const icon = s.isSystem ? '📋' : whoIcon(s.by);
      let mid, rightLabel;
-     if(s.isQuery){
+     if(s.isSystem){
+       mid = s.entry + (s.exit ? ' · '+s.exit : '');
+       rightLabel = s.color||'';
+     } else if(s.isQuery){
        mid = s.entry;
        rightLabel = s.empty ? 'prázdné' : (s.color||'');
      } else {
@@ -1071,7 +1075,10 @@ function startSoloGame(){
  G.guessPieces=[];
  G.shots=[]; G.log=[]; G.edgeColors={}; G.cellQueries={};
  G.selectedPiece=null; G.editMode=false; G.revealSecret=false;
- G.lastPath=null; G.winner=null; G.phase='play'; G.actionMode='laser';
+ G.lastPath=null; G.winner=null; G.phase='play'; G.actionMode='laser'; G.evaluation=null;
+ const eb=document.getElementById('evalBtn'); if(eb){eb.disabled=true;}
+ const gb=document.getElementById('guessBtn'); if(gb){gb.disabled=false;}
+
  addLog(`Nová hra · obtížnost ${G.difficulty}`);
  showToast('Nová hra – obtížnost '+G.difficulty,'ok');
  if(typeof switchSideTab==='function') switchSideTab('log');
@@ -1351,7 +1358,7 @@ function openGuess(){
  }
  submitGuess();
 }
-function submitGuess(){
+function buildEvalTable(){
  const byType={};
  for(const p of G.guessPieces) byType[p.defId||p.id]=p;
  let rows='', allOk=true;
@@ -1368,21 +1375,62 @@ function submitGuess(){
    <td>${a?`(${a.x},${a.y}) ${a.rot}°`:'—'}</td>
    <td>${match?'✓':'✗'}</td></tr>`;
  }
- G.revealSecret=true; G.phase='gameover';
  const grade=gradeForShots(nShots, G.difficulty||1);
+ return {rows, allOk, nShots, grade};
+}
+function logGameState(allOk, nShots, grade){
+ // Zápis do viditelného Záznamu hry (G.shots) + interní G.log
+ const resultTxt = allOk ? `VÝHRA · ${nShots} tahů · ${grade}` : `PROHRA · ${nShots} tahů`;
+ addLog(`Odevzdání: ${resultTxt}`);
+ G.shots.push({
+   by:'system', isSystem:true,
+   entry:'Odevzdání', exit: resultTxt,
+   color: allOk?'výhra':'prohra',
+   css: allOk?'#22c55e':'#ef4444',
+   resultText: resultTxt
+ });
+ for(const id of BASIC_IDS()){
+   const d=pieceDef(id);
+   const a=G.secretPieces.find(p=>p.id===id || p.defId===id);
+   const g=G.guessPieces.find(p=>(p.defId||p.id)===id);
+   const ok=a&&g&&(pieceKey(a)===pieceKey(g) || (a.x===g.x&&a.y===g.y&&a.rot===g.rot&&!!a.flipX===!!g.flipX));
+   const line = `${d.short}: ${g?`(${g.x},${g.y}) ${g.rot}°`:'—'} → ${a?`(${a.x},${a.y}) ${a.rot}°`:'—'} ${ok?'✓':'✗'}`;
+   addLog(line);
+   G.shots.push({
+     by:'system', isSystem:true,
+     entry: d.short,
+     exit: `${g?`(${g.x},${g.y})`:'—'} / ${a?`(${a.x},${a.y})`:'—'}`,
+     color: ok?'✓':'✗',
+     css: ok?'#22c55e':'#ef4444',
+     resultText: line
+   });
+ }
+}
+function showEvaluationModal(){
+ if(!G.evaluation){ showToast('Nejdřív odevzdejte řešení.','info'); return; }
+ const {title, html}=G.evaluation;
+ openModal(title, html);
+}
+function submitGuess(){
+ const {rows, allOk, nShots, grade}=buildEvalTable();
+ G.revealSecret=true; G.phase='gameover';
  if(allOk){
    G.winner='human';
-   addLog(`Výhra · ${nShots} tahů · ${grade}`);
    showToast(`Výhra! ${nShots} tahů – ${grade}`, 'ok');
  } else {
    G.winner=null;
-   addLog(`Prohra · ${nShots} tahů`);
    showToast('Prohra – řešení se neshoduje.', 'bad');
  }
- openModal(allOk?'Výhra!':'Prohra – porovnání',`
+ logGameState(allOk, nShots, grade);
+ const title=allOk?'Výhra!':'Prohra – porovnání';
+ const html=`
   <p>${allOk?`Správně! Počet tahů: <b>${nShots}</b> (${grade}).`:'Skutečné rozmístění je na desce. Červeně označené řádky se neshodují.'}</p>
   <table class="table"><thead><tr><th>Objekt</th><th>Vaše řešení</th><th>Skutečnost</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">Zavřít</button></div>`);
+  <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">Zavřít</button></div>`;
+ G.evaluation={title, html, allOk, nShots, grade};
+ const eb=document.getElementById('evalBtn'); if(eb) eb.disabled=false;
+ const gb=document.getElementById('guessBtn'); if(gb) gb.disabled=true;
+ openModal(title, html);
  renderAll();
 }
 
@@ -1410,6 +1458,7 @@ document.getElementById('queryModeBtn').onclick=()=>{
  updateActionModeButtons(); renderAll();
 };
 document.getElementById('guessBtn').onclick=openGuess;
+document.getElementById('evalBtn').onclick=showEvaluationModal;
 document.getElementById('diffBtn').onclick=()=>{
   G.difficulty = (G.difficulty % 3) + 1;
   document.getElementById('diffBtn').textContent=String(G.difficulty);
@@ -1455,7 +1504,8 @@ document.getElementById('copyRecordBtn').onclick=async()=>{
    const n=String(total-i).padStart(2,'0');
    const icon=whoIcon(s.by);
    const cand=s.candNote!=null?` [${s.candNote}]`:'';
-   if(s.isQuery) lines.push(`${n}. ${icon}  ${s.entry}  ${s.empty?'prázdné':s.color}${cand}`);
+   if(s.isSystem) lines.push(`${n}. 📋  ${s.entry}${s.exit?' · '+s.exit:''}  ${s.color||''}`);
+   else if(s.isQuery) lines.push(`${n}. ${icon}  ${s.entry}  ${s.empty?'prázdné':s.color}${cand}`);
    else lines.push(`${n}. ${icon}  ${s.entry} → ${s.exit||s.entry}  ${s.color||''}${cand}`);
  });
  const txt=lines.length?lines.join('\n'):'Záznam je prázdný.';
@@ -1495,7 +1545,9 @@ document.getElementById('helpBtn').onclick=()=>{
  <h3>Záložka Barvy</h3>
  <p>Výpis jednotlivých kombinací barev při odrazu laseru od drahokamů.</p>
  <h3>Indikace posledního tahu</h3>
-<p>Poslední tah (výstřel laseru nebo dotaz) je indikován pulzováním názvu (písmeno, číslo) souřadnic (vstupní, výstupní) nebo pulzováním konkrétní buňky na hrací desce.</p>
+ <p>Poslední tah (výstřel laseru nebo dotaz) je indikován pulzováním názvu (písmeno, číslo) souřadnic (vstupní, výstupní) nebo pulzováním konkrétní buňky na hrací desce.</p>
+ <h3>Konec hry</h3>
+ <p>V průběhu hry, kdy si hráč myslí, že má dostatek indicií, umístí pomocí editace postupně všechny diamanty do polohy, o které si myslí, že je správná, a stiskne tlačítko <b>Odevzdat řešení</b>. Tím dojde k porovnání a vyhodnocení polohy všech diamantů. Výsledek se objeví v tabulce, kterou lze do spuštění nové hry opětovně vyvolat stisknutím tlačítka <b>Vyhodnocení</b>. Po zavření tabulky může hráč na hrací desce vidět porovnání polohy jeho diamantů s polohou vygenerované předlohy na začátku hry. Výsledek je uložen v Logu hry.</p>
  <h3>Hodnocení</h3>
  <p>(výstřely + dotazy podle obtížnosti)</p>
  <table class="table" style="font-size:12px">
