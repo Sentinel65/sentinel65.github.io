@@ -821,7 +821,290 @@ function aiBestSlideScore(cells, empty, val) {
   return best;
 }
 
+function aiChooseFromMarket(playerIdx, market) {
+  if (market.length === 1) return 0;
+  const cells = state.grids[playerIdx];
+  const empty = getEmptyPos(cells);
+  if (!empty) return 0;
+  let bestIdx = 0, bestScore = -Infinity;
+  for (let mi = 0; mi < market.length; mi++) {
+    const val = market[mi];
+    // Prefer lower values when slide quality is similar
+    let sc = aiBestSlideScore(cells, empty, val) - val * 0.35;
+    if (sc > bestScore) { bestScore = sc; bestIdx = mi; }
+  }
+  return bestIdx;
+}
 
+function aiChooseSlide(playerIdx, cardValue) {
+  const cells = state.grids[playerIdx];
+  const empty = getEmptyPos(cells);
+  const edges = possibleEdges(empty.r, empty.c);
+  let best = edges[0], bestScore = -Infinity;
+  for (let i = 0; i < edges.length; i++) {
+    const e = edges[i];
+    const sc = evaluateGridForAI(applySlide(cells, empty.r, empty.c, e.side, cardValue));
+    if (sc > bestScore) { bestScore = sc; best = e; }
+  }
+  return best;
+}
+
+function isEliminated(p) {
+  return state.tournament && state.tournament.eliminated[p];
+}
+
+function startSelectPhase() {
+  state.phase = 'select';
+  state.selectedPos = null;
+  state.market = [];
+  state.revealedThisRound = Array(state.numPlayers).fill(null);
+  state.pendingCard = null;
+  state.emptyPos = null;
+  state.slideFromSide = null;
+  if (state.mode !== 'solo') {
+    for (let p = 0; p < state.numPlayers; p++) {
+      if (p === state.humanIndex || isEliminated(p)) continue;
+      state.revealedThisRound[p] = aiChooseCardToFlip(p);
+    }
+  }
+  setMsg('selectCard');
+  activeTab = state.humanIndex;
+  renderAll();
+}
+
+function humanSelectCard(r, c) {
+  if (viewOnly || state.phase !== 'select') return;
+  if (isEliminated(state.humanIndex)) return;
+  const cells = state.grids[state.humanIndex];
+  const idx = r * 4 + c;
+  if (cells[idx].faceUp || cells[idx].value == null) return;
+  state.selectedPos = { r, c };
+  state.revealedThisRound[state.humanIndex] = idx;
+
+  if (state.mode === 'solo') {
+    const val = cells[idx].value;
+    cells[idx] = { value: null, faceUp: true };
+    state.emptyPos = { r, c };
+    const size = ((state.round - 1) % 4) + 1;
+    state.market = [val];
+    for (let i = 1; i < size; i++) {
+      if (state.deck.length) state.market.push(state.deck.pop());
+    }
+    for (let i = state.market.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [state.market[i], state.market[j]] = [state.market[j], state.market[i]];
+    }
+    logMsg('youRevealed', [val, posLabel(r, c)]);
+    state.phase = 'market';
+    state.currentPicker = 0;
+    setMsg('chooseMarket');
+  } else {
+    state.market = [];
+    for (let p = 0; p < state.numPlayers; p++) {
+      if (isEliminated(p)) continue;
+      const pos = state.revealedThisRound[p];
+      if (pos == null) continue;
+      const val = state.grids[p][pos].value;
+      state.grids[p][pos] = { value: null, faceUp: true };
+      state.market.push({ val, fromPlayer: p, fromPos: pos });
+    }
+    // market as values for UI, keep meta
+    state.marketMeta = state.market.slice();
+    state.market = state.market.map(m => m.val);
+    for (let i = state.market.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [state.market[i], state.market[j]] = [state.market[j], state.market[i]];
+      [state.marketMeta[i], state.marketMeta[j]] = [state.marketMeta[j], state.marketMeta[i]];
+    }
+    const hr = Math.floor(state.revealedThisRound[state.humanIndex] / 4);
+    const hc = state.revealedThisRound[state.humanIndex] % 4;
+    const hval = state.marketMeta.find(m => m.fromPlayer === state.humanIndex);
+    if (hval) logMsg('youRevealed', [hval.val, posLabel(hr, hc)]);
+    logMsg('cardsInMarket');
+    state.phase = 'market';
+    // first non-eliminated from firstPlayer
+    state.currentPicker = state.firstPlayer;
+    for (let k = 0; k < state.numPlayers; k++) {
+      const p = (state.firstPlayer + k) % state.numPlayers;
+      if (!isEliminated(p)) { state.currentPicker = p; break; }
+    }
+    beginMarketPick();
+  }
+  renderAll();
+}
+
+function nextPicker(from) {
+  for (let k = 1; k <= state.numPlayers; k++) {
+    const p = (from + k) % state.numPlayers;
+    if (!isEliminated(p)) return p;
+  }
+  return from;
+}
+
+function beginMarketPick() {
+  if (state.phase !== 'market') return;
+  if (state.market.length === 0) { endRound(); return; }
+  if (state.mode === 'solo') {
+    if (state.market.length === 1) {
+      setTimeout(function () { humanTakeFromMarket(0); }, 280);
+      return;
+    }
+    setMsg('chooseMarket');
+    renderAll();
+    return;
+  }
+  const p = state.currentPicker;
+  if (isEliminated(p)) {
+    state.currentPicker = nextPicker(p);
+    beginMarketPick();
+    return;
+  }
+  activeTab = p;
+  if (p === state.humanIndex) {
+    if (state.market.length === 1) {
+      // Only one card left — auto-select and go to slide
+      setTimeout(function () { humanTakeFromMarket(0); }, 280);
+      return;
+    }
+    setMsg('chooseMarket');
+    renderAll();
+  } else {
+    setMsg('aiTurnMsg', [p]);
+    renderAll();
+    setTimeout(() => {
+      const mi = aiChooseFromMarket(p, state.market);
+      const card = state.market.splice(mi, 1)[0];
+      if (state.marketMeta) state.marketMeta.splice(mi, 1);
+      state.emptyPos = getEmptyPos(state.grids[p]);
+      const edge = aiChooseSlide(p, card);
+      const dest = entryPosAfterSlide(state.emptyPos.r, state.emptyPos.c, edge.side);
+      state.grids[p] = applySlide(state.grids[p], state.emptyPos.r, state.emptyPos.c, edge.side, card);
+      logMsg('aiPlayed', [p, card, sideLabel(edge.side), posLabel(dest.r, dest.c)]);
+      state.currentPicker = nextPicker(p);
+      if (state.market.length === 0) endRound();
+      else beginMarketPick();
+    }, 450);
+  }
+}
+
+function humanTakeFromMarket(mi) {
+  if (viewOnly || state.phase !== 'market') return;
+  if (state.mode !== 'solo' && state.currentPicker !== state.humanIndex) return;
+  if (mi < 0 || mi >= state.market.length) return;
+  const card = state.market.splice(mi, 1)[0];
+  if (state.marketMeta) state.marketMeta.splice(mi, 1);
+  state.pendingCard = card;
+  state.emptyPos = getEmptyPos(state.grids[state.humanIndex]);
+  state.phase = 'slide';
+  activeTab = state.humanIndex;
+  setMsg('chooseSlide');
+  renderAll();
+}
+
+function humanDoSlide(side) {
+  if (viewOnly || state.phase !== 'slide' || state.pendingCard == null) return;
+  const p = state.humanIndex;
+  const dest = entryPosAfterSlide(state.emptyPos.r, state.emptyPos.c, side);
+  state.grids[p] = applySlide(state.grids[p], state.emptyPos.r, state.emptyPos.c, side, state.pendingCard);
+  logMsg('youSlid', [state.pendingCard, sideLabel(side), posLabel(dest.r, dest.c)]);
+  state.pendingCard = null;
+  if (state.mode === 'solo') {
+    endRound();
+  } else {
+    state.currentPicker = nextPicker(p);
+    if (state.market.length === 0) endRound();
+    else { state.phase = 'market'; beginMarketPick(); }
+  }
+  renderAll();
+}
+
+function endRound() {
+  if (state.round >= 16) { finishGame(); return; }
+  state.round++;
+  // First player token passes to the next non-eliminated player
+  let fp = (state.firstPlayer + 1) % state.numPlayers;
+  for (let k = 0; k < state.numPlayers; k++) {
+    const p = (fp + k) % state.numPlayers;
+    if (!isEliminated(p)) { state.firstPlayer = p; break; }
+  }
+  logMsg('roundLog', [state.round]);
+  startSelectPhase();
+}
+
+function recordStats() {
+  const stats = loadStats();
+  const mode = state.mode;
+  const date = new Date().toISOString();
+  const snapshot = {
+    mode,
+    date,
+    scores: state.scores ? state.scores.map(s => ({ ...s })) : null,
+    cumulative: state.tournament ? state.tournament.cumulative.slice() : null,
+    eliminated: state.tournament ? state.tournament.eliminated.slice() : null,
+    eliminationGame: state.tournament && state.tournament.eliminationGame ? state.tournament.eliminationGame.slice() : null,
+    grids: state.grids.map(g => g.map(c => ({ ...c }))),
+    cancelled: state.cancelled ? state.cancelled.map(a => a.slice()) : null,
+    numPlayers: state.numPlayers,
+    humanIndex: state.humanIndex,
+    tournamentWinner: null,
+    tournamentComplete: false
+  };
+
+  if (mode === 'tournament' && state.tournament) {
+    const under100 = [];
+    for (let p = 0; p < state.numPlayers; p++) {
+      if (state.tournament.cumulative[p] < 100) under100.push(p);
+    }
+    if (under100.length === 1) {
+      snapshot.tournamentWinner = under100[0];
+      snapshot.tournamentComplete = true;
+    } else if (under100.length === 0) {
+      let w = 0, best = state.tournament.cumulative[0];
+      for (let p = 1; p < state.numPlayers; p++) {
+        if (state.tournament.cumulative[p] < best) {
+          best = state.tournament.cumulative[p];
+          w = p;
+        }
+      }
+      snapshot.tournamentWinner = w;
+      snapshot.tournamentComplete = true;
+    }
+  }
+
+  if (mode !== 'tournament' && state.scores) {
+    const myScore = state.scores[state.humanIndex].score;
+    const prev = stats.best[mode];
+    if (!prev || myScore < prev.score) {
+      stats.best[mode] = { score: myScore, winner: state.humanIndex, snapshot: snapshot };
+    }
+    let best = Infinity, bestCards = Infinity, winIdx = 0;
+    state.scores.forEach((s, i) => {
+      if (s.score < best || (s.score === best && s.cards < bestCards)) {
+        best = s.score; bestCards = s.cards; winIdx = i;
+      }
+    });
+    snapshot.winner = winIdx;
+  }
+
+  // Best tournament: final cumulative + all games for viewing
+  if (mode === 'tournament' && snapshot.tournamentComplete && snapshot.tournamentWinner != null) {
+    const cum = state.tournament.cumulative[snapshot.tournamentWinner];
+    const prev = stats.best.tournament;
+    if (!prev || cum <= prev.score) {
+      // include current snapshot in games list
+      let tgames = (stats.lastGames || []).slice();
+      const gnum = state.tournament.gameNumber;
+      const tid = state.tournament.id;
+      snapshot.tournamentGameNumber = gnum;
+      snapshot.tournamentId = tid;
+      const ex = tgames.findIndex(g => g.tournamentGameNumber === gnum && g.tournamentId === tid);
+      if (ex >= 0) tgames[ex] = snapshot; else tgames = tgames.concat([snapshot]);
+      stats.best.tournament = {
+        score: cum,
+        winner: snapshot.tournamentWinner,
+        snapshot: snapshot,
+        tournamentGames: tgames
+      };
     }
   }
 
