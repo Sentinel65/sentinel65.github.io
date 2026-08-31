@@ -481,6 +481,8 @@ function applyI18n() {
   updateStatusUI();
   renderTabs();
   if (state) renderBoard();
+  // Re-translate tournament game switcher buttons (Hra / Game 1, 2, …)
+  if (typeof renderViewGameSwitcher === 'function') renderViewGameSwitcher();
 }
 
 const SAVE_KEY = 'soupej_save_v7';
@@ -1747,113 +1749,343 @@ function renderStats() {
   const box = document.getElementById('statsContent');
   let html = '';
 
+  // ─────────────────────────────────────────────
+  // NEJLEPŠÍ VÝSLEDKY
+  // ─────────────────────────────────────────────
   html += '<div class="stats-section"><h3>' + t('bestResults') + '</h3>';
-  html += '<table class="stats-table"><tr><th>' + t('mode') + '</th><th>' + t('score') + '</th><th>' + t('winner') + '</th></tr>';
+
+  html += '<table class="stats-table stats-table-summary">';
+  html += '<tr>';
+  html += '<th>' + t('mode') + '</th>';
+  html += '<th>' + t('score') + '</th>';
+  html += '<th>' + t('winner') + '</th>';
+  html += '</tr>';
+
   const modes = ['solo', 'ai2', 'ai3', 'ai4', 'tournament'];
   let anyBest = false;
+
   modes.forEach(m => {
     const b = stats.best[m];
     if (!b) return;
-    anyBest = true;
-    const wName = (b.winner === 0) ? '👤' : ('🖥️' + (b.winner || 0));
-    const canView = !!(b.snapshot || (b.tournamentGames && b.tournamentGames.length));
-    html += '<tr class="' + (canView ? 'clickable' : '') + '" data-best="' + m + '"><td>' +
-      (MODE_LABEL[m] || m) + '</td><td>' + b.score + '</td><td>' + wName + '</td></tr>';
-  });
-  if (!anyBest) html += '<tr><td colspan="3">' + t('noStats') + '</td></tr>';
-  html += '</table></div>';
 
+    anyBest = true;
+
+    const wName = (b.winner === 0)
+      ? '👤'
+      : ('🖥️' + (b.winner || 0));
+
+    const canView = !!(
+      b.snapshot ||
+      (b.tournamentGames && b.tournamentGames.length)
+    );
+
+    html += '<tr class="' + (canView ? 'clickable' : '') +
+      '" data-best="' + m + '">';
+
+    html += '<td>' + (MODE_LABEL[m] || m) + '</td>';
+    html += '<td>' + b.score + '</td>';
+    html += '<td>' + wName + '</td>';
+
+    html += '</tr>';
+  });
+
+  if (!anyBest) {
+    html += '<tr><td colspan="3">' + t('noStats') + '</td></tr>';
+  }
+
+  html += '</table>';
+  html += '</div>';
+
+
+  // ─────────────────────────────────────────────
+  // POSLEDNÍ HRY
+  // ─────────────────────────────────────────────
   html += '<div class="stats-section"><h3>' + t('lastGames') + '</h3>';
+
   if (!stats.lastGames || !stats.lastGames.length) {
-    html += '<p style="color:var(--muted)">' + t('noStats') + '</p>';
+
+    html += '<p style="color:var(--muted)">' +
+      t('noStats') +
+      '</p>';
+
   } else {
+
     const games = stats.lastGames;
     const isT = games[0].mode === 'tournament';
     const n = games[0].numPlayers || 4;
     const hi = games[0].humanIndex || 0;
 
-    html += '<table class="stats-table"><tr><th>' + t('mode') + '</th>';
-    for (let p = 0; p < n; p++) {
-      const nm = p === hi ? '👤' : ('🖥️' + (p + 1));
-      html += '<th' + (isT ? ' style="text-align:right"' : '') + '>' + nm + '</th>';
-    }
-    html += '</tr>';
+
+    // ───────────────────────────────────────────
+    // HLAVIČKA SPODNÍ TABULKY
+    // ───────────────────────────────────────────
+    html += '<table class="stats-table' +
+      (isT ? '' : ' stats-table-summary') +
+      '">';
+
+    html += '<tr>';
+    html += '<th>' + t('mode') + '</th>';
 
     if (isT) {
+
+      // Turnaj – každý hráč má vlastní sloupec
+      let aiNo = 0;
+
+for (let p = 0; p < n; p++) {
+  let nm;
+
+  if (p === hi) {
+    nm = '👤';
+  } else {
+    aiNo++;
+    nm = '🖥️' + aiNo;
+  }
+
+  html += '<th style="text-align:right">' + nm + '</th>';
+}
+
+    } else {
+
+      // Ostatní režimy – stejné sloupce jako horní tabulka
+      html += '<th>' + t('score') + '</th>';
+      html += '<th>' + t('winner') + '</th>';
+    }
+
+    html += '</tr>';
+
+
+    // ───────────────────────────────────────────
+    // TURNAMENT
+    // ───────────────────────────────────────────
+    if (isT) {
+
       html += '<tr class="clickable" data-last="1">';
+
       html += '<td style="vertical-align:top">T';
+
       games.forEach(g => {
-        html += '<div style="line-height:1.3;color:var(--muted);font-size:0.75rem">#' + (g.tournamentGameNumber || '?') + '</div>';
+        html += '<div style="line-height:1.3;color:var(--muted);font-size:0.75rem">#' +
+          (g.tournamentGameNumber || '?') +
+          '</div>';
       });
+
       html += '</td>';
+
+
       for (let p = 0; p < n; p++) {
+
         html += '<td style="vertical-align:top;text-align:right">';
+
         let lastCum = null;
-        games.forEach(function (g, gi) {
+
+        games.forEach(function(g, gi) {
+
           let played = true;
-          if (g.played) played = !!g.played[p];
-          else if (gi > 0 && games[gi - 1].eliminated && games[gi - 1].eliminated[p]) played = false;
+
+          if (g.played) {
+            played = !!g.played[p];
+
+          } else if (
+            gi > 0 &&
+            games[gi - 1].eliminated &&
+            games[gi - 1].eliminated[p]
+          ) {
+            played = false;
+          }
+
+
           if (!played) {
+
             html += '<div style="line-height:1.3;color:var(--muted)">---</div>';
+
             return;
           }
-          const sc = (g.scores && g.scores[p]) ? g.scores[p].score : '—';
-          html += '<div style="line-height:1.3">+' + sc + '</div>';
-          if (g.cumulative) lastCum = g.cumulative[p];
+
+
+          const sc =
+            (g.scores && g.scores[p])
+              ? g.scores[p].score
+              : '—';
+
+          html += '<div style="line-height:1.3">+' +
+            sc +
+            '</div>';
+
+
+          if (g.cumulative) {
+            lastCum = g.cumulative[p];
+          }
+
         });
+
+
         const last = games[games.length - 1];
-        const cum = (lastCum != null) ? lastCum : (last.cumulative ? last.cumulative[p] : '—');
+
+        const cum =
+          (lastCum != null)
+            ? lastCum
+            : (last.cumulative
+                ? last.cumulative[p]
+                : '—');
+
+
         if (p === 0) {
-          window._statPlaces = computePlacesFromGames(games, n);
+          window._statPlaces =
+            computePlacesFromGames(games, n);
         }
-        const place = window._statPlaces ? window._statPlaces[p] : null;
-        const placeStr = (place && place > 1) ? ' (' + place + ')' : '';
-        html += '<div style="line-height:1.3;font-weight:700;margin-top:2px;border-top:1px solid #4a2030;padding-top:2px">' + cum + placeStr + '</div>';
+
+
+        const place =
+          window._statPlaces
+            ? window._statPlaces[p]
+            : null;
+
+
+        const placeStr =
+          (place && place > 1)
+            ? ' (' + place + ')'
+            : '';
+
+
+        html +=
+          '<div style="line-height:1.3;font-weight:700;margin-top:2px;border-top:1px solid #4a2030;padding-top:2px">' +
+          cum +
+          placeStr +
+          '</div>';
+
         html += '</td>';
       }
+
       html += '</tr>';
+
+
+    // ───────────────────────────────────────────
+    // OSTATNÍ REŽIMY
+    // ───────────────────────────────────────────
     } else {
+
       games.forEach((g, idx) => {
-        html += '<tr class="clickable" data-last-idx="' + idx + '">';
-        html += '<td>' + (MODE_LABEL[g.mode] || g.mode) + '</td>';
-        for (let p = 0; p < n; p++) {
-          const sc = (g.scores && g.scores[p]) ? g.scores[p].score : '—';
-          html += '<td>' + sc + '</td>';
-        }
+
+        const winIdx =
+          (g.winner != null)
+            ? g.winner
+            : 0;
+
+
+        const wName =
+          (winIdx === 0)
+            ? '👤'
+            : ('🖥️' + (winIdx || 0));
+
+
+        const sc =
+          (g.scores && g.scores[winIdx])
+            ? g.scores[winIdx].score
+            : '—';
+
+
+        html +=
+          '<tr class="clickable" data-last-idx="' +
+          idx +
+          '">';
+
+        // Stejné zarovnání jako v horní tabulce
+        html += '<td>' +
+          (MODE_LABEL[g.mode] || g.mode) +
+          '</td>';
+
+        html += '<td>' +
+          sc +
+          '</td>';
+
+        html += '<td>' +
+          wName +
+          '</td>';
+
         html += '</tr>';
       });
     }
+
+
     html += '</table>';
   }
+
   html += '</div>';
+
+
+  // ─────────────────────────────────────────────
+  // VYKRESLENÍ
+  // ─────────────────────────────────────────────
   box.innerHTML = html;
 
+
+  // ─────────────────────────────────────────────
+  // KLIKNUTÍ NA NEJLEPŠÍ VÝSLEDEK
+  // ─────────────────────────────────────────────
   box.querySelectorAll('[data-best]').forEach(tr => {
+
     tr.onclick = () => {
+
       const m = tr.dataset.best;
       const b = loadStats().best[m];
+
       if (!b) return;
-      if (b.tournamentGames && b.tournamentGames.length) {
-        viewSnapshot(b.tournamentGames[b.tournamentGames.length - 1], b.tournamentGames);
+
+
+      if (
+        b.tournamentGames &&
+        b.tournamentGames.length
+      ) {
+
+        viewSnapshot(
+          b.tournamentGames[b.tournamentGames.length - 1],
+          b.tournamentGames
+        );
+
       } else if (b.snapshot) {
+
         viewSnapshot(b.snapshot);
       }
     };
   });
+
+
+  // ─────────────────────────────────────────────
+  // KLIKNUTÍ NA POSLEDNÍ TURNaj
+  // ─────────────────────────────────────────────
   box.querySelectorAll('[data-last]').forEach(tr => {
+
     tr.onclick = () => {
+
       const games = loadStats().lastGames;
-      if (games && games.length) viewSnapshot(games[games.length - 1], games);
+
+      if (games && games.length) {
+        viewSnapshot(
+          games[games.length - 1],
+          games
+        );
+      }
     };
   });
+
+
+  // ─────────────────────────────────────────────
+  // KLIKNUTÍ NA POSLEDNÍ HRU
+  // ─────────────────────────────────────────────
   box.querySelectorAll('[data-last-idx]').forEach(tr => {
+
     tr.onclick = () => {
+
       const idx = +tr.dataset.lastIdx;
       const snap = loadStats().lastGames[idx];
-      if (snap) viewSnapshot(snap);
+
+      if (snap) {
+        viewSnapshot(snap);
+      }
     };
   });
 }
+
 
 function copyLog() {
   if (!state || !state.log.length) return;
