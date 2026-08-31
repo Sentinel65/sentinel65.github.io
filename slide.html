@@ -348,6 +348,7 @@ const I18N = {
     tournamentPlayerResult: "{0}: +{1} [{2}]",
     tournamentAutoPlay: "Hrajete vyřazeni – AI dohrává turnaj…",
     tournamentWinner: "Vítěz turnaje: {0} ({1})",
+    tournamentWinnerBest: "🏆 {0} [{1}] ⭐",
     tournamentRank: "{0} ({1})",
     tournamentSummary: "Celkový souhrn hry",
     tournamentScore: "Turnaj",
@@ -412,6 +413,7 @@ const I18N = {
     tournamentPlayerResult: "{0}: +{1} [{2}]",
     tournamentAutoPlay: "You are eliminated – AI is finishing the tournament…",
     tournamentWinner: "Tournament winner: {0} ({1})",
+    tournamentWinnerBest: "🏆 {0} [{1}] ⭐",
     tournamentRank: "{0} ({1})",
     tournamentSummary: "Overall summary",
     tournamentScore: "Tournament",
@@ -1773,7 +1775,7 @@ function renderStats() {
     html += '<table class="stats-table"><tr><th>' + t('mode') + '</th>';
     for (let p = 0; p < n; p++) {
       const nm = p === hi ? '👤' : ('🖥️' + (p + 1));
-      html += '<th>' + nm + '</th>';
+      html += '<th' + (isT ? ' style="text-align:right"' : '') + '>' + nm + '</th>';
     }
     html += '</tr>';
 
@@ -1785,30 +1787,27 @@ function renderStats() {
       });
       html += '</td>';
       for (let p = 0; p < n; p++) {
-        html += '<td style="vertical-align:top">';
+        html += '<td style="vertical-align:top;text-align:right">';
         let lastCum = null;
         games.forEach(function (g, gi) {
           let played = true;
           if (g.played) played = !!g.played[p];
           else if (gi > 0 && games[gi - 1].eliminated && games[gi - 1].eliminated[p]) played = false;
-          const num = g.tournamentGameNumber || (gi + 1);
           if (!played) {
-            html += '<div style="line-height:1.3;color:var(--muted)">#' + num + ': ---</div>';
+            html += '<div style="line-height:1.3;color:var(--muted)">---</div>';
             return;
           }
           const sc = (g.scores && g.scores[p]) ? g.scores[p].score : '—';
-          html += '<div style="line-height:1.3">#' + num + ': +' + sc + '</div>';
+          html += '<div style="line-height:1.3">+' + sc + '</div>';
           if (g.cumulative) lastCum = g.cumulative[p];
         });
-        // Final cumulative + overall place in parentheses
         const last = games[games.length - 1];
         const cum = (lastCum != null) ? lastCum : (last.cumulative ? last.cumulative[p] : '—');
-        // Compute places for all players once (reuse via closure on first p)
         if (p === 0) {
           window._statPlaces = computePlacesFromGames(games, n);
         }
         const place = window._statPlaces ? window._statPlaces[p] : null;
-        const placeStr = (place && place > 1) ? ' (' + place + ')' : (place === 1 ? '' : '');
+        const placeStr = (place && place > 1) ? ' (' + place + ')' : '';
         html += '<div style="line-height:1.3;font-weight:700;margin-top:2px;border-top:1px solid #4a2030;padding-top:2px">' + cum + placeStr + '</div>';
         html += '</td>';
       }
