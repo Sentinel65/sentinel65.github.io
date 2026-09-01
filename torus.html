@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TORUS</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --text: #eaeaea;
+  --cell: #3d4a6a;
+  --cell-hover: #4a5a7a;
+  --p1: #f5f5f5;
+  --p2: #1a1a1a;
+  --p1-border: #bbb;
+  --p2-border: #888;
+  --highlight: #4ecca3;
+  --selected: #ffd700;
+  --ok: #51cf66;
+  --wrap-line: #e8c547;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+#app { display: flex; flex-direction: column; height: 100%; max-width: 720px; margin: 0 auto; }
+
+/* TITLE */
+#title {
+  text-align: center; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.25em;
+  padding: 10px 0 4px; color: #fff; text-shadow: 0 0 12px rgba(233,69,96,0.4);
+}
+#copyright { font-size: 0.62rem; font-weight: 400; font-style: italic; letter-spacing: 0; opacity: 0.7; margin-top: 2px; }
+
+#menu {
+  display: flex; gap: 6px; padding: 6px 8px 8px; background: var(--panel);
+  border-bottom: 2px solid var(--accent2); justify-content: center; align-items: center;
+}
+.btn {
+  background: var(--accent2); border: none; color: var(--text); padding: 9px 11px;
+  border-radius: 10px; cursor: pointer; font-size: 1.25rem; display: inline-flex;
+  align-items: center; justify-content: center; transition: transform .1s;
+  min-width: 44px; min-height: 44px;
+  outline: none; /* Odstraní rámeček při kliknutí/fokusu */
+  -webkit-tap-highlight-color: transparent; /* Zruší probliknutí na mobilech */
+}
+.btn:hover { background: var(--accent2); transform: scale(1.08); }
+.btn:active { transform: scale(0.95); background: var(--accent2); }
+.btn:focus { outline: none; background: var(--accent2); } /* Zamezí vyskočení čtverce při fokusu */
+.btn.active { background: var(--accent2); box-shadow: none; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+
+/* STATUS / OPS */
+#status {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #0f0f23;
+  min-height: 52px;
+}
+.player-box {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 10px; border-radius: 10px; transition: background .2s, box-shadow .2s;
+  font-size: 0.8rem;
+}
+.player-box.active {
+  background: rgba(78,204,163,0.15);
+  box-shadow: 0 0 0 2px var(--highlight);
+}
+.player-box .score { font-size: 1.15rem; font-weight: 700; }
+.player-box.p1 .score { color: #eee; }
+.player-box.p2 .score { color: #ccc; }
+.player-box .label { opacity: 0.7; font-size: 0.7rem; }
+
+#ops {
+  display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+}
+.op-btn {
+  width: 42px; height: 42px; border-radius: 10px; border: 2px solid #444;
+  background: #1a1a30; color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+  position: relative; padding: 0;
+}
+.op-btn:hover:not(:disabled) { border-color: var(--highlight); background: #252545; }
+.op-btn.active { background: var(--highlight); border-color: var(--highlight); }
+.op-btn.active svg { stroke: #111; }
+.op-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.op-btn svg {
+  width: 22px; height: 22px; stroke: currentColor; fill: none;
+  stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+}
+.op-btn .cnt {
+  position: absolute; bottom: -2px; right: -2px; background: var(--accent);
+  color: #fff; font-size: 0.6rem; font-weight: 700; width: 16px; height: 16px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+
+/* BOARD */
+#board-wrap {
+  flex: 1; display: flex; justify-content: center; align-items: center;
+  padding: 8px; overflow: auto; min-height: 0; position: relative;
+}
+#board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 2px;
+  width: min(92vw, 480px);
+  height: min(92vw, 480px);
+  max-width: 100%;
+  background: #2a3348;
+  border: 5px solid #4a5570;
+  border-radius: 8px;
+  position: relative;
+}
+.cell {
+  background: var(--cell);
+  display: flex; justify-content: center; align-items: center;
+  position: relative; cursor: pointer; border-radius: 3px;
+  user-select: none; transition: background .12s;
+}
+.cell:hover { background: var(--cell-hover); }
+.cell.empty:hover { background: #5a6a8a; }
+.cell .num {
+  position: absolute; top: 1px; left: 2px;
+  font-size: clamp(0.38rem, 1.15vw, 0.48rem);
+  font-weight: 700; color: #c0c8d8; opacity: 0.85; pointer-events: none;
+  line-height: 1;
+}
+.cell .disc {
+  width: 66%; height: 66%; border-radius: 50%;
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.4);
+  z-index: 1;
+  transition: transform 0.55s ease, background 0.55s ease, border-color 0.55s ease;
+  transform-style: preserve-3d;
+}
+.cell .disc.p1 { background: var(--p1); border: 2px solid var(--p1-border); }
+.cell .disc.p2 { background: var(--p2); border: 2.5px solid #999; }
+.cell .disc.flipping {
+  transform: rotateY(180deg);
+}
+.cell .disc.ai-acted {
+  box-shadow: 0 0 0 3px #ff9f43, inset 0 -2px 4px rgba(0,0,0,0.35);
+}
+
+/* small green target dot instead of outline */
+.cell .target-dot {
+  position: absolute; width: 18%; height: 18%; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 6px var(--ok); z-index: 2;
+  pointer-events: none;
+}
+.cell.selected { outline: 3px solid var(--selected); outline-offset: -2px; z-index: 3; }
+.cell.capture-ready { animation: pulse 0.9s infinite; }
+.cell.surrounder { outline: 2px solid var(--highlight); outline-offset: -2px; z-index: 2; }
+
+/* wrap-threat outer colored lines */
+.cell.wrap-top    { box-shadow: inset 0 4px 0 0 var(--wrap-line); }
+.cell.wrap-bottom { box-shadow: inset 0 -4px 0 0 var(--wrap-line); }
+.cell.wrap-left   { box-shadow: inset 4px 0 0 0 var(--wrap-line); }
+.cell.wrap-right  { box-shadow: inset -4px 0 0 0 var(--wrap-line); }
+.cell.wrap-top.wrap-left    { box-shadow: inset 4px 4px 0 0 var(--wrap-line); }
+.cell.wrap-top.wrap-right   { box-shadow: inset -4px 4px 0 0 var(--wrap-line); }
+.cell.wrap-bottom.wrap-left { box-shadow: inset 4px -4px 0 0 var(--wrap-line); }
+.cell.wrap-bottom.wrap-right{ box-shadow: inset -4px -4px 0 0 var(--wrap-line); }
+
+@keyframes pulse {
+  0%,100% { box-shadow: inset 0 0 0 0 rgba(78,204,163,0.5); }
+  50% { box-shadow: inset 0 0 0 4px rgba(78,204,163,0.35); }
+}
+
+/* edge color hints - lighter */
+.cell.edge-top    { background: linear-gradient(180deg, #3a5a8a 0%, var(--cell) 70%); }
+.cell.edge-bottom { background: linear-gradient(0deg,   #6a4a3a 0%, var(--cell) 70%); }
+.cell.edge-left   { background: linear-gradient(90deg,  #3a6a4a 0%, var(--cell) 70%); }
+.cell.edge-right  { background: linear-gradient(270deg, #7a4a4a 0%, var(--cell) 70%); }
+.cell.corner      { background: #5a4a6a; }
+
+/* END OVERLAY */
+#end-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none;
+  flex-direction: column; justify-content: center; align-items: center; z-index: 50;
+  border-radius: 8px; text-align: center; padding: 20px; gap: 20px;
+}
+#end-overlay.show { display: flex; }
+#end-overlay .end-row {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  font-size: 1.55rem; font-weight: 700;
+}
+#end-overlay .end-row .trophy { font-size: 2.5rem; }
+#end-overlay .end-row .side {
+  display: flex; align-items: center; gap: 6px;
+}
+#end-overlay .end-row .side .ico { font-size: 1.7rem; }
+#end-overlay .end-row .sep { opacity: 0.45; margin: 0 2px; font-weight: 400; }
+#end-overlay .end-actions { display: flex; gap: 18px; }
+#end-overlay .end-actions .btn { font-size: 1.4rem; min-width: 52px; min-height: 52px; }
+
+/* MODALS */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none;
+  justify-content: center; align-items: center; z-index: 100; padding: 14px;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: var(--panel); border-radius: 14px; padding: 18px 20px; max-width: 500px;
+  width: 100%; max-height: 85vh; overflow-y: auto; border: 2px solid var(--accent2);
+  position: relative;
+}
+.modal h2 { margin-bottom: 12px; color: var(--accent); font-size: 1.25rem; padding-right: 60px; }
+.modal p, .modal li { margin-bottom: 8px; line-height: 1.45; font-size: 0.9rem; }
+.modal .copyright { font-style: italic; font-size: 0.78rem; opacity: 0.75; margin: -4px 0 12px; }
+.modal ul { padding-left: 20px; }
+.modal-header-actions {
+  position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;
+}
+.modal-header-actions button {
+  background: var(--accent2); border: none; color: var(--text); width: 36px; height: 36px;
+  border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex;
+  align-items: center; justify-content: center;
+}
+.modal-header-actions button:hover { background: var(--accent); }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #fff; padding: 10px 18px; border-radius: 8px;
+  font-size: 0.9rem; opacity: 0; transition: opacity .3s; z-index: 200; pointer-events: none;
+  max-width: 90%; text-align: center;
+}
+#toast.show { opacity: 1; }
+
+/* LOG ENTRIES */
+#log-full { white-space: pre-wrap; font-size: 0.85rem; max-height: 55vh; overflow: auto;
+  background: #0a0a18; padding: 10px; border-radius: 8px; font-family: system-ui, sans-serif; line-height: 1.5; }
+.log-line { padding: 3px 0; border-bottom: 1px solid #1a1a2a; }
+.log-line .ico { margin-right: 6px; }
+
+@media (max-width: 420px) {
+  #title { font-size: 1.25rem; letter-spacing: 0.15em; }
+  .btn { min-width: 40px; min-height: 40px; font-size: 1.1rem; padding: 7px 9px; }
+  .op-btn { width: 38px; height: 38px; font-size: 1.05rem; }
+  .player-box { padding: 3px 6px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="title">TORUS</div>
+
+<div id="menu">
+    <button class="btn" id="btn-save" title="Save">💾</button>
+    <button class="btn" id="btn-load" title="Load">📂</button>
+    <button class="btn" id="btn-restart" title="Restart">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+  </svg>
+</button>
+
+    <button class="btn" id="btn-log" title="Log">📜</button>
+    <button class="btn" id="btn-lang" title="Language">🇬🇧</button>
+    <button class="btn" id="btn-help" title="Help">💡</button>
+  </div>
+
+  <div id="status">
+    <div class="player-box p1" id="box-p1">
+      <span class="label" id="label-p1">👤</span>
+      <span class="score" id="score-p1">0</span>
+    </div>
+    <div id="ops">
+      <button class="op-btn" data-op="put" id="op-put" title="Put">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="cnt" id="cnt-put">2</span>
+      </button>
+      <button class="op-btn" data-op="move" id="op-move" title="Move">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>
+          <path d="M12 4l-2.5 2.5M12 4l2.5 2.5M12 20l-2.5-2.5M12 20l2.5-2.5M4 12l2.5-2.5M4 12l2.5 2.5M20 12l-2.5-2.5M20 12l-2.5 2.5"/>
+        </svg>
+        <span class="cnt" id="cnt-move">2</span>
+      </button>
+      <button class="op-btn" data-op="land" id="op-land" title="Remove">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+        <span class="cnt" id="cnt-land">1</span>
+      </button>
+      <button class="op-btn" id="btn-endturn" title="End turn">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="player-box p2" id="box-p2">
+      <span class="label" id="label-p2">🖥️</span>
+      <span class="score" id="score-p2">0</span>
+    </div>
+  </div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+    <div id="end-overlay">
+      <div class="end-row" id="end-row">
+        <span class="trophy" id="end-trophy">🏆</span>
+        <span class="side" id="end-winner"><span class="ico">👤</span><span class="pts">0</span></span>
+        <span class="sep">:</span>
+        <span class="side" id="end-loser"><span class="ico">🖥️</span><span class="pts">0</span></span>
+      </div>
+      <div class="end-actions">
+        <button class="btn" id="btn-newgame" title="Restart">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+  </svg>
+</button>
+        <button class="btn" id="btn-close-end" title="Close">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="help-modal">
+  <div class="modal">
+    <div class="modal-header-actions">
+      <button id="help-close" title="Close">✕</button>
+    </div>
+    <h2 data-i18n="helpTitle">Pravidla TORUS</h2>
+    <div class="copyright">© 2022 Designer and rules: Vladimir Bronnikov</div>
+    <div id="help-content"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="log-modal">
+  <div class="modal">
+    <div class="modal-header-actions">
+      <button id="btn-copy-log" title="Copy">📋</button>
+      <button id="log-close" title="Close">✕</button>
+    </div>
+    <h2 data-i18n="logTitle">Herní log</h2>
+    <div id="log-full"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===================== TRANSLATIONS ===================== */
+const I18N = {
+  cs: {
+    helpTitle: "Pravidla TORUS", logTitle: "Herní log",
+    turnP1: "Hráč 1 (bílý)", turnP2: "Hráč 2 (černý)",
+    saved: "Hra uložena", loaded: "Hra načtena", noSave: "Žádná uložená hra",
+    copied: "Log zkopírován", restartConfirm: "Opravdu restartovat hru?",
+    winP1: "Vyhrál Hráč 1!", winP2: "Vyhrál Hráč 2!", draw: "Remíza!",
+    boardFull: "Deska je plná.",
+    aiThinking: "AI přemýšlí…",
+    selectPiece: "Vyber svůj kámen", selectTarget: "Vyber cíl",
+    selectRemove: "Vyber 2 své kameny k odebrání", selectPlace: "Polož nový kámen",
+    invalid: "Neplatný tah", captured: "Zajato", placed: "Položeno", moved: "Přesunuto", landed: "Odebrání",
+    helpHtml: `
+      <p><strong>Cíl:</strong> Mít více kamenů své barvy, až bude deska plná (10×10 = 100 polí).</p>
+      <p><strong>Tah hráče</strong> může obsahovat (v libovolném pořadí, některé lze přeskočit):</p>
+      <ul>
+        <li><strong>+</strong> Položit – až 2 kameny na prázdná pole.</li>
+        <li><strong>↔</strong> Přesun – až 2 kroky: jeden kámen o 2 pole, nebo dva kameny o 1 pole. Pouze vodorovně/svisle (nahoru/dolů/doleva/doprava), na prázdná pole.</li>
+        <li><strong>−</strong> Odebrání – odeber 2 své kameny a polož 1 nový na prázdné pole (1× za tah).</li>
+        <li><strong>×</strong> Konec tahu – předá tah soupeři.</li>
+        <li><strong>Zajetí</strong> – pokud má soupeřův kámen alespoň 5 tvých kamenů v 8 sousedních polích (včetně přes okraj), otočí se na tvou barvu. Lze řetězit (kaskáda).</li>
+      </ul>
+      <p><strong>Torus (propojené okraje)</strong></p>
+      <p>Hrací deska funguje jako <em>torus</em> – jako povrch donutu. Levý okraj navazuje na pravý a horní okraj na dolní. Kámen, který stojí na levém okraji, sousedí s polem na pravém okraji (stejný řádek) a naopak. Stejně tak horní a dolní okraj.</p>
+      <p>Proto můžeš <strong>přesouvat kameny z jedné strany desky na druhou</strong>: posun z levého okraje „vlevo“ tě přenese na pravý okraj a naopak. Rohy jsou propojené se všemi třemi zbývajícími rohy.</p>
+      <p>Na fyzické desce to ukazují barevná pole kolem číslované části (kopie okrajů). V digitální verzi je propojení automatické – při pohybu nebo při počítání sousedů pro zajetí se okraje berou jako sousední.</p>
+      <p>Zlatá linka na okraji buňky upozorňuje, že přes torus už „sahá“ alespoň jeden tvůj kámen na soupeřův kámen na protější straně.</p>
+      <p>Hraješ <strong>proti AI</strong> (počítadlo vpravo = 🖥️).</p>
+    `
+  },
+  en: {
+    helpTitle: "TORUS Rules", logTitle: "Game log",
+    turnP1: "Player 1 (White)", turnP2: "Player 2 (Black)",
+    saved: "Game saved", loaded: "Game loaded", noSave: "No saved game",
+    copied: "Log copied", restartConfirm: "Really restart the game?",
+    winP1: "Player 1 wins!", winP2: "Player 2 wins!", draw: "Draw!",
+    boardFull: "Board is full.",
+    aiThinking: "AI thinking…",
+    selectPiece: "Select your piece", selectTarget: "Select target",
+    selectRemove: "Select 2 of your pieces to remove", selectPlace: "Place new piece",
+    invalid: "Invalid move", captured: "Captured", placed: "Placed", moved: "Moved", landed: "Remove",
+    helpHtml: `
+      <p><strong>Goal:</strong> Have more pieces of your color when the board is full (10×10 = 100 cells).</p>
+      <p><strong>Player turn</strong> may include (any order, some may be skipped):</p>
+      <ul>
+        <li><strong>+</strong> Put – place up to 2 pieces on empty cells.</li>
+        <li><strong>↔</strong> Move – up to 2 steps: one piece two cells, or two pieces one cell each. Orthogonal only (up/down/left/right), onto empty cells.</li>
+        <li><strong>−</strong> Remove – remove 2 of your pieces and place 1 new on an empty cell (once per turn).</li>
+        <li><strong>×</strong> End turn – pass the turn to the opponent.</li>
+        <li><strong>Capture</strong> – if an opponent piece is surrounded by at least 5 of your pieces in its 8 neighbours (including across edges), it flips to your colour. Cascades allowed.</li>
+      </ul>
+      <p><strong>Torus (wrapping edges)</strong></p>
+      <p>The board is a <em>torus</em> – like the surface of a doughnut. The left edge connects to the right edge, and the top edge connects to the bottom edge. A piece on the left edge is a neighbour of the cell on the right edge in the same row, and vice versa. The same applies to top and bottom.</p>
+      <p>You can therefore <strong>move pieces from one side of the board to the other</strong>: a step “left” from the left edge lands on the right edge, and the other way around. Corners are connected to the other three corners.</p>
+      <p>On the physical board this is shown by the coloured cells around the numbered area (copies of the edges). In the digital version the connection is automatic – movement and capture neighbourhoods treat opposite edges as adjacent.</p>
+      <p>A golden line on a cell edge warns that at least one of your pieces already “reaches” an opponent piece on the opposite side via the torus.</p>
+      <p>You play <strong>against the AI</strong> (right counter = 🖥️).</p>
+    `
+  }
+};
+
+/* ===================== GAME STATE ===================== */
+const SIZE = 10;
+let state = {
+  board: Array(SIZE * SIZE).fill(0),
+  player: 1,
+  mode: 'ai',
+  lang: 'cs',
+  putLeft: 2,
+  moveLeft: 2,
+  landLeft: 1,
+  action: null,
+  moveFrom: null,
+  landRemoves: [],
+  longPress: false,
+  suppressClick: false,
+  log: [],
+  gameOver: false,
+  winner: null,
+  aiActed: []   // indices of AI pieces that acted last turn
+};
+
+/* ===================== UTIL ===================== */
+function idx(r, c) { return r * SIZE + c; }
+function rc(i) { return [Math.floor(i / SIZE), i % SIZE]; }
+function wrap(v) { return (v + SIZE) % SIZE; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+function t(key) { return I18N[state.lang][key] || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[state.lang][key]) el.textContent = I18N[state.lang][key];
+  });
+  document.getElementById('help-content').innerHTML = t('helpHtml');
+  // language flag = target language
+  document.getElementById('btn-lang').textContent = state.lang === 'cs' ? '🇬🇧' : '🇨🇿';
+  updateStatus();
+  updateOpButtons();
+}
+
+/* ===================== NEIGHBORS (TORUS) ===================== */
+const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const DIRS4 = [[-1,0],[1,0],[0,-1],[0,1]];
+
+function neighbors8(i) {
+  const [r, c] = rc(i);
+  return DIRS8.map(([dr, dc]) => idx(wrap(r + dr), wrap(c + dc)));
+}
+function neighbors4(i) {
+  const [r, c] = rc(i);
+  return DIRS4.map(([dr, dc]) => idx(wrap(r + dr), wrap(c + dc)));
+}
+
+/* ===================== CAPTURE ===================== */
+function countOwnAround(i, player) {
+  return neighbors8(i).filter(n => state.board[n] === player).length;
+}
+
+function getSurrounders(i, player) {
+  return neighbors8(i).filter(n => state.board[n] === player);
+}
+
+/** Find all currently capturable opponent pieces for `player` */
+function findCapturable(player) {
+  const list = [];
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    if (state.board[i] !== 0 && state.board[i] !== player && countOwnAround(i, player) >= 5) {
+      list.push(i);
+    }
+  }
+  return list;
+}
+
+/**
+ * Animate captures one-by-one with a flip effect.
+ * Returns a Promise that resolves when all flips (including cascades) are done.
+ */
+function doCaptures(player) {
+  return new Promise(resolve => {
+    const runWave = () => {
+      const targets = findCapturable(player);
+      if (targets.length === 0) {
+        resolve(0);
+        return;
+      }
+      // Highlight surrounders of the first target, then flip all current targets
+      const first = targets[0];
+      const surrounders = getSurrounders(first, player);
+
+      // Mark surrounders visually
+      surrounders.forEach(si => {
+        const cell = document.querySelector(`.cell[data-idx="${si}"]`);
+        if (cell) cell.classList.add('surrounder');
+      });
+      // Mark the target
+      const targetCell = document.querySelector(`.cell[data-idx="${first}"]`);
+      if (targetCell) targetCell.classList.add('capture-ready');
+
+      // After a short pause, flip all current targets
+      setTimeout(() => {
+        targets.forEach(ti => {
+          const cell = document.querySelector(`.cell[data-idx="${ti}"]`);
+          const disc = cell ? cell.querySelector('.disc') : null;
+          if (disc) {
+            disc.classList.add('flipping');
+            // Mid-flip: change color
+            setTimeout(() => {
+              state.board[ti] = player;
+              disc.classList.remove('p1', 'p2');
+              disc.classList.add('p' + player);
+              logMsg(`${t('captured')} #${ti + 1}`, player);
+            }, 280);
+            // End of flip animation
+            setTimeout(() => {
+              disc.classList.remove('flipping');
+            }, 560);
+          } else {
+            state.board[ti] = player;
+            logMsg(`${t('captured')} #${ti + 1}`, player);
+          }
+        });
+
+        // Clear surrounder highlights and re-render after animation, then cascade
+        setTimeout(() => {
+          document.querySelectorAll('.surrounder').forEach(el => el.classList.remove('surrounder'));
+          renderBoard();
+          updateStatus();
+          // Cascade
+          setTimeout(runWave, 120);
+        }, 620);
+      }, 350);
+    };
+    runWave();
+  });
+}
+
+/* ===================== RENDER ===================== */
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const [r, c] = rc(i);
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.idx = i;
+
+    if ((r === 0 || r === 9) && (c === 0 || c === 9)) cell.classList.add('corner');
+    else if (r === 0) cell.classList.add('edge-top');
+    else if (r === 9) cell.classList.add('edge-bottom');
+    else if (c === 0) cell.classList.add('edge-left');
+    else if (c === 9) cell.classList.add('edge-right');
+
+    if (state.board[i] === 0) cell.classList.add('empty');
+
+    const num = document.createElement('span');
+    num.className = 'num';
+    num.textContent = i + 1;
+    cell.appendChild(num);
+
+    if (state.board[i] !== 0) {
+      const disc = document.createElement('div');
+      disc.className = 'disc p' + state.board[i];
+      if (state.aiActed.includes(i)) disc.classList.add('ai-acted');
+      cell.appendChild(disc);
+    }
+
+    // selection
+    if (state.moveFrom === i || state.landRemoves.includes(i)) cell.classList.add('selected');
+
+    // target dots (small green circle)
+    let showTarget = false;
+    if (state.action === 'put' && state.board[i] === 0 && state.putLeft > 0) showTarget = true;
+    if (state.action === 'move' && state.moveFrom !== null) {
+      const adj = neighbors4(state.moveFrom);
+      if (adj.includes(i) && state.board[i] === 0) showTarget = true;
+    }
+    if (state.action === 'land' && state.landRemoves.length === 2 && state.board[i] === 0) showTarget = true;
+    if (showTarget) {
+      const dot = document.createElement('div');
+      dot.className = 'target-dot';
+      cell.appendChild(dot);
+    }
+
+    // capture hint + mark the surrounding own pieces
+    if (state.board[i] !== 0 && state.board[i] !== state.player && countOwnAround(i, state.player) >= 5) {
+      cell.classList.add('capture-ready');
+      getSurrounders(i, state.player).forEach(si => {
+        if (!window._pendingSurrounders) window._pendingSurrounders = new Set();
+        window._pendingSurrounders.add(si);
+      });
+    }
+
+    let pressTimer = null;
+    let longPressed = false;
+    cell.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      if (state.gameOver || (state.mode === 'ai' && state.player === 2)) return;
+      if (state.board[i] !== state.player || state.landLeft <= 0) return;
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        enterLandModeFromLongPress(i);
+      }, 550);
+    });
+    cell.addEventListener('pointerup', () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    cell.addEventListener('pointercancel', () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    cell.addEventListener('pointerleave', () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    cell.addEventListener('click', () => {
+      if (longPressed) {
+        longPressed = false;
+        return;
+      }
+      onCellClick(i);
+    });
+    cell.addEventListener('dblclick', () => enterMoveModeFromDoubleClick(i));
+    boardEl.appendChild(cell);
+  }
+
+  // second pass: apply surrounder class
+  if (window._pendingSurrounders) {
+    window._pendingSurrounders.forEach(si => {
+      const c = boardEl.querySelector(`.cell[data-idx="${si}"]`);
+      if (c) c.classList.add('surrounder');
+    });
+    window._pendingSurrounders = null;
+  }
+
+  // Wrap-threat indicators: when a capture-ready piece has neighbors across the torus,
+  // mark the opposite edge cell with outer colored lines.
+  applyWrapThreats(boardEl);
+
+  const overlay = document.getElementById('end-overlay');
+  if (state.gameOver) {
+    overlay.classList.add('show');
+    const p1 = state.board.filter(x => x === 1).length;
+    const p2 = state.board.filter(x => x === 2).length;
+    const ico1 = '👤';
+    const ico2 = '🖥️';
+    let trophy = '🤝';
+    let wIco = ico1, wPts = p1, lIco = ico2, lPts = p2;
+    if (p1 > p2) {
+      trophy = '🏆';
+      wIco = ico1; wPts = p1; lIco = ico2; lPts = p2;
+    } else if (p2 > p1) {
+      trophy = '🏆';
+      wIco = ico2; wPts = p2; lIco = ico1; lPts = p1;
+    }
+    document.getElementById('end-trophy').textContent = trophy;
+    document.querySelector('#end-winner .ico').textContent = wIco;
+    document.querySelector('#end-winner .pts').textContent = wPts;
+    document.querySelector('#end-loser .ico').textContent = lIco;
+    document.querySelector('#end-loser .pts').textContent = lPts;
+  } else {
+    overlay.classList.remove('show');
+  }
+}
+
+/** Mark opposite edge cells with outer colored lines when capture threat wraps around */
+/**
+ * Show golden outer lines as soon as there is at least 1 own piece
+ * contributing to a surround via torus wrap (edge / corner threat).
+ * Does NOT require 5 pieces – lights up from the first wrapping neighbour.
+ */
+function applyWrapThreats(boardEl) {
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    // only care about opponent pieces
+    if (state.board[i] === 0 || state.board[i] === state.player) continue;
+
+    const [r, c] = rc(i);
+    const surrounders = getSurrounders(i, state.player); // own pieces around this opponent
+    if (surrounders.length === 0) continue;
+
+    let hasWrap = false;
+
+    for (const si of surrounders) {
+      const [sr, sc] = rc(si);
+      const wrapsH = Math.abs(sc - c) === SIZE - 1;
+      const wrapsV = Math.abs(sr - r) === SIZE - 1;
+      if (!wrapsH && !wrapsV) continue;
+
+      hasWrap = true;
+      const sCell = boardEl.querySelector(`.cell[data-idx="${si}"]`);
+      if (sCell) {
+        if (wrapsH) {
+          if (sc === 0) sCell.classList.add('wrap-left');
+          else if (sc === SIZE - 1) sCell.classList.add('wrap-right');
+        }
+        if (wrapsV) {
+          if (sr === 0) sCell.classList.add('wrap-top');
+          else if (sr === SIZE - 1) sCell.classList.add('wrap-bottom');
+        }
+      }
+    }
+
+    // also mark the threatened opponent piece itself on the outer side(s)
+    if (hasWrap) {
+      const cell = boardEl.querySelector(`.cell[data-idx="${i}"]`);
+      if (!cell) continue;
+      for (const si of surrounders) {
+        const [sr, sc] = rc(si);
+        if (Math.abs(sc - c) === SIZE - 1) {
+          if (c === 0) cell.classList.add('wrap-left');
+          else if (c === SIZE - 1) cell.classList.add('wrap-right');
+        }
+        if (Math.abs(sr - r) === SIZE - 1) {
+          if (r === 0) cell.classList.add('wrap-top');
+          else if (r === SIZE - 1) cell.classList.add('wrap-bottom');
+        }
+      }
+    }
+  }
+}
+
+function updateStatus() {
+  const p1 = state.board.filter(x => x === 1).length;
+  const p2 = state.board.filter(x => x === 2).length;
+  document.getElementById('score-p1').textContent = p1;
+  document.getElementById('score-p2').textContent = p2;
+  document.getElementById('label-p1').textContent = '👤';
+  document.getElementById('label-p2').textContent = '🖥️';
+  document.getElementById('box-p1').classList.toggle('active', state.player === 1 && !state.gameOver);
+  document.getElementById('box-p2').classList.toggle('active', state.player === 2 && !state.gameOver);
+}
+
+function updateOpButtons() {
+  document.getElementById('cnt-put').textContent = state.putLeft;
+  document.getElementById('cnt-move').textContent = state.moveLeft;
+  document.getElementById('cnt-land').textContent = state.landLeft;
+  document.getElementById('op-put').disabled = state.putLeft <= 0 || state.gameOver;
+  document.getElementById('op-move').disabled = state.moveLeft <= 0 || state.gameOver;
+  document.getElementById('op-land').disabled = state.landLeft <= 0 || state.gameOver;
+  document.getElementById('op-put').classList.toggle('active', state.action === 'put');
+  document.getElementById('op-move').classList.toggle('active', state.action === 'move');
+  document.getElementById('op-land').classList.toggle('active', state.action === 'land');
+  document.getElementById('btn-endturn').disabled = state.gameOver;
+}
+
+function logMsg(msg, player) {
+  const entry = { msg, player: player || state.player };
+  state.log.push(entry);
+}
+
+function renderLogModal() {
+  const box = document.getElementById('log-full');
+  if (state.log.length === 0) {
+    box.innerHTML = '<div style="opacity:0.5">(empty)</div>';
+    return;
+  }
+  // reverse chronological
+  const lines = [...state.log].reverse().map(e => {
+    const ico = e.player === 1 ? '👤' : (e.player === 2 ? '🖥️' : '•');
+    return `<div class="log-line"><span class="ico">${ico}</span>${e.msg}</div>`;
+  });
+  box.innerHTML = lines.join('');
+}
+
+/* ===================== ACTIONS ===================== */
+function resetTurnCounters() {
+  state.putLeft = 2;
+  state.moveLeft = 2;
+  state.landLeft = 1;
+  state.action = null;
+  state.moveFrom = null;
+  state.landRemoves = [];
+  state.longPress = false;
+  state.suppressClick = false;
+}
+
+function startTurn() {
+  resetTurnCounters();
+
+  updateOpButtons();
+  updateStatus();
+  renderBoard();
+
+  logMsg(
+    `— ${state.player === 1 ? t('turnP1') : t('turnP2')} —`,
+    state.player
+  );
+
+  // Pokud je na tahu AI, spusť její tah automaticky
+  if (state.mode === 'ai' && state.player === 2 && !state.gameOver) {
+    setTimeout(aiTurn, 320);
+  }
+}
+
+
+function clearAiHighlight() {
+  if (state.aiActed.length > 0) {
+    state.aiActed = [];
+  }
+}
+
+function endTurn() {
+  if (state.gameOver) return;
+
+  doCaptures(state.player).then(() => {
+    if (state.board.every(x => x !== 0)) {
+      state.gameOver = true;
+      renderBoard();
+      return;
+    }
+
+    state.player = state.player === 1 ? 2 : 1;
+
+    // startTurn() se postará i o automatické spuštění AI
+    startTurn();
+  });
+}
+
+function enterMoveModeFromDoubleClick(i) {
+  if (state.gameOver || (state.mode === 'ai' && state.player === 2)) return;
+  if (state.board[i] !== state.player || state.moveLeft <= 0) return;
+  clearAiHighlight();
+  state.action = 'move';
+  state.moveFrom = i;
+  state.landRemoves = [];
+  updateOpButtons();
+  renderBoard();
+  toast(t('selectTarget'));
+}
+
+function enterLandModeFromLongPress(i) {
+  if (state.gameOver || (state.mode === 'ai' && state.player === 2)) return;
+  if (state.board[i] !== state.player || state.landLeft <= 0) return;
+  clearAiHighlight();
+  state.action = 'land';
+  state.moveFrom = null;
+  state.landRemoves = [i];
+  state.longPress = true;
+  state.suppressClick = true;
+  updateOpButtons();
+  renderBoard();
+  toast(t('selectRemove'));
+}
+
+function onCellClick(i) {
+  if (state.suppressClick) {
+    state.suppressClick = false;
+    return;
+  }
+  if (state.gameOver) return;
+  if (state.mode === 'ai' && state.player === 2) return;
+
+  // Simplified input: a single click on an empty cell places a stone
+  // when no specific operation mode is active. The operation buttons
+  // continue to work exactly as before.
+  if (state.action === null && state.board[i] === 0) {
+    if (state.putLeft <= 0) return;
+    clearAiHighlight();
+    state.board[i] = state.player;
+    state.putLeft--;
+    logMsg(`${t('placed')} #${i + 1}`, state.player);
+    updateOpButtons();
+    updateStatus();
+    renderBoard();
+    doCaptures(state.player).then(() => { updateStatus(); checkFull(); });
+    return;
+  }
+
+  if (state.action === 'put') {
+    if (state.putLeft <= 0) return;
+    if (state.board[i] !== 0) { toast(t('invalid')); return; }
+    clearAiHighlight();
+    state.board[i] = state.player;
+    state.putLeft--;
+    logMsg(`${t('placed')} #${i + 1}`, state.player);
+    if (state.putLeft <= 0) state.action = null;
+    updateOpButtons();
+    updateStatus();
+    renderBoard();
+    doCaptures(state.player).then(() => { updateStatus(); checkFull(); });
+  }
+  else if (state.action === 'move') {
+    if (state.moveLeft <= 0) return;
+    if (state.moveFrom === null) {
+      if (state.board[i] !== state.player) { toast(t('selectPiece')); return; }
+      state.moveFrom = i;
+      renderBoard();
+    } else {
+      const adj = neighbors4(state.moveFrom);
+      if (!adj.includes(i) || state.board[i] !== 0) {
+        if (state.board[i] === state.player) {
+          state.moveFrom = i;
+          renderBoard();
+          return;
+        }
+        toast(t('invalid'));
+        return;
+      }
+      clearAiHighlight();
+      state.board[i] = state.player;
+      state.board[state.moveFrom] = 0;
+      logMsg(`${t('moved')} #${state.moveFrom + 1} → #${i + 1}`, state.player);
+      state.moveFrom = null;
+      state.moveLeft--;
+      if (state.moveLeft <= 0) state.action = null;
+      updateOpButtons();
+      updateStatus();
+      renderBoard();
+      doCaptures(state.player).then(() => { updateStatus(); checkFull(); });
+    }
+  }
+  else if (state.action === 'land') {
+    if (state.landLeft <= 0) return;
+    if (state.landRemoves.length < 2) {
+      if (state.board[i] !== state.player) { toast(t('selectRemove')); return; }
+      if (state.landRemoves.includes(i)) {
+        state.landRemoves = state.landRemoves.filter(x => x !== i);
+      } else {
+        state.landRemoves.push(i);
+      }
+      renderBoard();
+      if (state.landRemoves.length === 2) toast(t('selectPlace'));
+    } else {
+      if (state.board[i] !== 0) { toast(t('invalid')); return; }
+      clearAiHighlight();
+      state.landRemoves.forEach(ri => state.board[ri] = 0);
+      state.board[i] = state.player;
+      logMsg(`${t('landed')} −2 → #${i + 1}`, state.player);
+      state.landRemoves = [];
+      state.landLeft = 0;
+      state.action = null;
+      updateOpButtons();
+      updateStatus();
+      renderBoard();
+      doCaptures(state.player).then(() => { updateStatus(); checkFull(); });
+    }
+  }
+}
+
+function checkFull() {
+  if (state.board.every(x => x !== 0)) {
+    doCaptures(state.player).then(() => {
+      state.gameOver = true;
+      renderBoard();
+    });
+  }
+}
+
+/* ===================== AI ===================== */
+async function aiTurn() {
+  if (state.gameOver || state.player !== 2) return;
+  toast(t('aiThinking'));
+  state.aiActed = [];
+
+  await doCaptures(2);
+
+  let puts = 0;
+  const empties = [];
+  for (let i = 0; i < 100; i++) if (state.board[i] === 0) empties.push(i);
+  for (let i = empties.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [empties[i], empties[j]] = [empties[j], empties[i]];
+  }
+
+  function scorePut(pos) {
+    state.board[pos] = 2;
+    let score = neighbors8(pos).filter(n => state.board[n] === 2).length;
+    for (let i = 0; i < 100; i++) {
+      if (state.board[i] === 1 && countOwnAround(i, 2) >= 5) score += 12;
+      else if (state.board[i] === 1 && countOwnAround(i, 2) >= 4) score += 3;
+    }
+    state.board[pos] = 0;
+    return score;
+  }
+
+  empties.sort((a, b) => scorePut(b) - scorePut(a));
+  for (const e of empties) {
+    if (puts >= 2) break;
+    state.board[e] = 2;
+    state.aiActed.push(e);
+    puts++;
+    logMsg(`AI ${t('placed')} #${e + 1}`, 2);
+    renderBoard();
+    await doCaptures(2);
+  }
+  state.putLeft = 2 - puts;
+
+  let movesDone = 0;
+  const own = [];
+  for (let i = 0; i < 100; i++) if (state.board[i] === 2) own.push(i);
+  for (let attempt = 0; attempt < 8 && movesDone < 2; attempt++) {
+    if (own.length === 0) break;
+    const from = own[Math.floor(Math.random() * own.length)];
+    const adj = neighbors4(from).filter(n => state.board[n] === 0);
+    if (adj.length === 0) continue;
+    adj.sort((a, b) => scorePut(b) - scorePut(a));
+    const to = adj[0];
+    state.board[to] = 2;
+    state.board[from] = 0;
+    state.aiActed = state.aiActed.filter(x => x !== from);
+    state.aiActed.push(to);
+    logMsg(`AI ${t('moved')} #${from + 1} → #${to + 1}`, 2);
+    movesDone++;
+    renderBoard();
+    await doCaptures(2);
+    own.splice(own.indexOf(from), 1);
+    own.push(to);
+  }
+  state.moveLeft = 2 - movesDone;
+
+  const ownCount = state.board.filter(x => x === 2).length;
+  if (state.landLeft > 0 && ownCount >= 9 && Math.random() < 0.2) {
+    const candidates = [];
+    for (let i = 0; i < 100; i++) if (state.board[i] === 2) candidates.push(i);
+    candidates.sort((a, b) => neighbors8(a).filter(n => state.board[n] === 2).length - neighbors8(b).filter(n => state.board[n] === 2).length);
+    if (candidates.length >= 2) {
+      const r1 = candidates[0], r2 = candidates[1];
+      state.board[r1] = 0; state.board[r2] = 0;
+      state.aiActed = state.aiActed.filter(x => x !== r1 && x !== r2);
+      let best = -1, bestS = -1;
+      for (const e of empties) {
+        if (state.board[e] !== 0) continue;
+        const s = scorePut(e);
+        if (s > bestS) { bestS = s; best = e; }
+      }
+      if (best >= 0) {
+        state.board[best] = 2;
+        state.aiActed.push(best);
+        logMsg(`AI ${t('landed')} −2 → #${best + 1}`, 2);
+        state.landLeft = 0;
+        renderBoard();
+        await doCaptures(2);
+      } else {
+        state.board[r1] = 2; state.board[r2] = 2;
+      }
+    }
+  }
+
+  updateOpButtons();
+  updateStatus();
+  renderBoard();
+  if (state.board.every(x => x !== 0)) {
+    state.gameOver = true;
+    renderBoard();
+  } else {
+    setTimeout(() => endTurn(), 300);
+  }
+}
+
+/* ===================== SAVE / LOAD ===================== */
+function saveGame() {
+  const data = {
+    board: state.board, player: state.player, mode: state.mode, lang: state.lang,
+    putLeft: state.putLeft, moveLeft: state.moveLeft, landLeft: state.landLeft,
+    log: state.log, gameOver: state.gameOver, winner: state.winner
+  };
+  localStorage.setItem('ctor_save', JSON.stringify(data));
+  toast(t('saved'));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('ctor_save');
+  if (!raw) { toast(t('noSave')); return; }
+  try {
+    const data = JSON.parse(raw);
+    Object.assign(state, data);
+    state.action = null;
+    state.moveFrom = null;
+    state.landRemoves = [];
+    applyI18n();
+    renderBoard();
+    updateOpButtons();
+    updateStatus();
+    toast(t('loaded'));
+  } catch (e) {
+    toast(t('noSave'));
+  }
+}
+
+/* ===================== INIT ===================== */
+const START_PLAYER_KEY = 'gameStartPlayer';
+
+function getNextStartingPlayer() {
+  const last = Number(localStorage.getItem(START_PLAYER_KEY)) || 2;
+  const next = last === 1 ? 2 : 1;
+
+  localStorage.setItem(START_PLAYER_KEY, String(next));
+  return next;
+}
+
+function newGame() {
+  state.board = Array(SIZE * SIZE).fill(0);
+
+  // Střídání začínajícího hráče
+  state.player = getNextStartingPlayer();
+
+  state.gameOver = false;
+  state.winner = null;
+  state.log = [];
+  state.aiActed = [];
+  resetTurnCounters();
+
+  startTurn();
+  logMsg('New game', 0);
+}
+
+function init() {
+  document.getElementById('op-put').addEventListener('click', () => {
+    if (state.putLeft <= 0) return;
+    state.action = state.action === 'put' ? null : 'put';
+    state.moveFrom = null; state.landRemoves = [];
+    updateOpButtons(); renderBoard();
+  });
+  document.getElementById('op-move').addEventListener('click', () => {
+    if (state.moveLeft <= 0) return;
+    state.action = state.action === 'move' ? null : 'move';
+    state.moveFrom = null; state.landRemoves = [];
+    updateOpButtons(); renderBoard();
+  });
+  document.getElementById('op-land').addEventListener('click', () => {
+    if (state.landLeft <= 0) return;
+    state.action = state.action === 'land' ? null : 'land';
+    state.moveFrom = null; state.landRemoves = [];
+    updateOpButtons(); renderBoard();
+  });
+  document.getElementById('btn-endturn').addEventListener('click', endTurn);
+
+  document.getElementById('btn-save').addEventListener('click', saveGame);
+  document.getElementById('btn-load').addEventListener('click', loadGame);
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    newGame();
+    toast(state.lang === 'cs' ? 'Hra restartována' : 'Game restarted');
+  });
+  document.getElementById('btn-lang').addEventListener('click', () => {
+    state.lang = state.lang === 'cs' ? 'en' : 'cs';
+    applyI18n();
+  });
+  document.getElementById('btn-help').addEventListener('click', () => {
+    document.getElementById('help-modal').classList.add('show');
+  });
+  document.getElementById('help-close').addEventListener('click', () => {
+    document.getElementById('help-modal').classList.remove('show');
+  });
+  document.getElementById('btn-log').addEventListener('click', () => {
+    renderLogModal();
+    document.getElementById('log-modal').classList.add('show');
+  });
+  document.getElementById('log-close').addEventListener('click', () => {
+    document.getElementById('log-modal').classList.remove('show');
+  });
+  document.getElementById('btn-copy-log').addEventListener('click', () => {
+    const text = state.log.slice().reverse().map(e => {
+      const ico = e.player === 1 ? 'P1' : (e.player === 2 ? 'P2' : '•');
+      return `${ico}: ${e.msg}`;
+    }).join('\n');
+    navigator.clipboard.writeText(text).then(() => toast(t('copied'))).catch(() => toast(t('copied')));
+  });
+  document.getElementById('btn-newgame').addEventListener('click', newGame);
+  document.getElementById('btn-close-end').addEventListener('click', () => {
+    document.getElementById('end-overlay').classList.remove('show');
+  });
+
+  // close modals on background click
+  document.querySelectorAll('.modal-bg').forEach(bg => {
+    bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('show'); });
+  });
+
+  applyI18n();
+  newGame();
+}
+
+init();
+</script>
+</body>
+</html>
