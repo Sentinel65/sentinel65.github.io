@@ -48,11 +48,12 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
 #btn-coords:focus { outline:none; }
 #menu { display:flex; gap:4px; padding:5px 6px 6px; background:var(--panel);
   border-bottom:2px solid var(--accent2); justify-content:center; align-items:center; flex-wrap:nowrap; }
-.btn { background:var(--accent2); border:none; color:var(--text); padding:8px 9px; border-radius:9px;
-  cursor:pointer; font-size:1.35rem; display:inline-flex; align-items:center; justify-content:center;
-  transition:transform .1s; min-width:46px; min-height:46px; flex:0 0 auto; outline:none;
+.btn { background:var(--accent2); border:none; color:var(--text); padding:6px 7px; border-radius:9px;
+  cursor:pointer; font-size:1.2rem; display:inline-flex; align-items:center; justify-content:center;
+  transition:transform .1s; min-width:40px; min-height:40px; flex:0 0 auto; outline:none;
   -webkit-tap-highlight-color:transparent; }
-.btn svg { width:28px; height:28px; }
+.btn svg { width:24px; height:24px; }
+.btn.replay-on { box-shadow:0 0 0 2px var(--highlight); background:#1a4a6a; }
 .btn:hover { background:var(--accent2); transform:scale(1.06); }
 .btn:active { transform:scale(.95); background:var(--accent2); }
 .btn:focus { outline:none; background:var(--accent2); }
@@ -78,13 +79,40 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
 
 /* BOARD */
 #board-wrap {
-  flex: 1; display: flex; justify-content: center; align-items: center;
+  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
   padding: 8px; overflow: hidden; min-height: 0; position: relative;
 }
 #board {
   display:grid; grid-template-columns:repeat(10,1fr); grid-template-rows:repeat(10,1fr); gap:2px;
-  width:min(94vw,520px,calc(100vh - 175px)); height:min(94vw,520px,calc(100vh - 175px)); max-width:100%; max-height:100%; background:#2a3348;
+  width:min(94vw,520px,calc(100vh - 210px)); height:min(94vw,520px,calc(100vh - 210px)); max-width:100%; max-height:100%; background:#2a3348;
   border:5px solid #4a5570; border-radius:8px; position:relative;
+}
+#board.replay-locked { pointer-events: none; opacity: 0.92; }
+#replay-bar {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  width: min(94vw, 520px); margin-top: 6px; padding: 6px 8px;
+  background: var(--panel); border-radius: 10px; border: 1px solid var(--accent2);
+  /* Reserve space always so the board does not jump when toggling replay */
+  visibility: hidden; opacity: 0; pointer-events: none;
+  min-height: 52px;
+}
+#replay-bar.show { visibility: visible; opacity: 1; pointer-events: auto; }
+#replay-bar .rp-btn {
+  background: var(--accent2); border: none; color: var(--text); width: 36px; height: 36px;
+  border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+#replay-bar .rp-btn:hover:not(:disabled) { background: #1a4a7a; }
+#replay-bar .rp-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+#replay-bar .rp-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#replay-bar .rp-btn svg path.filled { fill: currentColor; stroke: none; }
+#replay-bar .rp-step {
+  font-size: 0.78rem; font-weight: 700; color: #c8d0e0; min-width: 3.6em; text-align: center;
+  letter-spacing: 0.02em;
+}
+#replay-bar .rp-tip {
+  width: 100%; text-align: center; font-size: 0.75rem; color: var(--highlight);
+  font-weight: 600; min-height: 1.1em; padding: 0 4px;
 }
 .cell {
   background: var(--cell);
@@ -213,6 +241,23 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
   max-width: 90%; text-align: center;
 }
 #toast.show { opacity: 1; }
+#confirm-toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: var(--panel); color: var(--text); padding: 12px 14px; border-radius: 10px;
+  font-size: 0.9rem; opacity: 0; transition: opacity .25s; z-index: 210;
+  max-width: 92%; text-align: center; pointer-events: none;
+  border: 2px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+#confirm-toast.show { opacity: 1; pointer-events: auto; }
+#confirm-toast .confirm-actions { display: flex; gap: 12px; }
+#confirm-toast .confirm-actions button {
+  background: var(--accent2); border: none; color: var(--text); min-width: 44px; min-height: 40px;
+  border-radius: 8px; cursor: pointer; font-size: 1.2rem; display: inline-flex;
+  align-items: center; justify-content: center; padding: 6px 12px;
+}
+#confirm-toast .confirm-actions button.yes { background: var(--ok); color: #111; font-weight: 700; }
+#confirm-toast .confirm-actions button.no { background: var(--accent); color: #fff; }
 
 /* LOG ENTRIES */
 #log-full { white-space: pre-wrap; font-size: 0.85rem; max-height: 55vh; overflow: auto;
@@ -226,9 +271,9 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
   .title-player { gap:5px; padding:4px 5px; }
   .title-player .label { font-size:1.2rem; }
   .title-player .score { font-size:1.2rem; }
-  #menu { gap:2px; padding:4px 3px 5px; }
-  .btn { min-width:40px; min-height:40px; width:40px; height:40px; padding:5px; font-size:1.15rem; border-radius:8px; }
-  .btn svg { width:24px !important; height:24px !important; }
+  #menu { gap:2px; padding:4px 2px 5px; }
+  .btn { min-width:34px; min-height:34px; width:34px; height:34px; padding:3px; font-size:1rem; border-radius:8px; }
+  .btn svg { width:20px !important; height:20px !important; }
   #status { min-height:47px; padding:5px 3px; }
   #ops { gap:4px; }
   .op-btn { width:37px; height:37px; border-radius:8px; }
@@ -262,6 +307,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
   <button class="btn" id="btn-restart" title="Restart" data-i18n-title="btnRestart"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4z"/></svg></button>
   <button class="btn" id="btn-ailevel" title="AI level"><svg id="icon-ailevel" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"></svg></button>
   <button class="btn" id="btn-gamemode" title="Game mode"><svg id="icon-gamemode" viewBox="0 0 24 24" width="24" height="24"></svg></button>
+  <button class="btn" id="btn-replay" title="Replay"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg></button>
   <button class="btn" id="btn-log" title="Log" data-i18n-title="btnLog">📜</button>
   <button class="btn" id="btn-lang" title="Language" data-i18n-title="btnLang">🇬🇧</button>
   <button class="btn" id="btn-help" title="Help" data-i18n-title="btnHelp">💡</button>
@@ -277,6 +323,25 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
 
 <div id="board-wrap">
     <div id="board"></div>
+    <div id="replay-bar">
+      <button class="rp-btn" id="rp-start" title="Start">
+        <svg viewBox="0 0 24 24"><path d="M5 5v14M9 12l10-7v14L9 12z" class="filled"/></svg>
+      </button>
+      <button class="rp-btn" id="rp-prev" title="Prev">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <button class="rp-btn" id="rp-play" title="Play">
+        <svg viewBox="0 0 24 24" id="rp-play-icon"><path d="M8 5v14l11-7z" class="filled"/></svg>
+      </button>
+      <button class="rp-btn" id="rp-next" title="Next">
+        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button class="rp-btn" id="rp-end" title="End">
+        <svg viewBox="0 0 24 24"><path d="M19 5v14M5 5l10 7-10 7z" class="filled"/></svg>
+      </button>
+      <span class="rp-step" id="rp-step">0 / 0</span>
+      <div class="rp-tip" id="rp-tip"></div>
+    </div>
     <div id="end-overlay">
       <div class="end-row" id="end-row">
         <span class="trophy" id="end-trophy">🏆</span>
@@ -311,6 +376,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
   <div class="modal">
     <div class="modal-header-actions">
       <button id="btn-copy-log" title="Copy" data-i18n-title="btnCopy">📋</button>
+      <button id="btn-clear-data" title="Clear saved data" data-i18n-title="btnClearData">🗑️</button>
       <button id="log-close" title="Close" data-i18n-title="btnClose">✕</button>
     </div>
     <h2 data-i18n="logTitle">Herní log</h2>
@@ -319,6 +385,13 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
 </div>
 
 <div id="toast"></div>
+<div id="confirm-toast">
+  <div id="confirm-msg"></div>
+  <div class="confirm-actions">
+    <button type="button" class="yes" id="confirm-yes" title="OK">✓</button>
+    <button type="button" class="no" id="confirm-no" title="Cancel">✕</button>
+  </div>
+</div>
 
 <script>
 /* ===================== TRANSLATIONS ===================== */
@@ -327,11 +400,17 @@ const I18N = {
     helpTitle: "Pravidla TORUS", logTitle: "Herní log",
     btnSave: "Uložit", btnLoad: "Načíst", btnRestart: "Restart", btnLog: "Log",
     btnLang: "Jazyk", btnHelp: "Nápověda", btnClose: "Zavřít", btnCopy: "Kopírovat",
+    btnClearData: "Vymazat uložená data",
+    clearDataConfirm: "Opravdu vymazat všechna uložená data hry?",
+    clearDataDone: "Uložená data byla vymazána",
     turnP1: "Hráč 1 (bílý)", turnP2: "Hráč 2 (černý)",
     saved: "Hra uložena", loaded: "Hra načtena", noSave: "Žádná uložená hra",
     copied: "Log zkopírován", restartConfirm: "Opravdu restartovat hru?",
     winP1: "Vyhrál Hráč 1!", winP2: "Vyhrál Hráč 2!", draw: "Remíza!",
     boardFull: "Deska je plná.",
+    boardFullEnd: "Deska je plná — konec hry",
+    rpStart: "Na začátek", rpPrev: "Krok zpět", rpPlay: "Přehrát", rpPause: "Pauza",
+    rpNext: "Krok vpřed", rpEnd: "Na konec", rpReplay: "Přehrávač",
     aiThinking: "AI přemýšlí…",
     selectPiece: "Vyber svůj kámen", selectTarget: "Vyber cíl",
     selectRemove: "Vyber 2 své kameny k odebrání", selectPlace: "Polož nový kámen",
@@ -363,6 +442,7 @@ const I18N = {
         <li>Standardní režim <svg class="rule-ico" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12h8M17 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
         <li>Pokročilý režim <svg class="rule-ico" viewBox="0 0 24 24"><circle cx="7" cy="12" r="2.5" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="2.5" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="2.5" fill="currentColor" stroke="none"/><path d="M15 12h6M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
       </ul>
+      <p>Změnou herního režimu se restartuje hra.</p>
       <p>Hráč 👤 má bílé kameny, AI 🖥️ má černé kameny.</p>
       <p><strong>Úroveň AI:</strong></p>
       <ul>
@@ -372,17 +452,24 @@ const I18N = {
       </ul>
       <p>Klikáním přepínáš 1 / 2 / 3 čárky. Úroveň platí pro další tahy AI; hru není nutné restartovat.</p>
       <p>Kliknutím na název hry se aktivuje / deaktivuje zobrazení souřadnic na polích hrací desky, která jsou obsazená hracími kameny.</p>
+      <p><strong>Přehrávač partie</strong> (ikona oka v menu): zobrazí panel pod deskou. Každý řádek herního logu = jeden krok. Ovládání: na začátek, krok zpět, automatické přehrání / pauza, krok vpřed, na konec. Počet kroků je vpravo. U každého kroku se zobrazí tooltip s ikonou hráče (👤 / 🖥️) a popisem úkonu (položeno, přesunuto, odebrání, migrace, zajetí…). Při aktivním přehrávači je deska zablokovaná.</p>
     `
   },
   en: {
     helpTitle: "TORUS Rules", logTitle: "Game log",
     btnSave: "Save", btnLoad: "Load", btnRestart: "Restart", btnLog: "Log",
     btnLang: "Language", btnHelp: "Help", btnClose: "Close", btnCopy: "Copy",
+    btnClearData: "Clear saved data",
+    clearDataConfirm: "Really delete all saved game data?",
+    clearDataDone: "Saved data has been deleted",
     turnP1: "Player 1 (White)", turnP2: "Player 2 (Black)",
     saved: "Game saved", loaded: "Game loaded", noSave: "No saved game",
     copied: "Log copied", restartConfirm: "Really restart the game?",
     winP1: "Player 1 wins!", winP2: "Player 2 wins!", draw: "Draw!",
     boardFull: "Board is full.",
+    boardFullEnd: "Board full — game over",
+    rpStart: "Go to start", rpPrev: "Step back", rpPlay: "Play", rpPause: "Pause",
+    rpNext: "Step forward", rpEnd: "Go to end", rpReplay: "Replay",
     aiThinking: "AI thinking…",
     selectPiece: "Select your piece", selectTarget: "Select target",
     selectRemove: "Select 2 of your pieces to remove", selectPlace: "Place new piece",
@@ -414,6 +501,7 @@ const I18N = {
         <li>Standard mode <svg class="rule-ico" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12h8M17 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
         <li>Advanced mode <svg class="rule-ico" viewBox="0 0 24 24"><circle cx="7" cy="12" r="2.5" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="2.5" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="2.5" fill="currentColor" stroke="none"/><path d="M15 12h6M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
       </ul>
+      <p>Changing the game mode restarts the game.</p>
       <p>Player 👤 has white pieces, AI 🖥️ has black pieces.</p>
       <p><strong>AI level:</strong></p>
       <ul>
@@ -423,6 +511,7 @@ const I18N = {
       </ul>
       <p>Click to cycle 1 / 2 / 3 bars. The level applies to subsequent AI turns; no restart required.</p>
       <p>Click the game title to toggle coordinate display on board cells occupied by pieces.</p>
+      <p><strong>Game replay</strong> (eye icon in the menu): opens a bar under the board. Each game-log line = one step. Controls: go to start, step back, autoplay / pause, step forward, go to end. Step count is on the right. Every step shows a tooltip with the player icon (👤 / 🖥️) and the action description (placed, moved, remove, migration, capture…). While replay is active the board is locked.</p>
     `
   }
 };
@@ -450,7 +539,9 @@ let state = {
   log: [],
   gameOver: false,
   winner: null,
-  aiActed: []   // indices of AI pieces that acted last turn
+  aiActed: [],   // indices of AI pieces that acted last turn
+  history: [],   // board snapshots after each completed turn
+  replay: { active: false, index: 0, playing: false, timer: null }
 };
 
 function renderAiLevelIcon() {
@@ -494,19 +585,21 @@ function updateCoordsButton() {
 function logGameResult() {
   const p1 = state.board.filter(x => x === 1).length;
   const p2 = state.board.filter(x => x === 2).length;
-  let result;
-  if (p1 > p2) result = state.lang === 'cs' ? `Výsledek: výhra hráče ${p1}:${p2}` : `Result: player wins ${p1}:${p2}`;
-  else if (p2 > p1) result = state.lang === 'cs' ? `Výsledek: výhra AI ${p2}:${p1}` : `Result: AI wins ${p2}:${p1}`;
-  else result = state.lang === 'cs' ? `Výsledek: remíza ${p1}:${p2}` : `Result: draw ${p1}:${p2}`;
+  let resultKey = 'draw';
+  if (p1 > p2) resultKey = 'winP1';
+  else if (p2 > p1) resultKey = 'winP2';
   const aiIcon = ['|', '||', '|||'][state.aiLevel - 1];
-  logMsg(`${result} (${aiIcon} · ${gameModeLabel()})`, 0);
-  logMsg(state.lang === 'cs' ? 'Deska je plná — konec hry' : 'Board full — game over', 0);
+  const result = resultKey === 'winP1' ? t('winP1') : resultKey === 'winP2' ? t('winP2') : t('draw');
+  logMsg(`${result} (${aiIcon} · ${gameModeLabel()})`, 0, {
+    type: 'gameOver', resultKey, aiIcon, gameMode: state.gameMode, p1, p2
+  });
+  logMsg(t('boardFullEnd'), 0, { type: 'boardFull' });
 }
 
 function setGameOver() {
   if (state.gameOver) return;
   state.gameOver = true;
-  logGameResult();
+  logGameResult(); // log lines also create replay steps
 }
 
 /* ===================== UTIL ===================== */
@@ -514,10 +607,31 @@ function idx(r, c) { return r * SIZE + c; }
 function rc(i) { return [Math.floor(i / SIZE), i % SIZE]; }
 function wrap(v) { return (v + SIZE) % SIZE; }
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1800);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+let _confirmResolve = null;
+function hideConfirmToast(answer) {
+  const box = document.getElementById('confirm-toast');
+  if (box) box.classList.remove('show');
+  const r = _confirmResolve;
+  _confirmResolve = null;
+  if (r) r(answer === true);
+}
+function confirmToast(msg) {
+  return new Promise(resolve => {
+    const box = document.getElementById('confirm-toast');
+    const msgEl = document.getElementById('confirm-msg');
+    if (!box || !msgEl) { resolve(false); return; }
+    // dismiss previous pending confirm
+    if (_confirmResolve) _confirmResolve(false);
+    msgEl.textContent = msg;
+    box.classList.add('show');
+    _confirmResolve = resolve;
+  });
 }
 function t(key) { return I18N[state.lang][key] || key; }
 
@@ -548,6 +662,7 @@ function applyI18n() {
   updateCoordsButton();
   updateStatus();
   updateOpButtons();
+  updateReplayUI();
 }
 
 /* ===================== NEIGHBORS (TORUS) ===================== */
@@ -620,7 +735,7 @@ function doCaptures(player) {
               state.board[ti] = player;
               disc.classList.remove('p1', 'p2');
               disc.classList.add('p' + player);
-              logMsg(`${t('captured')} #${ti + 1}`, player);
+              logMsg(`${t('captured')} #${ti + 1}`, player, { type: 'captured', to: ti });
             }, 280);
             // End of flip animation
             setTimeout(() => {
@@ -628,7 +743,7 @@ function doCaptures(player) {
             }, 560);
           } else {
             state.board[ti] = player;
-            logMsg(`${t('captured')} #${ti + 1}`, player);
+            logMsg(`${t('captured')} #${ti + 1}`, player, { type: 'captured', to: ti });
           }
         });
 
@@ -650,6 +765,8 @@ function doCaptures(player) {
 function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
+  const view = displayBoard();
+  const locked = state.replay.active;
   for (let i = 0; i < SIZE * SIZE; i++) {
     const [r, c] = rc(i);
     const cell = document.createElement('div');
@@ -662,77 +779,79 @@ function renderBoard() {
     else if (c === 0) cell.classList.add('edge-left');
     else if (c === 9) cell.classList.add('edge-right');
 
-    if (state.board[i] === 0) cell.classList.add('empty');
+    if (view[i] === 0) cell.classList.add('empty');
 
-    if (state.board[i] === 0) {
+    if (view[i] === 0) {
       const num = document.createElement('span'); num.className='num'; num.textContent=i+1; cell.appendChild(num);
     }
-    if (state.board[i] !== 0) {
-      const disc=document.createElement('div'); disc.className='disc p'+state.board[i];
-      if(state.aiActed.includes(i)) disc.classList.add('ai-acted');
+    if (view[i] !== 0) {
+      const disc=document.createElement('div'); disc.className='disc p'+view[i];
+      if(!locked && state.aiActed.includes(i)) disc.classList.add('ai-acted');
       if(state.showStoneCoords){
         const sc=document.createElement('span'); sc.className='stone-coord'; sc.textContent=i+1;
         disc.appendChild(sc);
       }
       cell.appendChild(disc);
     }
-    // selection
-    if (state.moveFrom === i || state.landRemoves.includes(i)) cell.classList.add('selected');
-    if (state.migrationSelected.includes(i)) cell.classList.add('migration-source');
+    // selection / targets only when not locked
+    if (!locked) {
+      if (state.moveFrom === i || state.landRemoves.includes(i)) cell.classList.add('selected');
+      if (state.migrationSelected.includes(i)) cell.classList.add('migration-source');
 
-    // target dots (small green circle)
-    let showTarget = false;
-    if (state.action === 'put' && state.board[i] === 0 && state.putLeft > 0) showTarget = true;
-    if (state.action === 'move' && state.moveFrom !== null) {
-      const adj = neighbors4(state.moveFrom);
-      if (adj.includes(i) && state.board[i] === 0) showTarget = true;
-    }
-    if (state.action === 'land' && state.landRemoves.length === 2 && state.board[i] === 0) showTarget = true;
-    if (state.action === 'migration' && getSelectedMigrationTargets().includes(i)) { showTarget=true; cell.classList.add('migration-target'); }
-    if (showTarget) {
-      const dot = document.createElement('div');
-      dot.className = 'target-dot';
-      cell.appendChild(dot);
-    }
-
-    // capture hint + mark the surrounding own pieces
-    if (state.board[i] !== 0 && state.board[i] !== state.player && countOwnAround(i, state.player) >= 5) {
-      cell.classList.add('capture-ready');
-      getSurrounders(i, state.player).forEach(si => {
-        if (!window._pendingSurrounders) window._pendingSurrounders = new Set();
-        window._pendingSurrounders.add(si);
-      });
-    }
-
-    let pressTimer = null;
-    let longPressed = false;
-    cell.addEventListener('pointerdown', e => {
-      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
-      if (state.gameOver || (state.mode === 'ai' && state.player === 2)) return;
-      if (state.board[i] !== state.player || state.landLeft <= 0) return;
-      longPressed = false;
-      pressTimer = setTimeout(() => {
-        longPressed = true;
-        enterLandModeFromLongPress(i);
-      }, 550);
-    });
-    cell.addEventListener('pointerup', () => {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    });
-    cell.addEventListener('pointercancel', () => {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    });
-    cell.addEventListener('pointerleave', () => {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    });
-    cell.addEventListener('click', () => {
-      if (longPressed) {
-        longPressed = false;
-        return;
+      let showTarget = false;
+      if (state.action === 'put' && view[i] === 0 && state.putLeft > 0) showTarget = true;
+      if (state.action === 'move' && state.moveFrom !== null) {
+        const adj = neighbors4(state.moveFrom);
+        if (adj.includes(i) && view[i] === 0) showTarget = true;
       }
-      onCellClick(i);
-    });
-    cell.addEventListener('dblclick', () => enterMoveModeFromDoubleClick(i));
+      if (state.action === 'land' && state.landRemoves.length === 2 && view[i] === 0) showTarget = true;
+      if (state.action === 'migration' && getSelectedMigrationTargets().includes(i)) { showTarget=true; cell.classList.add('migration-target'); }
+      if (showTarget) {
+        const dot = document.createElement('div');
+        dot.className = 'target-dot';
+        cell.appendChild(dot);
+      }
+
+      if (view[i] !== 0 && view[i] !== state.player && countOwnAround(i, state.player) >= 5) {
+        cell.classList.add('capture-ready');
+        getSurrounders(i, state.player).forEach(si => {
+          if (!window._pendingSurrounders) window._pendingSurrounders = new Set();
+          window._pendingSurrounders.add(si);
+        });
+      }
+    }
+
+    if (!locked) {
+      let pressTimer = null;
+      let longPressed = false;
+      cell.addEventListener('pointerdown', e => {
+        if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+        if (state.gameOver || (state.mode === 'ai' && state.player === 2)) return;
+        if (state.board[i] !== state.player || state.landLeft <= 0) return;
+        longPressed = false;
+        pressTimer = setTimeout(() => {
+          longPressed = true;
+          enterLandModeFromLongPress(i);
+        }, 550);
+      });
+      cell.addEventListener('pointerup', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      });
+      cell.addEventListener('pointercancel', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      });
+      cell.addEventListener('pointerleave', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      });
+      cell.addEventListener('click', () => {
+        if (longPressed) {
+          longPressed = false;
+          return;
+        }
+        onCellClick(i);
+      });
+      cell.addEventListener('dblclick', () => enterMoveModeFromDoubleClick(i));
+    }
     boardEl.appendChild(cell);
   }
 
@@ -750,7 +869,8 @@ function renderBoard() {
   applyWrapThreats(boardEl);
 
   const overlay = document.getElementById('end-overlay');
-  if (state.gameOver) {
+  // Hide end overlay while browsing history (except when not in replay)
+  if (state.gameOver && !state.replay.active) {
     overlay.classList.add('show');
     const p1 = state.board.filter(x => x === 1).length;
     const p2 = state.board.filter(x => x === 2).length;
@@ -832,40 +952,227 @@ function applyWrapThreats(boardEl) {
 }
 
 function updateStatus() {
-  const p1 = state.board.filter(x => x === 1).length;
-  const p2 = state.board.filter(x => x === 2).length;
+  const view = displayBoard();
+  const p1 = view.filter(x => x === 1).length;
+  const p2 = view.filter(x => x === 2).length;
   document.getElementById('score-p1').textContent = p1;
   document.getElementById('score-p2').textContent = p2;
   document.getElementById('label-p1').textContent = '👤';
   document.getElementById('label-p2').textContent = '🖥️';
-  document.getElementById('box-p1').classList.toggle('active', state.player === 1 && !state.gameOver);
-  document.getElementById('box-p2').classList.toggle('active', state.player === 2 && !state.gameOver);
+  const live = !state.replay.active;
+  document.getElementById('box-p1').classList.toggle('active', live && state.player === 1 && !state.gameOver);
+  document.getElementById('box-p2').classList.toggle('active', live && state.player === 2 && !state.gameOver);
 }
 
 function updateOpButtons() {
+  const locked = state.replay.active;
   document.getElementById('cnt-put').textContent = state.putLeft;
   document.getElementById('cnt-move').textContent = state.moveLeft;
   document.getElementById('cnt-land').textContent = state.landLeft;
-  document.getElementById('op-put').disabled = state.putLeft <= 0 || state.gameOver;
-  document.getElementById('op-move').disabled = state.moveLeft <= 0 || state.gameOver;
-  document.getElementById('op-land').disabled = state.landLeft <= 0 || state.gameOver;
+  document.getElementById('op-put').disabled = locked || state.putLeft <= 0 || state.gameOver;
+  document.getElementById('op-move').disabled = locked || state.moveLeft <= 0 || state.gameOver;
+  document.getElementById('op-land').disabled = locked || state.landLeft <= 0 || state.gameOver;
   document.getElementById('op-put').title = t('opPut');
   document.getElementById('op-move').title = t('opMove');
   document.getElementById('op-land').title = t('opRemove');
   document.getElementById('btn-endturn').title = t('opEndTurn');
   const migBtn=document.getElementById('op-migration');
-  if(migBtn){ migBtn.classList.toggle('hidden',!isAdvancedMode()); migBtn.disabled=state.migrationUsed||state.gameOver||(state.mode==='ai'&&state.player===2); migBtn.classList.toggle('active',state.action==='migration'); migBtn.title=`${t('migration')} — ${gameModeLabel()}`;
+  if(migBtn){ migBtn.classList.toggle('hidden',!isAdvancedMode()); migBtn.disabled=locked||state.migrationUsed||state.gameOver||(state.mode==='ai'&&state.player===2); migBtn.classList.toggle('active',!locked&&state.action==='migration'); migBtn.title=`${t('migration')} — ${gameModeLabel()}`;
     const migCnt=document.getElementById('cnt-migration'); if(migCnt) migCnt.textContent = state.migrationUsed?0:1;
   }
-  document.getElementById('op-put').classList.toggle('active', state.action === 'put');
-  document.getElementById('op-move').classList.toggle('active', state.action === 'move');
-  document.getElementById('op-land').classList.toggle('active', state.action === 'land');
-  document.getElementById('btn-endturn').disabled = state.gameOver;
+  document.getElementById('op-put').classList.toggle('active', !locked && state.action === 'put');
+  document.getElementById('op-move').classList.toggle('active', !locked && state.action === 'move');
+  document.getElementById('op-land').classList.toggle('active', !locked && state.action === 'land');
+  document.getElementById('btn-endturn').disabled = locked || state.gameOver;
 }
 
-function logMsg(msg, player) {
-  const entry = { msg, player: player || state.player };
+function logMsg(msg, player, meta) {
+  const entry = {
+    msg,
+    player: player === 0 ? 0 : (player || state.player),
+    meta: meta || null
+  };
   state.log.push(entry);
+  // Every log line = one replay step (board state after the action)
+  state.history.push({
+    board: state.board.slice(),
+    player: entry.player,
+    msg: entry.msg,
+    meta: entry.meta
+  });
+  if (state.replay.active) updateReplayUI();
+}
+
+/** Dynamic text for a log/history entry in the current language */
+function formatLogText(entry) {
+  if (!entry) return '';
+  const meta = entry.meta;
+  if (meta && meta.type) {
+    switch (meta.type) {
+      case 'placed':
+        return `${t('placed')} #${meta.to + 1}`;
+      case 'moved':
+        return `${t('moved')} #${meta.from + 1} → #${meta.to + 1}`;
+      case 'landed':
+        return `${t('landed')} #${meta.r1 + 1} : #${meta.r2 + 1} → #${meta.place + 1}`;
+      case 'migration': {
+        const a = (meta.group || []).map(i => '#' + (i + 1)).join(',');
+        const b = (meta.targets || []).map(i => '#' + (i + 1)).join(',');
+        return `${t('migration')}: ${a} → ${b}`;
+      }
+      case 'captured':
+        return `${t('captured')} #${meta.to + 1}`;
+      case 'newGame': {
+        const mode = meta.gameMode === 'advanced' ? t('advancedMode') : t('standardMode');
+        return `${t('newGame')} — ${mode} — ${meta.aiIcon || ''}`;
+      }
+      case 'gameOver': {
+        const mode = meta.gameMode === 'advanced' ? t('advancedMode') : t('standardMode');
+        const resultKey = meta.resultKey;
+        const result = resultKey === 'winP1' ? t('winP1') : resultKey === 'winP2' ? t('winP2') : resultKey === 'draw' ? t('draw') : (meta.result || '');
+        return `${result} (${meta.aiIcon || ''} · ${mode})`;
+      }
+      case 'boardFull':
+        return t('boardFullEnd');
+      default:
+        break;
+    }
+  }
+  // Fallback: strip AI prefix from stored message
+  return String(entry.msg || '').replace(/^AI\s+/i, '').trim();
+}
+
+/* ===================== REPLAY ===================== */
+function displayBoard() {
+  if (state.replay.active && state.history.length) {
+    const i = Math.max(0, Math.min(state.replay.index, state.history.length - 1));
+    return state.history[i].board;
+  }
+  return state.board;
+}
+
+function replayTipText(entry) {
+  if (!entry) return '';
+  const ico = entry.player === 1 ? '👤' : (entry.player === 2 ? '🖥️' : '⚙️');
+  return `${ico} ${formatLogText(entry)}`;
+}
+
+function updateReplayUI() {
+  const bar = document.getElementById('replay-bar');
+  const btn = document.getElementById('btn-replay');
+  const board = document.getElementById('board');
+  if (!bar || !btn) return;
+  bar.classList.toggle('show', state.replay.active);
+  btn.classList.toggle('replay-on', state.replay.active);
+  if (board) board.classList.toggle('replay-locked', state.replay.active);
+
+  const total = state.history.length;
+  const cur = state.replay.active && total ? state.replay.index + 1 : total;
+  const stepEl = document.getElementById('rp-step');
+  if (stepEl) stepEl.textContent = `${cur} / ${total}`;
+
+  const tipEl = document.getElementById('rp-tip');
+  if (tipEl) {
+    if (state.replay.active && total > 0) {
+      const h = state.history[state.replay.index];
+      tipEl.textContent = h ? replayTipText(h) : '';
+    } else {
+      tipEl.textContent = '';
+    }
+  }
+
+  // Dynamic titles for replay controls
+  const setT = (id, key) => { const el = document.getElementById(id); if (el) el.title = t(key); };
+  setT('rp-start', 'rpStart');
+  setT('rp-prev', 'rpPrev');
+  setT('rp-next', 'rpNext');
+  setT('rp-end', 'rpEnd');
+  setT('btn-replay', 'rpReplay');
+  const playBtn = document.getElementById('rp-play');
+  if (playBtn) playBtn.title = state.replay.playing ? t('rpPause') : t('rpPlay');
+
+  const atStart = state.replay.index <= 0;
+  const atEnd = total === 0 || state.replay.index >= total - 1;
+  const dis = (id, v) => { const el = document.getElementById(id); if (el) el.disabled = v; };
+  dis('rp-start', atStart);
+  dis('rp-prev', atStart);
+  dis('rp-next', atEnd);
+  dis('rp-end', atEnd);
+
+  const playIcon = document.getElementById('rp-play-icon');
+  if (playIcon) {
+    playIcon.innerHTML = state.replay.playing
+      ? '<path d="M7 5h3v14H7zM14 5h3v14h-3z" class="filled"/>'
+      : '<path d="M8 5v14l11-7z" class="filled"/>';
+  }
+
+  // Disable ops while replaying
+  ['op-put','op-move','op-land','op-migration','btn-endturn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && state.replay.active) el.disabled = true;
+  });
+}
+
+function stopReplayPlayback() {
+  if (state.replay.timer) { clearInterval(state.replay.timer); state.replay.timer = null; }
+  state.replay.playing = false;
+}
+
+function setReplayIndex(i) {
+  if (!state.history.length) return;
+  state.replay.index = Math.max(0, Math.min(i, state.history.length - 1));
+  renderBoard();
+  updateReplayUI();
+  updateStatus();
+}
+
+function toggleReplay() {
+  if (state.replay.active) {
+    stopReplayPlayback();
+    state.replay.active = false;
+    // restore live board rendering
+    renderBoard();
+    updateOpButtons();
+    updateStatus();
+    updateReplayUI();
+    toast(state.lang === 'cs' ? 'Přehrávač vypnut' : 'Replay off');
+  } else {
+    if (state.history.length < 1) {
+      toast(state.lang === 'cs' ? 'Žádné tahy k přehrání' : 'No moves to replay');
+      return;
+    }
+    stopReplayPlayback();
+    state.replay.active = true;
+    state.replay.index = state.history.length - 1;
+    state.action = null;
+    state.moveFrom = null;
+    state.landRemoves = [];
+    state.migrationSelected = [];
+    renderBoard();
+    updateReplayUI();
+    updateStatus();
+    toast(state.lang === 'cs' ? 'Přehrávač zapnut' : 'Replay on');
+  }
+}
+
+function replayPlayPause() {
+  if (!state.replay.active) return;
+  if (state.replay.playing) {
+    stopReplayPlayback();
+    updateReplayUI();
+    return;
+  }
+  if (state.replay.index >= state.history.length - 1) setReplayIndex(0);
+  state.replay.playing = true;
+  updateReplayUI();
+  state.replay.timer = setInterval(() => {
+    if (state.replay.index >= state.history.length - 1) {
+      stopReplayPlayback();
+      updateReplayUI();
+      return;
+    }
+    setReplayIndex(state.replay.index + 1);
+  }, 900);
 }
 
 function renderLogModal() {
@@ -879,7 +1186,7 @@ function renderLogModal() {
   // reverse chronological
   const lines = [...state.log].reverse().map(e => {
     const ico = e.player === 1 ? '👤' : (e.player === 2 ? '🖥️' : '⚙️');
-    return `<div class="log-line"><span class="ico">${ico}</span>${e.msg}</div>`;
+    return `<div class="log-line"><span class="ico">${ico}</span>${formatLogText(e)}</div>`;
   });
   box.innerHTML = meta + lines.join('');
 }
@@ -1023,7 +1330,7 @@ function applyMigrationMove(move,player=state.player,logIt=true){
   state.aiActed=state.aiActed.filter(i=>!move.group.includes(i));
   if(player===2)state.aiActed.push(...move.targets);
   state.migrationUsed=true; state.migrationSelected=[]; state.action=null;
-  if(logIt){const a=move.group.map(i=>'#'+(i+1)).join(',');const b=move.targets.map(i=>'#'+(i+1)).join(',');logMsg(`${player===2?'AI ':''}${t('migration')}: ${a} → ${b}`,player);}
+  if(logIt){const a=move.group.map(i=>'#'+(i+1)).join(',');const b=move.targets.map(i=>'#'+(i+1)).join(',');logMsg(`${t('migration')}: ${a} → ${b}`,player,{type:'migration',group:move.group.slice(),targets:move.targets.slice()});}
   return true;
 }
 
@@ -1111,7 +1418,7 @@ function clearAiHighlight() {
 }
 
 function endTurn() {
-  if (state.gameOver) return;
+  if (state.gameOver || state.replay.active) return;
 
   doCaptures(state.player).then(() => {
     if (state.board.every(x => x !== 0)) {
@@ -1154,6 +1461,7 @@ function enterLandModeFromLongPress(i) {
 }
 
 function onCellClick(i) {
+  if (state.replay.active) return;
   if (state.suppressClick) {
     state.suppressClick = false;
     return;
@@ -1171,7 +1479,7 @@ function onCellClick(i) {
     clearAiHighlight();
     state.board[i] = state.player;
     state.putLeft--;
-    logMsg(`${t('placed')} #${i + 1}`, state.player);
+    logMsg(`${t('placed')} #${i + 1}`, state.player, { type: 'placed', to: i });
     updateOpButtons();
     updateStatus();
     renderBoard();
@@ -1185,7 +1493,7 @@ function onCellClick(i) {
     clearAiHighlight();
     state.board[i] = state.player;
     state.putLeft--;
-    logMsg(`${t('placed')} #${i + 1}`, state.player);
+    logMsg(`${t('placed')} #${i + 1}`, state.player, { type: 'placed', to: i });
     if (state.putLeft <= 0) state.action = null;
     updateOpButtons();
     updateStatus();
@@ -1212,7 +1520,7 @@ function onCellClick(i) {
       clearAiHighlight();
       state.board[i] = state.player;
       state.board[state.moveFrom] = 0;
-      logMsg(`${t('moved')} #${state.moveFrom + 1} → #${i + 1}`, state.player);
+      logMsg(`${t('moved')} #${state.moveFrom + 1} → #${i + 1}`, state.player, { type: 'moved', from: state.moveFrom, to: i });
       state.moveFrom = null;
       state.moveLeft--;
       if (state.moveLeft <= 0) state.action = null;
@@ -1241,7 +1549,7 @@ function onCellClick(i) {
       clearAiHighlight();
       state.landRemoves.forEach(ri => state.board[ri] = 0);
       state.board[i] = state.player;
-      logMsg(`${t('landed')} #${state.landRemoves[0] + 1} : #${state.landRemoves[1] + 1} → #${i + 1}`, state.player);
+      logMsg(`${t('landed')} #${state.landRemoves[0] + 1} : #${state.landRemoves[1] + 1} → #${i + 1}`, state.player, { type: 'landed', r1: state.landRemoves[0], r2: state.landRemoves[1], place: i });
       state.landRemoves = [];
       state.landLeft = 0;
       state.action = null;
@@ -1364,7 +1672,7 @@ async function aiTurnEasy() {
     state.board[e] = 2;
     state.aiActed.push(e);
     puts++;
-    logMsg(`AI ${t('placed')} #${e + 1}`, 2);
+    logMsg(`${t('placed')} #${e + 1}`, 2, { type: 'placed', to: e });
     renderBoard();
     await doCaptures(2);
   }
@@ -1384,7 +1692,7 @@ async function aiTurnEasy() {
         state.board[from] = 0;
         state.aiActed = state.aiActed.filter(x => x !== from);
         state.aiActed.push(to);
-        logMsg(`AI ${t('moved')} #${from + 1} → #${to + 1}`, 2);
+        logMsg(`${t('moved')} #${from + 1} → #${to + 1}`, 2, { type: 'moved', from, to });
         renderBoard();
         await doCaptures(2);
       }
@@ -1426,7 +1734,7 @@ async function aiTurnMedium() {
     state.board[e] = 2;
     state.aiActed.push(e);
     puts++;
-    logMsg(`AI ${t('placed')} #${e + 1}`, 2);
+    logMsg(`${t('placed')} #${e + 1}`, 2, { type: 'placed', to: e });
     renderBoard();
     await doCaptures(2);
   }
@@ -1445,7 +1753,7 @@ async function aiTurnMedium() {
     state.board[from] = 0;
     state.aiActed = state.aiActed.filter(x => x !== from);
     state.aiActed.push(to);
-    logMsg(`AI ${t('moved')} #${from + 1} → #${to + 1}`, 2);
+    logMsg(`${t('moved')} #${from + 1} → #${to + 1}`, 2, { type: 'moved', from, to });
     movesDone++;
     renderBoard();
     await doCaptures(2);
@@ -1485,7 +1793,7 @@ async function aiTurnMedium() {
       state.board[best.r2] = 0;
       state.board[best.place] = 2;
       state.aiActed.push(best.place);
-      logMsg(`AI ${t('landed')} #${best.r1 + 1} : #${best.r2 + 1} → #${best.place + 1}`, 2);
+      logMsg(`${t('landed')} #${best.r1 + 1} : #${best.r2 + 1} → #${best.place + 1}`, 2, { type: 'landed', r1: best.r1, r2: best.r2, place: best.place });
       renderBoard();
       await doCaptures(2);
     }
@@ -1704,7 +2012,7 @@ async function aiTurn() {
       state.board[bestAction.pos] = 2;
       state.aiActed.push(bestAction.pos);
       putsLeft--;
-      logMsg(`AI ${t('placed')} #${bestAction.pos + 1}`, 2);
+      logMsg(`${t('placed')} #${bestAction.pos + 1}`, 2, { type: 'placed', to: bestAction.pos });
       renderBoard();
       await doCaptures(2);
     } else if (bestAction.type === 'move') {
@@ -1717,14 +2025,14 @@ async function aiTurn() {
       state.aiActed = state.aiActed.filter(x => x !== bestAction.from);
       state.aiActed.push(bestAction.to);
       movesLeft--;
-      logMsg(`AI ${t('moved')} #${bestAction.from + 1} → #${bestAction.to + 1}`, 2);
+      logMsg(`${t('moved')} #${bestAction.from + 1} → #${bestAction.to + 1}`, 2, { type: 'moved', from: bestAction.from, to: bestAction.to });
       renderBoard();
       await doCaptures(2);
     } else if(bestAction.type==='land'){
       if(state.board[bestAction.r1]!==2||state.board[bestAction.r2]!==2||state.board[bestAction.place]!==0){landLeft=0;continue;}
       state.board[bestAction.r1]=0;state.board[bestAction.r2]=0;state.board[bestAction.place]=2;
       state.aiActed=state.aiActed.filter(x=>x!==bestAction.r1&&x!==bestAction.r2);state.aiActed.push(bestAction.place);landLeft=0;
-      logMsg(`AI ${t('landed')} #${bestAction.r1+1} : #${bestAction.r2+1} → #${bestAction.place+1}`,2);renderBoard();await doCaptures(2);
+      logMsg(`${t('landed')} #${bestAction.r1+1} : #${bestAction.r2+1} → #${bestAction.place+1}`,2,{type:'landed',r1:bestAction.r1,r2:bestAction.r2,place:bestAction.place});renderBoard();await doCaptures(2);
     } else if(bestAction.type==='migration'){
       if(!applyMigrationMove(bestAction.move,2,true)){migrationLeft=0;continue;}
       migrationLeft=0;renderBoard();await doCaptures(2);
@@ -1756,7 +2064,7 @@ function saveGame() {
     board: state.board, player: state.player, mode: state.mode, gameMode: state.gameMode, lang: state.lang,
     aiLevel: state.aiLevel, showStoneCoords: state.showStoneCoords,
     putLeft: state.putLeft, moveLeft: state.moveLeft, landLeft: state.landLeft, migrationUsed: state.migrationUsed,
-    log: state.log, gameOver: state.gameOver, winner: state.winner
+    log: state.log, history: state.history, gameOver: state.gameOver, winner: state.winner
   };
   localStorage.setItem('ctor_save', JSON.stringify(data));
   toast(t('saved'));
@@ -1766,6 +2074,8 @@ function loadGame() {
   const raw = localStorage.getItem('ctor_save');
   if (!raw) { toast(t('noSave')); return; }
   try {
+    stopReplayPlayback();
+    state.replay.active = false;
     const data = JSON.parse(raw);
     Object.assign(state, data);
     state.action = null;
@@ -1776,11 +2086,20 @@ function loadGame() {
     if (![1,2,3].includes(state.aiLevel)) state.aiLevel=3;
     if (typeof state.showStoneCoords!=='boolean') state.showStoneCoords=false;
     if (typeof state.migrationUsed!=='boolean') state.migrationUsed=false;
+    // Rebuild history from log if missing (older saves)
+    if (!Array.isArray(state.history) || state.history.length !== state.log.length) {
+      state.history = (state.log || []).map(e => ({
+        board: state.board.slice(),
+        player: e.player,
+        msg: e.msg
+      }));
+    }
     applyI18n();
     renderAiLevelIcon();
     renderBoard();
     updateOpButtons();
     updateStatus();
+    updateReplayUI();
     toast(t('loaded'));
   } catch (e) {
     toast(t('noSave'));
@@ -1799,6 +2118,9 @@ function getNextStartingPlayer() {
 }
 
 function newGame() {
+  stopReplayPlayback();
+  state.replay.active = false;
+  state.replay.index = 0;
   state.board = Array(SIZE * SIZE).fill(0);
 
   // Střídání začínajícího hráče
@@ -1807,10 +2129,14 @@ function newGame() {
   state.gameOver = false;
   state.winner = null;
   state.log=[]; state.aiActed=[]; state.showStoneCoords=false; resetTurnCounters();
+  state.history = [];
   
   const aiIcon = ['|', '||', '|||'][state.aiLevel - 1] || '|';
-  logMsg(`${t('newGame')} — ${gameModeLabel()} — ${aiIcon}`,0);
+  logMsg(`${t('newGame')} — ${gameModeLabel()} — ${aiIcon}`, 0, {
+    type: 'newGame', gameMode: state.gameMode, aiIcon, aiLevel: state.aiLevel
+  });
   renderGameModeIcon();
+  updateReplayUI();
   startTurn();
 }
 
@@ -1852,6 +2178,12 @@ function init() {
     toast(msg);
   });
   document.getElementById('btn-gamemode').addEventListener('click',()=>{state.gameMode=isAdvancedMode()?'standard':'advanced';newGame();toast(gameModeLabel());});
+  document.getElementById('btn-replay').addEventListener('click', toggleReplay);
+  document.getElementById('rp-start').addEventListener('click', () => { stopReplayPlayback(); setReplayIndex(0); });
+  document.getElementById('rp-prev').addEventListener('click', () => { stopReplayPlayback(); setReplayIndex(state.replay.index - 1); });
+  document.getElementById('rp-next').addEventListener('click', () => { stopReplayPlayback(); setReplayIndex(state.replay.index + 1); });
+  document.getElementById('rp-end').addEventListener('click', () => { stopReplayPlayback(); setReplayIndex(state.history.length - 1); });
+  document.getElementById('rp-play').addEventListener('click', replayPlayPause);
   document.getElementById('btn-coords').addEventListener('click',()=>{state.showStoneCoords=!state.showStoneCoords;updateCoordsButton();renderBoard();toast(state.showStoneCoords?t('coordsOn'):t('coordsOff'));});
   document.getElementById('btn-lang').addEventListener('click', () => {
     state.lang = state.lang === 'cs' ? 'en' : 'cs';
@@ -1869,23 +2201,41 @@ function init() {
   });
   document.getElementById('log-close').addEventListener('click', () => {
     document.getElementById('log-modal').classList.remove('show');
+    hideConfirmToast(false);
   });
   document.getElementById('btn-copy-log').addEventListener('click', () => {
     const aiIcon = ['|', '||', '|||'][state.aiLevel - 1] || '|';
     const text = `${gameModeLabel()} · ${aiIcon}\n` + state.log.slice().reverse().map(e => {
       const ico = e.player === 1 ? 'P1' : (e.player === 2 ? 'P2' : '⚙️');
-      return `${ico}: ${e.msg}`;
+      return `${ico}: ${formatLogText(e)}`;
     }).join('\n');
     navigator.clipboard.writeText(text).then(() => toast(t('copied'))).catch(() => toast(t('copied')));
   });
+  document.getElementById('btn-clear-data').addEventListener('click', async () => {
+    const ok = await confirmToast(t('clearDataConfirm'));
+    if (!ok) return;
+    try {
+      localStorage.removeItem('ctor_save');
+      localStorage.removeItem('torus_ai_level');
+      localStorage.removeItem(START_PLAYER_KEY);
+    } catch (e) { /* ignore */ }
+    toast(t('clearDataDone'));
+  });
+  document.getElementById('confirm-yes').addEventListener('click', () => hideConfirmToast(true));
+  document.getElementById('confirm-no').addEventListener('click', () => hideConfirmToast(false));
   document.getElementById('btn-newgame').addEventListener('click', newGame);
   document.getElementById('btn-close-end').addEventListener('click', () => {
     document.getElementById('end-overlay').classList.remove('show');
   });
 
-  // close modals on background click
+  // close modals on background click (also dismiss pending confirm)
   document.querySelectorAll('.modal-bg').forEach(bg => {
-    bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('show'); });
+    bg.addEventListener('click', e => {
+      if (e.target === bg) {
+        bg.classList.remove('show');
+        if (bg.id === 'log-modal') hideConfirmToast(false);
+      }
+    });
   });
 
   // restore AI level preference
