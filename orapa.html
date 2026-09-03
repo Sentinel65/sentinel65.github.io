@@ -202,6 +202,7 @@ position:sticky;top:0;background:#0f2744;z-index:2}
         <button class="iconBtn activeMode" id="laserModeBtn" title="Laser – střelba ze souřadnice" style="width:32px;height:32px;font-size:15px">⚡</button>
         <button class="iconBtn" id="queryModeBtn" title="Dotaz – barva pole" style="width:32px;height:32px;font-size:15px">⬚</button>
         <button class="iconBtn" id="copyRecordBtn" title="Kopírovat záznam" style="width:32px;height:32px;font-size:16px">⧉</button>
+        <button class="iconBtn" id="clearStorageBtn" title="Vymazat uložená data" style="width:32px;height:32px;font-size:15px">🗑</button>
       </div>
     </div>
     <div id="answerBox" class="answer" style="max-height:220px;overflow:auto">
@@ -273,7 +274,7 @@ function countCorrectGems(){
     total++;
     const a=G.secretPieces.find(p=>p.id===id||p.defId===id);
     const g=G.guessPieces.find(p=>(p.defId||p.id)===id);
-    if(a&&g&&(pieceKey(a)===pieceKey(g)||(a.x===g.x&&a.y===g.y&&a.rot===g.rot&&!!a.flipX===!!g.flipX))) ok++;
+    if(piecesMatch(a,g)) ok++;
   }
   return {ok, total};
 }
@@ -319,7 +320,7 @@ function renderStatsBox(){
     const gems=(e.correct!=null&&e.total!=null)?`${e.correct} | ${e.total}`:'—';
     return {shots:e.nShots, state, gems};
   };
-  let html='<div style="font-weight:700;margin-bottom:6px">Statistika</div>';
+  let html='<div style="font-weight:700;margin-bottom:6px">Statistiky</div>';
   html+='<table class="table" style="font-size:12px"><thead><tr><th></th><th>Tahy</th><th>Stav</th><th>Drahokamy</th></tr></thead><tbody>';
   if(G.evaluation){
     const {ok,total}=typeof countCorrectGems==='function'?countCorrectGems():{ok:'?',total:'?'};
@@ -328,7 +329,7 @@ function renderStatsBox(){
   } else {
     html+=`<tr style="opacity:.7"><td>Aktuální hra</td><td colspan="3">nejsou odeslána data</td></tr>`;
   }
-  for(const d of ['1','2','3']){
+  for(const d of ['1','2','3','4']){
     const b=st.best[d];
     if(b){
       const f=fmt(b);
@@ -366,7 +367,7 @@ function loadStatEntry(entry){
   for(const id of BASIC_IDS()){
     const a=G.secretPieces.find(p=>p.id===id||p.defId===id);
     const g=byType[id]; const d=pieceDef(id);
-    const match=a&&g&&(pieceKey(a)===pieceKey(g)||(a.x===g.x&&a.y===g.y&&a.rot===g.rot&&!!a.flipX===!!g.flipX));
+    const match=piecesMatch(a,g);
     rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td>${d.short}</td><td>${g?`(${g.x},${g.y})`:'—'}</td><td>${a?`(${a.x},${a.y})`:'—'}</td><td>${match?'✓':'✗'}</td></tr>`;
   }
   G.evaluation.html=`<p>${entry.win?`Výhra · ${entry.nShots} tahů · ${entry.grade}`:`Prohra · ${entry.nShots} tahů`}</p>
@@ -402,9 +403,17 @@ const PIECES=[
   verts:[[0,0],[2,0],[1,1]]}
 ];
 function idsForDifficulty(d){
+  // 1: 5 | 2: +průhledný | 3–4: +černý (7)
+  // 1–3: přímá viditelnost z okraje (a)
+  // 4: aspoň 1 schovaný, dostupný jen přes odraz(y) (b)
   if(d>=3) return ['ltBlue','red','yellow','whiteDiamond','ltWhite','clearTri','blackTri'];
   if(d>=2) return ['ltBlue','red','yellow','whiteDiamond','ltWhite','clearTri'];
   return ['ltBlue','red','yellow','whiteDiamond','ltWhite'];
+}
+function visibilityModeForDifficulty(d){
+  // 'direct' (1–3): každý drahokam je přímo zatažitelný z okraje (první zásah)
+  // 'hidden' (4): všichni detekovatelní, ale aspoň 1 jen přes odraz(y)
+  return (d>=4) ? 'hidden' : 'direct';
 }
 function BASIC_IDS(){ return idsForDifficulty(G.difficulty||1); }
 
@@ -834,20 +843,60 @@ function addLaunch(x,y,label,colorFill,side){
  g.addEventListener('click',(e)=>{e.stopPropagation(); humanShoot(label);});
  svg.appendChild(g);
 }
+function gemLetter(p){
+  const id=String(p.defId||p.id||'');
+  if(id==='whiteDiamond') return 'W';
+  if(id==='ltWhite') return 'W2';
+  if(id==='ltBlue') return 'B';
+  if(id==='yellow') return 'Y';
+  if(id==='red') return 'R';
+  if(id==='clearTri') return 'P';
+  if(id==='blackTri') return 'K';
+  if(p.color==='transparent') return 'P';
+  if(p.color==='black') return 'K';
+  if(p.color==='red') return 'R';
+  if(p.color==='blue') return 'B';
+  if(p.color==='yellow') return 'Y';
+  if(p.color==='white') return 'W';
+  return '·';
+}
+function isHiddenSecret(p){
+  // Preferuj příznak z generování; jinak dopočítej
+  if(p && p.hidden===true) return true;
+  if((G.difficulty||1)<4 || !G.secretPieces || !G.secretPieces.length) return false;
+  const id=p.id;
+  if(!G.secretPieces.some(s=>s.id===id)) return false;
+  return !pieceHitByRays(G.secretPieces, id, {firstOnly:true});
+}
+function gemLetterFill(p){
+  if(G.revealSecret && isHiddenSecret(p)) return '#16a34a';
+  if(p.color==='white' || p.color==='transparent') return '#0f172a';
+  return '#ffffff';
+}
+// Pozice podle souřadnic desky: sloupec A–H + řádek 1–10
+function formatBoardPos(p){
+  if(!p) return '—';
+  const cx=Math.max(0, Math.min(W-1, Math.floor(Number(p.x)+1e-6)));
+  const cy=Math.max(0, Math.min(H-1, Math.floor(Number(p.y)+1e-6)));
+  const col=TOP_LABELS[cx]||'?';
+  const row=cy+1;
+  const rot=((p.rot||0)%360+360)%360;
+  const flip=p.flipX?' ↔':'';
+  return `${col}${row} · ${rot}°${flip}`;
+}
 function drawPiece(p){
  const poly=placementPoly(p);
  const pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
  const fill=COLORS[p.color]||COLORS.white;
  const g=svgEl('g',{class:'piece'+(p.invalid?' invalid':'')});
- // Bez černého orámování – čistě barva
  g.appendChild(svgEl('polygon',{points:pts,fill,stroke:p.color==='white'?'#94a3b8':'none','stroke-width':p.color==='white'?1:0,'fill-opacity':1}));
  if(G.selectedPiece===p.id && G.editMode){
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'6 4'}));
  }
  const cx=poly.reduce((s,v)=>s+v[0],0)/poly.length,cy=poly.reduce((s,v)=>s+v[1],0)/poly.length;
  const q=boardPoint(cx,cy);
- const tx=svgEl('text',{x:q[0],y:q[1]+4,'font-size':11,fill:p.color==='white'?'#1e3a5f':'#fff','text-anchor':'middle','font-weight':'800','pointer-events':'none'});
- tx.textContent=p.id==='whiteDiamond'?'W':p.id==='ltWhite'?'W2':p.id==='ltBlue'?'B':p.id==='yellow'?'Y':p.id==='red'?'R':'?';
+ const tx=svgEl('text',{x:q[0],y:q[1]+6,'font-size':16,fill:gemLetterFill(p),'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
+ tx.textContent=gemLetter(p);
  g.appendChild(tx); g.addEventListener('pointerdown',e=>startDrag(e,p.id)); svg.appendChild(g);
 }
 function drawVirtualPiece(p){
@@ -858,8 +907,11 @@ function drawVirtualPiece(p){
  if(G.selectedPiece===p.id)
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'5 4'}));
  const cx=poly.reduce((s,v)=>s+v[0],0)/poly.length,cy=poly.reduce((s,v)=>s+v[1],0)/poly.length;
- const q=boardPoint(cx,cy), tx=svgEl('text',{x:q[0],y:q[1]+4,'font-size':11,fill:'#fff','text-anchor':'middle','font-weight':'800','pointer-events':'none'});
- tx.textContent=p.color==='red'?'R':p.color==='blue'?'B':p.color==='yellow'?'Y':p.color==='black'?'K':p.color==='transparent'?'P':'W';
+ const q=boardPoint(cx,cy);
+ // hypotézy: větší tučná písmena; zelená jen u odhaleného schovaného originálu, ne u hypotéz
+ const letterFill = (p.color==='white'||p.color==='transparent') ? '#0f172a' : '#ffffff';
+ const tx=svgEl('text',{x:q[0],y:q[1]+6,'font-size':16,fill:letterFill,'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
+ tx.textContent=gemLetter(p);
  g.appendChild(tx);
  g.addEventListener('pointerdown',e=>{
    e.stopPropagation();
@@ -1165,11 +1217,15 @@ function renderAll(){
      const icon = s.isSystem ? '📋' : whoIcon(s.by);
      let mid, rightLabel;
      if(s.isSystem){
-       mid = s.entry + (s.exit ? ' · '+s.exit : '');
+       const nm = s.hiddenGem ? `<span style="color:#16a34a;font-weight:800">${s.entry}</span>` : s.entry;
+       mid = nm + (s.exit ? ' · '+s.exit : '');
        rightLabel = s.color||'';
      } else if(s.isQuery){
        mid = s.entry;
        rightLabel = s.empty ? 'prázdné' : (s.color||'');
+     } else if(s.absorbed){
+       mid = `${s.entry} →`;
+       rightLabel = 'pohlcen';
      } else {
        const exit = s.exit && s.exit!=='?' ? s.exit : s.entry;
        mid = `${s.entry} → ${exit}`;
@@ -1219,6 +1275,17 @@ function addShotLog(s){
 
 function startSoloGame(){
  G.secretPieces=generateRandomLayout(BASIC_IDS());
+ if((G.difficulty||1)>=4 && G.secretPieces){
+   markHiddenFlags(G.secretPieces);
+   if(!G.secretPieces.some(p=>p.hidden)){
+     // ještě jeden pokus o skryté rozložení
+     for(let i=0;i<20 && !G.secretPieces.some(p=>p.hidden);i++){
+       G.secretPieces=generateRandomLayout(BASIC_IDS(),'hidden');
+       markHiddenFlags(G.secretPieces);
+     }
+   }
+ }
+
  G.guessPieces=[];
  G.shots=[]; G.log=[]; G.edgeColors={}; G.cellQueries={};
  G.selectedPiece=null; G.editMode=false; G.revealSecret=false;
@@ -1241,28 +1308,104 @@ function startSoloGame(){
  }
  renderAll();
 }
-function generateRandomLayout(ids){
- ids=(ids||BASIC_IDS()).slice(); const pieces=[];
- for(let attempt=0;attempt<5000;attempt++){
-   pieces.length=0; let ok=true;
-   for(const id of ids){
-     let placed=null;
-     for(let k=0;k<500;k++){
-       const d=pieceDef(id), p={id,defId:id,rot:[0,90,180,270][Math.floor(Math.random()*4)],x:Math.floor(Math.random()*W),y:Math.floor(Math.random()*H),color:d.color,kind:d.kind,flipX:Math.random()<0.5,invalid:false};
-       if(validPlacement(p,pieces)){placed=p;break}
-     }
-     if(!placed){ok=false;break}
-     pieces.push(placed);
+function pieceHitByRays(layout, pieceId, {firstOnly}={firstOnly:false}){
+  for(const lab of allLaunchLabels()){
+    const r=rayTrace(layout, lab);
+    if(!r || !r.hits || !r.hits.length) continue;
+    if(firstOnly){
+      if(r.hits[0].pieceId===pieceId) return true;
+    } else {
+      if(r.hits.some(h=>h.pieceId===pieceId)) return true;
+    }
+  }
+  return false;
+}
+function markHiddenFlags(layout){
+  for(const p of layout){
+    p.hidden = !pieceHitByRays(layout, p.id, {firstOnly:true});
+  }
+  return layout;
+}
+function layoutVisibilityOK(layout, mode){
+  if(!layout || !layout.length) return false;
+  if(mode==='direct'){
+    // a) každý drahokam je aspoň jednou přímo viditelný z okraje (první zásah paprsku)
+    return layout.every(p=>pieceHitByRays(layout, p.id, {firstOnly:true}));
+  }
+  // b / hidden (obtížnost 4):
+  // – všichni drahokamy detekovatelní paprskem (i přes odrazy)
+  // – aspoň jeden NENÍ nikdy prvním zásahem = dostupný jen přes odraz(y)
+  const allDetectable = layout.every(p=>pieceHitByRays(layout, p.id, {firstOnly:false}));
+  if(!allDetectable) return false;
+  return layout.some(p=>!pieceHitByRays(layout, p.id, {firstOnly:true}));
+}
+function randomPieceCandidate(id){
+  const d=pieceDef(id);
+  return {id,defId:id,rot:[0,90,180,270][Math.floor(Math.random()*4)],
+    x:Math.floor(Math.random()*W),y:Math.floor(Math.random()*H),
+    color:d.color,kind:d.kind,flipX:Math.random()<0.5,invalid:false,hidden:false};
+}
+function tryPlaceAll(ids){
+  const pieces=[];
+  for(const id of ids){
+    let placed=null;
+    for(let k=0;k<600;k++){
+      const p=randomPieceCandidate(id);
+      if(validPlacement(p,pieces)){placed=p;break}
+    }
+    if(!placed) return null;
+    pieces.push(placed);
+  }
+  return pieces;
+}
+function generateRandomLayout(ids, mode){
+ ids=(ids||BASIC_IDS()).slice();
+ mode=mode||visibilityModeForDifficulty(G.difficulty||1);
+ const maxAttempts = mode==='hidden' ? 15000 : 7000;
+ for(let attempt=0;attempt<maxAttempts;attempt++){
+   const pieces=tryPlaceAll(ids);
+   if(!pieces) continue;
+   if(layoutVisibilityOK(pieces, mode)){
+     markHiddenFlags(pieces);
+     return clone(pieces);
    }
-   if(ok) return clone(pieces);
  }
- return [
-  {id:'ltBlue',defId:'ltBlue',rot:0,x:2,y:0,color:'blue'},
-  {id:'ltWhite',defId:'ltWhite',rot:90,x:0,y:3,color:'white'},
-  {id:'yellow',defId:'yellow',rot:0,x:5,y:2,color:'yellow'},
-  {id:'whiteDiamond',defId:'whiteDiamond',rot:0,x:3,y:5,color:'white'},
-  {id:'red',defId:'red',rot:0,x:4,y:8,color:'red'}
- ];
+ // Mode hidden: cílený pokus – nejdřív „zdi“ u okraje, pak jeden drahokam dovnitř
+ if(mode==='hidden'){
+   for(let attempt=0;attempt<8000;attempt++){
+     const edgeIds=ids.slice(0,-1);
+     const hideId=ids[ids.length-1];
+     const pieces=tryPlaceAll(edgeIds);
+     if(!pieces) continue;
+     // zkusit umístit poslední drahokam více doprostřed
+     let hiddenP=null;
+     for(let k=0;k<800;k++){
+       const d=pieceDef(hideId);
+       const p={id:hideId,defId:hideId,rot:[0,90,180,270][Math.floor(Math.random()*4)],
+         x:1+Math.floor(Math.random()*(W-2)),y:1+Math.floor(Math.random()*(H-2)),
+         color:d.color,kind:d.kind,flipX:Math.random()<0.5,invalid:false,hidden:false};
+       if(validPlacement(p,pieces)){hiddenP=p;break}
+     }
+     if(!hiddenP) continue;
+     pieces.push(hiddenP);
+     if(layoutVisibilityOK(pieces, 'hidden')){
+       markHiddenFlags(pieces);
+       return clone(pieces);
+     }
+   }
+ }
+ // poslední záchrana – libovolné platné rozložení (bez garance schovaného)
+ console.warn('generateRandomLayout: slabý fallback', mode);
+ for(let attempt=0;attempt<3000;attempt++){
+   const pieces=tryPlaceAll(ids);
+   if(!pieces) continue;
+   markHiddenFlags(pieces);
+   if(mode!=='hidden' || pieces.some(p=>p.hidden)) return clone(pieces);
+   if(mode!=='hidden') return clone(pieces);
+ }
+ const fb=tryPlaceAll(ids)||[];
+ markHiddenFlags(fb);
+ return clone(fb);
 }
 
 function generateCandidates(n){
@@ -1465,13 +1608,31 @@ function showAIWinComparison(){
 }
 
 function pieceKey(p){
- // Normalizovaný klíč tvaru pro porovnání (buňky pokryté polygonem)
+ // Normalizovaný klíč: buňky pokryté polygonem (hustší vzorek – tenké tvary jako clearTri)
  const poly=placementPoly(p);
  const cells=new Set();
- for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-   if(pointInPoly([x+0.5,y+0.5],poly)) cells.add(x+','+y);
+ const step=0.25;
+ for(let y=0;y<H;y+=step) for(let x=0;x<W;x+=step){
+   if(pointInPoly([x+step*0.5,y+step*0.5],poly))
+     cells.add(Math.floor(x)+','+Math.floor(y));
  }
- return [...cells].sort().join('|');
+ // vrcholy a středy hran
+ for(let i=0;i<poly.length;i++){
+   const a=poly[i], b=poly[(i+1)%poly.length];
+   for(const pt of [a,[(a[0]+b[0])/2,(a[1]+b[1])/2]]){
+     if(pt[0]>=-EPS&&pt[1]>=-EPS&&pt[0]<W+EPS&&pt[1]<H+EPS)
+       cells.add(Math.max(0,Math.min(W-1,Math.floor(pt[0])))+','+Math.max(0,Math.min(H-1,Math.floor(pt[1]))));
+   }
+ }
+ if(cells.size) return [...cells].sort().join('|');
+ // nouzově pozice (nesmí být prázdný klíč → falešná shoda)
+ return `xy:${p.x},${p.y},r:${p.rot||0},f:${p.flipX?1:0}`;
+}
+function piecesMatch(a,g){
+  if(!a||!g) return false;
+  if(a.x===g.x && a.y===g.y && (a.rot||0)===(g.rot||0) && !!a.flipX===!!g.flipX) return true;
+  const ka=pieceKey(a), kg=pieceKey(g);
+  return !!ka && !!kg && ka===kg;
 }
 function gradeForShots(n,d){
   d=d||1;
@@ -1489,11 +1650,18 @@ function gradeForShots(n,d){
     if(n<=25) return 'nadšenec';
     return 'amatér';
   }
-  // d===3
-  if(n<=15) return 'odborník';
-  if(n<=18) return 'profík';
-  if(n<=21) return 'lovec';
-  if(n<=25) return 'nadšenec';
+  if(d===3){
+    if(n<=15) return 'odborník';
+    if(n<=18) return 'profík';
+    if(n<=21) return 'lovec';
+    if(n<=25) return 'nadšenec';
+    return 'amatér';
+  }
+  // d===4 = sloupec 3 + 2
+  if(n<=17) return 'odborník';
+  if(n<=20) return 'profík';
+  if(n<=23) return 'lovec';
+  if(n<=27) return 'nadšenec';
   return 'amatér';
 }
 function openGuess(){
@@ -1509,17 +1677,21 @@ function buildEvalTable(){
  const byType={};
  for(const p of G.guessPieces) byType[p.defId||p.id]=p;
  let rows='', allOk=true;
- const nShots=G.shots.length;
+ const nShots=G.shots.filter(s=>!s.isSystem).length;
  for(const id of BASIC_IDS()){
    const a=G.secretPieces.find(p=>p.id===id || p.defId===id);
    const g=byType[id];
    const d=pieceDef(id);
    let match=false;
-   if(a&&g) match = pieceKey(a)===pieceKey(g) || (a.x===g.x && a.y===g.y && a.rot===g.rot && !!a.flipX===!!g.flipX);
+   if(a&&g) match = piecesMatch(a,g);
    if(!match) allOk=false;
-   rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td><span class="dot" style="background:${COLORS[d.color]}"></span>${d.short}</td>
-   <td>${g?`(${g.x},${g.y}) ${g.rot}°`:'—'}</td>
-   <td>${a?`(${a.x},${a.y}) ${a.rot}°`:'—'}</td>
+   const hid=a&&isHiddenSecret(a);
+   const name=hid?`<span style="color:#16a34a;font-weight:800">${d.short}</span>`:d.short;
+   const gPos=g?`(${g.x},${g.y}) ${g.rot}°`:'—';
+   const aPos=a?`(${a.x},${a.y}) ${a.rot}°`:'—';
+   rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td><span class="dot" style="background:${COLORS[d.color]}"></span>${name}</td>
+   <td>${gPos}</td>
+   <td>${aPos}</td>
    <td>${match?'✓':'✗'}</td></tr>`;
  }
  const grade=gradeForShots(nShots, G.difficulty||1);
@@ -1540,13 +1712,16 @@ function logGameState(allOk, nShots, grade){
    const d=pieceDef(id);
    const a=G.secretPieces.find(p=>p.id===id || p.defId===id);
    const g=G.guessPieces.find(p=>(p.defId||p.id)===id);
-   const ok=a&&g&&(pieceKey(a)===pieceKey(g) || (a.x===g.x&&a.y===g.y&&a.rot===g.rot&&!!a.flipX===!!g.flipX));
-   const line = `${d.short}: ${g?`(${g.x},${g.y}) ${g.rot}°`:'—'} → ${a?`(${a.x},${a.y}) ${a.rot}°`:'—'} ${ok?'✓':'✗'}`;
+   const ok=piecesMatch(a,g);
+   const hid=!!(a&&isHiddenSecret(a));
+   const gPos=g?`(${g.x},${g.y}) ${g.rot}°`:'—';
+   const aPos=a?`(${a.x},${a.y}) ${a.rot}°`:'—';
+   const line = `${d.short}: ${gPos} → ${aPos} ${ok?'✓':'✗'}`;
    addLog(line);
    G.shots.push({
-     by:'system', isSystem:true,
+     by:'system', isSystem:true, hiddenGem:hid,
      entry: d.short,
-     exit: `${g?`(${g.x},${g.y})`:'—'} / ${a?`(${a.x},${a.y})`:'—'}`,
+     exit: `${gPos} / ${aPos}`,
      color: ok?'✓':'✗',
      css: ok?'#22c55e':'#ef4444',
      resultText: line
@@ -1594,7 +1769,7 @@ document.getElementById('queryModeBtn').onclick=()=>{
 document.getElementById('guessBtn').onclick=openGuess;
 document.getElementById('evalBtn').onclick=showEvaluationModal;
 document.getElementById('diffBtn').onclick=()=>{
-  G.difficulty = (G.difficulty % 3) + 1;
+  G.difficulty = (G.difficulty % 4) + 1;
   document.getElementById('diffBtn').textContent=String(G.difficulty);
   //showToast('Obtížnost '+G.difficulty+' – nová hra','info');
   startSoloGame();
@@ -1621,20 +1796,29 @@ document.getElementById('loadBtn').onclick=()=>{
     if(!G.cellQueries) G.cellQueries={};
 
     G.editMode=false;
+    if(G.difficulty==null) G.difficulty=1;
 
-    // Synchronizace tlačítek podle skutečně načteného stavu hry
+    // Synchronizace tlačítek podle načteného stavu
+    const finished = G.phase==='gameover' || !!G.evaluation || !!G.revealSecret;
+    if(finished){
+      G.phase='gameover';
+      G.revealSecret=true;
+    } else {
+      G.phase='play';
+      G.revealSecret=false;
+      G.evaluation=null;
+    }
     const eb=document.getElementById('evalBtn');
     const gb=document.getElementById('guessBtn');
-
     if(eb) eb.disabled=!G.evaluation;
-    if(gb) gb.disabled=!!G.evaluation;
+    if(gb) gb.disabled=finished; // Odeslat jen u probíhající hry
 
-    // Synchronizace obtížnosti
     const db=document.getElementById('diffBtn');
     if(db) db.textContent=String(G.difficulty||1);
 
     showToast('Hra načtena.', 'ok');
     renderAll();
+    if(typeof renderStatsBox==='function') renderStatsBox();
 
   }catch(e){
     console.error('Load error:',e);
@@ -1683,6 +1867,25 @@ document.getElementById('copyRecordBtn').onclick=async()=>{
  const txt=lines.length?lines.join('\n'):'Záznam je prázdný.';
  try{await navigator.clipboard.writeText(txt);showToast('Záznam zkopírován.','ok')}catch(e){showToast('Kopírování se nezdařilo.','bad')}
 };
+document.getElementById('clearStorageBtn').onclick=()=>{
+  openModal('Vymazat data', `
+  <p style="margin-bottom:16px">Opravdu smazat uloženou hru a statistiky z paměti zařízení?</p>
+  <div class="controls" style="justify-content:flex-end;gap:8px">
+    <button class="controlBtn" onclick="closeModal()">Zrušit</button>
+    <button class="controlBtn primary" onclick="doClearStorage()">Smazat</button>
+  </div>`);
+};
+function doClearStorage(){
+  try{
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(STATS_KEY);
+    showToast('Uložená data byla vymazána.','ok');
+  }catch(e){
+    showToast('Mazání se nezdařilo.','bad');
+  }
+  closeModal();
+  if(typeof renderStatsBox==='function') renderStatsBox();
+}
 document.getElementById('helpBtn').onclick=()=>{
  const clb=document.getElementById('copyLogBtn'); if(clb) clb.style.display='none';
  openModal('Nápověda – Orapa Mine',`
@@ -1709,7 +1912,8 @@ document.getElementById('helpBtn').onclick=()=>{
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
  <li>reverzně vypsané jednotlivé výstřely laseru a dotazy</li>
  <li>formát zápisu: pořadové číslo tahu, vstupní bod, výstupní bod, výsledná barva paprsku laseru</li>
- <li>tlačítka v záhlaví logu: blesk (mód laser), čtvereček (mód dotazu na konkrétní souřadnici), 2 čtverečky v sobě (zkopírování obsahu logu)</li>
+ <li>výjimkou je černý drahokam, který paprsek neodráží, ale pohlcuje, zápis tedy nebude mít výstupní bod</li>
+ <li>tlačítka v záhlaví logu: blesk (mód laser), čtvereček (mód dotazu na konkrétní souřadnici), 2 čtverečky v sobě (zkopírování obsahu logu), ikona koše (smaže uložená data v local storage)</li>
  </ul>
  <h3>Záložka Barvy</h3>
  <p>Výpis jednotlivých kombinací barev při odrazu laseru od drahokamů.</p>
@@ -1717,7 +1921,7 @@ document.getElementById('helpBtn').onclick=()=>{
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
  <li><b>Odeslat</b> – porovná vaše rozmístění s předlohou a uloží výsledek do logu i statistik</li>
  <li><b>Vyhodnocení</b> – znovu zobrazí tabulku výsledku až do nové hry</li>
- <li>statistika: nejlepší výsledky podle obtížnosti (localStorage); kliknutím načtete záznam</li>
+ <li><b>Statistiky</b> – nejlepší výsledky podle obtížnosti (localStorage); kliknutím načtete záznam</li>
  </ul>
  <h3>Indikace posledního tahu</h3>
  <p>Poslední tah (výstřel laseru nebo dotaz) je indikován pulzováním názvu (písmeno, číslo) souřadnic (vstupní, výstupní) nebo pulzováním konkrétní buňky na hrací desce.</p>
@@ -1726,19 +1930,21 @@ document.getElementById('helpBtn').onclick=()=>{
  <h3>Hodnocení</h3>
  <p>(výstřely + dotazy podle obtížnosti)</p>
  <table class="table" style="font-size:12px">
- <thead><tr><th>Tahy</th><th>1</th><th>2</th><th>3</th></tr></thead>
+ <thead><tr><th>Tahy</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
  <tbody>
- <tr><td>odborník</td><td>≤10</td><td>≤12</td><td>≤15</td></tr>
- <tr><td>profík</td><td>11–13</td><td>13–15</td><td>16–18</td></tr>
- <tr><td>lovec</td><td>14–18</td><td>16–20</td><td>19–21</td></tr>
- <tr><td>nadšenec</td><td>19–23</td><td>21–25</td><td>22–25</td></tr>
- <tr><td>amatér</td><td>≥24</td><td>≥26</td><td>≥26</td></tr>
+ <tr><td>odborník</td><td>≤10</td><td>≤12</td><td>≤15</td><td>≤17</td></tr>
+ <tr><td>profík</td><td>11–13</td><td>13–15</td><td>16–18</td><td>18–20</td></tr>
+ <tr><td>lovec</td><td>14–18</td><td>16–20</td><td>19–21</td><td>21–23</td></tr>
+ <tr><td>nadšenec</td><td>19–23</td><td>21–25</td><td>22–25</td><td>24–27</td></tr>
+ <tr><td>amatér</td><td>≥24</td><td>≥26</td><td>≥26</td><td>≥28</td></tr>
  </tbody></table>
  <h3>Obtížnost</h3>
  <p style="margin-top:8px">
- 1 = celkem 5 základních drahokamů<br>
- 2 = celkem 6 drahokamů (+ průhledný)<br>
- 3 = celkem 7 drahokamů (+ černý)</p>`);
+ 1 = 5 drahokamů, přímá viditelnost<br>
+ 2 = 6 drahokamů (+ průhledný), přímá viditelnost<br>
+ 3 = 7 drahokamů (+ černý), přímá viditelnost<br>
+ 4 = 7 drahokamů, aspoň 1 drahokam je „schovaný“ tak, že paprsek se k němu dostane přes odraz jiného drahokamu či více drahokamů</p>
+ <p style="margin-top:10px">„Schovaný“ drahokam je na hrací desce, v logu a ve vyhodnocení označen zelenou barvou.</p>`);
 };
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function openModal(title,html){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.add('open')}
