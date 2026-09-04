@@ -330,7 +330,13 @@ const I18N={
   stats:'Statistika', currentGame:'Aktuální hra', lastGame:'Poslední hra', noData:'nejsou odeslána data',
   difficultyN:'Obtížnost {n}', clickLoad:'Kliknutím na výsledek načtete záznam a desku.',
   colMoves:'Tahy', colState:'Stav', colGems:'Drahokamy', reflect180:'Odraz 180° → vstup = výstup',
-  helpTitle:'Nápověda – Orapa Mine'
+  helpTitle:'Nápověda – Orapa Mine',
+  evalWinTitle:'Výhra!', evalLoseTitle:'Prohra – porovnání',
+  evalWinText:'Správně! Počet tahů: <b>{n}</b> ({grade}).',
+  evalLoseText:'Skutečné rozmístění je na desce. Červeně označené řádky se neshodují.',
+  evalColObject:'Objekt', evalColYours:'Vaše řešení', evalColReal:'Skutečnost',
+  evalNeedSubmit:'Nejdřív odevzdejte řešení.',
+  gradeExpert:'odborník', gradePro:'profík', gradeHunter:'lovec', gradeFan:'nadšenec', gradeAmateur:'amatér'
  },
  en:{
   langBtnTitle:'Čeština', langBtnLabel:'CS',
@@ -365,7 +371,13 @@ const I18N={
   stats:'Statistics', currentGame:'Current game', lastGame:'Last game', noData:'no submitted data',
   difficultyN:'Difficulty {n}', clickLoad:'Click a result to load the log and board.',
   colMoves:'Moves', colState:'State', colGems:'Gems', reflect180:'180° reflection → entry = exit',
-  helpTitle:'Help – Orapa Mine'
+  helpTitle:'Help – Orapa Mine',
+  evalWinTitle:'Win!', evalLoseTitle:'Loss – comparison',
+  evalWinText:'Correct! Moves: <b>{n}</b> ({grade}).',
+  evalLoseText:'The real layout is on the board. Red rows do not match.',
+  evalColObject:'Object', evalColYours:'Your solution', evalColReal:'Actual',
+  evalNeedSubmit:'Submit a solution first.',
+  gradeExpert:'expert', gradePro:'pro', gradeHunter:'hunter', gradeFan:'fan', gradeAmateur:'amateur'
  }
 };
 function t(key, vars){
@@ -584,19 +596,19 @@ function loadStatEntry(entry){
   G.secretPieces=clone(entry.secretPieces||[]);
   G.edgeColors=clone(entry.edgeColors||{});
   G.cellQueries=clone(entry.cellQueries||{});
-  G.evaluation={title:entry.win?'Výhra!':'Prohra – porovnání', html:null, allOk:entry.win, nShots:entry.nShots, grade:entry.grade};
-  // rebuild modal html
   const byType={}; for(const p of G.guessPieces) byType[p.defId||p.id]=p;
   let rows='';
   for(const id of BASIC_IDS()){
     const a=G.secretPieces.find(p=>p.id===id||p.defId===id);
     const g=byType[id]; const d=pieceDef(id);
     const match=piecesMatch(a,g);
-    rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td>${d.short}</td><td>${g?`(${g.x},${g.y})`:'—'}</td><td>${a?`(${a.x},${a.y})`:'—'}</td><td>${match?'✓':'✗'}</td></tr>`;
+    const short=typeof gemShort==='function'?gemShort(d):d.short;
+    const hid=a&&typeof isHiddenSecret==='function'&&isHiddenSecret(a);
+    const name=hid?`<span style="color:#16a34a;font-weight:800">${short}</span>`:short;
+    rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td><span class="dot" style="background:${COLORS[d.color]}"></span>${name}</td><td>${g?`(${g.x},${g.y}) ${g.rot||0}°`:'—'}</td><td>${a?`(${a.x},${a.y}) ${a.rot||0}°`:'—'}</td><td>${match?'✓':'✗'}</td></tr>`;
   }
-  G.evaluation.html=`<p>${entry.win?`Výhra · ${entry.nShots} tahů · ${entry.grade}`:`Prohra · ${entry.nShots} tahů`}</p>
-    <table class="table"><thead><tr><th>Objekt</th><th>Řešení</th><th>Skutečnost</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">Zavřít</button></div>`;
+  const {title, html}=buildEvaluationHtml(rows, !!entry.win, entry.nShots, entry.grade);
+  G.evaluation={title, html, allOk:!!entry.win, nShots:entry.nShots, grade:entry.grade, rows};
   const eb=document.getElementById('evalBtn'); if(eb) eb.disabled=false;
   const gb=document.getElementById('guessBtn'); if(gb) gb.disabled=true;
   document.getElementById('diffBtn').textContent=String(G.difficulty);
@@ -2090,33 +2102,38 @@ function piecesMatch(a,g){
 // hodnocení hráče z tabulky v nápovědě
 function gradeForShots(n,d){
   d=d||1;
+  let key='gradeAmateur';
   if(d===1){
-    if(n<=10) return 'odborník';
-    if(n<=13) return 'profík';
-    if(n<=18) return 'lovec';
-    if(n<=23) return 'nadšenec';
-    return 'amatér';
+    if(n<=10) key='gradeExpert';
+    else if(n<=13) key='gradePro';
+    else if(n<=18) key='gradeHunter';
+    else if(n<=23) key='gradeFan';
+  } else if(d===2){
+    if(n<=12) key='gradeExpert';
+    else if(n<=15) key='gradePro';
+    else if(n<=20) key='gradeHunter';
+    else if(n<=25) key='gradeFan';
+  } else if(d===3){
+    if(n<=15) key='gradeExpert';
+    else if(n<=18) key='gradePro';
+    else if(n<=21) key='gradeHunter';
+    else if(n<=25) key='gradeFan';
+  } else {
+    if(n<=16) key='gradeExpert';
+    else if(n<=19) key='gradePro';
+    else if(n<=22) key='gradeHunter';
+    else if(n<=26) key='gradeFan';
   }
-  if(d===2){
-    if(n<=12) return 'odborník';
-    if(n<=15) return 'profík';
-    if(n<=20) return 'lovec';
-    if(n<=25) return 'nadšenec';
-    return 'amatér';
-  }
-  if(d===3){
-    if(n<=15) return 'odborník';
-    if(n<=18) return 'profík';
-    if(n<=21) return 'lovec';
-    if(n<=25) return 'nadšenec';
-    return 'amatér';
-  }
-  // d===4 = sloupec 3 + 2
-  if(n<=16) return 'odborník';
-  if(n<=19) return 'profík';
-  if(n<=22) return 'lovec';
-  if(n<=26) return 'nadšenec';
-  return 'amatér';
+  return key;
+}
+function gradeLabel(key){
+  if(!key) return '';
+  const legacy={
+    'odborník':'gradeExpert','profík':'gradePro','lovec':'gradeHunter',
+    'nadšenec':'gradeFan','amatér':'gradeAmateur',
+    expert:'gradeExpert',pro:'gradePro',hunter:'gradeHunter',fan:'gradeFan',amateur:'gradeAmateur'
+  };
+  return t(legacy[key]||key);
 }
 function openGuess(){
  if(G.phase!=='play')return;
@@ -2140,7 +2157,8 @@ function buildEvalTable(){
    if(a&&g) match = piecesMatch(a,g);
    if(!match) allOk=false;
    const hid=a&&isHiddenSecret(a);
-   const name=hid?`<span style="color:#16a34a;font-weight:800">${d.short}</span>`:d.short;
+   const short=typeof gemShort==='function'?gemShort(d):d.short;
+   const name=hid?`<span style="color:#16a34a;font-weight:800">${short}</span>`:short;
    const gPos=g?`(${g.x},${g.y}) ${g.rot}°`:'—';
    const aPos=a?`(${a.x},${a.y}) ${a.rot}°`:'—';
    rows+=`<tr style="background:${match?'#14532d55':'#7f1d1d55'}"><td><span class="dot" style="background:${COLORS[d.color]}"></span>${name}</td>
@@ -2182,9 +2200,21 @@ function logGameState(allOk, nShots, grade){
    });
  }
 }
+function buildEvaluationHtml(rows, allOk, nShots, grade){
+  const gLab=gradeLabel(grade);
+  const title=allOk?t('evalWinTitle'):t('evalLoseTitle');
+  const html=`
+  <p>${allOk?t('evalWinText',{n:nShots,grade:gLab}):t('evalLoseText')}</p>
+  <table class="table"><thead><tr><th>${t('evalColObject')}</th><th>${t('evalColYours')}</th><th>${t('evalColReal')}</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">${t('close')}</button></div>`;
+  return {title, html};
+}
 function showEvaluationModal(){
- if(!G.evaluation){ showToast('Nejdřív odevzdejte řešení.','info'); return; }
- const {title, html}=G.evaluation;
+ if(!G.evaluation){ showToast(t('evalNeedSubmit'),'info'); return; }
+ // Přegenerovat HTML v aktuálním jazyce
+ const rows=G.evaluation.rows || (buildEvalTable().rows);
+ const {title, html}=buildEvaluationHtml(rows, G.evaluation.allOk, G.evaluation.nShots, G.evaluation.grade);
+ G.evaluation.title=title; G.evaluation.html=html; G.evaluation.rows=rows;
  openModal(title, html);
 }
 function submitGuess(){
@@ -2192,19 +2222,15 @@ function submitGuess(){
  G.revealSecret=true; G.phase='gameover';
  if(allOk){
    G.winner='human';
-   showToast(`${t('toastWin')} ${nShots} ${t('turns')} – ${grade}`, 'ok');
+   showToast(`${t('toastWin')} ${nShots} ${t('turns')} – ${gradeLabel(grade)}`, 'ok');
  } else {
    G.winner=null;
    showToast(t('toastLose'), 'bad');
  }
  logGameState(allOk, nShots, grade);
  recordGameStats(allOk, nShots, grade);
- const title=allOk?'Výhra!':'Prohra – porovnání';
- const html=`
-  <p>${allOk?`Správně! Počet tahů: <b>${nShots}</b> (${grade}).`:'Skutečné rozmístění je na desce. Červeně označené řádky se neshodují.'}</p>
-  <table class="table"><thead><tr><th>Objekt</th><th>Vaše řešení</th><th>Skutečnost</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">Zavřít</button></div>`;
- G.evaluation={title, html, allOk, nShots, grade};
+ const {title, html}=buildEvaluationHtml(rows, allOk, nShots, grade);
+ G.evaluation={title, html, allOk, nShots, grade, rows};
  const eb=document.getElementById('evalBtn'); if(eb) eb.disabled=false;
  const gb=document.getElementById('guessBtn'); if(gb) gb.disabled=true;
  openModal(title, html);
