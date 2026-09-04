@@ -64,7 +64,9 @@ background:var(--panel);border-radius:12px;margin-bottom:10px;flex-wrap:wrap}
 .answer strong{color:#a7f3d0}.answerBig{font-size:16px;font-weight:800;margin-top:4px;color:#a7f3d0}
 .boardSwitch{display:flex;gap:6px;margin-bottom:8px}.boardTab{flex:1;border:1px solid #2a4a6e;background:#133056;color:#cbd5e1;padding:8px 10px;border-radius:9px;cursor:pointer;font-weight:700}.boardTab.active{background:var(--accent);border-color:#818cf8;color:#fff}.boardHint{font-size:11px;color:#9fb0c7;margin-top:6px}
 .deduction{background:#182335;border:1px solid #3f516b;border-radius:10px;padding:9px;font-size:12px}.deductionRow{display:grid;grid-template-columns:18px 1fr auto;gap:7px;align-items:center;padding:4px 0;border-bottom:1px solid #334257}.deductionRow:last-child{border-bottom:0}.miniSwatch{display:inline-block;width:15px;height:15px;border-radius:3px;border:1px solid #ffffff55;vertical-align:-3px;margin:0 2px}.pathHint{margin-top:8px;background:#0c1c32;border:1px solid #1e3a5f;border-radius:10px;padding:8px;font-size:12px}.pathHint .hitRow{padding:4px 0;border-bottom:1px solid #34445a}.pathHint .hitRow:last-child{border-bottom:0}.pathNoHit{color:#9fb0c7}
-.guessMode{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.markBtn{border:1px solid #2a4a6e;background:#1a3352;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px}.markBtn.active{background:#3949ab;border-color:#818cf8}.boardWrap.virtual{box-shadow:inset 0 0 0 2px #6366f1}.virtualPiece{opacity:.48;cursor:pointer}.virtualPiece.selected{opacity:.8;filter:drop-shadow(0 0 5px #818cf8)}
+.guessMode{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.markBtn{border:1px solid #2a4a6e;background:#1a3352;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px}.markBtn.active{background:#3949ab;border-color:#818cf8}.boardWrap.virtual{box-shadow:inset 0 0 0 2px #6366f1}.virtualPiece{opacity:1;cursor:pointer}.virtualPiece.selected{opacity:1;filter:drop-shadow(0 0 5px #818cf8)}
+.flashRow{animation:flashRow 1.6s ease-out}
+@keyframes flashRow{0%{background:#fbbf24aa}70%{background:#fbbf2455}100%{background:transparent}}
 .invalid{fill:#ef4444!important;fill-opacity:.28!important;stroke:#ff8080!important}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;
 padding:14px;z-index:50}
@@ -80,18 +82,18 @@ position:sticky;top:0;background:#0f2744;z-index:2}
 .legend{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#b9c6d8}
 .legend span{display:inline-flex;align-items:center;gap:4px}
 .toast-container {position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999;pointer-events:none;width:min(420px,calc(100vw - 24px));}
-.toast {background:var(--panel2);border-left:4px solid var(--accent);color:var(--text);padding:12px 16px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:14px;transition:opacity 0.3s;pointer-events:auto;width:100%;box-sizing:border-box;text-align:center;}
+.toast {background:var(--panel2);border-left:4px solid var(--accent);color:var(--text);padding:12px 16px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:14px;transition:opacity 0.3s;pointer-events:auto;width:100%;box-sizing:border-box;text-align:left;}
 .toast.bad {border-left-color:var(--bad);}
 .toast.ok {border-left-color:var(--ok);}
 @keyframes labelPulse {
-  0%,100%{opacity:1; transform:scale(1)}
-  50%{opacity:0.2; transform:scale(1.35)}
+  0%,100%{opacity:1}
+  50%{opacity:0.25}
 }
 @keyframes cellPulse {
   0%,100%{stroke-opacity:1; stroke-width:3; fill-opacity:0.55}
   50%{stroke-opacity:0.15; stroke-width:6; fill-opacity:0.9}
 }
-.label-last{animation:labelPulse 1.6s ease-in-out infinite; transform-origin:center; transform-box:fill-box}
+.label-last{animation:labelPulse 1.6s ease-in-out infinite}
 .cell-last{animation:cellPulse 1.4s ease-in-out infinite}
 @media(max-width:680px){
  .toast-container{bottom:12px;left:0;right:0;transform:none;width:100%;padding:0 8px;box-sizing:border-box}
@@ -141,6 +143,31 @@ position:sticky;top:0;background:#0f2744;z-index:2}
  .answer{max-height:160px!important;font-size:12px}
  #mobileTabsPanel{padding:6px}
 }
+
+html{color-scheme:dark}
+/* Scrollbary – design hry (PC i mobil) */
+#answerBox, .answer, .dialog, .dialogBody, .logPre, .shotList, #modalBody{
+  scrollbar-width:thin !important;
+  scrollbar-color:#3b5a7e #0a1628 !important;
+}
+#answerBox::-webkit-scrollbar, .answer::-webkit-scrollbar, .dialog::-webkit-scrollbar,
+.dialogBody::-webkit-scrollbar, .logPre::-webkit-scrollbar, .shotList::-webkit-scrollbar,
+#modalBody::-webkit-scrollbar{width:10px !important;height:10px !important}
+#answerBox::-webkit-scrollbar-track, .answer::-webkit-scrollbar-track, .dialog::-webkit-scrollbar-track,
+.dialogBody::-webkit-scrollbar-track, .logPre::-webkit-scrollbar-track, .shotList::-webkit-scrollbar-track,
+#modalBody::-webkit-scrollbar-track{background:#0a1628 !important;border-radius:8px}
+#answerBox::-webkit-scrollbar-thumb, .answer::-webkit-scrollbar-thumb, .dialog::-webkit-scrollbar-thumb,
+.dialogBody::-webkit-scrollbar-thumb, .logPre::-webkit-scrollbar-thumb, .shotList::-webkit-scrollbar-thumb,
+#modalBody::-webkit-scrollbar-thumb{background:#3b5a7e !important;border-radius:8px;border:2px solid #0a1628}
+#answerBox::-webkit-scrollbar-thumb:hover, .answer::-webkit-scrollbar-thumb:hover, .dialog::-webkit-scrollbar-thumb:hover,
+.dialogBody::-webkit-scrollbar-thumb:hover, .logPre::-webkit-scrollbar-thumb:hover,
+#modalBody::-webkit-scrollbar-thumb:hover{background:#4b6a8e !important}
+#answerBox::-webkit-scrollbar-corner, .dialog::-webkit-scrollbar-corner{background:#0a1628 !important}
+@media(min-width:1001px){
+  .layout{grid-template-columns:minmax(560px,760px) 360px}
+  #board{max-width:min(100%,760px)}
+}
+
 </style>
 </head>
 <body>
@@ -148,13 +175,14 @@ position:sticky;top:0;background:#0f2744;z-index:2}
 <header>
   <div>
     <h1>Orapa Mine</h1>
-    <div class="subtitle">Solo · lokalizace drahokamů</div>
+    <div class="subtitle">Sólo hra· lokalizace drahokamů</div>
   </div>
   <nav class="menu" aria-label="Herní menu">
     <button class="iconBtn" id="diffBtn" title="Obtížnost">1</button>
     <button class="iconBtn" id="saveBtn" title="Uložit hru">↓</button>
     <button class="iconBtn" id="loadBtn" title="Načíst hru">↥</button>
     <button class="iconBtn" id="restartBtn" title="Nová hra">↻</button>
+    <button class="iconBtn" id="langBtn" title="English" data-i18n-title="langBtnTitle">EN</button>
     <button class="iconBtn" id="helpBtn" title="Nápověda">?</button>
   </nav>
 </header>
@@ -260,8 +288,204 @@ position:sticky;top:0;background:#0f2744;z-index:2}
 'use strict';
 
 const W=8,H=10, CELL=56, OX=58, OY=50;
+const VB_W=564, VB_H=670;
+function isPcLandscape(){ return window.matchMedia('(min-width:1001px)').matches; }
 const EPS=1e-7;
 const SAVE_KEY='orapa_mine_save_v4';
+const DIFF_KEY='orapa_mine_difficulty_v1';
+
+const LANG_KEY='orapa_mine_lang_v1';
+let LANG=(()=>{ try{const x=localStorage.getItem(LANG_KEY); return (x==='en'||x==='cs')?x:'cs'; }catch(e){return 'cs'; } })();
+const I18N={
+ cs:{
+  langBtnTitle:'English', langBtnLabel:'EN',
+  subtitle:'Sólo hra · lokalizace drahokamů',
+  diff:'Obtížnost', save:'Uložit hru', load:'Načíst hru', restart:'Nová hra', help:'Nápověda',
+  tabGems:'Drahokamy', tabLog:'Log', tabColors:'Barvy', tabSolve:'Řešení',
+  record:'Záznam hry', laser:'Laser – střelba ze souřadnice', query:'Dotaz – barva pole',
+  copy:'Kopírovat záznam', clearData:'Vymazat uložená data',
+  noShots:'Zatím žádné střely.',
+  send:'Odeslat', eval:'Vyhodnocení',
+  toastSaved:'Hra uložena.', toastLoaded:'Hra načtena.', toastNoSave:'Uložená hra neexistuje.',
+  toastBadSave:'Uložená hra je poškozená.', toastCleared:'Uložená data byla vymazána.',
+  toastClearFail:'Mazání se nezdařilo.', toastCopied:'Záznam zkopírován.', toastCopyFail:'Kopírování se nezdařilo.',
+  toastNewGame:'Nová hra – obtížnost ', toastWin:'Výhra!', toastLose:'Prohra – řešení se neshoduje.',
+  toastSwitchLaser:'Přepněte na Laser pro výstřel.',
+  toastAlreadyShot:'Tato souřadnice již byla použita (#{n}).',
+  toastOnBoard:'Drahokam je na desce. Přetáhněte jej mimo desku pro odebrání.',
+  toastRemoved:'Drahokam odebrán z desky.', toastRotated:'Otočeno o 90°', toastFlipped:'Svislé překlopení',
+  toastNoRotFlip:'Není třeba rotace ani flip.', toastOnlyRot:'Povolena pouze rotace.',
+  toastPlaceAll:'Umístěte všech {n} drahokamů.',
+  toastGemPlaced:'{name} – táhněte / 1× otočit / 2× překlopit',
+  toastGemPlacedRot:'{name} – táhněte / 1× otočit',
+  toastGemPlacedFixed:'{name} – táhněte (bez rotace/flip)',
+  toastDropOutside:'Puštěno mimo desku – drahokam nebyl umístěn.',
+  confirmRestart:'Opravdu chcete začít novou hru?', confirmClear:'Opravdu smazat uloženou hru a statistiky z paměti zařízení?',
+  cancel:'Zrušit', yes:'Ano', delete:'Smazat', close:'Zavřít',
+  win:'VÝHRA', lose:'PROHRA', submitted:'Odesláno', turns:'tahů',
+  empty:'prázdné', absorbed:'pohlcen', none:'žádná',
+  gemOnBoard:' (na desce – přetáhněte mimo desku)',
+  gemDrag:' – klikněte nebo přidržte a přetáhněte na desku',
+  gemRot:' · rotace 90°', gemFlip:' · flip', gemFixed:' · bez rotace/flip',
+  stats:'Statistika', currentGame:'Aktuální hra', lastGame:'Poslední hra', noData:'nejsou odeslána data',
+  difficultyN:'Obtížnost {n}', clickLoad:'Kliknutím na výsledek načtete záznam a desku.',
+  colMoves:'Tahy', colState:'Stav', colGems:'Drahokamy', reflect180:'Odraz 180° → vstup = výstup',
+  helpTitle:'Nápověda – Orapa Mine'
+ },
+ en:{
+  langBtnTitle:'Čeština', langBtnLabel:'CS',
+  subtitle:'Solo · gem localization',
+  diff:'Difficulty', save:'Save game', load:'Load game', restart:'New game', help:'Help',
+  tabGems:'Gems', tabLog:'Log', tabColors:'Colors', tabSolve:'Solution',
+  record:'Game log', laser:'Laser – shoot from edge', query:'Query – cell color',
+  copy:'Copy log', clearData:'Clear saved data',
+  noShots:'No shots yet.',
+  send:'Submit', eval:'Evaluation',
+  toastSaved:'Game saved.', toastLoaded:'Game loaded.', toastNoSave:'No saved game.',
+  toastBadSave:'Saved game is corrupted.', toastCleared:'Saved data cleared.',
+  toastClearFail:'Could not clear data.', toastCopied:'Log copied.', toastCopyFail:'Copy failed.',
+  toastNewGame:'New game – difficulty ', toastWin:'Win!', toastLose:'Loss – solution does not match.',
+  toastSwitchLaser:'Switch to Laser mode to shoot.',
+  toastAlreadyShot:'This coordinate was already used (#{n}).',
+  toastOnBoard:'Gem is on the board. Drag it off the board to remove.',
+  toastRemoved:'Gem removed from board.', toastRotated:'Rotated 90°', toastFlipped:'Vertical flip',
+  toastNoRotFlip:'No rotation or flip needed.', toastOnlyRot:'Rotation only.',
+  toastPlaceAll:'Place all {n} gems.',
+  toastGemPlaced:'{name} – drag / 1× rotate / 2× flip',
+  toastGemPlacedRot:'{name} – drag / 1× rotate',
+  toastGemPlacedFixed:'{name} – drag (no rotate/flip)',
+  toastDropOutside:'Released off the board – gem was not placed.',
+  confirmRestart:'Really start a new game?', confirmClear:'Really delete saved game and statistics?',
+  cancel:'Cancel', yes:'Yes', delete:'Delete', close:'Close',
+  win:'WIN', lose:'LOSS', submitted:'Submitted', turns:'moves',
+  empty:'empty', absorbed:'absorbed', none:'none',
+  gemOnBoard:' (on board – drag off to remove)',
+  gemDrag:' – click or hold and drag onto the board',
+  gemRot:' · rotate 90°', gemFlip:' · flip', gemFixed:' · no rotate/flip',
+  stats:'Statistics', currentGame:'Current game', lastGame:'Last game', noData:'no submitted data',
+  difficultyN:'Difficulty {n}', clickLoad:'Click a result to load the log and board.',
+  colMoves:'Moves', colState:'State', colGems:'Gems', reflect180:'180° reflection → entry = exit',
+  helpTitle:'Help – Orapa Mine'
+ }
+};
+function t(key, vars){
+  const dict=I18N[LANG]||I18N.cs;
+  let s=dict[key]||I18N.cs[key]||key;
+  if(vars) Object.keys(vars).forEach(k=>{ s=s.replace(new RegExp('\\{'+k+'\\}','g'), String(vars[k])); });
+  return s;
+}
+function colorNameI18n(name){
+  if(!name) return name;
+  if(LANG==='cs') return name;
+  const map={
+    'červená':'red','modrá':'blue','žlutá':'yellow','bílá':'white','žádná':'none',
+    'fialová':'purple','zelená':'green','oranžová':'orange','růžová':'pink',
+    'světle modrá':'light blue','světle žlutá':'light yellow','světle fialová':'light purple',
+    'světle zelená':'light green','světle oranžová':'light orange',
+    'tmavě šedá':'dark gray','šedá':'gray','průhledná':'transparent','pohlcen':'absorbed','prázdné':'empty',
+    'výhra':'win','prohra':'loss'
+  };
+  return map[name]||name;
+}
+function swatch(css){ return `<span style="display:inline-block;width:14px;height:14px;background:${css||'#94a3b8'};border-radius:3px;border:1px solid #fff6;vertical-align:-2px;margin:0 2px"></span>`; }
+function mixPartsForColor(name){
+  // základní barvy, z nichž vzniká výsledek
+  const m={
+    'fialová':['blue','red'],'zelená':['blue','yellow'],'oranžová':['yellow','red'],
+    'světle modrá':['blue','white'],'růžová':['red','white'],'světle žlutá':['yellow','white'],
+    'světle fialová':['blue','red','white'],'světle zelená':['blue','yellow','white'],
+    'světle oranžová':['yellow','red','white'],'tmavě šedá':['blue','yellow','red'],
+    'šedá':['blue','yellow','red','white']
+  };
+  return m[name]||null;
+}
+function toastColorHtml(colorObj){
+  if(!colorObj) return swatch('#94a3b8');
+  const name=colorObj.name||'';
+  const css=colorObj.css||'#94a3b8';
+  const parts=mixPartsForColor(name);
+  let html=swatch(css);
+  if(parts && parts.length){
+    html+=' <span style="opacity:.9">('+parts.map(c=>swatch(COLORS[c]||'#fff')).join('+')+')</span>';
+  }
+  return html;
+}
+function showToast(msg, type='info', asHtml=false){
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  if(asHtml) el.innerHTML = msg; else el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3500);
+}
+function gemShort(def){
+  if(LANG!=='en') return def.short;
+  const m={ltBlue:'Blue ▲',ltWhite:'White ▲',yellow:'Yellow ▲',whiteDiamond:'White ◆',red:'Red ▰',clearTri:'Clear',blackTri:'Black'};
+  return m[def.id]||def.short;
+}
+function gemControlTitle(def, used){
+  if(used) return gemShort(def) + t('gemOnBoard');
+  let extra='';
+  if(def.fixedOrientation) extra=t('gemFixed');
+  else if(def.chiral) extra=t('gemRot')+t('gemFlip');
+  else extra=t('gemRot');
+  return gemShort(def) + t('gemDrag') + extra;
+}
+function shotToastRightHtml(colorObj){
+  // barvy = jen čtverečky (+ závorka s kombinací); text u pohlcen / žádná / prázdné / průhledná
+  if(!colorObj) return swatch('#94a3b8');
+  const name=colorObj.name||'';
+  let css = colorObj.css||'#94a3b8';
+  if(name==='prázdné' || name==='žádná' || name==='pohlcen') css='#1e3a5f';
+  if(name==='průhledná') css='#94a3b8';
+  if(name==='pohlcen') return t('absorbed')+swatch(css);
+  if(name==='žádná') return t('none')+swatch(css);
+  if(name==='prázdné') return t('empty')+swatch(css);
+  if(name==='průhledná') return colorNameI18n('průhledná')+swatch(css);
+  return toastColorHtml({name, css:colorObj.css});
+}
+function shotToastHtml(left, rightHtml){
+  return `<span style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%"><span style="text-align:left;font-weight:700;white-space:nowrap">${left}</span><span style="display:inline-flex;align-items:center;gap:4px;text-align:right;flex-wrap:wrap;justify-content:flex-end">${rightHtml||''}</span></span>`;
+}
+function renderColorMixBody(){
+  const el=document.getElementById('colorMixBody'); if(!el) return;
+  const S=(css)=>`<span class="miniSwatch" style="background:${css}"></span>`;
+  const rows=[
+    [S('#3b82f6')+'+'+S('#ef4444')+' = '+S('#8b5cf6')+' '+colorNameI18n('fialová')],
+    [S('#3b82f6')+'+'+S('#eab308')+' = '+S('#22c55e')+' '+colorNameI18n('zelená')],
+    [S('#eab308')+'+'+S('#ef4444')+' = '+S('#fb923c')+' '+colorNameI18n('oranžová')],
+    [S('#3b82f6')+'+'+S('#f1f5f9')+' = '+S('#7dd3fc')+' '+colorNameI18n('světle modrá')],
+    [S('#ef4444')+'+'+S('#f1f5f9')+' = '+S('#f9a8d4')+' '+colorNameI18n('růžová')],
+    [S('#eab308')+'+'+S('#f1f5f9')+' = '+S('#fde047')+' '+colorNameI18n('světle žlutá')],
+    [S('#3b82f6')+'+'+S('#ef4444')+'+'+S('#f1f5f9')+' = '+S('#c4b5fd')+' '+colorNameI18n('světle fialová')],
+    [S('#3b82f6')+'+'+S('#eab308')+'+'+S('#f1f5f9')+' = '+S('#86efac')+' '+colorNameI18n('světle zelená')],
+    [S('#eab308')+'+'+S('#ef4444')+'+'+S('#f1f5f9')+' = '+S('#fdba74')+' '+colorNameI18n('světle oranžová')],
+    [S('#3b82f6')+'+'+S('#eab308')+'+'+S('#ef4444')+' = '+S('#374151')+' '+colorNameI18n('tmavě šedá')],
+    [S('#3b82f6')+'+'+S('#eab308')+'+'+S('#ef4444')+'+'+S('#f1f5f9')+' = '+S('#9ca3af')+' '+colorNameI18n('šedá')],
+  ];
+  el.innerHTML=rows.map(r=>'<div>'+r[0]+'</div>').join('')+
+    `<div style="margin-top:6px;color:#8ba3c4;font-size:10px">${t('reflect180')}</div>`;
+}
+function applyI18n(){
+  document.documentElement.lang = LANG==='en'?'en':'cs';
+  const setTitle=(id,key)=>{ const el=document.getElementById(id); if(el) el.title=t(key); };
+  setTitle('diffBtn','diff'); setTitle('saveBtn','save'); setTitle('loadBtn','load');
+  setTitle('restartBtn','restart'); setTitle('helpBtn','help');
+  setTitle('laserModeBtn','laser'); setTitle('queryModeBtn','query');
+  setTitle('copyRecordBtn','copy'); setTitle('clearStorageBtn','clearData');
+  const lb=document.getElementById('langBtn');
+  if(lb){ lb.title=t('langBtnTitle'); lb.textContent=t('langBtnLabel'); }
+  const sub=document.querySelector('.subtitle'); if(sub) sub.textContent=t('subtitle');
+  const mapTabs={tabAkce:'tabGems',tabLog:'tabLog',tabPravidla:'tabColors',tabReseni:'tabSolve'};
+  Object.keys(mapTabs).forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=t(mapTabs[id]); });
+  const rec=document.querySelector('#paneLog span[style*="font-weight:700"]'); if(rec) rec.textContent=t('record');
+  const gb=document.getElementById('guessBtn'); if(gb) gb.textContent=t('send');
+  const eb=document.getElementById('evalBtn'); if(eb && !eb.dataset.keep) eb.textContent=t('eval');
+  renderColorMixBody();
+  renderAll();
+  if(typeof renderStatsBox==='function') renderStatsBox();
+}
+
 
 const STATS_KEY='orapa_mine_stats_v1';
 function loadStats(){
@@ -320,26 +544,26 @@ function renderStatsBox(){
     const gems=(e.correct!=null&&e.total!=null)?`${e.correct} | ${e.total}`:'—';
     return {shots:e.nShots, state, gems};
   };
-  let html='<div style="font-weight:700;margin-bottom:6px">Statistiky</div>';
-  html+='<table class="table" style="font-size:12px"><thead><tr><th></th><th>Tahy</th><th>Stav</th><th>Drahokamy</th></tr></thead><tbody>';
+  let html='<div style="font-weight:700;margin-bottom:6px">'+t('stats')+'</div>';
+  html+='<table class="table" style="font-size:12px"><thead><tr><th></th><th>'+t('colMoves')+'</th><th>'+t('colState')+'</th><th>'+t('colGems')+'</th></tr></thead><tbody>';
   if(G.evaluation){
     const {ok,total}=typeof countCorrectGems==='function'?countCorrectGems():{ok:'?',total:'?'};
     const state=G.evaluation.allOk?'🏆':'👎';
-    html+=`<tr style="background:#0f2a22"><td>Poslední hra</td><td>${G.evaluation.nShots}</td><td>${state}</td><td>${ok} | ${total}</td></tr>`;
+    html+=`<tr style="background:#0f2a22"><td>${t('lastGame')}</td><td>${G.evaluation.nShots}</td><td>${state}</td><td>${ok} | ${total}</td></tr>`;
   } else {
-    html+=`<tr style="opacity:.7"><td>Aktuální hra</td><td colspan="3">nejsou odeslána data</td></tr>`;
+    html+=`<tr style="opacity:.7"><td>${t('currentGame')}</td><td colspan="3">${t('noData')}</td></tr>`;
   }
   for(const d of ['1','2','3','4']){
     const b=st.best[d];
     if(b){
       const f=fmt(b);
-      html+=`<tr data-stat="${b.id}" style="cursor:pointer"><td>Obtížnost ${d}</td><td>${f.shots}</td><td>${f.state}</td><td>${f.gems}</td></tr>`;
+      html+=`<tr data-stat="${b.id}" style="cursor:pointer"><td>${t('difficultyN',{n:d})}</td><td>${f.shots}</td><td>${f.state}</td><td>${f.gems}</td></tr>`;
     } else {
-      html+=`<tr><td>Obtížnost ${d}</td><td colspan="3">—</td></tr>`;
+      html+=`<tr><td>${t('difficultyN',{n:d})}</td><td colspan="3">—</td></tr>`;
     }
   }
   html+='</tbody></table>';
-  html+='<div style="font-size:11px;color:#8ba3c4;margin-top:6px">Kliknutím na výsledek načtete záznam a desku.</div>';
+  html+='<div style="font-size:11px;color:#8ba3c4;margin-top:6px">'+t('clickLoad')+'</div>';
   el.innerHTML=html;
   el.querySelectorAll('tr[data-stat]').forEach(tr=>{
     tr.onclick=()=>{
@@ -384,7 +608,7 @@ function loadStatEntry(entry){
 
 const COLORS={
  blue:'#3b82f6', red:'#ef4444', yellow:'#eab308', white:'#f1f5f9',
- transparent:'#64748b', black:'#111827'
+ transparent:'#94a3b8', black:'#111827'
 };
 const PIECES=[
  {id:'ltBlue',name:'Velký trojúhelník',short:'Modrý ▲',color:'blue',kind:'largeTri',area:4,
@@ -394,13 +618,13 @@ const PIECES=[
  {id:'yellow',name:'Střední trojúhelník',short:'Žlutý ▲',color:'yellow',kind:'mediumTri',area:2,
   verts:[[0,0],[2,0],[0,2]]},
  {id:'whiteDiamond',name:'Bílý diamant',short:'Bílý ◆',color:'white',kind:'diamond',area:2,
-  verts:[[1,0],[2,1],[1,2],[0,1]]},
+  verts:[[1,0],[2,1],[1,2],[0,1]],fixedOrientation:true},
  {id:'red',name:'Červený rovnoběžník',short:'Červený ▰',color:'red',kind:'para',area:2,
-  verts:[[1,0],[3,0],[2,1],[0,1]]},
+  verts:[[1,0],[3,0],[2,1],[0,1]],chiral:true},
  {id:'clearTri',name:'Průhledný trojúhelník',short:'Průhledný',color:'transparent',kind:'clear',area:1,
   verts:[[0,0],[2,0],[1,1]]},
- {id:'blackTri',name:'Černý trojúhelník',short:'Černý',color:'black',kind:'absorb',area:1,
-  verts:[[0,0],[2,0],[1,1]]}
+ {id:'blackTri',name:'Černý drahokam',short:'Černý',color:'black',kind:'absorb',area:2,
+  verts:[[0,0],[1,0],[1,2],[0,2]]}
 ];
 function idsForDifficulty(d){
   // 1: 5 | 2: +průhledný | 3–4: +černý (7)
@@ -432,17 +656,6 @@ const palette=document.getElementById('palette');
 svg.addEventListener('selectstart',e=>e.preventDefault());
 document.addEventListener('selectstart',e=>{ if(G.drag) e.preventDefault(); });
 
-function showToast(msg, type='info'){
-  const container = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  container.appendChild(t);
-  setTimeout(()=>{
-    t.style.opacity = '0';
-    setTimeout(()=>t.remove(), 300);
-  }, 3500);
-}
 
 function pieceDef(id){return PIECES.find(p=>p.id===id)}
 function clone(x){return JSON.parse(JSON.stringify(x))}
@@ -654,7 +867,7 @@ function colorForHits(hitColors){
  if(b) return {name:'modrá',css:COLORS.blue};
  if(y) return {name:'žlutá',css:COLORS.yellow};
  if(w) return {name:'bílá',css:'#ffffff'};
- return {name:'žádná',css:'#94a3b8'};
+ return {name:'žádná',css:'#1e3a5f'};
 }
 
 function segmentRayIntersection(p,d,a,b){
@@ -667,13 +880,19 @@ function segmentRayIntersection(p,d,a,b){
  if(t>1e-6&&u>-1e-8&&u<1+1e-8)return {t,u,pt:[p[0]+t*d[0],p[1]+t*d[1]]};
  return null;
 }
-function rayTrace(pieces,entry){
+function rayTrace(pieces,entry,opts){
+ opts=opts||{};
+ const jit=(typeof opts.jitter==='number')?opts.jitter:0;
  const l=launch(entry); if(!l)return null;
  let p=[l.x<0?0:l.x>W?W:l.x+0.5, l.y<0?0:l.y>H?H:l.y+0.5], d=[l.dx,l.dy];
- if(l.side==='top')p=[l.x+0.5,0];
- if(l.side==='bottom')p=[l.x+0.5,H];
- if(l.side==='left')p=[0,l.y+0.5];
- if(l.side==='right')p=[W,l.y+0.5];
+ // jitter posune start podél hrany (pro robustní detekci tenkých tvarů)
+ if(l.side==='top')p=[Math.max(0,Math.min(W,l.x+0.5+jit)),0];
+ else if(l.side==='bottom')p=[Math.max(0,Math.min(W,l.x+0.5+jit)),H];
+ else if(l.side==='left')p=[0,Math.max(0,Math.min(H,l.y+0.5+jit))];
+ else if(l.side==='right')p=[W,Math.max(0,Math.min(H,l.y+0.5+jit))];
+ else {
+   p=[l.x<0?0:l.x>W?W:l.x+0.5, l.y<0?0:l.y>H?H:l.y+0.5];
+ }
 
  let hits=[], path=[p.slice()], seen=new Set();
  for(let step=0;step<80;step++){
@@ -709,7 +928,7 @@ function rayTrace(pieces,entry){
      path.push(hp.slice());
      hits.push({pieceId:pid,color:'black',point:hp.slice(),edge:best.edge.slice()});
      return {entry,exit:null,hits,hitColors:hits.map(h=>h.color),
-       color:{name:'pohlcen',css:'#94a3b8'},path,absorbed:true};
+       color:{name:'pohlcen',css:'#1e3a5f'},path,absorbed:true};
    }
    hits.push({pieceId:pid,color:best.piece.color,point:hp.slice(),edge:best.edge.slice()});
    path.push(hp.slice());
@@ -737,11 +956,22 @@ function svgEl(tag,attrs={}){
  for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v); return e;
 }
 function clearSvg(){while(svg.firstChild)svg.removeChild(svg.firstChild)}
+function finalizeBoardView(){
+  // Pouze na PC: otočení desky do landscape (široko); logika souřadnic beze změny
+  if(!isPcLandscape()){
+    svg.setAttribute('viewBox','0 0 '+VB_W+' '+VB_H);
+    return;
+  }
+  svg.setAttribute('viewBox','0 0 '+VB_H+' '+VB_W);
+  const g=svgEl('g',{transform:'translate(0,'+VB_W+') rotate(-90)'});
+  while(svg.firstChild) g.appendChild(svg.firstChild);
+  svg.appendChild(g);
+}
 function boardPoint(x,y){return [OX+x*CELL,OY+y*CELL]}
 
 function drawBoard(){
  clearSvg();
- svg.appendChild(svgEl('rect',{x:0,y:0,width:564,height:670,rx:12,fill:'#0a1628'}));
+ svg.appendChild(svgEl('rect',{x:0,y:0,width:VB_W,height:VB_H,rx:12,fill:'#0a1628'}));
  svg.appendChild(svgEl('rect',{x:OX,y:OY,width:W*CELL,height:H*CELL,fill:'#1e3a5f',rx:2}));
  for(let x=0;x<=W;x++)svg.appendChild(svgEl('line',{x1:OX+x*CELL,y1:OY,x2:OX+x*CELL,y2:OY+H*CELL,stroke:'#2a4a6e','stroke-width':1}));
  for(let y=0;y<=H;y++)svg.appendChild(svgEl('line',{x1:OX,y1:OY+y*CELL,x2:OX+W*CELL,y2:OY+y*CELL,stroke:'#2a4a6e','stroke-width':1}));
@@ -786,6 +1016,7 @@ function drawBoard(){
    const ls=lastShot();
    if(G.lastPath && !(ls && ls.isQuery)) drawPath(G.lastPath);
  }
+ finalizeBoardView();
 }
 function drawFadedHypothesis(p){
  const poly=placementPoly(p);
@@ -830,16 +1061,23 @@ function addLaunch(x,y,label,colorFill,side){
  if(side==='left'){ rx=x-s; ry=y-CELL/2; }
  if(side==='right'){ rx=x; ry=y-CELL/2; }
  const isLast=lastShotLabels().has(String(label).toUpperCase());
- const bg=svgEl('rect',{x:rx,y:ry,width:side==='top'||side==='bottom'?CELL:s,height:side==='left'||side==='right'?CELL:s,
+ const bw=side==='top'||side==='bottom'?CELL:s;
+ const bh=side==='left'||side==='right'?CELL:s;
+ const bg=svgEl('rect',{x:rx,y:ry,width:bw,height:bh,
    fill:fill,stroke:'#1e293b','stroke-width':1,'fill-opacity':colorFill?0.95:0.7});
- const cx=rx+(side==='top'||side==='bottom'?CELL:s)/2;
- const cy=ry+(side==='left'||side==='right'?CELL:s)/2+5;
+ // Střed pole (bez offsetu – dominant-baseline vycentruje text)
+ const cx=rx+bw/2;
+ const cy=ry+bh/2;
+ // Rotace landscape na skupině, pulz na textu – animace transform jinak přepíše rotate
+ const tg=svgEl('g');
+ if(isPcLandscape()) tg.setAttribute('transform', `rotate(90 ${cx} ${cy})`);
  const t=svgEl('text',{x:cx,y:cy,
    'font-size':isLast?18:14,fill:isLast?'#0f172a':(colorFill?'#0f172a':'#f1f5f9'),
-   'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
+   'text-anchor':'middle','dominant-baseline':'central','font-weight':'900','pointer-events':'none'});
  t.textContent=label;
  if(isLast) t.classList.add('label-last');
- g.append(bg,t);
+ tg.appendChild(t);
+ g.append(bg,tg);
  g.addEventListener('click',(e)=>{e.stopPropagation(); humanShoot(label);});
  svg.appendChild(g);
 }
@@ -899,11 +1137,35 @@ function drawPiece(p){
  tx.textContent=gemLetter(p);
  g.appendChild(tx); g.addEventListener('pointerdown',e=>startDrag(e,p.id)); svg.appendChild(g);
 }
+function appendClippedGrid(g, poly, clipId){
+ const b=bbox(poly);
+ const defs=svgEl('defs',{});
+ const clip=svgEl('clipPath',{id:clipId});
+ clip.appendChild(svgEl('polygon',{points:poly.map(v=>boardPoint(v[0],v[1]).join(',')).join(' ')}));
+ defs.appendChild(clip);
+ g.appendChild(defs);
+ const gridG=svgEl('g',{'clip-path':`url(#${clipId})`});
+ for(let x=Math.ceil(b.minx+1e-6); x<b.maxx-1e-6; x++){
+   const a=boardPoint(x,b.miny), c=boardPoint(x,b.maxy);
+   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:'rgba(15,23,42,0.35)','stroke-width':1}));
+ }
+ for(let y=Math.ceil(b.miny+1e-6); y<b.maxy-1e-6; y++){
+   const a=boardPoint(b.minx,y), c=boardPoint(b.maxx,y);
+   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:'rgba(15,23,42,0.35)','stroke-width':1}));
+ }
+ g.appendChild(gridG);
+}
 function drawVirtualPiece(p){
  const poly=placementPoly(p), pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
  const fill=COLORS[p.color]||'#94a3b8', g=svgEl('g',{class:'virtualPiece'+(G.selectedPiece===p.id?' selected':'')});
  const inv=p.invalid;
- g.appendChild(svgEl('polygon',{points:pts,fill:inv?'#ef4444':fill,stroke:'none','fill-opacity':inv?0.35:0.55}));
+ if(inv){
+   g.appendChild(svgEl('polygon',{points:pts,fill:'#ef4444',stroke:'none','fill-opacity':0.4}));
+ } else {
+   const stroke = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : 'rgba(0,0,0,0.25)';
+   g.appendChild(svgEl('polygon',{points:pts,fill,stroke,'stroke-width':1.2,'fill-opacity':1}));
+   appendClippedGrid(g, poly, 'vgrid_'+p.id);
+ }
  if(G.selectedPiece===p.id)
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'5 4'}));
  const cx=poly.reduce((s,v)=>s+v[0],0)/poly.length,cy=poly.reduce((s,v)=>s+v[1],0)/poly.length;
@@ -957,10 +1219,20 @@ function drawPath(result){
 function svgLocalPoint(evt){
  const pt=svg.createSVGPoint();pt.x=evt.clientX;pt.y=evt.clientY;
  const ctm=svg.getScreenCTM();const p=pt.matrixTransform(ctm.inverse());
- return [(p.x-OX)/CELL,(p.y-OY)/CELL];
+ let x=p.x, y=p.y;
+ if(isPcLandscape()){
+   // inverze transform translate(0,VB_W) rotate(-90)
+   x = VB_W - p.y;
+   y = p.x;
+ }
+ return [(x-OX)/CELL,(y-OY)/CELL];
 }
 // --- Ovládání drahokamů v setupu ---
-// Klik = výběr. 1. klik na vybraný = otočení 90°. 2. rychlé kliknutí = překlopení (flip Y).
+// Klik = výběr. 1. klik na vybraný = otočení 90°. 2. rychlé kliknutí = překlopení (flip Y) –
+// povoleno jen u chirálního (asymetrického) drahokamu (červený rovnoběžník). Všechny
+// trojúhelníky a černý drahokam mají povolenou jen rotaci (flip zamčený – nevede u nich
+// k jiné poloze). Bílý diamant (čtverec) má zamčené obojí (fixedOrientation) – rotace
+// i flip jsou u něj zbytečné, tvar vypadá při každé poloze stejně.
 // Tažení = přesun. Klik mimo = zrušení výběru.
 let pieceClickTimer=null, pieceClickCount=0, pieceDragMoved=false;
 
@@ -1031,7 +1303,7 @@ svg.addEventListener('pointerup',evt=>{
   if(outside){
    G.guessPieces=G.guessPieces.filter(x=>x.id!==id);
    G.selectedPiece=null;
-   showToast('Drahokam odebrán z desky.','ok');
+   showToast(t('toastRemoved'),'ok');
    pieceClickCount=0;
    renderAll();
    return;
@@ -1056,16 +1328,23 @@ svg.addEventListener('pointerup',evt=>{
  pieceClickCount++;
  clearTimeout(pieceClickTimer);
  pieceClickTimer=setTimeout(()=>{
-  if(pieceClickCount===1){
+  const def=pieceDef(p.defId||p.id);
+  if(def.fixedOrientation){
+   showToast(t('toastNoRotFlip'), 'info');
+  } else if(pieceClickCount===1){
    p.rot=(p.rot+90)%360;
    const snap=nearestValidPosition(p,p.x,p.y,list);
    if(snap){Object.assign(p,snap);p.invalid=false} else p.invalid=!validPlacement(p,list,p.id);
-   showToast('Otočeno o 90°', 'ok');
+   showToast(t('toastRotated'), 'ok');
   } else if(pieceClickCount>=2){
-   p.flipX = !p.flipX;
-   const snap=nearestValidPosition(p,p.x,p.y,list);
-   if(snap){Object.assign(p,snap);p.invalid=false} else p.invalid=!validPlacement(p,list,p.id);
-   showToast('Svislé překlopení', 'ok');
+   if(!def.chiral){
+    showToast(t('toastOnlyRot'), 'info');
+   } else {
+    p.flipX = !p.flipX;
+    const snap=nearestValidPosition(p,p.x,p.y,list);
+    if(snap){Object.assign(p,snap);p.invalid=false} else p.invalid=!validPlacement(p,list,p.id);
+    showToast(t('toastFlipped'), 'ok');
+   }
   }
   pieceClickCount=0;
   renderAll();
@@ -1100,7 +1379,7 @@ svg.addEventListener('click',evt=>{
  if(found){
   let cname, css;
   if(found.color==='transparent'){ cname='průhledná'; css='#94a3b8'; }
-  else if(found.color==='black'){ cname='pohlcen'; css='#94a3b8'; }
+  else if(found.color==='black'){ cname='pohlcen'; css='#1e3a5f'; }
   else if(found.color==='blue'){ cname='modrá'; css=COLORS.blue; }
   else if(found.color==='red'){ cname='červená'; css=COLORS.red; }
   else if(found.color==='yellow'){ cname='žlutá'; css=COLORS.yellow; }
@@ -1109,18 +1388,19 @@ svg.addEventListener('click',evt=>{
   G.cellQueries[cellKey] = css;
   const shot={by:'human',entry:lab,exit:'',color:cname,css,isQuery:true,empty:false,cellKey};
   G.shots.push(shot); addShotLog(shot);
-  showToast(`${lab} · ${cname}`, 'ok');
+  showToast(shotToastHtml(lab, shotToastRightHtml({name:cname,css})), 'ok', true);
  } else {
   const boardCell='#1e3a5f';
   const cellKey=cx+','+cy;
   G.cellQueries[cellKey] = boardCell;
   const shot={by:'human',entry:lab,exit:'',color:'prázdné',css:boardCell,isQuery:true,empty:true,cellKey};
   G.shots.push(shot); addShotLog(shot);
-  showToast(`${lab} · prázdné`, 'info');
+  showToast(shotToastHtml(lab, shotToastRightHtml({name:'prázdné',css:boardCell})), 'info', true);
  }
  G.actionMode='laser';
  updateActionModeButtons();
  renderAll();
+ focusLatestLog();
 });
 
 function renderPalette(){
@@ -1169,6 +1449,68 @@ function updateObjectTable(){ /* pomocná tabulka zrušena */ }
 function coord(p){return `${String.fromCharCode(65+Math.max(0,Math.min(7,Math.floor(p.y))))}${Math.max(1,Math.min(10,Math.floor(p.x)+1))}`}
 function renderShotList(){ /* sloučeno do answerBox / Záznam hry */ }
 function setStatus(text){ /* status bar removed */ }
+function addGuessPieceAt(id, x, y, opts){
+ if(G.phase!=='play' || G.revealSecret) return;
+ opts=opts||{};
+ const d=pieceDef(id);
+ const pid='g_'+id;
+ let p;
+ if(opts.snap){
+   const base={id:pid,defId:id,rot:0,x:0,y:0,color:d.color,kind:d.kind,flipX:false};
+   const vs=transformVerts(d,0,0,0), bb=bbox(vs);
+   const tx=x-(bb.maxx-bb.minx)/2, ty=y-(bb.maxy-bb.miny)/2;
+   const snap=nearestValidPosition(base,tx,ty,G.guessPieces);
+   if(snap){ p={...base,...snap}; }
+   else {
+     p={...base,x:Math.max(0,Math.min(W-1,Math.round(tx))),y:Math.max(0,Math.min(H-1,Math.round(ty)))};
+     p.invalid=!validPlacement(p,G.guessPieces);
+   }
+ } else {
+   p={id:pid,defId:id,rot:0,x,y,color:d.color,kind:d.kind,flipX:false};
+ }
+ G.guessPieces.push(p);
+ G.selectedPiece=pid;
+ G.editMode=true;
+ renderAll();
+ const nm=gemShort(d);
+ let key='toastGemPlacedRot';
+ if(d.fixedOrientation) key='toastGemPlacedFixed';
+ else if(d.chiral) key='toastGemPlaced';
+ showToast(t(key,{name:nm}),'ok');
+}
+function startPaletteDrag(evt,id){
+ if(G.phase!=='play' || G.revealSecret) return;
+ const startX=evt.clientX, startY=evt.clientY;
+ let moved=false, ghost=null;
+ const onMove=(e)=>{
+   const dx=e.clientX-startX, dy=e.clientY-startY;
+   if(!moved && Math.hypot(dx,dy)>6){
+     moved=true;
+     ghost=document.createElement('div');
+     ghost.style.cssText='position:fixed;pointer-events:none;z-index:9999;opacity:.85;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))';
+     ghost.innerHTML=miniSvg(pieceDef(id),52);
+     document.body.appendChild(ghost);
+   }
+   if(ghost){ ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px'; }
+ };
+ const onUp=(e)=>{
+   document.removeEventListener('pointermove',onMove);
+   document.removeEventListener('pointerup',onUp);
+   document.removeEventListener('pointercancel',onUp);
+   if(ghost) ghost.remove();
+   if(moved){
+     const pos=svgLocalPoint(e);
+     if(pos[0]>=-0.5 && pos[0]<=W+0.5 && pos[1]>=-0.5 && pos[1]<=H+0.5){
+       addGuessPieceAt(id,pos[0],pos[1],{snap:true});
+     } else {
+       showToast(t('toastDropOutside'),'info');
+     }
+   }
+ };
+ document.addEventListener('pointermove',onMove);
+ document.addEventListener('pointerup',onUp);
+ document.addEventListener('pointercancel',onUp);
+}
 function renderVirtualTools(){
  const el=document.getElementById('virtualTools'); if(!el)return;
  el.innerHTML='';
@@ -1180,19 +1522,17 @@ function renderVirtualTools(){
    const used=G.guessPieces.some(p=>(p.defId||p.id)===id);
    const b=document.createElement('button');
    b.type='button';
-   b.title=d.short+(used?' (na desce – přetáhněte mimo desku pro odebrání)':'');
-   b.style.cssText=`border:1px solid ${used?'#6366f1':'#2a4a6e'};background:#1a3352;border-radius:10px;padding:6px;line-height:0;opacity:${used?0.4:1};cursor:${used?'default':'pointer'}`;
+   b.title=gemControlTitle(d, used);
+   b.style.cssText=used
+     ?`border:1px solid #ff8080;background:rgba(239,68,68,0.28);border-radius:10px;padding:6px;line-height:0;opacity:1;cursor:default;touch-action:none`
+     :`border:1px solid #2a4a6e;background:#1a3352;border-radius:10px;padding:6px;line-height:0;opacity:1;cursor:grab;touch-action:none`;
    b.innerHTML=miniSvg(d,52);
    b.onclick=()=>{
      if(G.phase!=='play' || G.revealSecret) return;
-     if(used){ showToast('Drahokam je na desce. Přetáhněte jej mimo desku pro odebrání.','info'); return; }
-     const pid='g_'+id;
-     G.guessPieces.push({id:pid,defId:id,rot:0,x:2,y:3,color:d.color,kind:d.kind,flipX:false});
-     G.selectedPiece=pid;
-     G.editMode=true;
-     renderAll();
-     showToast(d.short+' – táhněte / 1× otočit / 2× překlopit','ok');
+     if(used){ showToast(t('toastOnBoard'),'info'); return; }
+     addGuessPieceAt(id,2,3);
    };
+   if(!used) b.addEventListener('pointerdown',(e)=>startPaletteDrag(e,id));
    wrap.appendChild(b);
  });
  el.appendChild(wrap);
@@ -1212,7 +1552,7 @@ function renderAll(){
    const total=G.shots.length;
    G.shots.slice().reverse().forEach((s,i)=>{
      const num=String(total-i).padStart(2,'0');
-     const col = s.css || (s.color==='žlutá'?COLORS.yellow:s.color==='bílá'?COLORS.white:s.color==='modrá'?COLORS.blue:s.color==='červená'?COLORS.red:s.color==='prázdné'?'#1e3a5f':'#94a3b8');
+     const col = s.css || (s.color==='žlutá'?COLORS.yellow:s.color==='bílá'?COLORS.white:s.color==='modrá'?COLORS.blue:s.color==='červená'?COLORS.red:s.color==='prázdné'||s.color==='žádná'||s.color==='pohlcen'?'#1e3a5f':s.color==='průhledná'?'#94a3b8':'#94a3b8');
      const hi = i===0 ? 'background:#0f2a22;' : '';
      const icon = s.isSystem ? '📋' : whoIcon(s.by);
      let mid, rightLabel;
@@ -1222,17 +1562,18 @@ function renderAll(){
        rightLabel = s.color||'';
      } else if(s.isQuery){
        mid = s.entry;
-       rightLabel = s.empty ? 'prázdné' : (s.color||'');
+       rightLabel = s.empty ? t('empty') : colorNameI18n(s.color||'');
      } else if(s.absorbed){
        mid = `${s.entry} →`;
-       rightLabel = 'pohlcen';
+       rightLabel = t('absorbed');
      } else {
        const exit = s.exit && s.exit!=='?' ? s.exit : s.entry;
        mid = `${s.entry} → ${exit}`;
-       rightLabel = s.color||'?';
+       rightLabel = colorNameI18n(s.color||'?');
      }
      const cand = (s.candNote!=null) ? ` <span style="color:#94a3b8">[${s.candNote}]</span>` : '';
-     html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 4px;border-bottom:1px solid #1e3a5f;${hi}">
+     const rowIdx=total-1-i;
+     html+=`<div id="shotRow-${rowIdx}" style="display:flex;justify-content:space-between;align-items:center;padding:5px 4px;border-bottom:1px solid #1e3a5f;${hi}">
        <span><b>${num}.</b> ${icon}  ${mid}${cand}</span>
        <span style="display:inline-flex;align-items:center;gap:6px">${rightLabel}
          <span style="display:inline-block;width:14px;height:14px;background:${col};border-radius:3px;border:1px solid #fff6"></span>
@@ -1241,7 +1582,7 @@ function renderAll(){
    });
    document.getElementById('answerBox').innerHTML=html;
  } else {
-   document.getElementById('answerBox').innerHTML='<div style="color:#8ba3c4;font-size:12px">Zatím žádné střely.</div>';
+   document.getElementById('answerBox').innerHTML='<div style="color:#8ba3c4;font-size:12px">'+t('noShots')+'</div>';
  }
  updateActionModeButtons();
 }
@@ -1274,17 +1615,24 @@ function addShotLog(s){
 }
 
 function startSoloGame(){
- G.secretPieces=generateRandomLayout(BASIC_IDS());
- if((G.difficulty||1)>=4 && G.secretPieces){
-   markHiddenFlags(G.secretPieces);
-   if(!G.secretPieces.some(p=>p.hidden)){
-     // ještě jeden pokus o skryté rozložení
-     for(let i=0;i<20 && !G.secretPieces.some(p=>p.hidden);i++){
-       G.secretPieces=generateRandomLayout(BASIC_IDS(),'hidden');
-       markHiddenFlags(G.secretPieces);
-     }
+ const _mode=visibilityModeForDifficulty(G.difficulty||1);
+ G.secretPieces=generateRandomLayout(BASIC_IDS(),_mode);
+ // Tvrdá kontrola: žádný drahokam nesmí být nedosažitelný paprskem
+ for(let i=0;i<40;i++){
+   if(G.secretPieces && layoutAllDetectable(G.secretPieces)){
+     markHiddenFlags(G.secretPieces);
+     if(_mode!=='hidden' || G.secretPieces.some(p=>p.hidden)) break;
+   }
+   G.secretPieces=generateRandomLayout(BASIC_IDS(),_mode);
+ }
+ if(!G.secretPieces || !layoutAllDetectable(G.secretPieces)){
+   // nouze: přímá viditelnost
+   for(let i=0;i<30;i++){
+     G.secretPieces=generateRandomLayout(BASIC_IDS(),'direct');
+     if(G.secretPieces && layoutAllDetectable(G.secretPieces)) break;
    }
  }
+ markHiddenFlags(G.secretPieces||[]);
 
  G.guessPieces=[];
  G.shots=[]; G.log=[]; G.edgeColors={}; G.cellQueries={};
@@ -1294,7 +1642,7 @@ function startSoloGame(){
  const gb=document.getElementById('guessBtn'); if(gb){gb.disabled=false;}
 
  addLog(`Nová hra · obtížnost ${G.difficulty}`);
- showToast('Nová hra – obtížnost '+G.difficulty,'ok');
+ showToast(t('toastNewGame')+G.difficulty,'ok');
  if(typeof switchSideTab==='function') switchSideTab('log');
  else {
    // fallback před definicí switchSideTab
@@ -1309,13 +1657,23 @@ function startSoloGame(){
  renderAll();
 }
 function pieceHitByRays(layout, pieceId, {firstOnly}={firstOnly:false}){
+  const match=h=>{
+    if(!h) return false;
+    if(h.pieceId===pieceId) return true;
+    const p=layout.find(x=>x.id===h.pieceId || x.defId===h.pieceId);
+    return !!(p && (p.id===pieceId || p.defId===pieceId));
+  };
+  // Více startů podél hrany – tenký průhledný trojúhelník se jinak snadno „mine“
+  const jitters=[0,-0.35,-0.18,0.18,0.35];
   for(const lab of allLaunchLabels()){
-    const r=rayTrace(layout, lab);
-    if(!r || !r.hits || !r.hits.length) continue;
-    if(firstOnly){
-      if(r.hits[0].pieceId===pieceId) return true;
-    } else {
-      if(r.hits.some(h=>h.pieceId===pieceId)) return true;
+    for(const jit of jitters){
+      const r=rayTrace(layout, lab, {jitter:jit});
+      if(!r || !r.hits || !r.hits.length) continue;
+      if(firstOnly){
+        if(match(r.hits[0])) return true;
+      } else {
+        if(r.hits.some(match)) return true;
+      }
     }
   }
   return false;
@@ -1326,24 +1684,37 @@ function markHiddenFlags(layout){
   }
   return layout;
 }
+function layoutAllDetectable(layout){
+  // Každý drahokam (včetně schovaného i černého) musí jít zasáhnout paprskem
+  // z alespoň jedné hrany – přímo nebo přes odrazy.
+  // Černý pohlcuje: jediná cesta k jinému drahokamu přes černý = ten druhý
+  // se do hits nedostane → layout neplatný.
+  return !!(layout && layout.length && layout.every(p=>pieceHitByRays(layout, p.id, {firstOnly:false})));
+}
 function layoutVisibilityOK(layout, mode){
   if(!layout || !layout.length) return false;
+  if(!layoutAllDetectable(layout)) return false;
   if(mode==='direct'){
     // a) každý drahokam je aspoň jednou přímo viditelný z okraje (první zásah paprsku)
     return layout.every(p=>pieceHitByRays(layout, p.id, {firstOnly:true}));
   }
   // b / hidden (obtížnost 4):
-  // – všichni drahokamy detekovatelní paprskem (i přes odrazy)
+  // – všichni detekovatelní (už ověřeno)
   // – aspoň jeden NENÍ nikdy prvním zásahem = dostupný jen přes odraz(y)
-  const allDetectable = layout.every(p=>pieceHitByRays(layout, p.id, {firstOnly:false}));
-  if(!allDetectable) return false;
   return layout.some(p=>!pieceHitByRays(layout, p.id, {firstOnly:true}));
 }
 function randomPieceCandidate(id){
   const d=pieceDef(id);
-  return {id,defId:id,rot:[0,90,180,270][Math.floor(Math.random()*4)],
+  const rot = d.fixedOrientation ? 0 : [0,90,180,270][Math.floor(Math.random()*4)];
+  // Flip se náhodně generuje jen u asymetrického (chirálního) drahokamu (červený
+  // rovnoběžník). U souměrných tvarů (trojúhelníky, černý drahokam) by flip jen
+  // duplikoval již dosažitelnou rotaci a matlal by zobrazenou hodnotu rotace po
+  // vyhodnocení, proto se u nich vždy generuje flipX:false. Bílý diamant (čtverec) má
+  // navíc fixedOrientation a negeneruje se u něj ani rotace – vypadá stejně ve všech.
+  const flipX = (d.fixedOrientation || !d.chiral) ? false : Math.random()<0.5;
+  return {id,defId:id,rot,
     x:Math.floor(Math.random()*W),y:Math.floor(Math.random()*H),
-    color:d.color,kind:d.kind,flipX:Math.random()<0.5,invalid:false,hidden:false};
+    color:d.color,kind:d.kind,flipX,invalid:false,hidden:false};
 }
 function tryPlaceAll(ids){
   const pieces=[];
@@ -1361,53 +1732,87 @@ function tryPlaceAll(ids){
 function generateRandomLayout(ids, mode){
  ids=(ids||BASIC_IDS()).slice();
  mode=mode||visibilityModeForDifficulty(G.difficulty||1);
- const maxAttempts = mode==='hidden' ? 15000 : 7000;
+ const maxAttempts = mode==='hidden' ? 30000 : 15000;
+
+ function acceptLayout(pieces){
+   if(!pieces || !pieces.length) return false;
+   if(!layoutAllDetectable(pieces)) return false;
+   if(mode==='direct')
+     return pieces.every(p=>pieceHitByRays(pieces, p.id, {firstOnly:true}));
+   return pieces.some(p=>!pieceHitByRays(pieces, p.id, {firstOnly:true}));
+ }
+
  for(let attempt=0;attempt<maxAttempts;attempt++){
    const pieces=tryPlaceAll(ids);
-   if(!pieces) continue;
-   if(layoutVisibilityOK(pieces, mode)){
+   if(pieces && acceptLayout(pieces)){
      markHiddenFlags(pieces);
      return clone(pieces);
    }
  }
- // Mode hidden: cílený pokus – nejdřív „zdi“ u okraje, pak jeden drahokam dovnitř
  if(mode==='hidden'){
-   for(let attempt=0;attempt<8000;attempt++){
-     const edgeIds=ids.slice(0,-1);
-     const hideId=ids[ids.length-1];
+   // Schovaný může být KTERÝKOLI drahokam včetně černého.
+   // Podmínka: paprsek na něj musí dosáhnout (layoutAllDetectable).
+   // U ne-černého nesmí být jediná cesta zablokovaná pohlcením černým.
+   for(let attempt=0;attempt<20000;attempt++){
+     const hideId=ids[Math.floor(Math.random()*ids.length)];
+     const edgeIds=ids.filter(id=>id!==hideId);
      const pieces=tryPlaceAll(edgeIds);
      if(!pieces) continue;
-     // zkusit umístit poslední drahokam více doprostřed
      let hiddenP=null;
-     for(let k=0;k<800;k++){
+     for(let k=0;k<1200;k++){
        const d=pieceDef(hideId);
-       const p={id:hideId,defId:hideId,rot:[0,90,180,270][Math.floor(Math.random()*4)],
+       const rot = d.fixedOrientation ? 0 : [0,90,180,270][Math.floor(Math.random()*4)];
+       const flipX = (d.fixedOrientation || !d.chiral) ? false : Math.random()<0.5;
+       const p={id:hideId,defId:hideId,rot,
          x:1+Math.floor(Math.random()*(W-2)),y:1+Math.floor(Math.random()*(H-2)),
-         color:d.color,kind:d.kind,flipX:Math.random()<0.5,invalid:false,hidden:false};
+         color:d.color,kind:d.kind,flipX,invalid:false,hidden:false};
        if(validPlacement(p,pieces)){hiddenP=p;break}
      }
      if(!hiddenP) continue;
      pieces.push(hiddenP);
-     if(layoutVisibilityOK(pieces, 'hidden')){
+     if(acceptLayout(pieces)){
        markHiddenFlags(pieces);
        return clone(pieces);
      }
    }
  }
- // poslední záchrana – libovolné platné rozložení (bez garance schovaného)
- console.warn('generateRandomLayout: slabý fallback', mode);
- for(let attempt=0;attempt<3000;attempt++){
+ // Nouzově: jakýkoli plně detekovatelný layout (bez výjimky)
+ for(let attempt=0;attempt<30000;attempt++){
    const pieces=tryPlaceAll(ids);
-   if(!pieces) continue;
-   markHiddenFlags(pieces);
-   if(mode!=='hidden' || pieces.some(p=>p.hidden)) return clone(pieces);
-   if(mode!=='hidden') return clone(pieces);
+   if(pieces && layoutAllDetectable(pieces)){
+     markHiddenFlags(pieces);
+     return clone(pieces);
+   }
+ }
+ console.error('generateRandomLayout: no detectable layout');
+ // jako poslední možnost – layout bez černého, pokud je v ids (dočasně) aby šlo hrát
+ const idsNoBlack=ids.filter(id=>{ const d=pieceDef(id); return d && d.color!=='black'; });
+ if(idsNoBlack.length && idsNoBlack.length<ids.length){
+   for(let attempt=0;attempt<5000;attempt++){
+     const pieces=tryPlaceAll(idsNoBlack);
+     if(pieces && layoutAllDetectable(pieces)){
+       // doplnit černý na detekovatelné místo
+       const d=pieceDef('blackTri');
+       if(d){
+         for(let k=0;k<2000;k++){
+           const p={id:'blackTri',defId:'blackTri',rot:[0,90,180,270][k%4],
+             x:Math.floor(Math.random()*W),y:Math.floor(Math.random()*H),
+             color:'black',kind:'absorb',flipX:false,invalid:false,hidden:false};
+           if(!validPlacement(p,pieces)) continue;
+           const trial=pieces.concat([p]);
+           if(layoutAllDetectable(trial)){
+             markHiddenFlags(trial);
+             return clone(trial);
+           }
+         }
+       }
+     }
+   }
  }
  const fb=tryPlaceAll(ids)||[];
  markHiddenFlags(fb);
  return clone(fb);
 }
-
 function generateCandidates(n){
  const arr=[], seen=new Set(); let tries=0;
  while(arr.length<n&&tries<n*80){
@@ -1547,42 +1952,90 @@ function laserEdgeColor(colorObj){
  // Skutečná barva paprsku pro podbarvení souřadnice (bílá = čistě bílá)
  if(!colorObj) return '#94a3b8';
  if(colorObj.name==='bílá') return '#ffffff';
- if(colorObj.name==='žádná') return '#94a3b8'; return colorObj.css || '#94a3b8';
+ if(colorObj.name==='žádná' || colorObj.name==='pohlcen') return '#1e3a5f';
+ if(colorObj.name==='průhledná') return '#94a3b8';
+ return colorObj.css || '#94a3b8';
+}
+function flashLogRow(idx){
+ switchSideTab('log');
+ renderAll();
+ requestAnimationFrame(()=>{
+   const rowEl=document.getElementById('shotRow-'+idx);
+   if(rowEl){
+     rowEl.scrollIntoView({block:'center',behavior:'smooth'});
+     rowEl.classList.remove('flashRow'); void rowEl.offsetWidth;
+     rowEl.classList.add('flashRow');
+     setTimeout(()=>rowEl.classList.remove('flashRow'), 1600);
+   }
+ });
+ const num=String(idx+1).padStart(2,'0');
+ showToast(t('toastAlreadyShot',{n:num}),'info');
+}
+function focusLatestLog(){
+  // Přepne na Log a scroll na první řádek (nejnovější zápis)
+  switchSideTab('log');
+  requestAnimationFrame(()=>{
+    const box=document.getElementById('answerBox');
+    if(box){ box.scrollTop=0; }
+    const lastIdx=(G.shots&&G.shots.length)?G.shots.length-1:-1;
+    if(lastIdx>=0){
+      const rowEl=document.getElementById('shotRow-'+lastIdx);
+      if(rowEl){
+        rowEl.scrollIntoView({block:'start',behavior:'smooth'});
+        rowEl.classList.remove('flashRow'); void rowEl.offsetWidth;
+        rowEl.classList.add('flashRow');
+        setTimeout(()=>rowEl.classList.remove('flashRow'), 1200);
+      }
+    }
+  });
 }
 function humanShoot(label){
  if(G.phase!=='play' || G.revealSecret) return;
- if(G.actionMode!=='laser'){ showToast('Přepněte na Laser pro výstřel.','info'); return; }
+ if(G.actionMode!=='laser'){ showToast(t('toastSwitchLaser'),'info'); return; }
  if(G.editMode || G.selectedPiece){
    G.editMode=false; G.selectedPiece=null;
    const mb=document.getElementById('markPieceBtn');
    if(mb) mb.classList.remove('active');
  }
+ const lab=String(label).toUpperCase();
+ const existingIdx=G.shots.findIndex(s=>{
+   if(s.isQuery || s.isSystem) return false;
+   const e=String(s.entry||'').toUpperCase();
+   const x=s.exit!=null ? String(s.exit).toUpperCase() : '';
+   return e===lab || x===lab;
+ });
+ if(existingIdx>=0){
+   flashLogRow(existingIdx);
+   return;
+ }
  let r=rayTrace(G.secretPieces,label);
  if(!r) return;
  r=finalizeRayColor(r);
  if(r.absorbed){
-   const edgeCol='#94a3b8';
-   const ansText = `${label} → · pohlcen`;
-   const shot={by:'human',entry:label,exit:null,color:'pohlcen',css:edgeCol,resultText:ansText,path:r.path,absorbed:true};
+   const edgeCol='#1e3a5f';
+   const shot={by:'human',entry:label,exit:null,color:'pohlcen',css:edgeCol,resultText:label+' →',path:r.path,absorbed:true};
    G.shots.push(shot); addShotLog(shot);
    if(!G.edgeColors) G.edgeColors={};
    G.edgeColors[label]=edgeCol;
    G.lastPath={entry:label,exit:null,color:r.color,path:r.path,absorbed:true};
-   showToast(ansText,'ok');
+   showToast(shotToastHtml(label+' →', shotToastRightHtml({name:'pohlcen',css:edgeCol})), 'ok', true);
    renderAll();
+   focusLatestLog();
    return;
  }
  if(!r.exit || r.exit==='?') r.exit = label;
- const ansText = `${label} → ${r.exit} · ${r.color.name}`;
  const edgeCol = laserEdgeColor(r.color);
- const shot={by:'human',entry:label,exit:r.exit,color:r.color.name,css:edgeCol,resultText:ansText,path:r.path};
+ const shot={by:'human',entry:label,exit:r.exit,color:r.color.name,css:edgeCol,resultText:`${label} → ${r.exit}`,path:r.path, colorObj:r.color};
  G.shots.push(shot); addShotLog(shot);
  if(!G.edgeColors) G.edgeColors={};
  G.edgeColors[label]=edgeCol;
  if(r.exit) G.edgeColors[r.exit]=edgeCol;
  G.lastPath={entry:label,exit:r.exit,color:r.color,path:r.path};
- showToast(ansText,'ok');
+ // stejný formát jako v logu: vždy vstup → výstup (i když jsou shodné)
+ const left = `${label} → ${r.exit}`;
+ showToast(shotToastHtml(left, shotToastRightHtml(r.color)), 'ok', true);
  renderAll();
+ focusLatestLog();
 }
 function aiTurn(){}
 function showAIWinComparison(){
@@ -1608,25 +2061,14 @@ function showAIWinComparison(){
 }
 
 function pieceKey(p){
- // Normalizovaný klíč: buňky pokryté polygonem (hustší vzorek – tenké tvary jako clearTri)
+ // Normalizovaný klíč: PŘESNÁ geometrie výsledného mnohoúhelníku (seřazené vrcholy).
+ // Díky tomu se dva zápisy stejného tvaru (různá kombinace rotace + překlopení,
+ // které u souměrných drahokamů dávají naprosto stejnou výslednou polohu) vyhodnotí
+ // jako shodné – porovnává se skutečný tvar na desce, ne interní rot/flip hodnoty.
  const poly=placementPoly(p);
- const cells=new Set();
- const step=0.25;
- for(let y=0;y<H;y+=step) for(let x=0;x<W;x+=step){
-   if(pointInPoly([x+step*0.5,y+step*0.5],poly))
-     cells.add(Math.floor(x)+','+Math.floor(y));
- }
- // vrcholy a středy hran
- for(let i=0;i<poly.length;i++){
-   const a=poly[i], b=poly[(i+1)%poly.length];
-   for(const pt of [a,[(a[0]+b[0])/2,(a[1]+b[1])/2]]){
-     if(pt[0]>=-EPS&&pt[1]>=-EPS&&pt[0]<W+EPS&&pt[1]<H+EPS)
-       cells.add(Math.max(0,Math.min(W-1,Math.floor(pt[0])))+','+Math.max(0,Math.min(H-1,Math.floor(pt[1]))));
-   }
- }
- if(cells.size) return [...cells].sort().join('|');
- // nouzově pozice (nesmí být prázdný klíč → falešná shoda)
- return `xy:${p.x},${p.y},r:${p.rot||0},f:${p.flipX?1:0}`;
+ const pts=poly.map(([x,y])=>[Math.round(x*1000)/1000, Math.round(y*1000)/1000]);
+ pts.sort((a,b)=>a[0]-b[0] || a[1]-b[1]);
+ return pts.map(([x,y])=>`${x},${y}`).join('|');
 }
 function piecesMatch(a,g){
   if(!a||!g) return false;
@@ -1634,6 +2076,7 @@ function piecesMatch(a,g){
   const ka=pieceKey(a), kg=pieceKey(g);
   return !!ka && !!kg && ka===kg;
 }
+// hodnocení hráče z tabulky v nápovědě
 function gradeForShots(n,d){
   d=d||1;
   if(d===1){
@@ -1658,17 +2101,17 @@ function gradeForShots(n,d){
     return 'amatér';
   }
   // d===4 = sloupec 3 + 2
-  if(n<=17) return 'odborník';
-  if(n<=20) return 'profík';
-  if(n<=23) return 'lovec';
-  if(n<=27) return 'nadšenec';
+  if(n<=16) return 'odborník';
+  if(n<=19) return 'profík';
+  if(n<=22) return 'lovec';
+  if(n<=26) return 'nadšenec';
   return 'amatér';
 }
 function openGuess(){
  if(G.phase!=='play')return;
  const need=BASIC_IDS().length;
  if(G.guessPieces.length < need){
-   showToast(`Umístěte všech ${need} drahokamů (Editace).`, 'bad');
+   showToast(t('toastPlaceAll',{n:need}), 'bad');
    return;
  }
  submitGuess();
@@ -1699,11 +2142,11 @@ function buildEvalTable(){
 }
 function logGameState(allOk, nShots, grade){
  // Zápis do viditelného Záznamu hry (G.shots) + interní G.log
- const resultTxt = allOk ? `VÝHRA – ${nShots} tahů` : `PROHRA – ${nShots} tahů`;
- addLog(`Odesláno – ${resultTxt}`);
+ const resultTxt = allOk ? `${t('win')} – ${nShots} ${t('turns')}` : `${t('lose')} – ${nShots} ${t('turns')}`;
+ addLog(`${t('submitted')} – ${resultTxt}`);
  G.shots.push({
    by:'system', isSystem:true,
-   entry:'Odesláno', exit: resultTxt,
+   entry:t('submitted'), exit: resultTxt,
    color: allOk?'výhra':'prohra',
    css: allOk?'#22c55e':'#ef4444',
    resultText: resultTxt
@@ -1738,10 +2181,10 @@ function submitGuess(){
  G.revealSecret=true; G.phase='gameover';
  if(allOk){
    G.winner='human';
-   showToast(`Výhra! ${nShots} tahů – ${grade}`, 'ok');
+   showToast(`${t('toastWin')} ${nShots} ${t('turns')} – ${grade}`, 'ok');
  } else {
    G.winner=null;
-   showToast('Prohra – řešení se neshoduje.', 'bad');
+   showToast(t('toastLose'), 'bad');
  }
  logGameState(allOk, nShots, grade);
  recordGameStats(allOk, nShots, grade);
@@ -1771,17 +2214,18 @@ document.getElementById('evalBtn').onclick=showEvaluationModal;
 document.getElementById('diffBtn').onclick=()=>{
   G.difficulty = (G.difficulty % 4) + 1;
   document.getElementById('diffBtn').textContent=String(G.difficulty);
+  try{ localStorage.setItem(DIFF_KEY, String(G.difficulty)); }catch(e){}
   //showToast('Obtížnost '+G.difficulty+' – nová hra','info');
   startSoloGame();
 };
 document.getElementById('saveBtn').onclick=()=>{
- const data=JSON.stringify(G);localStorage.setItem(SAVE_KEY,data);showToast('Hra uložena.','ok');
+ const data=JSON.stringify(G);localStorage.setItem(SAVE_KEY,data);showToast(t('toastSaved'),'ok');
 };
 document.getElementById('loadBtn').onclick=()=>{
   const raw=localStorage.getItem(SAVE_KEY);
 
   if(!raw){
-    showToast('Uložená hra neexistuje.', 'bad');
+    showToast(t('toastNoSave'), 'bad');
     return;
   }
 
@@ -1816,21 +2260,21 @@ document.getElementById('loadBtn').onclick=()=>{
     const db=document.getElementById('diffBtn');
     if(db) db.textContent=String(G.difficulty||1);
 
-    showToast('Hra načtena.', 'ok');
+    showToast(t('toastLoaded'), 'ok');
     renderAll();
     if(typeof renderStatsBox==='function') renderStatsBox();
 
   }catch(e){
     console.error('Load error:',e);
-    showToast('Uložená hra je poškozená.', 'bad');
+    showToast(t('toastBadSave'), 'bad');
   }
 };
 document.getElementById('restartBtn').onclick=()=>{
- openModal('Potvrzení', `
-  <p style="margin-bottom: 20px;">Opravdu chcete začít novou hru?</p>
+ openModal(t('restart'), `
+  <p style="margin-bottom: 20px;">${t('confirmRestart')}</p>
   <div class="controls" style="justify-content: flex-end;">
-    <button class="controlBtn" onclick="closeModal()">Zrušit</button>
-    <button class="controlBtn primary" onclick="doRestart()">Ano</button>
+    <button class="controlBtn" onclick="closeModal()">${t('cancel')}</button>
+    <button class="controlBtn primary" onclick="doRestart()">${t('yes')}</button>
   </div>
  `);
 };
@@ -1865,40 +2309,100 @@ document.getElementById('copyRecordBtn').onclick=async()=>{
    else lines.push(`${n}. ${icon}  ${s.entry} → ${s.exit||s.entry}  ${s.color||''}${cand}`);
  });
  const txt=lines.length?lines.join('\n'):'Záznam je prázdný.';
- try{await navigator.clipboard.writeText(txt);showToast('Záznam zkopírován.','ok')}catch(e){showToast('Kopírování se nezdařilo.','bad')}
+ try{await navigator.clipboard.writeText(txt);showToast(t('toastCopied'),'ok')}catch(e){showToast(t('toastCopyFail'),'bad')}
 };
 document.getElementById('clearStorageBtn').onclick=()=>{
-  openModal('Vymazat data', `
-  <p style="margin-bottom:16px">Opravdu smazat uloženou hru a statistiky z paměti zařízení?</p>
+  openModal(t('clearData'), `
+  <p style="margin-bottom:16px">${t('confirmClear')}</p>
   <div class="controls" style="justify-content:flex-end;gap:8px">
-    <button class="controlBtn" onclick="closeModal()">Zrušit</button>
-    <button class="controlBtn primary" onclick="doClearStorage()">Smazat</button>
+    <button class="controlBtn" onclick="closeModal()">${t('cancel')}</button>
+    <button class="controlBtn primary" onclick="doClearStorage()">${t('delete')}</button>
   </div>`);
 };
 function doClearStorage(){
   try{
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(STATS_KEY);
-    showToast('Uložená data byla vymazána.','ok');
+    localStorage.removeItem(DIFF_KEY);
+    showToast(t('toastCleared'),'ok');
   }catch(e){
-    showToast('Mazání se nezdařilo.','bad');
+    showToast(t('toastClearFail'),'bad');
   }
   closeModal();
   if(typeof renderStatsBox==='function') renderStatsBox();
 }
 document.getElementById('helpBtn').onclick=()=>{
  const clb=document.getElementById('copyLogBtn'); if(clb) clb.style.display='none';
- openModal('Nápověda – Orapa Mine',`
+ openModal(t('helpTitle'), LANG==='en' ? `
+ <p style="font-style:italic;opacity:.85">© 2024 Designer: Junghee Choi, Wanjin Gill</p>
+ <p style="font-style:italic">You have been hired to locate gems in the world's largest diamond mine – Orapa Mine. Using ultrasonic beams sent deep underground and analysing their returns, you can determine the position and type of gems.</p>
+ <h3>Principle</h3>
+ <p>On a 10×8 board geometric gems are hidden. Click an edge transmitter to send a light wave. The wave reflects from object edges; a slanted edge turns it 90°, a horizontal/vertical edge sends it back. Result: exit point and final colour.</p>
+ <h3>Gems tab</h3>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li>click a gem in the stock to place it (edit mode, dashed frame), or hold and drag onto the board</li>
+ <li>1× tap = rotate 90° right</li>
+ <li>2× tap = vertical flip – <b>only the red parallelogram</b></li>
+ <li>triangles and the black gem: rotation only</li>
+ <li>white diamond: no rotation, no flip</li>
+ <li>drag a gem <b>off the board</b> to return it to stock</li>
+ </ul>
+ <h3>Placement rules</h3>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li>no overlapping or going outside the board</li>
+ <li>edges must not touch; corners may touch</li>
+ <li>invalid placement is highlighted in red</li>
+ </ul>
+ <h3>Log tab</h3>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li>shots and queries listed newest first</li>
+ <li>format: move number, entry, exit, beam colour</li>
+ <li>exception: the black gem absorbs the beam – no exit point</li>
+ <li>header buttons: lightning (laser), square (cell query), copy, trash (clear local storage)</li>
+ <li>clicking an already used edge coordinate highlights the existing log row (entry or exit)</li>
+ </ul>
+ <h3>Colors tab</h3>
+ <p>Colour mixes when the beam reflects off gems.</p>
+ <h3>Solution tab</h3>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
+ <li><b>Submit</b> – compare your layout with the secret and save the result</li>
+ <li><b>Evaluation</b> – reopen the result table until a new game</li>
+ <li>statistics: best results per difficulty; click to reload</li>
+ </ul>
+ <h3>Last move</h3>
+ <p>The last shot or query is marked by pulsing coordinate labels or the cell.</p>
+ <h3>End of game</h3>
+ <p>When you think you know the layout, place all gems and press <b>Submit</b>. The comparison table can be reopened with <b>Evaluation</b>. The board shows your placement vs. the secret. The result is stored in the Log.</p>
+ <h3>Scoring</h3>
+ <p>(shots + queries by difficulty)</p>
+ <table class="table" style="font-size:12px">
+ <thead><tr><th>Moves</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
+ <tbody>
+ <tr><td>expert</td><td>≤10</td><td>≤12</td><td>≤15</td><td>≤16</td></tr>
+ <tr><td>pro</td><td>11–13</td><td>13–15</td><td>16–18</td><td>17–19</td></tr>
+ <tr><td>hunter</td><td>14–18</td><td>16–20</td><td>19–21</td><td>20–22</td></tr>
+ <tr><td>fan</td><td>19–23</td><td>21–25</td><td>22–25</td><td>23–26</td></tr>
+ <tr><td>amateur</td><td>≥24</td><td>≥26</td><td>≥26</td><td>≥27</td></tr>
+ </tbody></table>
+ <h3>Difficulty</h3>
+ <p style="margin-top:8px">
+ 1 = 5 gems, direct visibility<br>
+ 2 = 6 gems (+ transparent), direct visibility<br>
+ 3 = 7 gems (+ black), direct visibility<br>
+ 4 = 7 gems, at least 1 gem is “hidden” – reachable only via reflection(s)</p>
+ <p style="margin-top:10px">A “hidden” gem is marked in green on the board, in the log and in the evaluation.</p>
+` : `
  <p style="font-style:italic;opacity:.85">© 2024 Designer: Junghee Choi, Wanjin Gill</p>
  <p style="font-style:italic">Obdrželi jste zakázku na lokalizaci drahokamů v největším diamantovém dole na světě – Orapa Mine. Pomocí ultrazvukových paprsků, které vyšlete hluboko pod zem, a analýzy jejich návratů můžete určit polohu a typ drahokamů.</p>
  <h3>Herní princip</h3>
  <p>Na desce 10×8 jsou ukryty geometrické drahokamy. Kliknutím na vysílač na okraji hrací desky vyšlete světelnou vlnu. Vlna se od hran objektů odráží; šikmá hrana ji otočí o 90°, vodorovná/svislá hrana ji vrátí zpět. Výsledkem je výstupní bod a výsledná barva.</p>
  <h3>Záložka Drahokamy</h3>
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
- <li>kliknutím na drahokam v zásobníku jej umístíte na desku (hned v režimu editace, čárkovaný rám)</li>
- <li>přidržením přetáhněte na požadované místo; při uvolnění se přichytí k platnému bodu</li>
+ <li>kliknutím na drahokam v zásobníku jej umístíte na desku (režim editace, čárkovaný rám), nebo jej přidržením přetáhněte na požadované místo hrací desky; při uvolnění se přichytí k platnému bodu</li>
  <li>1× klepnutí = otočení o 90° doprava</li>
- <li>2× klepnutí = překlopení přes svislou osu</li>
+ <li>2× klepnutí = překlopení přes svislou osu – <b>platí pouze pro <span style="color: red;">červený</span> rovnoběžník</b> (je jediný nesouměrný, generuje se i staví s rotací i flipem)</li>
+ <li>všechny trojúhelníky a černý drahokam mají povolenou pouze rotaci (flip by u nich vedl jen ke stejné poloze jinou otočkou)</li>
+ <li>bílý diamant (čtverec) nemá povolenou ani rotaci, ani flip – jeho tvar vypadá při každé poloze stejně</li>
  <li>přetažením drahokamu <b>mimo desku</b> jej vrátíte do zásobníku</li>
  </ul>
  <h3>Pravidla kontroly</h3>
@@ -1921,7 +2425,7 @@ document.getElementById('helpBtn').onclick=()=>{
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
  <li><b>Odeslat</b> – porovná vaše rozmístění s předlohou a uloží výsledek do logu i statistik</li>
  <li><b>Vyhodnocení</b> – znovu zobrazí tabulku výsledku až do nové hry</li>
- <li><b>Statistiky</b> – nejlepší výsledky podle obtížnosti (localStorage); kliknutím načtete záznam</li>
+ <li>statistika: nejlepší výsledky podle obtížnosti (localStorage); kliknutím načtete záznam</li>
  </ul>
  <h3>Indikace posledního tahu</h3>
  <p>Poslední tah (výstřel laseru nebo dotaz) je indikován pulzováním názvu (písmeno, číslo) souřadnic (vstupní, výstupní) nebo pulzováním konkrétní buňky na hrací desce.</p>
@@ -1961,7 +2465,27 @@ document.addEventListener('keydown',e=>{
 });
 
 // Init
+try{
+  const savedDiff=parseInt(localStorage.getItem(DIFF_KEY),10);
+  if(savedDiff>=1 && savedDiff<=4){
+    G.difficulty=savedDiff;
+    const db=document.getElementById('diffBtn');
+    if(db) db.textContent=String(G.difficulty);
+  }
+}catch(e){}
+document.getElementById('langBtn').onclick=()=>{
+  LANG = (LANG==='cs') ? 'en' : 'cs';
+  try{ localStorage.setItem(LANG_KEY, LANG); }catch(e){}
+  applyI18n();
+};
 startSoloGame();
+applyI18n();
+let lastLandMode=isPcLandscape();
+window.addEventListener('resize',()=>{
+  const land=isPcLandscape();
+  if(land!==lastLandMode){ lastLandMode=land; renderAll(); }
+});
+
 </script>
 </body>
 </html>
