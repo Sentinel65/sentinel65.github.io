@@ -1071,11 +1071,8 @@ function addLaunch(x,y,label,colorFill,side){
  // Rotace landscape na skupině, pulz na textu – animace transform jinak přepíše rotate
  const tg=svgEl('g');
  if(isPcLandscape()) tg.setAttribute('transform', `rotate(90 ${cx} ${cy})`);
- // pohlcen / žádná / prázdné (#1e3a5f) → světle modrý font; ostatní použité → černý
- const isDimFill = !!(colorFill && String(colorFill).toLowerCase()==='#1e3a5f');
- const labelFill = !colorFill ? '#f1f5f9' : (isDimFill ? '#7dd3fc' : '#0f172a');
  const t=svgEl('text',{x:cx,y:cy,
-   'font-size':isLast?18:14,fill:labelFill,
+   'font-size':isLast?18:14,fill:isLast?'#0f172a':(colorFill?'#0f172a':'#f1f5f9'),
    'text-anchor':'middle','dominant-baseline':'central','font-weight':'900','pointer-events':'none'});
  t.textContent=label;
  if(isLast) t.classList.add('label-last');
@@ -2353,7 +2350,7 @@ document.getElementById('helpBtn').onclick=()=>{
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
  <li>click a gem in the stock to place it (edit mode, dashed frame), or hold and drag onto the board</li>
  <li>1× tap = rotate 90° right</li>
- <li>2× tap = vertical flip – <b>only <span style="color: red;">the red parallelogram</span></b></b></li>
+ <li>2× tap = vertical flip – <b>only <span style="color: red;">the red parallelogram</span></b></li>
  <li>triangles and the black gem: rotation only</li>
  <li>white diamond: no rotation, no flip</li>
  <li>drag a gem <b>off the board</b> to return it to stock</li>
@@ -2411,7 +2408,7 @@ document.getElementById('helpBtn').onclick=()=>{
  <ul style="margin:0 0 8px 18px;padding:0;line-height:1.6">
  <li>kliknutím na drahokam v zásobníku jej umístíte na desku (režim editace, čárkovaný rám), nebo jej přidržením přetáhněte na požadované místo hrací desky; při uvolnění se přichytí k platnému bodu</li>
  <li>1× klepnutí = otočení o 90° doprava</li>
- <li>2× klepnutí = překlopení přes svislou osu – <b>platí pouze pro <span style="color: red;">červený  rovnoběžník</span></b> (je jediný nesouměrný, generuje se i staví s rotací i flipem)</li>
+ <li>2× klepnutí = překlopení přes svislou osu – <b>platí pouze pro <span style="color: red;">červený rovnoběžník</span></b> (je jediný nesouměrný, generuje se i staví s rotací i flipem)</li>
  <li>všechny trojúhelníky a černý drahokam mají povolenou pouze rotaci (flip by u nich vedl jen ke stejné poloze jinou otočkou)</li>
  <li>bílý diamant (čtverec) nemá povolenou ani rotaci, ani flip – jeho tvar vypadá při každé poloze stejně</li>
  <li>přetažením drahokamu <b>mimo desku</b> jej vrátíte do zásobníku</li>
