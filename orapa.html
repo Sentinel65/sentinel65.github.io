@@ -1572,9 +1572,24 @@ function renderAll(){
      const icon = s.isSystem ? '📋' : whoIcon(s.by);
      let mid, rightLabel;
      if(s.isSystem){
-       const nm = s.hiddenGem ? `<span style="color:#16a34a;font-weight:800">${s.entry}</span>` : s.entry;
-       mid = nm + (s.exit ? ' · '+s.exit : '');
-       rightLabel = s.color||'';
+       let label=s.entry;
+       if(s.defId && typeof gemShort==='function'){
+         const d=pieceDef(s.defId);
+         if(d) label=gemShort(d);
+       } else if(s.systemKind==='result'){
+         // Odesláno / Submitted + výsledek v aktuálním jazyce
+         if(s.nShots!=null){
+           const resultTxt = s.allOk
+             ? `${t('win')} – ${s.nShots} ${t('turns')}`
+             : `${t('lose')} – ${s.nShots} ${t('turns')}`;
+           label=t('submitted');
+           s._exitI18n=resultTxt;
+         }
+       }
+       const nm = s.hiddenGem ? `<span style="color:#16a34a;font-weight:800">${label}</span>` : label;
+       const exitPart = (s._exitI18n!=null) ? s._exitI18n : s.exit;
+       mid = nm + (exitPart ? ' · '+exitPart : '');
+       rightLabel = (s.color==='výhra'||s.color==='prohra') ? colorNameI18n(s.color) : (s.color||'');
      } else if(s.isQuery){
        mid = s.entry;
        rightLabel = s.empty ? t('empty') : colorNameI18n(s.color||'');
@@ -2174,11 +2189,12 @@ function logGameState(allOk, nShots, grade){
  const resultTxt = allOk ? `${t('win')} – ${nShots} ${t('turns')}` : `${t('lose')} – ${nShots} ${t('turns')}`;
  addLog(`${t('submitted')} – ${resultTxt}`);
  G.shots.push({
-   by:'system', isSystem:true,
+   by:'system', isSystem:true, systemKind:'result',
    entry:t('submitted'), exit: resultTxt,
    color: allOk?'výhra':'prohra',
    css: allOk?'#22c55e':'#ef4444',
-   resultText: resultTxt
+   resultText: resultTxt,
+   allOk:!!allOk, nShots, grade
  });
  for(const id of BASIC_IDS()){
    const d=pieceDef(id);
@@ -2188,11 +2204,13 @@ function logGameState(allOk, nShots, grade){
    const hid=!!(a&&isHiddenSecret(a));
    const gPos=g?`(${g.x},${g.y}) ${g.rot}°`:'—';
    const aPos=a?`(${a.x},${a.y}) ${a.rot}°`:'—';
-   const line = `${d.short}: ${gPos} → ${aPos} ${ok?'✓':'✗'}`;
+   const short=typeof gemShort==='function'?gemShort(d):d.short;
+   const line = `${short}: ${gPos} → ${aPos} ${ok?'✓':'✗'}`;
    addLog(line);
    G.shots.push({
-     by:'system', isSystem:true, hiddenGem:hid,
-     entry: d.short,
+     by:'system', isSystem:true, systemKind:'gem', hiddenGem:hid,
+     defId:id,
+     entry: short,
      exit: `${gPos} / ${aPos}`,
      color: ok?'✓':'✗',
      css: ok?'#22c55e':'#ef4444',
