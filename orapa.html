@@ -1142,31 +1142,36 @@ function drawPiece(p){
  const pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
  const fill=COLORS[p.color]||COLORS.white;
  const g=svgEl('g',{class:'piece'+(p.invalid?' invalid':'')});
- g.appendChild(svgEl('polygon',{points:pts,fill,stroke:p.color==='white'?'#94a3b8':'none','stroke-width':p.color==='white'?1:0,'fill-opacity':1}));
+ const edge = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : (p.color==='black' ? '#64748b' : 'rgba(0,0,0,0.25)');
+ g.appendChild(svgEl('polygon',{points:pts,fill,stroke:edge,'stroke-width':1.2,'fill-opacity':1}));
+ appendClippedGrid(g, poly, 'sgrid_'+String(p.id||p.defId||'x'), p.color==='black');
+ // Schovaný drahokam: zelené čárkované orámování
+ if(G.revealSecret && isHiddenSecret(p)){
+   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#16a34a','stroke-width':3,'stroke-dasharray':'6 4'}));
+ }
  if(G.selectedPiece===p.id && G.editMode){
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'6 4'}));
  }
- const cx=poly.reduce((s,v)=>s+v[0],0)/poly.length,cy=poly.reduce((s,v)=>s+v[1],0)/poly.length;
- const q=boardPoint(cx,cy);
- const tx=svgEl('text',{x:q[0],y:q[1]+6,'font-size':16,fill:gemLetterFill(p),'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
- tx.textContent=gemLetter(p);
- g.appendChild(tx); g.addEventListener('pointerdown',e=>startDrag(e,p.id)); svg.appendChild(g);
+ g.addEventListener('pointerdown',e=>startDrag(e,p.id));
+ svg.appendChild(g);
 }
-function appendClippedGrid(g, poly, clipId){
+function appendClippedGrid(g, poly, clipId, onBlack){
  const b=bbox(poly);
  const defs=svgEl('defs',{});
  const clip=svgEl('clipPath',{id:clipId});
  clip.appendChild(svgEl('polygon',{points:poly.map(v=>boardPoint(v[0],v[1]).join(',')).join(' ')}));
  defs.appendChild(clip);
  g.appendChild(defs);
+ // na černém drahokamu světle šedá mřížka, jinak tmavá jako v zásobníku
+ const lineStroke = onBlack ? 'rgba(226,232,240,0.55)' : 'rgba(15,23,42,0.35)';
  const gridG=svgEl('g',{'clip-path':`url(#${clipId})`});
  for(let x=Math.ceil(b.minx+1e-6); x<b.maxx-1e-6; x++){
    const a=boardPoint(x,b.miny), c=boardPoint(x,b.maxy);
-   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:'rgba(15,23,42,0.35)','stroke-width':1}));
+   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:lineStroke,'stroke-width':1}));
  }
  for(let y=Math.ceil(b.miny+1e-6); y<b.maxy-1e-6; y++){
    const a=boardPoint(b.minx,y), c=boardPoint(b.maxx,y);
-   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:'rgba(15,23,42,0.35)','stroke-width':1}));
+   gridG.appendChild(svgEl('line',{x1:a[0],y1:a[1],x2:c[0],y2:c[1],stroke:lineStroke,'stroke-width':1}));
  }
  g.appendChild(gridG);
 }
@@ -1177,19 +1182,12 @@ function drawVirtualPiece(p){
  if(inv){
    g.appendChild(svgEl('polygon',{points:pts,fill:'#ef4444',stroke:'none','fill-opacity':0.4}));
  } else {
-   const stroke = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : 'rgba(0,0,0,0.25)';
+   const stroke = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : (p.color==='black' ? '#64748b' : 'rgba(0,0,0,0.25)');
    g.appendChild(svgEl('polygon',{points:pts,fill,stroke,'stroke-width':1.2,'fill-opacity':1}));
-   appendClippedGrid(g, poly, 'vgrid_'+p.id);
+   appendClippedGrid(g, poly, 'vgrid_'+p.id, p.color==='black');
  }
  if(G.selectedPiece===p.id)
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'5 4'}));
- const cx=poly.reduce((s,v)=>s+v[0],0)/poly.length,cy=poly.reduce((s,v)=>s+v[1],0)/poly.length;
- const q=boardPoint(cx,cy);
- // hypotézy: větší tučná písmena; zelená jen u odhaleného schovaného originálu, ne u hypotéz
- const letterFill = (p.color==='white'||p.color==='transparent') ? '#0f172a' : '#ffffff';
- const tx=svgEl('text',{x:q[0],y:q[1]+6,'font-size':16,fill:letterFill,'text-anchor':'middle','font-weight':'900','pointer-events':'none'});
- tx.textContent=gemLetter(p);
- g.appendChild(tx);
  g.addEventListener('pointerdown',e=>{
    e.stopPropagation();
    if(G.phase==='play' && !G.revealSecret) startDrag(e,p.id);
@@ -1442,21 +1440,23 @@ function miniSvg(def,size=48){
  const fill=COLORS[def.color]||'#94a3b8';
  const stroke=def.color==='white'||def.color==='transparent'?'#94a3b8':'rgba(0,0,0,0.25)';
  let grid='';
+ const gridStroke = def.color==='black' ? 'rgba(226,232,240,0.55)' : 'rgba(15,23,42,0.35)';
+ const edgeStroke = def.color==='white'||def.color==='transparent' ? '#94a3b8'
+   : (def.color==='black' ? '#64748b' : stroke);
  // mřížka 1×1 uvnitř bbox
  const minx=b.minx, miny=b.miny, maxx=b.maxx, maxy=b.maxy;
  for(let x=Math.ceil(minx+1e-6); x<maxx-1e-6; x++){
    const a=to([x,miny]), c=to([x,maxy]);
-   grid+=`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="rgba(15,23,42,0.35)" stroke-width="1"/>`;
+   grid+=`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="${gridStroke}" stroke-width="1"/>`;
  }
  for(let y=Math.ceil(miny+1e-6); y<maxy-1e-6; y++){
    const a=to([minx,y]), c=to([maxx,y]);
-   grid+=`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="rgba(15,23,42,0.35)" stroke-width="1"/>`;
+   grid+=`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="${gridStroke}" stroke-width="1"/>`;
  }
- // clip grid to polygon via mask
  const mid=`m${def.id}`;
  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
   <defs><clipPath id="${mid}"><polygon points="${pts}"/></clipPath></defs>
-  <polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
+  <polygon points="${pts}" fill="${fill}" stroke="${edgeStroke}" stroke-width="1.2"/>
   <g clip-path="url(#${mid})">${grid}</g>
  </svg>`;
 }
