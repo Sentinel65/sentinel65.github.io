@@ -332,7 +332,7 @@ const I18N={
   colMoves:'Tahy', colState:'Stav', colGems:'Drahokamy', reflect180:'Odraz 180° → vstup = výstup',
   helpTitle:'Nápověda – Orapa Mine',
   evalWinTitle:'Výhra!', evalLoseTitle:'Prohra – porovnání',
-  evalWinText:'Správně! Počet tahů: <b>{n}</b> ({grade}).',
+  evalWinText:'Správně! Počet tahů: <b>{n}</b>.',
   evalLoseText:'Skutečné rozmístění je na desce. Červeně označené řádky se neshodují.',
   evalColObject:'Objekt', evalColYours:'Vaše řešení', evalColReal:'Skutečnost',
   evalNeedSubmit:'Nejdřív odevzdejte řešení.',
@@ -373,7 +373,7 @@ const I18N={
   colMoves:'Moves', colState:'State', colGems:'Gems', reflect180:'180° reflection → entry = exit',
   helpTitle:'Help – Orapa Mine',
   evalWinTitle:'Win!', evalLoseTitle:'Loss – comparison',
-  evalWinText:'Correct! Moves: <b>{n}</b> ({grade}).',
+  evalWinText:'Correct! Moves: <b>{n}</b>.',
   evalLoseText:'The real layout is on the board. Red rows do not match.',
   evalColObject:'Object', evalColYours:'Your solution', evalColReal:'Actual',
   evalNeedSubmit:'Submit a solution first.',
@@ -496,6 +496,10 @@ function applyI18n(){
   renderColorMixBody();
   renderAll();
   if(typeof renderStatsBox==='function') renderStatsBox();
+  const modal=document.getElementById('modal');
+  if(modal && modal.classList.contains('open') && G.evaluation){
+    try{ showEvaluationModal(); }catch(e){}
+  }
 }
 
 
@@ -1137,17 +1141,193 @@ function formatBoardPos(p){
   const flip=p.flipX?' ↔':'';
   return `${col}${row} · ${rot}°${flip}`;
 }
+function gemShadeStops(color){
+  // Krystalický 3D vzhled: světlo přichází z levého horního rohu.
+  // Každá barva má světlou, základní, hlubokou a okrajovou hodnotu.
+  const m={
+    blue:{light:'#b9dcff',base:'#3b82f6',deep:'#174ea6',edge:'#123b80'},
+    red:{light:'#ffb4b4',base:'#ef4444',deep:'#991b1b',edge:'#721c1c'},
+    yellow:{light:'#fff4a8',base:'#eab308',deep:'#a16207',edge:'#7a4b05'},
+    white:{light:'#ffffff',base:'#eef2f7',deep:'#a7b0bd',edge:'#8b96a5'},
+    transparent:{light:'rgba(255,255,255,.86)',base:'rgba(210,220,232,.48)',deep:'rgba(104,120,140,.30)',edge:'rgba(226,232,240,.82)'},
+    black:{light:'#a8b6c8',base:'#1e293b',deep:'#0f172a',edge:'#0b1220'}
+  };
+  return m[color]||{light:'#e2e8f0',base:'#94a3b8',deep:'#475569',edge:'#334155'};
+}
+function gemBoardEdge(color){
+  return gemShadeStops(color).edge;
+}
+function appendGem3DFill(g, poly, pts, color, gid){
+  const b=bbox(poly);
+  const tl=boardPoint(b.minx,b.miny);
+  const br=boardPoint(b.maxx,b.maxy);
+  const defs=svgEl('defs',{});
+  const shade=gemShadeStops(color);
+
+  // Základní plošný gradient – výraznější než původní verze, aby byl drahokam
+  // čitelný i na mobilu. Neobsahuje žádné symboly, hvězdy ani kolečka.
+  const lg=svgEl('linearGradient',{
+    id:gid,gradientUnits:'userSpaceOnUse',
+    x1:String(tl[0]),y1:String(tl[1]),x2:String(br[0]),y2:String(br[1])
+  });
+  [[0,shade.light],[.28,shade.base],[.72,shade.base],[1,shade.deep]].forEach(([off,c])=>
+    lg.appendChild(svgEl('stop',{offset:String(off),'stop-color':c}))
+  );
+  defs.appendChild(lg);
+
+  // Měkký odlesk vlevo nahoře.
+  const hg=svgEl('radialGradient',{
+    id:gid+'_h',gradientUnits:'userSpaceOnUse',
+    cx:String(tl[0]+(br[0]-tl[0])*.28),cy:String(tl[1]+(br[1]-tl[1])*.22),
+    r:String(Math.max(CELL*.9,Math.hypot(br[0]-tl[0],br[1]-tl[1])*.72))
+  });
+  hg.appendChild(svgEl('stop',{offset:'0','stop-color':'#ffffff','stop-opacity':color==='transparent'?.34:(color==='black'?.32:.48)}));
+  hg.appendChild(svgEl('stop',{offset:'.42','stop-color':'#ffffff','stop-opacity':color==='transparent'?.10:(color==='black'?.10:.12)}));
+  hg.appendChild(svgEl('stop',{offset:'1','stop-color':'#ffffff','stop-opacity':'0'}));
+  defs.appendChild(hg);
+
+  // Jemná tmavá hloubka u pravého/spodního okraje.
+  const dg=svgEl('linearGradient',{
+    id:gid+'_d',gradientUnits:'userSpaceOnUse',
+    x1:String(br[0]),y1:String(br[1]),x2:String(tl[0]),y2:String(tl[1])
+  });
+  dg.appendChild(svgEl('stop',{offset:'0','stop-color':'#020617','stop-opacity':color==='black'?.28:.22}));
+  dg.appendChild(svgEl('stop',{offset:'.55','stop-color':'#020617','stop-opacity':'0'}));
+  defs.appendChild(dg);
+
+  // Clip pro všechny facetové vrstvy.
+  const clipId=gid+'_c';
+  const clip=svgEl('clipPath',{id:clipId});
+  clip.appendChild(svgEl('polygon',{points:pts}));
+  defs.appendChild(clip);
+  g.appendChild(defs);
+
+  // Tělo drahokamu.
+  g.appendChild(svgEl('polygon',{
+    points:pts,fill:`url(#${gid})`,stroke:shade.edge,'stroke-width':1.8,
+    'stroke-linejoin':'round','fill-opacity':1
+  }));
+
+  // ---------- Krystalické fasety ----------
+  // Rozdílně osvětlené plochy jsou vytvořené podle skutečného tvaru,
+  // takže se zachovají i při rotaci drahokamu.
+  const cx=boardPoint((b.minx+b.maxx)/2,(b.miny+b.maxy)/2);
+  const top=poly.reduce((a,v)=>v[1]<a[1]?v:a,poly[0]);
+  const bottom=poly.reduce((a,v)=>v[1]>a[1]?v:a,poly[0]);
+  const left=poly.reduce((a,v)=>v[0]<a[0]?v:a,poly[0]);
+  const right=poly.reduce((a,v)=>v[0]>a[0]?v:a,poly[0]);
+  const P=v=>boardPoint(v[0],v[1]).join(',');
+
+  // U velkých trojúhelníků je horní levá plocha světlejší a spodní pravá hlubší.
+  if(poly.length===3){
+    const triLight=svgEl('polygon',{
+      points:`${P(poly[0])} ${P(poly[1])} ${cx.join(',')}`,
+      fill:'#ffffff','fill-opacity':color==='transparent'?.18:.16,
+      'clip-path':`url(#${clipId})`,'pointer-events':'none'
+    });
+    const triDark=svgEl('polygon',{
+      points:`${P(poly[1])} ${P(poly[2])} ${cx.join(',')}`,
+      fill:'#020617','fill-opacity':color==='black'?.22:.13,
+      'clip-path':`url(#${clipId})`,'pointer-events':'none'
+    });
+    g.appendChild(triLight);
+    g.appendChild(triDark);
+  } else if(poly.length===4){
+    // Čtyřúhelníky (diamant / červený rovnoběžník / černý kámen).
+    // Každá hrana vytváří jednu fasetu se společným středem.
+    const ordered=poly.slice();
+
+    if(color==='black'){
+      // Jemnější 3D jako u modrého: fasety ke středu zesvětlit,
+      // u vnější hrany jen mírně tmavší (ne černé plochy), hrana rozpoznatelná.
+      const midX=(b.minx+b.maxx)/2, midY=(b.miny+b.maxy)/2;
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+        const mx=(a[0]+bb[0])/2, my=(a[1]+bb[1])/2;
+        const pEdge=boardPoint(mx, my);
+        const towardLight = (-(mx-midX) - (my-midY));
+        // gradient od mírně tmavší hrany ke světlejšímu středu
+        const fid=gid+'_bf'+i;
+        const fg=svgEl('linearGradient',{
+          id:fid, gradientUnits:'userSpaceOnUse',
+          x1:String(pEdge[0]), y1:String(pEdge[1]),
+          x2:String(cx[0]), y2:String(cx[1])
+        });
+        let edgeCol, tipCol;
+        if(towardLight > 0.1){ edgeCol='#6b7c90'; tipCol='#c5d0de'; }
+        else if(towardLight > -0.05){ edgeCol='#4a5668'; tipCol='#9aa8bc'; }
+        else { edgeCol='#3a4555'; tipCol='#7a8799'; } // dříve skoro černé → teď šedé
+        fg.appendChild(svgEl('stop',{offset:'0','stop-color':edgeCol}));
+        fg.appendChild(svgEl('stop',{offset:'1','stop-color':tipCol}));
+        defs.appendChild(fg);
+        g.appendChild(svgEl('polygon',{
+          points:`${P(a)} ${P(bb)} ${cx.join(',')}`,
+          fill:`url(#${fid})`,'fill-opacity':.88,
+          'clip-path':`url(#${clipId})`,'pointer-events':'none'
+        }));
+      }
+      // Hřebeny ke středu – jemné světlé linky
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i];
+        const p2=boardPoint(a[0],a[1]);
+        g.appendChild(svgEl('line',{
+          x1:cx[0],y1:cx[1],x2:p2[0],y2:p2[1],
+          stroke:'#dbe4f0','stroke-width':1.1,'stroke-opacity':.40,
+          'stroke-linecap':'round','clip-path':`url(#${clipId})`,'pointer-events':'none'
+        }));
+      }
+      // Vnější hrana: tenká tmavší linka (ne silný kontrast)
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+        const p1=boardPoint(a[0],a[1]), p2=boardPoint(bb[0],bb[1]);
+        g.appendChild(svgEl('line',{
+          x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],
+          stroke:'#0b0f16','stroke-width':1.15,'stroke-opacity':.55,
+          'stroke-linecap':'round','pointer-events':'none'
+        }));
+      }
+    }else{
+
+      // Ostatní čtyřúhelníky ponechávají původní jemnější fasetování.
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i],bb=ordered[(i+1)%ordered.length];
+        const avgY=(a[1]+bb[1])/2, avgX=(a[0]+bb[0])/2;
+        let op=.05;
+        if(avgY <= (b.miny+b.maxy)/2 && avgX <= (b.minx+b.maxx)/2) op=.20;
+        else if(avgY >= (b.miny+b.maxy)/2 && avgX >= (b.minx+b.maxx)/2) op=.16;
+        else if(avgY <= (b.miny+b.maxy)/2) op=.10;
+        else op=.07;
+        g.appendChild(svgEl('polygon',{
+          points:`${P(a)} ${P(bb)} ${cx.join(',')}`,
+          fill:avgY <= (b.miny+b.maxy)/2?'#ffffff':'#020617',
+          'fill-opacity':op,'clip-path':`url(#${clipId})`,'pointer-events':'none'
+        }));
+      }
+    }
+  }
+
+  // Hlavní odlesk a jemné ztmavení spodní pravé části.
+  g.appendChild(svgEl('polygon',{points:pts,fill:`url(#${gid}_h)`,'clip-path':`url(#${clipId})`,'pointer-events':'none'}));
+  g.appendChild(svgEl('polygon',{points:pts,fill:`url(#${gid}_d)`,'clip-path':`url(#${clipId})`,'pointer-events':'none'}));
+
+  // Vnitřní tenká linka kopírující hrany dodá vzhled broušeného krystalu.
+  g.appendChild(svgEl('polygon',{
+    points:pts,fill:'none',stroke:'#ffffff',
+    'stroke-opacity':color==='black'?.22:(color==='transparent'?.32:.20),
+    'stroke-width':.8,'stroke-linejoin':'round','pointer-events':'none'
+  }));
+}
 function drawPiece(p){
  const poly=placementPoly(p);
  const pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
- const fill=COLORS[p.color]||COLORS.white;
  const g=svgEl('g',{class:'piece'+(p.invalid?' invalid':'')});
- const edge = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : (p.color==='black' ? '#64748b' : 'rgba(0,0,0,0.25)');
- g.appendChild(svgEl('polygon',{points:pts,fill,stroke:edge,'stroke-width':1.2,'fill-opacity':1}));
- appendClippedGrid(g, poly, 'sgrid_'+String(p.id||p.defId||'x'), p.color==='black');
- // Schovaný drahokam: zelené čárkované orámování
+ g.setAttribute('style','filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45)) drop-shadow(0 0 2px rgba(255,255,255,0.25))');
+ const gid='g3d_'+String(p.id||p.defId||'x').replace(/[^a-zA-Z0-9_]/g,'_');
+ appendGem3DFill(g, poly, pts, p.color, gid);
+ appendClippedGrid(g, poly, 'sgrid_'+gid, p.color==='black');
  if(G.revealSecret && isHiddenSecret(p)){
-   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#16a34a','stroke-width':3,'stroke-dasharray':'6 4'}));
+   // plná silnější zelená čára (ne čárkovaná)
+   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#16a34a','stroke-width':4}));
  }
  if(G.selectedPiece===p.id && G.editMode){
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'6 4'}));
@@ -1177,14 +1357,15 @@ function appendClippedGrid(g, poly, clipId, onBlack){
 }
 function drawVirtualPiece(p){
  const poly=placementPoly(p), pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
- const fill=COLORS[p.color]||'#94a3b8', g=svgEl('g',{class:'virtualPiece'+(G.selectedPiece===p.id?' selected':'')});
+ const g=svgEl('g',{class:'virtualPiece'+(G.selectedPiece===p.id?' selected':'')});
  const inv=p.invalid;
  if(inv){
    g.appendChild(svgEl('polygon',{points:pts,fill:'#ef4444',stroke:'none','fill-opacity':0.4}));
  } else {
-   const stroke = (p.color==='white'||p.color==='transparent') ? '#94a3b8' : (p.color==='black' ? '#64748b' : 'rgba(0,0,0,0.25)');
-   g.appendChild(svgEl('polygon',{points:pts,fill,stroke,'stroke-width':1.2,'fill-opacity':1}));
-   appendClippedGrid(g, poly, 'vgrid_'+p.id, p.color==='black');
+   g.setAttribute('style','filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45)) drop-shadow(0 0 2px rgba(255,255,255,0.25))');
+   const gid='vg3d_'+String(p.id||'x').replace(/[^a-zA-Z0-9_]/g,'_');
+   appendGem3DFill(g, poly, pts, p.color, gid);
+   appendClippedGrid(g, poly, 'vgrid_'+gid, p.color==='black');
  }
  if(G.selectedPiece===p.id)
    g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'5 4'}));
@@ -2145,7 +2326,7 @@ function gradeLabel(key){
   if(!key) return '';
   const legacy={
     'odborník':'gradeExpert','profík':'gradePro','lovec':'gradeHunter',
-    'nadšenec':'gradeFan','amatér':'gradeAmateur',
+    'nadšenec':'gradeFan','fanda':'gradeFan','amatér':'gradeAmateur',
     expert:'gradeExpert',pro:'gradePro',hunter:'gradeHunter',fan:'gradeFan',amateur:'gradeAmateur'
   };
   return t(legacy[key]||key);
@@ -2218,20 +2399,70 @@ function logGameState(allOk, nShots, grade){
    });
  }
 }
+function gradeRanges(d){
+  d=d||1;
+  if(d===1) return [
+    {key:'gradeExpert', label:'≤10'},
+    {key:'gradePro', label:'11–13'},
+    {key:'gradeHunter', label:'14–18'},
+    {key:'gradeFan', label:'19–23'},
+    {key:'gradeAmateur', label:'≥24'}
+  ];
+  if(d===2) return [
+    {key:'gradeExpert', label:'≤12'},
+    {key:'gradePro', label:'13–15'},
+    {key:'gradeHunter', label:'16–20'},
+    {key:'gradeFan', label:'21–25'},
+    {key:'gradeAmateur', label:'≥26'}
+  ];
+  if(d===3) return [
+    {key:'gradeExpert', label:'≤15'},
+    {key:'gradePro', label:'16–18'},
+    {key:'gradeHunter', label:'19–21'},
+    {key:'gradeFan', label:'22–25'},
+    {key:'gradeAmateur', label:'≥26'}
+  ];
+  return [
+    {key:'gradeExpert', label:'≤16'},
+    {key:'gradePro', label:'17–19'},
+    {key:'gradeHunter', label:'20–22'},
+    {key:'gradeFan', label:'23–26'},
+    {key:'gradeAmateur', label:'≥27'}
+  ];
+}
+function buildScoreTableHtml(nShots, grade){
+  const ranges=gradeRanges(G.difficulty||1);
+  const active=grade||gradeForShots(nShots, G.difficulty||1);
+  // stejná zelená jako schovaný drahokam (#16a34a) – jen na rozsahu pod hlavičkou
+  const hi='color:#16a34a;font-weight:800';
+  let head='<tr>', body='<tr>';
+  ranges.forEach(r=>{
+    const on=r.key===active;
+    head+=`<th>${t(r.key)}</th>`;
+    body+=`<td${on?` style="${hi}"`:''}>${r.label}</td>`;
+  });
+  head+='</tr>'; body+='</tr>';
+  return `<table class="table" style="margin-top:12px;text-align:center"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
 function buildEvaluationHtml(rows, allOk, nShots, grade){
-  const gLab=gradeLabel(grade);
   const title=allOk?t('evalWinTitle'):t('evalLoseTitle');
+  const score=allOk?buildScoreTableHtml(nShots, grade):'';
   const html=`
-  <p>${allOk?t('evalWinText',{n:nShots,grade:gLab}):t('evalLoseText')}</p>
+  <p>${allOk?t('evalWinText',{n:nShots}):t('evalLoseText')}</p>
   <table class="table"><thead><tr><th>${t('evalColObject')}</th><th>${t('evalColYours')}</th><th>${t('evalColReal')}</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  ${score}
   <div class="controls" style="margin-top:12px"><button class="controlBtn primary" onclick="closeModal()">${t('close')}</button></div>`;
   return {title, html};
 }
 function showEvaluationModal(){
  if(!G.evaluation){ showToast(t('evalNeedSubmit'),'info'); return; }
- // Přegenerovat HTML v aktuálním jazyce
- const rows=G.evaluation.rows || (buildEvalTable().rows);
- const {title, html}=buildEvaluationHtml(rows, G.evaluation.allOk, G.evaluation.nShots, G.evaluation.grade);
+ // Vždy znovu sestavit řádky v aktuálním jazyce (názvy drahokamů)
+ const rebuilt=buildEvalTable();
+ const rows=rebuilt.rows;
+ const allOk=G.evaluation.allOk;
+ const nShots=G.evaluation.nShots!=null?G.evaluation.nShots:rebuilt.nShots;
+ const grade=G.evaluation.grade||rebuilt.grade;
+ const {title, html}=buildEvaluationHtml(rows, allOk, nShots, grade);
  G.evaluation.title=title; G.evaluation.html=html; G.evaluation.rows=rows;
  openModal(title, html);
 }
