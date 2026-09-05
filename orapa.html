@@ -243,8 +243,8 @@ html{color-scheme:dark}
       <span style="font-weight:700;font-size:13px">Záznam hry</span>
       <div style="display:flex;gap:4px;align-items:center">
         <button class="iconBtn activeMode" id="laserModeBtn" title="Laser – střelba ze souřadnice" style="width:32px;height:32px;font-size:15px">⚡</button>
-        <button class="iconBtn" id="queryModeBtn" title="Dotaz – barva pole" style="width:32px;height:32px;font-size:15px">⬚</button>
-        <button class="iconBtn" id="copyRecordBtn" title="Kopírovat záznam" style="width:32px;height:32px;font-size:16px">⧉</button>
+        <button class="iconBtn" id="queryModeBtn" title="Dotaz – barva pole" style="width:32px;height:32px;font-size:15px">🎯</button>
+        <button class="iconBtn" id="copyRecordBtn" title="Kopírovat záznam" style="width:32px;height:32px;font-size:16px">📋</button>
         <button class="iconBtn" id="clearStorageBtn" title="Vymazat uložená data" style="width:32px;height:32px;font-size:15px">🗑</button>
       </div>
     </div>
@@ -351,7 +351,7 @@ const I18N={
   evalLoseText:'Skutečné rozmístění je na desce. Červeně označené řádky se neshodují.',
   evalColObject:'Objekt', evalColYours:'Vaše řešení', evalColReal:'Skutečnost',
   evalNeedSubmit:'Nejdřív odevzdejte řešení.',
-  gradeExpert:'odborník', gradePro:'profík', gradeHunter:'lovec', gradeFan:'nadšenec', gradeAmateur:'amatér'
+  gradeExpert:'expert', gradePro:'profík', gradeHunter:'lovec', gradeFan:'fanda', gradeAmateur:'amatér'
  },
  en:{
   langBtnTitle:'Čeština', langBtnLabel:'CS',
@@ -1770,23 +1770,42 @@ function coord(p){return `${String.fromCharCode(65+Math.max(0,Math.min(7,Math.fl
 function renderShotList(){ /* sloučeno do answerBox / Záznam hry */ }
 function setStatus(text){ /* status bar removed */ }
 function addGuessPieceAt(id, x, y, opts){
- if(G.phase!=='play' || G.revealSecret) return;
+ if(G.phase!=='play' || G.revealSecret) return false;
  opts=opts||{};
  const d=pieceDef(id);
+ if(!d) return false;
  const pid='g_'+id;
- let p;
- if(opts.snap){
-   const base={id:pid,defId:id,rot:0,x:0,y:0,color:d.color,kind:d.kind,flipX:false};
+ // už je na desce?
+ if(G.guessPieces.some(p=>(p.defId||p.id)===id || p.id===pid)){
+   showToast(t('toastOnBoard'),'info');
+   return false;
+ }
+ const base={id:pid,defId:id,rot:0,x:0,y:0,color:d.color,kind:d.kind,flipX:false};
+ let p=null;
+ if(opts.snap || opts.findFree){
    const vs=transformVerts(d,0,0,0), bb=bbox(vs);
-   const tx=x-(bb.maxx-bb.minx)/2, ty=y-(bb.maxy-bb.miny)/2;
-   const snap=nearestValidPosition(base,tx,ty,G.guessPieces);
-   if(snap){ p={...base,...snap}; }
-   else {
-     p={...base,x:Math.max(0,Math.min(W-1,Math.round(tx))),y:Math.max(0,Math.min(H-1,Math.round(ty)))};
-     p.invalid=!validPlacement(p,G.guessPieces);
+   const tx=(x!=null)?(x-(bb.maxx-bb.minx)/2):1;
+   const ty=(y!=null)?(y-(bb.maxy-bb.miny)/2):1;
+   const snap=nearestValidPosition(base, tx, ty, G.guessPieces);
+   if(snap){
+     p={...base, x:snap.x, y:snap.y, rot:snap.rot||0, flipX:!!snap.flipX, invalid:false};
+   } else {
+     // žádná platná pozice na desce
+     showToast(LANG==='en'?'No valid free position on the board.':'Na desce není volná platná pozice.','bad');
+     return false;
    }
  } else {
-   p={id:pid,defId:id,rot:0,x,y,color:d.color,kind:d.kind,flipX:false};
+   p={...base, x:x||0, y:y||0};
+   p.invalid=!validPlacement(p, G.guessPieces);
+   if(p.invalid){
+     // zkus najít nejbližší platnou
+     const snap=nearestValidPosition(base, p.x, p.y, G.guessPieces);
+     if(snap){ p={...base, x:snap.x, y:snap.y, invalid:false}; }
+     else {
+       showToast(LANG==='en'?'No valid free position on the board.':'Na desce není volná platná pozice.','bad');
+       return false;
+     }
+   }
  }
  G.guessPieces.push(p);
  G.selectedPiece=pid;
@@ -1797,6 +1816,7 @@ function addGuessPieceAt(id, x, y, opts){
  if(d.fixedOrientation) key='toastGemPlacedFixed';
  else if(d.chiral) key='toastGemPlaced';
  showToast(t(key,{name:nm}),'ok');
+ return true;
 }
 function startPaletteDrag(evt,id){
  if(G.phase!=='play' || G.revealSecret) return;
@@ -1850,7 +1870,8 @@ function renderVirtualTools(){
    b.onclick=()=>{
      if(G.phase!=='play' || G.revealSecret) return;
      if(used){ showToast(t('toastOnBoard'),'info'); return; }
-     addGuessPieceAt(id,2,3);
+     // najít první volnou platnou pozici (ne vždy střed)
+     addGuessPieceAt(id, 1, 1, {findFree:true});
    };
    if(!used) b.addEventListener('pointerdown',(e)=>startPaletteDrag(e,id));
    wrap.appendChild(b);
@@ -2473,8 +2494,8 @@ function gradeForShots(n,d){
 function gradeLabel(key){
   if(!key) return '';
   const legacy={
-    'odborník':'gradeExpert','profík':'gradePro','lovec':'gradeHunter',
-    'nadšenec':'gradeFan','fanda':'gradeFan','amatér':'gradeAmateur',
+    'expert':'gradeExpert','profík':'gradePro','lovec':'gradeHunter',
+    'fanda':'gradeFan','fanda':'gradeFan','amatér':'gradeAmateur',
     expert:'gradeExpert',pro:'gradePro',hunter:'gradeHunter',fan:'gradeFan',amateur:'gradeAmateur'
   };
   return t(legacy[key]||key);
@@ -2485,6 +2506,21 @@ function openGuess(){
  if(G.guessPieces.length < need){
    showToast(t('toastPlaceAll',{n:need}), 'bad');
    return;
+ }
+ // kontrola: všechny drahokamy platně umístěné (bez přesahu, překryvu, styku hran)
+ for(const p of G.guessPieces){
+   if(p.invalid || !validPlacement(p, G.guessPieces, p.id)){
+     showToast(LANG==='en'?'Some gems are in an invalid position.':'Některé drahokamy jsou v neplatné poloze.','bad');
+     return;
+   }
+ }
+ // každý požadovaný typ právě jednou
+ for(const id of BASIC_IDS()){
+   const n=G.guessPieces.filter(p=>(p.defId||p.id)===id || p.id==='g_'+id).length;
+   if(n!==1){
+     showToast(t('toastPlaceAll',{n:need}), 'bad');
+     return;
+   }
  }
  submitGuess();
 }
@@ -2793,8 +2829,14 @@ document.getElementById('helpBtn').onclick=()=>{
  <li>shots and queries listed newest first</li>
  <li>format: move number, entry, exit, beam colour</li>
  <li>exception: the black gem absorbs the beam – no exit point</li>
- <li>header buttons: lightning (laser), square (cell query), copy, trash (clear local storage)</li>
  <li>clicking an already used edge coordinate highlights the existing log row (entry or exit)</li>
+ </ul>
+ <p style="margin:6px 0 4px"><b>Log header icons:</b></p>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.8;list-style:none">
+ <li>⚡ – laser shot from an edge coordinate</li>
+ <li>🎯 – query colour of a board cell</li>
+ <li>📋 – copy log contents</li>
+ <li>🗑 – clear saved data in local storage</li>
  </ul>
  <h3>Colors tab</h3>
  <p>Colour mixes when the beam reflects off gems.</p>
@@ -2852,7 +2894,13 @@ document.getElementById('helpBtn').onclick=()=>{
  <li>reverzně vypsané jednotlivé výstřely laseru a dotazy</li>
  <li>formát zápisu: pořadové číslo tahu, vstupní bod, výstupní bod, výsledná barva paprsku laseru</li>
  <li>výjimkou je černý drahokam, který paprsek neodráží, ale pohlcuje, zápis tedy nebude mít výstupní bod</li>
- <li>tlačítka v záhlaví logu: blesk (mód laser), čtvereček (mód dotazu na konkrétní souřadnici), 2 čtverečky v sobě (zkopírování obsahu logu), ikona koše (smaže uložená data v local storage)</li>
+ </ul>
+ <p style="margin:6px 0 4px"><b>Ikony v záhlaví logu:</b></p>
+ <ul style="margin:0 0 8px 18px;padding:0;line-height:1.8;list-style:none">
+ <li>⚡ – výstřel laseru ze souřadnice na okraji desky</li>
+ <li>🎯 – dotaz na barvu konkrétního pole hrací desky</li>
+ <li>📋 – zkopírování obsahu logu</li>
+ <li>🗑 – smazání uložených dat v local storage</li>
  </ul>
  <h3>Záložka Barvy</h3>
  <p>Výpis jednotlivých kombinací barev při odrazu laseru od drahokamů.</p>
@@ -2871,10 +2919,10 @@ document.getElementById('helpBtn').onclick=()=>{
  <table class="table" style="font-size:12px">
  <thead><tr><th>Tahy</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
  <tbody>
- <tr><td>odborník</td><td>≤10</td><td>≤12</td><td>≤15</td><td>≤16</td></tr>
+ <tr><td>expert</td><td>≤10</td><td>≤12</td><td>≤15</td><td>≤16</td></tr>
  <tr><td>profík</td><td>11–13</td><td>13–15</td><td>16–18</td><td>17–19</td></tr>
  <tr><td>lovec</td><td>14–18</td><td>16–20</td><td>19–21</td><td>20–22</td></tr>
- <tr><td>nadšenec</td><td>19–23</td><td>21–25</td><td>22–25</td><td>23–26</td></tr>
+ <tr><td>fanda</td><td>19–23</td><td>21–25</td><td>22–25</td><td>23–26</td></tr>
  <tr><td>amatér</td><td>≥24</td><td>≥26</td><td>≥26</td><td>≥27</td></tr>
  </tbody></table>
  <h3>Obtížnost</h3>
