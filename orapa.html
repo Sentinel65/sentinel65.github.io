@@ -1233,20 +1233,77 @@ function appendGem3DFill(g, poly, pts, color, gid){
   const right=poly.reduce((a,v)=>v[0]>a[0]?v:a,poly[0]);
   const P=v=>boardPoint(v[0],v[1]).join(',');
 
-  // U velkých trojúhelníků je horní levá plocha světlejší a spodní pravá hlubší.
+  // Trojúhelníky: fasety ke středu + zvýrazněné hrany (jako u černého).
+  // Tmavé barvy → světlé hřebeny; světlé (bílá/stříbrná) → tmavé hřebeny.
   if(poly.length===3){
-    const triLight=svgEl('polygon',{
-      points:`${P(poly[0])} ${P(poly[1])} ${cx.join(',')}`,
-      fill:'#ffffff','fill-opacity':color==='transparent'?.18:.16,
-      'clip-path':`url(#${clipId})`,'pointer-events':'none'
-    });
-    const triDark=svgEl('polygon',{
-      points:`${P(poly[1])} ${P(poly[2])} ${cx.join(',')}`,
-      fill:'#020617','fill-opacity':color==='black'?.22:.13,
-      'clip-path':`url(#${clipId})`,'pointer-events':'none'
-    });
-    g.appendChild(triLight);
-    g.appendChild(triDark);
+    const isLight=color==='white'||color==='transparent';
+    const midX=(b.minx+b.maxx)/2, midY=(b.miny+b.maxy)/2;
+    const ordered=poly.slice();
+    for(let i=0;i<ordered.length;i++){
+      const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+      const mx=(a[0]+bb[0])/2, my=(a[1]+bb[1])/2;
+      const pEdge=boardPoint(mx,my);
+      const towardLight=(-(mx-midX)-(my-midY));
+      const fid=gid+'_tf'+i;
+      const fg=svgEl('linearGradient',{
+        id:fid,gradientUnits:'userSpaceOnUse',
+        x1:String(pEdge[0]),y1:String(pEdge[1]),
+        x2:String(cx[0]),y2:String(cx[1])
+      });
+      let edgeCol, tipCol;
+      if(color==='blue'){
+        if(towardLight>0.1){ edgeCol='#2563eb'; tipCol='#bfdbfe'; }
+        else if(towardLight>-0.05){ edgeCol='#1d4ed8'; tipCol='#93c5fd'; }
+        else { edgeCol='#1e3a8a'; tipCol='#60a5fa'; }
+      } else if(color==='yellow'){
+        if(towardLight>0.1){ edgeCol='#ca8a04'; tipCol='#fef9c3'; }
+        else if(towardLight>-0.05){ edgeCol='#a16207'; tipCol='#fde68a'; }
+        else { edgeCol='#854d0e'; tipCol='#facc15'; }
+      } else if(color==='white'){
+        // světlý kámen: u hrany mírně tmavší, ke středu bělejší
+        if(towardLight>0.1){ edgeCol='#cbd5e1'; tipCol='#ffffff'; }
+        else if(towardLight>-0.05){ edgeCol='#94a3b8'; tipCol='#f8fafc'; }
+        else { edgeCol='#64748b'; tipCol='#e2e8f0'; }
+      } else if(color==='transparent'){
+        if(towardLight>0.1){ edgeCol='rgba(148,163,184,.55)'; tipCol='rgba(255,255,255,.75)'; }
+        else if(towardLight>-0.05){ edgeCol='rgba(100,116,139,.50)'; tipCol='rgba(241,245,249,.60)'; }
+        else { edgeCol='rgba(71,85,105,.48)'; tipCol='rgba(203,213,225,.55)'; }
+      } else {
+        edgeCol='#64748b'; tipCol='#cbd5e1';
+      }
+      fg.appendChild(svgEl('stop',{offset:'0','stop-color':edgeCol}));
+      fg.appendChild(svgEl('stop',{offset:'1','stop-color':tipCol}));
+      defs.appendChild(fg);
+      g.appendChild(svgEl('polygon',{
+        points:`${P(a)} ${P(bb)} ${cx.join(',')}`,
+        fill:`url(#${fid})`,'fill-opacity':isLight?.82:.90,
+        'clip-path':`url(#${clipId})`,'pointer-events':'none'
+      }));
+    }
+    // Hřebeny ke středu: světlé u tmavých barev, tmavé u světlých
+    const ridge=isLight?'#334155':'#e2e8f0';
+    const ridgeOp=isLight?.45:.42;
+    for(let i=0;i<ordered.length;i++){
+      const a=ordered[i];
+      const p2=boardPoint(a[0],a[1]);
+      g.appendChild(svgEl('line',{
+        x1:cx[0],y1:cx[1],x2:p2[0],y2:p2[1],
+        stroke:ridge,'stroke-width':1.15,'stroke-opacity':ridgeOp,
+        'stroke-linecap':'round','clip-path':`url(#${clipId})`,'pointer-events':'none'
+      }));
+    }
+    // Vnější hrana – u světlých výrazněji tmavší, ať je čitelná
+    const outer=isLight?'#475569':'#0b1220';
+    const outerOp=isLight?.65:.50;
+    for(let i=0;i<ordered.length;i++){
+      const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+      const p1=boardPoint(a[0],a[1]), p2=boardPoint(bb[0],bb[1]);
+      g.appendChild(svgEl('line',{
+        x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],
+        stroke:outer,'stroke-width':1.2,'stroke-opacity':outerOp,
+        'stroke-linecap':'round','pointer-events':'none'
+      }));
+    }
   } else if(poly.length===4){
     // Čtyřúhelníky (diamant / červený rovnoběžník / černý kámen).
     // Každá hrana vytváří jednu fasetu se společným středem.
@@ -1302,20 +1359,64 @@ function appendGem3DFill(g, poly, pts, color, gid){
         }));
       }
     }else{
-
-      // Ostatní čtyřúhelníky ponechávají původní jemnější fasetování.
+      // Červený / bílý diamant – stejné fasety jako trojúhelníky a černý
+      const isLight=color==='white';
+      const midX=(b.minx+b.maxx)/2, midY=(b.miny+b.maxy)/2;
       for(let i=0;i<ordered.length;i++){
-        const a=ordered[i],bb=ordered[(i+1)%ordered.length];
-        const avgY=(a[1]+bb[1])/2, avgX=(a[0]+bb[0])/2;
-        let op=.05;
-        if(avgY <= (b.miny+b.maxy)/2 && avgX <= (b.minx+b.maxx)/2) op=.20;
-        else if(avgY >= (b.miny+b.maxy)/2 && avgX >= (b.minx+b.maxx)/2) op=.16;
-        else if(avgY <= (b.miny+b.maxy)/2) op=.10;
-        else op=.07;
+        const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+        const mx=(a[0]+bb[0])/2, my=(a[1]+bb[1])/2;
+        const pEdge=boardPoint(mx,my);
+        const towardLight=(-(mx-midX)-(my-midY));
+        const fid=gid+'_qf'+i;
+        const fg=svgEl('linearGradient',{
+          id:fid,gradientUnits:'userSpaceOnUse',
+          x1:String(pEdge[0]),y1:String(pEdge[1]),
+          x2:String(cx[0]),y2:String(cx[1])
+        });
+        let edgeCol, tipCol;
+        if(color==='red'){
+          if(towardLight>0.1){ edgeCol='#dc2626'; tipCol='#fecaca'; }
+          else if(towardLight>-0.05){ edgeCol='#b91c1c'; tipCol='#fca5a5'; }
+          else { edgeCol='#7f1d1d'; tipCol='#f87171'; }
+        } else if(color==='white'){
+          if(towardLight>0.1){ edgeCol='#cbd5e1'; tipCol='#ffffff'; }
+          else if(towardLight>-0.05){ edgeCol='#94a3b8'; tipCol='#f8fafc'; }
+          else { edgeCol='#64748b'; tipCol='#e2e8f0'; }
+        } else {
+          // fallback (např. yellow quad)
+          if(towardLight>0.1){ edgeCol='#ca8a04'; tipCol='#fef9c3'; }
+          else if(towardLight>-0.05){ edgeCol='#a16207'; tipCol='#fde68a'; }
+          else { edgeCol='#854d0e'; tipCol='#facc15'; }
+        }
+        fg.appendChild(svgEl('stop',{offset:'0','stop-color':edgeCol}));
+        fg.appendChild(svgEl('stop',{offset:'1','stop-color':tipCol}));
+        defs.appendChild(fg);
         g.appendChild(svgEl('polygon',{
           points:`${P(a)} ${P(bb)} ${cx.join(',')}`,
-          fill:avgY <= (b.miny+b.maxy)/2?'#ffffff':'#020617',
-          'fill-opacity':op,'clip-path':`url(#${clipId})`,'pointer-events':'none'
+          fill:`url(#${fid})`,'fill-opacity':isLight?.82:.90,
+          'clip-path':`url(#${clipId})`,'pointer-events':'none'
+        }));
+      }
+      const ridge=isLight?'#334155':'#e2e8f0';
+      const ridgeOp=isLight?.45:.42;
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i];
+        const p2=boardPoint(a[0],a[1]);
+        g.appendChild(svgEl('line',{
+          x1:cx[0],y1:cx[1],x2:p2[0],y2:p2[1],
+          stroke:ridge,'stroke-width':1.15,'stroke-opacity':ridgeOp,
+          'stroke-linecap':'round','clip-path':`url(#${clipId})`,'pointer-events':'none'
+        }));
+      }
+      const outer=isLight?'#475569':'#0b1220';
+      const outerOp=isLight?.65:.50;
+      for(let i=0;i<ordered.length;i++){
+        const a=ordered[i], bb=ordered[(i+1)%ordered.length];
+        const p1=boardPoint(a[0],a[1]), p2=boardPoint(bb[0],bb[1]);
+        g.appendChild(svgEl('line',{
+          x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],
+          stroke:outer,'stroke-width':1.2,'stroke-opacity':outerOp,
+          'stroke-linecap':'round','pointer-events':'none'
         }));
       }
     }
@@ -1332,6 +1433,14 @@ function appendGem3DFill(g, poly, pts, color, gid){
     'stroke-width':.8,'stroke-linejoin':'round','pointer-events':'none'
   }));
 }
+function gemFrameColor(color){
+  // plné orámování barvou drahokamu (stejná síla jako schovaný)
+  const m={
+    blue:'#3b82f6', red:'#ef4444', yellow:'#eab308',
+    white:'#e2e8f0', transparent:'#94a3b8', black:'#64748b'
+  };
+  return m[color]||'#94a3b8';
+}
 function drawPiece(p){
  const poly=placementPoly(p);
  const pts=poly.map(v=>{let q=boardPoint(v[0],v[1]);return q.join(',')}).join(' ');
@@ -1341,11 +1450,11 @@ function drawPiece(p){
  appendGem3DFill(g, poly, pts, p.color, gid);
  appendClippedGrid(g, poly, 'sgrid_'+gid, p.color==='black');
  if(G.revealSecret && isHiddenSecret(p)){
-   // plná silnější zelená čára (ne čárkovaná)
-   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#16a34a','stroke-width':4}));
+   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#16a34a','stroke-width':4,'stroke-linejoin':'round'}));
  }
  if(G.selectedPiece===p.id && G.editMode){
-   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'6 4'}));
+   // editace: tenká čárkovaná oranžová
+   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#f97316','stroke-width':1.5,'stroke-dasharray':'5 4','stroke-linejoin':'round'}));
  }
  g.addEventListener('pointerdown',e=>startDrag(e,p.id));
  svg.appendChild(g);
@@ -1383,7 +1492,7 @@ function drawVirtualPiece(p){
    appendClippedGrid(g, poly, 'vgrid_'+gid, p.color==='black');
  }
  if(G.selectedPiece===p.id)
-   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#a5b4fc','stroke-width':3,'stroke-dasharray':'5 4'}));
+   g.appendChild(svgEl('polygon',{points:pts,fill:'none',stroke:'#f97316','stroke-width':1.5,'stroke-dasharray':'5 4','stroke-linejoin':'round'}));
  g.addEventListener('pointerdown',e=>{
    e.stopPropagation();
    if(G.phase==='play' && !G.revealSecret) startDrag(e,p.id);
