@@ -164,8 +164,23 @@ html{color-scheme:dark}
 #modalBody::-webkit-scrollbar-thumb:hover{background:#4b6a8e !important}
 #answerBox::-webkit-scrollbar-corner, .dialog::-webkit-scrollbar-corner{background:#0a1628 !important}
 @media(min-width:1001px){
-  .layout{grid-template-columns:minmax(560px,760px) 360px}
+  .layout{grid-template-columns:minmax(560px,760px) 360px;align-items:stretch}
   #board{max-width:min(100%,760px)}
+  #boardPanel{display:flex;flex-direction:column}
+  .boardWrap{flex:0 0 auto}
+  .side{display:flex;flex-direction:column;min-height:0}
+  #mobileTabsPanel{
+    display:flex;flex-direction:column;flex:1;min-height:0;
+    height:100%;box-sizing:border-box;
+  }
+  #paneLog{
+    display:flex;flex-direction:column;flex:1;min-height:0;
+  }
+  #paneLog > div:first-child{flex:0 0 auto}
+  #answerBox{
+    flex:1 1 auto;min-height:120px;
+    max-height:none !important;
+  }
 }
 
 </style>
@@ -1733,6 +1748,29 @@ function renderVirtualTools(){
  });
  el.appendChild(wrap);
 }
+
+function syncLogHeight(){
+  // Na PC srovnat spodní hranu logu se spodní hranou desky
+  const box=document.getElementById('answerBox');
+  const board=document.getElementById('board');
+  if(!box || !board) return;
+  if(window.matchMedia('(max-width:1000px)').matches){
+    box.style.maxHeight='';
+    box.style.height='';
+    return;
+  }
+  // počkat na layout
+  requestAnimationFrame(()=>{
+    const br=board.getBoundingClientRect();
+    const top=box.getBoundingClientRect().top;
+    const h=Math.floor(br.bottom - top);
+    if(h>80){
+      box.style.maxHeight=h+'px';
+      box.style.height=h+'px';
+    }
+  });
+}
+
 function renderAll(){
  renderVirtualTools();
  const db=document.getElementById('diffBtn');
@@ -1796,6 +1834,7 @@ function renderAll(){
    document.getElementById('answerBox').innerHTML='<div style="color:#8ba3c4;font-size:12px">'+t('noShots')+'</div>';
  }
  updateActionModeButtons();
+ syncLogHeight();
 }
 function updateActionModeButtons(){
  const laser=document.getElementById('laserModeBtn');
@@ -2578,6 +2617,7 @@ function switchSideTab(name){
     if(tab) tab.classList.toggle('active', t===name);
   });
   if(name==='reseni') renderStatsBox();
+  if(name==='log') requestAnimationFrame(syncLogHeight);
 }
 document.getElementById('tabAkce').onclick=()=>switchSideTab('akce');
 document.getElementById('tabLog').onclick=()=>switchSideTab('log');
@@ -2770,6 +2810,7 @@ let lastLandMode=isPcLandscape();
 window.addEventListener('resize',()=>{
   const land=isPcLandscape();
   if(land!==lastLandMode){ lastLandMode=land; renderAll(); }
+  else syncLogHeight();
 });
 
 </script>
