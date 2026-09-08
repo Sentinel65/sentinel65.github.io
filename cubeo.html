@@ -108,7 +108,6 @@ button{font:inherit;color:inherit}
 .logList::-webkit-scrollbar-thumb:hover{background:#3d4a5c}
 .modalBody{scrollbar-width:thin;scrollbar-color:#2a3342 #0c1119}
 
-/* Upravený layout logu do mřížky (Grid) */
 .logItem{display:grid;grid-template-columns:24px 22px 48px 1fr;gap:4px;padding:5px 7px;border-bottom:1px solid #2a3342;align-items:center}
 .logItem.win{color:var(--gold);font-weight:700}
 .l-num{color:var(--muted)}
@@ -245,15 +244,6 @@ button{font:inherit;color:inherit}
 <script>
 'use strict';
 
-/* =========================
-   CUBEO — self-contained
-   Rules implemented from Cubeo_rules.pdf:
-   - two distinguishable sets of six D6
-   - single formation / pinning / slide rules
-   - add, move, merge
-   - win by merge > 6 or blocking opponent
-   ========================= */
-
 const I18N = {
   cs:{
     turnTitle:"Na tahu",onBoard:"na desce",pool:"zásoba",actionTitle:"Akce",
@@ -299,27 +289,9 @@ const I18N = {
 <h3>Tři základní pravidla</h3>
 <ol>
 <li><b>Jediná formace:</b> všechny kostky na desce musí tvořit jednu souvislou skupinu (dotýkat se stranou, ne jen rohem).</li>
-<li><b>Připnutí (Pinning / Freedom to Move):</b> představte si, že kostku <b>odeberete</b> z formace. Pokud by zbývající kostky už <b>netvořily jednu skupinu</b>, je kostka připnutá a <b>nesmí se přesunout</b> ani být odebrána při spojení. Na desce má <b style="color:var(--danger)">tenký červený rámeček</b>.<br>
-<b>Důležité:</b> nezáleží na tom, že cílové pole přesunu by formaci zase spojilo — test je jen „co se stane po pouhém odebrání“. Oficiální znění: <i>„Imagine removing a given die; if the remaining dice would break the Single Formation Rule, then that die is pinned and cannot move.“</i></li>
+<li><b>Připnutí (Pinning / Freedom to Move):</b> představte si, že kostku <b>odeberete</b> z formace. Pokud by zbývající kostky už <b>netvořily jednu skupinu</b>, je kostka připnutá a <b>nesmí se přesunout</b> ani být odebrána při spojení. Na desce má <b style="color:var(--danger)">tenký červený rámeček</b>.</li>
 <li><b>Smykové pravidlo (Slide):</b> kostku lze přidat / odebrat jen tak, že ji lze zasunout / vysunout po povrchu bez zvedání a bez posunu ostatních kostek.</li>
 </ol>
-<p class="ruleCaption"><b>Příklad připnutí</b> (pozice po: + ⬜ (0,1), + ⬛ (1,-1), + ⬜ (0,2), + ⬛ (2,0), + ⬜ (1,2)):</p>
-<div class="diagramRow">
-  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
-    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--green);font-weight:800;font-size:17px">✓</div>
-    <div class="rc w" style="box-shadow:0 0 0 2px var(--danger)">1</div><div class="rc empty"></div><div class="rc empty"></div>
-    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
-    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-  </div>
-  <div class="diagramArrow">→</div>
-  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
-    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--danger);font-weight:800;font-size:15px">✗</div>
-    <div class="rc empty" style="border:2px dashed var(--green)"></div><div class="rc empty" style="border:2px dashed var(--danger)"></div><div class="rc empty"></div>
-    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
-    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-  </div>
-</div>
-<p class="ruleCaption">Vlevo: <b>(0,1)</b> s červeným rámečkem spojuje horní kostky <b>(0,2),(1,2)</b> se zbytkem. Vpravo: po odebrání dvě skupiny — kostka je připnutá; přesun (např. na (1,1)) je zakázán, i kdyby cíl formaci znovu spojil (vlevo zeleně čárkovaně vyznačeno pole, kde kostka dříve stála; vpravo červeně čárkovaně vyznačené pole = zakázaný zamýšlený přesun).</p>
 
 <h3>Začátek</h3>
 <div class="diagramRow">
@@ -344,8 +316,7 @@ const I18N = {
 <ul>
 <li>jde po prázdných polích kolem formace, kroky jsou vždy o stranu, <b>přes roh se jde úhlopříčně</b>,</li>
 <li>nesmí přeskakovat ani končit na jiné kostce,</li>
-<li>nesmí opakovat stejné pole (žádné kmitání sem a tam),</li>
-<li>směr se může měnit,</li>
+<li>směr se může měnit (může se i vracet),</li>
 <li>cíl ≠ start — formace se musí změnit.</li>
 </ul>
 <div class="diagramRow">
@@ -355,7 +326,7 @@ const I18N = {
     <div class="rc b sel">2</div><div class="rc w">1</div><div class="rc move">·</div>
   </div>
 </div>
-<p class="ruleCaption">Černá dvojka (žlutý rámeček) musí ujít přesně 2 pole po obvodu. Modrá pole = příklady cílů (vpravo od bílé 1 a nad černou 1). Přes roh se počítá úhlopříčný krok.</p>
+<p class="ruleCaption">Černá dvojka (žlutý rámeček) musí ujít přesně 2 pole po obvodu. Modrá pole = příklady cílů. Přes roh se počítá úhlopříčný krok.</p>
 
 <h3>3. Spojit dvě kostky</h3>
 <p>Pokud máte na desce aspoň 3 kostky, můžete sečíst dvě <b>sousední vlastní</b> kostky. Aspoň jedna z nich musí jít odebrat (není připnutá + Slide). Odebraná se vrací do zásoby, zbývající dostane součet.</p>
@@ -372,8 +343,8 @@ const I18N = {
     <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
   </div>
 </div>
-<p class="ruleCaption">Volná 2 + sousední 1 → 3. Čtyřka a ostatní jedničky jsou připnuté (odebrání by rozbilo formaci).</p>
-<p><b>Pokud součet &gt; 6, vyhráváte.</b> Výsledná kostka zežloutne a zobrazí svou hodnotu.</p>
+<p class="ruleCaption">Volná 2 + sousední 1 → 3. Čtyřka a ostatní jedničky jsou připnuté.</p>
+<p><b>Pokud součet &gt; 6, vyhráváte.</b></p>
 
 <h3>Ovládání</h3>
 <ul>
@@ -436,27 +407,9 @@ const I18N = {
 <h3>The three ubiquitous rules</h3>
 <ol>
 <li><b>Single Formation:</b> all dice must form one connected group (side-adjacent, not merely corner-touching).</li>
-<li><b>Pinning (Freedom to Move):</b> imagine <b>removing</b> a die from the formation. If the remaining dice would <b>no longer form a single group</b>, that die is pinned and <b>cannot move</b> or be removed in a merge. On the board it has a <b style="color:var(--danger)">thin red outline</b>.<br>
-<b>Important:</b> it does not matter that the move’s destination would reconnect the formation — the test is only “what happens if the die is simply removed.” Official wording: <i>“Imagine removing a given die; if the remaining dice would break the Single Formation Rule, then that die is pinned and cannot move.”</i></li>
+<li><b>Pinning (Freedom to Move):</b> imagine <b>removing</b> a die from the formation. If the remaining dice would <b>no longer form a single group</b>, that die is pinned and <b>cannot move</b> or be removed in a merge. On the board it has a <b style="color:var(--danger)">thin red outline</b>.</li>
 <li><b>Slide Rule:</b> a die may be added or removed only if it can slide in or out on the surface without lifting and without moving other dice.</li>
 </ol>
-<p class="ruleCaption"><b>Pinning example</b> (after: + ⬜ (0,1), + ⬛ (1,-1), + ⬜ (0,2), + ⬛ (2,0), + ⬜ (1,2)):</p>
-<div class="diagramRow">
-  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
-    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--green);font-weight:800;font-size:17px">✓</div>
-    <div class="rc w" style="box-shadow:0 0 0 2px var(--danger)">1</div><div class="rc empty"></div><div class="rc empty"></div>
-    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
-    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-  </div>
-  <div class="diagramArrow">→</div>
-  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
-    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--danger);font-weight:800;font-size:15px">✗</div>
-    <div class="rc empty" style="border:2px dashed var(--green)"></div><div class="rc empty" style="border:2px dashed var(--danger)"></div><div class="rc empty"></div>
-    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
-    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-  </div>
-</div>
-<p class="ruleCaption">Left: <b>(0,1)</b> with red outline links the top dice <b>(0,2),(1,2)</b> to the rest. Right: after removal, two groups — the die is pinned; a move (e.g. to (1,1)) is illegal even if the destination would reconnect the formation (left green dashed cell = the die's former spot; right red dashed cell = illegal intended move).</p>
 
 <h3>Setup</h3>
 <div class="diagramRow">
@@ -481,8 +434,7 @@ const I18N = {
 <ul>
 <li>uses empty cells around the formation; steps are side-adjacent, and <b>around a corner the step is diagonal</b>,</li>
 <li>must not jump or land on another die,</li>
-<li>must not revisit a cell (no back-and-forth oscillation),</li>
-<li>may change direction,</li>
+<li>may change direction (may backtrack),</li>
 <li>must end on a different cell — the formation must change.</li>
 </ul>
 <div class="diagramRow">
@@ -492,7 +444,7 @@ const I18N = {
     <div class="rc b sel">2</div><div class="rc w">1</div><div class="rc move">·</div>
   </div>
 </div>
-<p class="ruleCaption">The black two (gold outline) must travel exactly 2 spaces along the perimeter. Blue cells = example destinations (right of white 1 and above black 1). Around a corner the step is diagonal.</p>
+<p class="ruleCaption">The black two (gold outline) must travel exactly 2 spaces along the perimeter. Blue cells = example destinations. Around a corner the step is diagonal.</p>
 
 <h3>3. Merge two dice</h3>
 <p>With at least 3 dice on the board, you may add the values of two <b>adjacent friendly</b> dice. At least one must be removable (not pinned + Slide). The removed die returns to your pool; the other shows the sum.</p>
@@ -509,8 +461,8 @@ const I18N = {
     <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
   </div>
 </div>
-<p class="ruleCaption">Free 2 + adjacent 1 → 3. The four and other ones are pinned (removing them would break the formation).</p>
-<p><b>If the sum is greater than 6, you win.</b> The resulting die shows its value and a trophy blinks on its cell.</p>
+<p class="ruleCaption">Free 2 + adjacent 1 → 3. The four and other ones are pinned.</p>
+<p><b>If the sum is greater than 6, you win.</b></p>
 
 <h3>Controls</h3>
 <ul>
@@ -593,7 +545,6 @@ function canSlideOut(s,key){
     let clear=true;
     while(Math.abs(cx)<=60 && Math.abs(cy)<=60){
       if(occ.has(KEY(cx,cy))){clear=false;break}
-      // Once outside a practical formation envelope, the ray is open.
       if(Math.abs(cx)>12 || Math.abs(cy)>12)break;
       cx+=dx;cy+=dy;
     }
@@ -606,8 +557,6 @@ function removable(s,key){return connectedAfterRemove(s,key)&&canSlideOut(s,key)
 function canSlideIn(s,x,y){
   const candidate=KEY(x,y);
   if(s.board[candidate])return false;
-  // The added die must be able to slide straight into the formation from
-  // at least one side without crossing another die.
   for(const [dx,dy] of DIRS){
     let cx=x+dx,cy=y+dy,clear=true;
     while(Math.abs(cx)<=60 && Math.abs(cy)<=60){
@@ -640,34 +589,23 @@ function legalAdd(s,player){
 }
 
 function isSideAdjacentToFormation(s, x, y){
-  // Orthogonal (side) contact with any remaining die.
   for(const [nx,ny] of neighbors(x,y)){
     if(s.board[KEY(nx,ny)]) return true;
   }
   return false;
 }
-function isCornerOrSideAdjacentToFormation(s, x, y){
-  // Side OR corner contact — path may graze the formation at a corner
-  // when sliding around the outside (official diagrams show paths around corners).
-  for(let dx=-1; dx<=1; dx++) for(let dy=-1; dy<=1; dy++){
-    if(dx===0 && dy===0) continue;
-    if(s.board[KEY(x+dx,y+dy)]) return true;
-  }
-  return false;
-}
+
 function movementDestinations(s,key){
   const die=s.board[key]; if(!die)return [];
   if(!removable(s,key))return [];
   const [sx,sy]=parseKey(key), val=die.value;
   const stationary=clone(s); delete stationary.board[key];
-  // Exactly `val` steps around the outside of the formation.
-  // Along sides: orthogonal steps. Around a corner: diagonal step (official rules diagrams).
-  // Intermediate cells must touch formation by side OR corner.
-  // Destination must share a SIDE; path is simple (no revisit); destination ≠ start.
+  
   const STEP8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
   const out=[];
   const seenDest=new Set();
-  function dfs(x, y, remaining, visited){
+  
+  function dfs(x, y, remaining){
     if(remaining===0){
       const k=KEY(x,y);
       if(k===key || s.board[k] || seenDest.has(k)) return;
@@ -681,16 +619,12 @@ function movementDestinations(s,key){
     }
     for(const [dx,dy] of STEP8){
       const nx=x+dx, ny=y+dy, nk=KEY(nx,ny);
-      if(visited.has(nk)) continue;
       if(stationary.board[nk]) continue;
-      if(!isCornerOrSideAdjacentToFormation(stationary, nx, ny)) continue;
-      visited.add(nk);
-      dfs(nx, ny, remaining-1, visited);
-      visited.delete(nk);
+      if(!isSideAdjacentToFormation(stationary, nx, ny)) continue;
+      dfs(nx, ny, remaining-1);
     }
   }
-  const visited0=new Set([KEY(sx,sy)]);
-  dfs(sx, sy, val, visited0);
+  dfs(sx, sy, val);
   return out;
 }
 function isFormation(s){
@@ -744,15 +678,13 @@ function applyAction(s,a){
   }else if(a.type==="merge"){
     const A=ns.board[a.from],B=ns.board[a.to];
     const sum=A.value+B.value;
-    // Prefer removing "from" if it is removable; otherwise remove "to".
     let remove=a.from,keep=a.to;
     if(!removable(s,remove)&&removable(s,a.to)){remove=a.to;keep=a.from}
     ns.board[keep].value=sum; delete ns.board[remove]; ns.pool[s.player]++;
-    // Win only when two dice are merged to a value greater than 6
     if(sum>6){
       ns.gameOver=true;
       ns.winner=s.player;
-      ns.winPair=[keep]; // the resulting die cell
+      ns.winPair=[keep];
       ns.winSum=sum;
     }
   }
@@ -775,7 +707,6 @@ function checkBlocked(s){
   return false;
 }
 function dieSym(owner, value, spaced){
-  // White / black die face; value in [brackets] when provided
   const face = owner===1 ? "⬜" : "⬛";
   if(value==null) return face;
   return spaced ? `${face} [${value}]` : `${face}[${value}]`;
@@ -787,7 +718,6 @@ function fmtCell(key){
   }
   return `(${key})`;
 }
-/** Enrich action with values/owner/keep before applyAction mutates the board. */
 function enrichAction(s,a,player){
   a.owner=player;
   if(a.type==="add"){
@@ -815,7 +745,6 @@ function actionLabel(a,player){
     const v = a.value!=null ? a.value : 1;
     return `➤ ${dieSym(owner,v,true)} ${fmtCell(a.from)} - ${fmtCell(a.to)}`;
   }
-  // merge: 🔗 ⬜ [2] (x,y) + [1] (x,y) = [3] (keep)
   const fv=a.fromVal!=null?a.fromVal:"?";
   const tv=a.toVal!=null?a.toVal:"?";
   const sum=a.sum!=null?a.sum:(fv+tv);
@@ -853,6 +782,7 @@ function execute(a){
   enrichAction(state,a,p);
   state=applyAction(state,a);
   record(a,p);
+  centerCamera();
   if(state.gameOver&&state.winner===p){
     const entry={kind:"win", winner:state.winner, winPair:state.winPair?state.winPair.slice():null, winSum:state.winSum, board:clone(state.board)};
     addLogEntry(entry);
@@ -872,7 +802,6 @@ function sameAction(a,b){
   return a.from===b.from&&a.to===b.to || a.from===b.to&&a.to===b.from;
 }
 
-/** Best immediate merge sum available to player (0 if none). */
 function bestMergeSum(s, player){
   let best=0;
   const own=boardEntries(s).filter(d=>d.owner===player);
@@ -901,25 +830,20 @@ function evaluate(s,root){
   const myMerge=bestMergeSum(s,root);
   const opMerge=bestMergeSum(s,op);
 
-  // Immediate tactical threats
-  if(myMerge>6) return 90000 + myMerge;          // can win now
-  if(opMerge>6) return -85000 - opMerge;         // opponent wins next if we pass
+  if(myMerge>6) return 90000 + myMerge;
+  if(opMerge>6) return -85000 - opMerge;
 
   let score=0;
-  // Race to high single die (path to merge > 6)
   score += myMax * 55;
-  score -= opMax * 70;          // opponent high die is more urgent to stop/match
+  score -= opMax * 70;
   score += myValue * 6;
   score -= opValue * 8;
-  // Prefer strong available merges (4,5,6)
   score += myMerge * 35;
   score -= opMerge * 50;
-  // Mobility & pool
   const myMoves=legalMoves(s,root).length;
   const opMoves=legalMoves(s,op).length;
   score += (myMoves - opMoves) * 12;
   score += (s.pool[root] - s.pool[op]) * 4;
-  // Slight pressure when opponent is one merge away from danger (max>=4)
   if(opMax>=4) score -= opMax * 25;
   if(myMax>=4) score += myMax * 18;
   if(opMax>=5) score -= 80;
@@ -932,18 +856,15 @@ function orderActions(s,actions,root){
   const op=3-root;
   return actions.map(a=>{
     let score=0;
-    // Absolute priority: winning merge
     if(a.type==="merge" && a.sum>6) score += 100000;
     else if(a.type==="merge") score += a.sum * 80 + (a.sum>=5 ? 40 : 0);
-    // Moves that free/position high dice
     if(a.type==="move") score += a.value * 6;
     if(a.type==="add") score += 8;
     const ns=applyAction(s,a);
     if(ns.gameOver && ns.winner===root) score += 100000;
-    // After our move, does opponent still threaten a winning merge?
     if(!ns.gameOver){
       const threat=bestMergeSum(ns, op);
-      if(threat>6) score -= 50000; // leaving opponent a win is disastrous
+      if(threat>6) score -= 50000;
       else score -= threat * 20;
       score += bestMergeSum(ns, root) * 25;
       const myMax=boardEntries(ns).filter(d=>d.owner===root).reduce((n,d)=>Math.max(n,d.value),0);
@@ -958,7 +879,6 @@ function minimax(s,depth,alpha,beta,maximizing,root){
   const player=maximizing?root:3-root;
   let moves=legalMoves(s,player);
   if(!moves.length)return {score:maximizing?-90000:90000};
-  // Level 3 looks at more candidate moves; always keep winning/blocking first
   const cap = depth>=3 ? 48 : depth>=2 ? 36 : 24;
   moves=orderActions(s,moves,root).slice(0,cap);
   let best=null;
@@ -1000,6 +920,7 @@ async function aiTurn(){
     state=applyAction(state,a);
     log.push(actionLabel(a,p));
     history.push({label:actionLabel(a,p),state:clone(state)});
+    centerCamera();
     if(state.gameOver){
       const wentry={kind:"win", winner:state.winner, winPair:state.winPair?state.winPair.slice():null, winSum:state.winSum, board:clone(state.board)};
       addLogEntry(wentry);
@@ -1024,6 +945,7 @@ function newGameWithAlternatingStarter(showToast=true){
   const starterName=first===1?I18N[lang].whiteTurn:I18N[lang].blackTurn;
   log.push({kind:"start", starter:first});
   history=[{label:"START",state:clone(state)}];
+  centerCamera();
   renderAll();
   if(showToast)toast(lang==="cs"?`${starterName} začíná.`:`${starterName} starts.`);
   if(first===2)setTimeout(aiTurn,350);
@@ -1037,7 +959,9 @@ function loadGame(){
   try{
     const o=JSON.parse(raw);state=o.state;log=o.log||[];history=o.history||[{label:"START",state:clone(state)}];
     lang=o.lang||lang;camera=o.camera||camera;coords=!!o.coords;aiLevel=Math.max(1,Math.min(3,Number(o.aiLevel)||3));
-    applyLang();selected=null;renderAll();toast(I18N[lang].loaded);if(!state.gameOver&&state.player===2)setTimeout(aiTurn,300);
+    applyLang();selected=null;
+    centerCamera();
+    renderAll();toast(I18N[lang].loaded);if(!state.gameOver&&state.player===2)setTimeout(aiTurn,300);
   }catch(e){toast("Save is invalid.")}
 }
 
@@ -1050,7 +974,9 @@ function poolHTML(n,black=false){
 }
 function resize(){
   const r=board.getBoundingClientRect(),d=window.devicePixelRatio||1;
-  board.width=Math.max(1,Math.floor(r.width*d));board.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);draw();
+  board.width=Math.max(1,Math.floor(r.width*d));board.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);
+  centerCamera();
+  draw();
 }
 function cellSize(){return Math.min(64,Math.max(34,Math.min(board.clientWidth,board.clientHeight)/11))*camera.zoom}
 function worldToScreen(x,y){
@@ -1059,10 +985,6 @@ function worldToScreen(x,y){
 }
 function screenToWorld(px,py){
   const cs=cellSize();
-  // worldToScreen() flips the y axis (screenY = oy - y*cs) so that
-  // world +y renders upward on screen. This inverse must flip it back
-  // the same way, otherwise a click on the cell rendered at world (x,1)
-  // resolves to (x,-1) — exactly mirrored across the x axis.
   const ox=board.clientWidth/2+camera.x;
   const oy=board.clientHeight/2+camera.y;
   return {x:Math.floor((px-ox)/cs),y:-Math.floor((py-oy)/cs)};
@@ -1074,7 +996,6 @@ function drawWinTrophy(x,y,size,owner=1){
   const pad=2;
   ctx.save();
   let grad=ctx.createLinearGradient(x,y,x+size,y+size);
-  // Same face colour as the winning player's die
   if(owner===1){
     grad.addColorStop(0,"#ffffff");grad.addColorStop(.45,"#e6e7e8");grad.addColorStop(1,"#9b9da1");
     ctx.fillStyle=grad;ctx.strokeStyle="#6c717b";
@@ -1093,7 +1014,6 @@ function drawDie(x,y,size,owner,value,selectedDie=false,hint=false,winning=false
   const pad=2;
   ctx.save();
   let grad=ctx.createLinearGradient(x,y,x+size,y+size);
-  // Winning die keeps the player's colour; only the value (and blink trophy) mark the win
   if(owner===1){
     grad.addColorStop(0,"#ffffff");grad.addColorStop(.45,"#e6e7e8");grad.addColorStop(1,"#9b9da1");
     ctx.fillStyle=grad;ctx.strokeStyle="#6c717b";ctx.lineWidth=winning?2:1.3;
@@ -1102,12 +1022,10 @@ function drawDie(x,y,size,owner,value,selectedDie=false,hint=false,winning=false
     ctx.fillStyle=grad;ctx.strokeStyle="#858b96";ctx.lineWidth=winning?2:1.3;
   }
   roundRect(ctx,x+pad,y+pad,size-2*pad,size-2*pad,Math.max(4,size*.13));
-  // inset face
   ctx.strokeStyle=owner===1?"#c6c9cd":"#151820";ctx.lineWidth=1;
   ctx.strokeRect(x+size*.12,y+size*.12,size*.76,size*.76);
   const pip=owner===1?"#171a20":"#f3f3ef";
   if(value>6){
-    // Show numeric value for 7+ (winning merge)
     ctx.fillStyle=pip;
     ctx.font=`bold ${Math.floor(size*0.42)}px system-ui,sans-serif`;
     ctx.textAlign="center"; ctx.textBaseline="middle";
@@ -1125,7 +1043,6 @@ function drawDie(x,y,size,owner,value,selectedDie=false,hint=false,winning=false
   }
   if(hint){ctx.strokeStyle="rgba(113,199,255,.85)";ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,size+4,size+4)}
   if(selectedDie && !winning){ctx.strokeStyle="#f2c96d";ctx.lineWidth=4;ctx.strokeRect(x-3,y-3,size+6,size+6)}
-  // Thin red outline for pinned dice (cannot move / be removed in merge)
   if(pinned && !winning){
     ctx.strokeStyle="rgba(239,116,116,.95)";
     ctx.lineWidth=1.75;
@@ -1150,7 +1067,6 @@ function draw(){
   for(let y=center.y-half;y<=center.y+half;y++){
     const p=worldToScreen(0,y).y;ctx.beginPath();ctx.moveTo(0,p);ctx.lineTo(W,p);ctx.stroke();
   }
-  // axis emphasis
   ctx.strokeStyle="rgba(113,199,255,.12)";
   const ox=worldToScreen(0,0).x,oy=worldToScreen(0,0).y;
   ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,H);ctx.stroke();
@@ -1169,7 +1085,6 @@ function draw(){
     const isWin=!!(state.winPair && state.winPair.includes(k));
     const isPinned=!isWin && !removable(state,k);
     if(isWin){
-      // Blink: alternate player-coloured die with value ↔ trophy
       const showTrophy = Math.floor(performance.now()/550) % 2 === 1;
       if(showTrophy){
         drawWinTrophy(p.x, p.y, cs, d.owner);
@@ -1180,7 +1095,6 @@ function draw(){
       drawDie(p.x,p.y,cs,d.owner,d.value,selected===k,false,false,isPinned);
     }
     if(coords){
-      // slight offset down+right from the corner; black bold on white dice
       const cx=p.x+cs*0.14, cy=p.y+cs*0.28;
       if(d.owner===1){
         ctx.fillStyle="#12151c";
@@ -1235,15 +1149,11 @@ function renderSide(){
   document.querySelectorAll(".actionBtn").forEach(btn=>{
     const a=btn.dataset.action;
     btn.classList.toggle("active",a===actionMode);
-    // Always allow switching mode on human turn; only hard-disable Add when pool is empty.
-    // Previously buttons stayed disabled whenever no legal of that type existed,
-    // which made Move/Merge appear broken when all dice were pinned or fewer than 3 dice.
     btn.disabled = playback || state.gameOver || state.player !== 1 || (a === "add" && state.pool[1] <= 0);
   });
 }
 function renderLog(){
   if(!$("logList"))return;
-  // Format structured entries with current language, then layout
   $("logList").innerHTML=(log||[]).map((x,i)=>({n:i+1,x})).reverse()
     .map(it=>{
       const text=formatLogEntry(it.x);
@@ -1284,7 +1194,6 @@ function winLogLine(s){
     const val = s.winSum || (s.board[k] && s.board[k].value) || "?";
     return `🏆 ${dieSym(w,val,true)} ${fmtCell(k)}`;
   }
-  // Block win: trophy + plain dice symbols (no [1]) + "no legal move"
   const msg = lang==="cs" ? "nemá platný tah" : "has no legal move";
   return `🏆 ${dieSym(w)} - ${dieSym(l)} ${msg}`;
 }
@@ -1336,13 +1245,7 @@ function applyLang(){
 }
 function toggleLang(){lang=lang==="cs"?"en":"cs";applyLang();}
 
-/* Gesture / command layer
-   - 1× click on own die     → add mode (hint fields to place a new die)
-   - 2× click on own die     → move mode for that die (hint destinations)
-   - long-press on own die   → merge mode for that die (then click partner)
-   Action buttons still switch modes manually.
-*/
-let pendingSingle=null; // {key, timer}
+let pendingSingle=null;
 let longPress={timer:null, key:null, fired:false};
 const DBL_MS=300;
 const LONG_MS=480;
@@ -1373,7 +1276,6 @@ function tryStartLongPress(clientX, clientY){
   longPress.timer=setTimeout(()=>{
     longPress.timer=null;
     longPress.fired=true;
-    // Long-press → merge mode
     clearPendingSingle();
     const all=legalMoves(state,1);
     const canMerge=all.some(x=>x.type==="merge"&&(x.from===k||x.to===k));
@@ -1390,16 +1292,13 @@ function tryStartLongPress(clientX, clientY){
 }
 function handleBoardTap(e){
   if(playback||state.gameOver||state.player!==1)return;
-  // If long-press already fired, ignore the following click
   if(longPress.fired){ clearLongPress(); return; }
   clearLongPress();
   const r=board.getBoundingClientRect(),w=screenToWorld(e.clientX-r.left,e.clientY-r.top),k=KEY(w.x,w.y);
   const all=legalMoves(state,1);
   const die=state.board[k];
 
-  // --- Click on own die ---
   if(die && die.owner===1){
-    // Merge mode: second die
     if(selected && actionMode==="merge"){
       clearPendingSingle();
       if(selected===k){ return; }
@@ -1410,16 +1309,13 @@ function handleBoardTap(e){
         : "These dice cannot be merged (must be adjacent, at least one free).");
       return;
     }
-    // Move mode with selection: second die used to mean merge only via long-press now
     if(selected && actionMode==="move" && selected!==k){
       clearPendingSingle();
-      // Allow merge as convenience if legal, else toast
       const merge=all.find(x=>x.type==="merge"&&((x.from===selected&&x.to===k)||(x.to===selected&&x.from===k)));
       if(merge){execute(merge);selected=null;renderSide();return}
       toast(lang==="cs"?"Pro spojení použijte dlouhý stisk na kostku.":"Use a long-press on a die to merge.");
       return;
     }
-    // Double-click same die → move mode
     if(pendingSingle && pendingSingle.key===k){
       clearPendingSingle();
       const canMove=all.some(x=>x.type==="move"&&x.from===k);
@@ -1431,7 +1327,6 @@ function handleBoardTap(e){
       setActionMode("move",k);
       return;
     }
-    // First click: wait for possible double, then fall back to add mode
     clearPendingSingle();
     pendingSingle={
       key:k,
@@ -1443,7 +1338,6 @@ function handleBoardTap(e){
     return;
   }
 
-  // --- Empty / other cell: execute current mode ---
   clearPendingSingle();
   if(actionMode==="add"){
     const a=all.find(x=>x.type==="add"&&x.x===w.x&&x.y===w.y);
@@ -1469,11 +1363,6 @@ function handleBoardTap(e){
   }
 }
 
-/* =========================
-   Board pointer / touch handling
-   Single finger/mouse = pan + click.
-   Two fingers = pinch zoom, with the zoom anchor kept under the fingers.
-   ========================= */
 const pointers=new Map();
 let gesture={
   mode:"none", moved:false, x:0,y:0,sx:0,sy:0,
@@ -1490,7 +1379,6 @@ function beginPinch(){
   if(pts.length<2)return;
   const a=pts[0],b=pts[1],mid=pointerMidpoint(a,b);
   const w=screenToWorld(mid.x,mid.y),cs=cellSize();
-  // Keep the exact world point under the initial finger midpoint fixed.
   gesture.mode="pinch";
   gesture.moved=true;
   gesture.pinchStartDistance=Math.max(1,pointerDistance(a,b));
@@ -1533,7 +1421,7 @@ board.addEventListener("pointermove",e=>{
   const dx=p.x-gesture.x,dy=p.y-gesture.y;
   if(Math.abs(p.x-gesture.sx)+Math.abs(p.y-gesture.sy)>6){
     gesture.moved=true;
-    clearLongPress(); // cancel long-press when panning
+    clearLongPress();
   }
   camera.x+=dx;camera.y+=dy;gesture.x=p.x;gesture.y=p.y;draw();
 });
@@ -1551,8 +1439,6 @@ function finishPointer(e,cancel=false){
     gesture.mode="none";
   }else if(pointers.size===1){
     clearLongPress();
-    // Do not generate a click after a pinch. Continue with a fresh pan
-    // reference if the user keeps one finger on the board.
     const q=[...pointers.values()][0];
     gesture.mode="pan";gesture.moved=true;gesture.x=q.x;gesture.y=q.y;gesture.sx=q.x;gesture.sy=q.y;
   }
@@ -1575,7 +1461,7 @@ function showPlayback(){
 function updatePlayback(){
   const max=Math.max(0,history.length-1);playIndex=Math.max(0,Math.min(playIndex,max));
   $("pCounter").textContent=`${playIndex} / ${max}`;
-  const snap=history[playIndex];if(snap){state=clone(snap.state);renderSide();renderLog();draw()}
+  const snap=history[playIndex];if(snap){state=clone(snap.state);centerCamera();renderSide();renderLog();draw()}
 }
 function closePlayback(){
   stopPlayback();
@@ -1584,6 +1470,7 @@ function closePlayback(){
   $("playDock").classList.remove("open");
   $("actionDock").style.display="";
   $("playBtn").classList.remove("active");
+  centerCamera();
   renderAll();
 }
 function stepPlayback(dir){playIndex+=dir;updatePlayback()}
@@ -1646,8 +1533,30 @@ $("copyLog").onclick=async()=>{
   try{await navigator.clipboard.writeText(text);toast(lang==="cs"?"Log zkopírován.":"Log copied.");}
   catch(e){toast("Clipboard unavailable.")}
 };
+
+function centerCamera() {
+  if(!state || !state.board) return;
+  const keys = Object.keys(state.board);
+  if(keys.length === 0) { camera.x = 0; camera.y = 0; return; }
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  for(const k of keys){
+    const [x,y] = parseKey(k);
+    if(x < minX) minX = x;
+    if(x > maxX) maxX = x;
+    if(y < minY) minY = y;
+    if(y > maxY) maxY = y;
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const cs = cellSize();
+  camera.x = -cx * cs;
+  camera.y = cy * cs;
+}
+
 function resetBoardView(){
-  camera.x=0;camera.y=0;camera.zoom=defaultZoom();draw();
+  camera.zoom=defaultZoom();
+  centerCamera();
+  draw();
 }
 function changeZoomAt(factor,anchorX=board.clientWidth/2,anchorY=board.clientHeight/2){
   const oldCs=cellSize();
@@ -1682,7 +1591,6 @@ window.addEventListener("keydown",e=>{
 newGameWithAlternatingStarter(false);
 applyLang();
 resize();
-// Defer layout + AI kick if Black starts
 requestAnimationFrame(()=>{
   resize();
   draw();
@@ -1692,7 +1600,6 @@ requestAnimationFrame(()=>{
   if(state && state.gameOver && state.winPair && state.winPair.length) draw();
   requestAnimationFrame(winPulseLoop);
 })();
-
 </script>
 </body>
 </html>
