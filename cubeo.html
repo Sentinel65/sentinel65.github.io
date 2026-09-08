@@ -1,0 +1,1656 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>CUBEO</title>
+<style>
+:root{
+  --bg:#10141d;--panel:#171d28;--panel2:#202838;--line:#354054;--text:#eef2f7;
+  --muted:#9ca8b9;--accent:#71c7ff;--green:#63d59a;--gold:#f2c96d;--danger:#ef7474;
+  --cell:min(8.7vw,58px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;color:inherit}
+.app{height:100dvh;display:flex;flex-direction:column}
+.topbar{height:116px;flex:0 0 116px;padding:7px 12px 8px;background:rgba(16,20,29,.98);border-bottom:1px solid var(--line);z-index:10}
+.titleRow{height:54px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.playerCounter{display:flex;align-items:center;gap:8px;width:max-content;padding:7px 11px;border:1px solid var(--line);background:#151b26;border-radius:12px;font-size:11px;letter-spacing:.08em;color:var(--muted);transition:.2s}
+.playerCounter b{font-size:20px;color:var(--text);line-height:1}
+.playerCounter.whiteCounter{justify-self:start}.playerCounter.blackCounter{justify-self:end}
+.playerCounter.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(113,199,255,.25) inset,0 0 18px rgba(113,199,255,.09);color:var(--text)}
+.counterDie{font-size:14px}
+.menu{height:46px;display:flex;justify-content:center;gap:7px;align-items:center}
+.titleWrap{position:relative;justify-self:center;text-align:center}
+.titleWrap h1{font-size:22px;letter-spacing:.18em;margin:0;font-weight:800}
+#titleHit{position:absolute;inset:-10px -35px;border:0;background:transparent;cursor:default}
+
+.iconBtn{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;font-size:20px;cursor:pointer;transition:.15s}
+.iconBtn:hover{background:var(--panel2);border-color:#52627b}
+.iconBtn.active{outline:2px solid var(--accent);outline-offset:-2px}
+.iconBtn:disabled{opacity:.35;cursor:not-allowed}
+.main{min-height:0;flex:1;display:flex;overflow:hidden}
+.section{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:10px}
+.section h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 9px}
+.turn{display:flex;align-items:center;gap:9px;font-weight:750}
+.turnDot{width:17px;height:17px;border-radius:50%;border:2px solid #56647a;box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+.turnDot.white{background:#f5f6f8}.turnDot.black{background:#20242c}
+.statGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.stat{background:#111721;border:1px solid #2b3547;border-radius:10px;padding:8px}
+.stat b{display:block;font-size:18px}.stat span{font-size:10px;color:var(--muted)}
+.actions{display:grid;grid-template-columns:1fr;gap:7px}
+.actionDock,.playDock{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+  display:flex;gap:8px;padding:8px 10px;
+  width:min(340px, calc(100% - 24px));
+  height:64px;
+  box-sizing:border-box;
+  background:rgba(17,23,33,.88);backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:14px;z-index:3;
+  align-items:center;justify-content:center;
+}
+.playDock{display:none}
+.playDock.open{display:flex}
+.playDock .playbar{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:0}
+.playDock .playbar button{width:40px;height:40px;border:1px solid var(--line);background:#111721;border-radius:10px;cursor:pointer;font-size:14px;flex:0 0 auto}
+.playDock .playbar button:hover{background:var(--panel2)}
+.playDock .counter{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted);min-width:64px;text-align:center;flex:0 0 auto}
+.playDock .closePlay{width:40px;height:40px;border:1px solid var(--line);background:#1a2230;border-radius:10px;cursor:pointer;font-size:16px;flex:0 0 auto}
+.toast.winToast{background:linear-gradient(135deg,#2a2418,#3a3020);border-color:var(--gold);color:#f8e7b0;font-weight:700;font-size:14px;padding:14px 18px;box-shadow:0 12px 36px #000a,0 0 20px rgba(242,201,109,.25)}
+
+.actionBtn{border:1px solid var(--line);background:#121824;border-radius:12px;padding:0;text-align:center;cursor:pointer;width:48px;height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
+.actionBtn:disabled{opacity:.35;cursor:not-allowed}
+.actionBtn.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(113,199,255,.22) inset;background:#182536}
+.actionBtn .actIcon{pointer-events:none}
+.helpHint{font-size:11px;line-height:1.45;color:var(--muted)}
+.pool{display:flex;gap:7px;flex-wrap:wrap}
+.poolDice{display:flex;gap:5px}
+.miniDie{width:31px;height:31px;border-radius:6px;border:1px solid #667085;position:relative;background:#f2f2ef;box-shadow:inset 1px 1px 3px #fff,inset -2px -2px 4px #9a9a9a}
+.miniDie.black{background:#272a30;border-color:#626773;box-shadow:inset 1px 1px 3px #777,inset -2px -2px 4px #08090c}
+.dot{position:absolute;width:5px;height:5px;border-radius:50%;background:#1d2026;transform:translate(-50%,-50%);top:50%;left:50%}
+.black .dot{background:#e9e9e5}
+.d1 .a{top:50%;left:50%}
+.d2 .a{top:25%;left:25%}.d2 .b{top:75%;left:75%}
+.d3 .a{top:25%;left:25%}.d3 .b{top:50%;left:50%}.d3 .c{top:75%;left:75%}
+.d4 .a{top:25%;left:25%}.d4 .b{top:25%;left:75%}.d4 .c{top:75%;left:25%}.d4 .d{top:75%;left:75%}
+.d5 .a{top:25%;left:25%}.d5 .b{top:25%;left:75%}.d5 .c{top:50%;left:50%}.d5 .d{top:75%;left:25%}.d5 .e{top:75%;left:75%}
+.d6 .a{top:22%;left:25%}.d6 .b{top:50%;left:25%}.d6 .c{top:78%;left:25%}.d6 .d{top:22%;left:75%}.d6 .e{top:50%;left:75%}.d6 .f{top:78%;left:75%}
+.boardArea{position:relative;flex:1 1 auto;min-width:0;min-height:0;background:#0c1119;overflow:hidden}
+#board{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#board.dragging{cursor:grabbing}
+.boardLegend{position:absolute;left:12px;top:12px;pointer-events:none;background:rgba(12,17,25,.78);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:11px;padding:7px 9px;font-size:11px;color:var(--muted)}
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:5px}
+.zoom button{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:rgba(23,29,40,.9);cursor:pointer}
+.toastBox{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:7px;z-index:100;pointer-events:none}
+.toast{background:#202938;border:1px solid #4b5a70;padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px #0007;font-size:13px;animation:toast .2s ease-out;white-space:nowrap;max-width:min(96vw,560px);overflow:hidden;text-overflow:ellipsis}
+.toast.winToast{white-space:normal;text-align:center;line-height:1.35}
+@keyframes toast{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.modalBack{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modalBack.open{display:flex}
+.modal{width:min(920px,96vw);height:min(88dvh,820px);background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 25px 80px #0009;display:flex;flex-direction:column;overflow:hidden}
+.modalHead{height:54px;flex:0 0 54px;padding:8px 10px 8px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.modalHead h2{margin:0;font-size:16px}.modalBtns{display:flex;gap:6px}
+.modalBody{padding:14px;overflow:auto;min-height:0}
+.logList{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.7;white-space:pre-wrap}
+/* Game-styled scrollbars (log + help) */
+.modalBody::-webkit-scrollbar,
+.rulesText::-webkit-scrollbar,
+.logList::-webkit-scrollbar{width:8px;height:8px}
+.modalBody::-webkit-scrollbar-track,
+.rulesText::-webkit-scrollbar-track,
+.logList::-webkit-scrollbar-track{background:#0c1119;border-radius:8px;border:1px solid #1a2230}
+.modalBody::-webkit-scrollbar-thumb,
+.rulesText::-webkit-scrollbar-thumb,
+.logList::-webkit-scrollbar-thumb{background:#2a3342;border-radius:8px;border:1px solid #3d4a5c}
+.modalBody::-webkit-scrollbar-thumb:hover,
+.rulesText::-webkit-scrollbar-thumb:hover,
+.logList::-webkit-scrollbar-thumb:hover{background:#3d4a5c}
+.modalBody{scrollbar-width:thin;scrollbar-color:#2a3342 #0c1119}
+
+/* Upravený layout logu do mřížky (Grid) */
+.logItem{display:grid;grid-template-columns:24px 22px 48px 1fr;gap:4px;padding:5px 7px;border-bottom:1px solid #2a3342;align-items:center}
+.logItem.win{color:var(--gold);font-weight:700}
+.l-num{color:var(--muted)}
+.l-ic{text-align:center}
+.l-die{white-space:nowrap}
+.l-rest{text-align:left}
+.l-sys{grid-column:1/-1;text-align:center;color:var(--muted);font-style:italic}
+
+.rulesPage{width:100%;display:block;border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+.rulesText{line-height:1.55;font-size:13px;color:#dce2eb}
+.rulesText h3{color:#fff;margin:18px 0 6px}.rulesText ul,.rulesText ol{padding-left:22px}
+.dieStrip{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.bigDie{width:52px;height:52px;border-radius:9px;position:relative;border:2px solid #727b89;background:#eee;box-shadow:inset 2px 2px 4px #fff,inset -3px -3px 5px #999,0 2px 5px #0006}
+.bigDie.black{background:#292c33;box-shadow:inset 2px 2px 4px #747983,inset -3px -3px 5px #07080b,0 2px 5px #0009}
+.bigDie .dot{width:8px;height:8px}
+.diagramRow{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;margin:8px 0 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ruleDiagram{display:inline-grid;gap:2px;background:#0c1119;padding:5px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto}
+.diagramArrow{align-self:center;font-size:18px;color:var(--accent);padding:0 2px;flex:0 0 auto}
+.rc{width:36px;height:36px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;position:relative;box-sizing:border-box}
+.rc.w{background:linear-gradient(135deg,#fff,#9b9da1);color:#171a20;border:1px solid #6c717b}
+.rc.b{background:linear-gradient(135deg,#686c75,#090b0f);color:#f3f3ef;border:1px solid #858b96}
+.rc.empty{background:transparent}
+.rc.bad{outline:2px solid var(--danger);background:rgba(239,116,116,.12)}
+.rc.good{outline:2px solid var(--green);background:rgba(99,213,154,.12)}
+.rc.move{outline:2px solid var(--accent);background:rgba(113,199,255,.14)}
+.rc.sel{outline:3px solid var(--gold)}
+.rc .mk{position:absolute;top:-10px;right:-10px;font-size:13px;line-height:1}
+.ruleCaption{font-size:12px;color:var(--muted);margin:6px 0 20px;max-width:560px}
+.ruleLegend{font-size:11px;color:var(--muted);margin:2px 0 4px}
+.ruleLegend b{color:var(--text)}
+.infoList,.hintLegend{margin:6px 0 12px;padding-left:18px;line-height:1.7}
+.infoList li,.hintLegend li{margin:2px 0}
+.playbar{display:flex;align-items:center;gap:6px}.playbar button{width:36px;height:32px;border:1px solid var(--line);background:#111721;border-radius:8px;cursor:pointer}
+.counter{font-variant-numeric:tabular-nums;font-size:11px;color:var(--muted);min-width:64px;text-align:center}
+.aiSelect{width:100%;background:#111721;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px}
+ .signalIcon{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:20px;width:24px}
+.signalIcon i{display:block;width:4px;border-radius:2px;background:#5b6677;opacity:.45}
+.signalIcon i:nth-child(1){height:6px}.signalIcon i:nth-child(2){height:12px}.signalIcon i:nth-child(3){height:18px}
+.signalIcon.level1 i:nth-child(1),.signalIcon.level2 i:nth-child(-n+2),.signalIcon.level3 i{background:var(--accent);opacity:1;box-shadow:0 0 5px rgba(113,199,255,.35)}
+.coordBadge{position:absolute;right:12px;top:12px;padding:6px 8px;border-radius:8px;background:#172131;border:1px solid var(--accent);color:var(--accent);font-size:10px;display:none;pointer-events:none}
+.coordBadge.show{display:block}
+@media(max-width:760px){
+  .topbar{height:104px;flex-basis:104px;padding:5px 6px 7px}
+  .titleRow{height:49px}.titleWrap h1{font-size:18px}.subtitle{display:none}
+  .playerCounter{gap:5px;padding:6px 8px;font-size:9px;border-radius:10px}.playerCounter b{font-size:17px}.counterDie{font-size:12px}
+  .menu{height:43px;gap:3px}.iconBtn{width:36px;height:36px;border-radius:10px;font-size:16px;padding:0}
+  .actionDock,.playDock{bottom:12px;gap:6px;padding:6px 8px;border-radius:12px;width:min(320px, calc(100% - 16px));height:58px}
+  .playDock .playbar button{width:34px;height:34px;font-size:13px}
+  .playDock .closePlay{width:34px;height:34px}
+  .actionBtn{width:42px;height:42px;flex:0 0 42px;font-size:20px}
+  .boardLegend{top:8px;left:8px}
+  .zoom{right:8px;bottom:82px}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+  <div class="titleRow">
+    <div class="playerCounter whiteCounter" id="whiteCounter"><span class="counterDie">⚪</span><span>BÍLÝ</span><b id="whitePoolTop">5</b></div>
+    <div class="titleWrap"><h1>CUBEO</h1><div class="subtitle">6D6 · NO LUCK</div><button id="titleHit" aria-label="Souřadnice"></button></div>
+    <div class="playerCounter blackCounter" id="blackCounter"><span class="counterDie">⚫</span><span>ČERNÝ</span><b id="blackPoolTop">5</b></div>
+  </div>
+  <nav class="menu" aria-label="Menu">
+    <button class="iconBtn" id="saveBtn" title="Uložit">💾</button>
+    <button class="iconBtn" id="loadBtn" title="Načíst">📂</button>
+    <button class="iconBtn" id="restartBtn" title="Restart">🔄</button>
+    <button class="iconBtn" id="logBtn" title="Log hry">☷</button>
+    <button class="iconBtn" id="aiBtn" title="Úroveň AI" aria-label="Úroveň AI"><span id="aiSignal" class="signalIcon level3"><i></i><i></i><i></i></span></button>
+    <button class="iconBtn" id="playBtn" title="Přehrávač tahů">▶</button>
+    <button class="iconBtn" id="langBtn" title="Jazyk">🇬🇧</button>
+    <button class="iconBtn" id="helpBtn" title="Nápověda">💡</button>
+  </nav>
+</header>
+
+  <main class="main">
+  <section class="boardArea">
+    <canvas id="board"></canvas>
+    <div class="boardLegend" id="boardLegend">CUBEO · <span data-i18n="drag">tažením posouvat desku</span></div>
+    <div class="coordBadge" id="coordBadge">Souřadnice</div>
+    <div class="actionDock" id="actionDock">
+      <button class="actionBtn active" data-action="add" title="Přidat kostku (1× klik na kostku)">
+        <span class="actIcon" aria-hidden="true">➕</span>
+      </button>
+      <button class="actionBtn" data-action="move" title="Přesunout kostku (2× klik na kostku)">
+        <span class="actIcon" aria-hidden="true">➤</span>
+      </button>
+      <button class="actionBtn" data-action="merge" title="Spojit kostky (dlouhý stisk + klik na druhou)">
+        <span class="actIcon" aria-hidden="true">🔗</span>
+      </button>
+    </div>
+    <div class="playDock" id="playDock">
+      <div class="playbar">
+        <button id="pFirst" title="Začátek">|◀</button>
+        <button id="pPrev" title="Předchozí">◀</button>
+        <button id="pPlay" title="Přehrát">▶</button>
+        <button id="pNext" title="Další">▶</button>
+        <button id="pLast" title="Konec">▶|</button>
+        <span class="counter" id="pCounter">0 / 0</span>
+      </div>
+      <button class="closePlay" id="closePlay" title="Zavřít přehrávač">×</button>
+    </div>
+    <div class="zoom"><button id="zoomOut">−</button><button id="zoomReset" title="Vycentrovat">□</button><button id="zoomIn">+</button></div>
+  </section>
+</main>
+</div>
+
+<div class="toastBox" id="toastBox"></div>
+
+<div class="modalBack" id="logModal">
+  <div class="modal" role="dialog">
+    <div class="modalHead"><h2 data-i18n="logTitle">Herní log</h2><div class="modalBtns"><button class="iconBtn" id="copyLog" title="Kopírovat">⧉</button><button class="iconBtn closeModal" title="Zavřít">×</button></div></div>
+    <div class="modalBody"><div id="logList" class="logList"></div></div>
+  </div>
+</div>
+
+<div class="modalBack" id="helpModal">
+  <div class="modal" role="dialog">
+    <div class="modalHead"><h2 data-i18n="helpTitle">Nápověda</h2><div class="modalBtns"><button class="iconBtn closeModal" title="Zavřít">×</button></div></div>
+    <div class="modalBody">
+      <div class="rulesText" id="rulesText"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modalBack" id="aiModal">
+  <div class="modal" role="dialog" style="height:auto;max-height:80dvh">
+    <div class="modalHead"><h2 data-i18n="aiTitle">Umělá inteligence</h2><div class="modalBtns"><button class="iconBtn closeModal">×</button></div></div>
+    <div class="modalBody"><p class="rulesText" id="aiInfo"></p></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =========================
+   CUBEO — self-contained
+   Rules implemented from Cubeo_rules.pdf:
+   - two distinguishable sets of six D6
+   - single formation / pinning / slide rules
+   - add, move, merge
+   - win by merge > 6 or blocking opponent
+   ========================= */
+
+const I18N = {
+  cs:{
+    turnTitle:"Na tahu",onBoard:"na desce",pool:"zásoba",actionTitle:"Akce",
+    add:"Přidat kostku",addHint:"vždy hodnota 1",move:"Přesunout kostku",moveHint:"1 pole za každý pip",
+    merge:"Spojit dvě kostky",mergeHint:"součet hodnot",diceTitle:"Zásoby",white:"Bílý",black:"Černý",
+    aiTitle:"Umělá inteligence",howTitle:"Ovládání",
+    howText:"Zvolte akci a klikněte na zvýrazněné pole. Desku lze tažením posouvat. Kliknutí na název CUBEO zobrazí souřadnice.",
+    drag:"tažením posouvat desku",logTitle:"Herní log",helpTitle:"Nápověda",playTitle:"Přehrávač tahů",
+    playInfo:"Během přehrávání je hrací deska zablokována. Po opuštění přehrávače se vrátíte do aktuální pozice hry.",
+    whiteTurn:"Bílý",blackTurn:"Černý",aiThinking:"AI přemýšlí…",saved:"Hra uložena.",loaded:"Hra načtena.",
+    noSave:"Uložená hra nebyla nalezena.",newGame:"Nová hra.",illegal:"Tento tah není podle pravidel.",
+    coords:"Souřadnice",winMerge:"vítězí spojením na hodnotu",winBlock:"vítězí zablokováním soupeře",
+    chooseDie:"Nejprve vyberte kostku.",noMoves:"Soupeř nemá žádný platný tah.",
+    ai1:"AI 1 — mělký minimax (depth 1), základní hodnocení.",ai2:"AI 2 — minimax depth 2, sleduje hrozby spojení.",ai3:"AI 3 — minimax depth 3 + alpha-beta; agresivní závod ke spojení > 6 a blokování hrozeb.",
+    addOk:"Kostka přidána.",moveOk:"Kostka přesunuta.",mergeOk:"Kostky spojeny.",
+    helpHtml:`<h3>Základní informace o hře Cubeo</h3>
+<p style="font-style:italic;color:var(--muted);margin-top:0">© 2016 Designer: Marek Kolcun</p>
+<ul class="infoList">
+<li><b>Počet hráčů:</b> 2</li>
+<li><b>Věk:</b> 7+</li>
+<li><b>Doba hraní:</b> 15–30 min</li>
+<li><b>Komponenty:</b> 2 sady (6 ks) D6 kostek ve dvou odlišných barvách</li>
+</ul>
+
+<h3>Cíl hry</h3>
+<p>Kostkami se nehází — hodnota kostky určuje délku přesunu, při spojení kostek se hodnoty sčítají. Vyhrajete, když jako první <b>spojíte dvě kostky na hodnotu větší než 6</b> (součet dá 7 a více). Výsledná kostka zobrazí svou hodnotu a na jejím poli bliká pohár. Prohrajete, když nemáte žádný platný tah.</p>
+<p class="ruleLegend">Spojení = sečtete hodnoty dvou sousedních vlastních kostek. Jedna zůstane na desce s novou hodnotou, druhá se vrátí do zásoby.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc w sel">4</div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w sel">3</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w" style="font-weight:800">7</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption"><b>Vítězné spojení:</b> 4 + 3 = <b>7</b>. Výsledná kostka má hodnotu 7 a na poli bliká pohár — vyhráli jste.</p>
+
+<h3>Tři základní pravidla</h3>
+<ol>
+<li><b>Jediná formace:</b> všechny kostky na desce musí tvořit jednu souvislou skupinu (dotýkat se stranou, ne jen rohem).</li>
+<li><b>Připnutí (Pinning / Freedom to Move):</b> představte si, že kostku <b>odeberete</b> z formace. Pokud by zbývající kostky už <b>netvořily jednu skupinu</b>, je kostka připnutá a <b>nesmí se přesunout</b> ani být odebrána při spojení. Na desce má <b style="color:var(--danger)">tenký červený rámeček</b>.<br>
+<b>Důležité:</b> nezáleží na tom, že cílové pole přesunu by formaci zase spojilo — test je jen „co se stane po pouhém odebrání“. Oficiální znění: <i>„Imagine removing a given die; if the remaining dice would break the Single Formation Rule, then that die is pinned and cannot move.“</i></li>
+<li><b>Smykové pravidlo (Slide):</b> kostku lze přidat / odebrat jen tak, že ji lze zasunout / vysunout po povrchu bez zvedání a bez posunu ostatních kostek.</li>
+</ol>
+<p class="ruleCaption"><b>Příklad připnutí</b> (pozice po: + ⬜ (0,1), + ⬛ (1,-1), + ⬜ (0,2), + ⬛ (2,0), + ⬜ (1,2)):</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--green);font-weight:800;font-size:17px">✓</div>
+    <div class="rc w" style="box-shadow:0 0 0 2px var(--danger)">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--danger);font-weight:800;font-size:15px">✗</div>
+    <div class="rc empty" style="border:2px dashed var(--green)"></div><div class="rc empty" style="border:2px dashed var(--danger)"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">Vlevo: <b>(0,1)</b> s červeným rámečkem spojuje horní kostky <b>(0,2),(1,2)</b> se zbytkem. Vpravo: po odebrání dvě skupiny — kostka je připnutá; přesun (např. na (1,1)) je zakázán, i kdyby cíl formaci znovu spojil (vlevo zeleně čárkovaně vyznačeno pole, kde kostka dříve stála; vpravo červeně čárkovaně vyznačené pole = zakázaný zamýšlený přesun).</p>
+
+<h3>Začátek</h3>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(2,36px)">
+    <div class="rc w">1</div><div class="rc b">1</div>
+  </div>
+</div>
+<p class="ruleCaption">Oba hráči položí jednu kostku hodnotou 1 do středu (dotýkají se stranou). Zbývajících 5 kostek je zásoba. Losuje se, kdo začíná.</p>
+
+<h3>1. Přidat kostku</h3>
+<p>Zásobní kostka vždy přijde jako <b>1</b>. Musí se dotýkat aspoň jedné <b>vaší</b> kostky a <b>nesmí</b> se stranou dotýkat soupeřovy (roh je povolen). Musí jít zasunout podle Slide pravidla.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc good">+</div>
+  </div>
+</div>
+<p class="ruleCaption">Černý může přidat na zelené pole (dotýká se černé, nedotýká se bílé stranou).</p>
+
+<h3>2. Přesunout kostku</h3>
+<p>Přesuňte <b>nepřipnutou</b> kostku <b>po obvodu formace</b> přesně o tolik polí, kolik má pipů. Cesta:</p>
+<ul>
+<li>jde po prázdných polích kolem formace (kroky jsou vždy o stranu, ne úhlopříčkou),</li>
+<li>cesta smí vést i přes rohy (obcházení rohu), ale cíl musí sousedit stranou,</li>
+<li>nesmí přeskakovat ani končit na jiné kostce,</li>
+<li>nesmí opakovat stejné pole (žádné kmitání sem a tam),</li>
+<li>směr se může měnit,</li>
+<li>cíl ≠ start — formace se musí změnit.</li>
+</ul>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+    <div class="rc b move">2</div><div class="rc w">1</div><div class="rc empty"></div>
+    <div class="rc move">·</div><div class="rc move">·</div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">Černá dvojka musí ujít přesně 2 pole po obvodu (modrá pole = příklady cílů).</p>
+
+<h3>3. Spojit dvě kostky</h3>
+<p>Pokud máte na desce aspoň 3 kostky, můžete sečíst dvě <b>sousední vlastní</b> kostky. Aspoň jedna z nich musí jít odebrat (není připnutá + Slide). Odebraná se vrací do zásoby, zbývající dostane součet.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(4,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w">4</div><div class="rc w sel">1</div><div class="rc w sel">2</div>
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(4,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w">4</div><div class="rc w">3</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">Volná 2 + sousední 1 → 3. Čtyřka a ostatní jedničky jsou připnuté (odebrání by rozbilo formaci).</p>
+<p><b>Pokud součet &gt; 6, vyhráváte.</b> Výsledná kostka zežloutne a zobrazí svou hodnotu.</p>
+
+<h3>Ovládání</h3>
+<ul>
+<li><b>1× klik</b> na vlastní kostku → nápověda polí pro <b>přidání</b> (pak klik na zelené pole).</li>
+<li><b>2× klik</b> na vlastní kostku → nápověda polí pro <b>přesun</b> (pak klik na cíl).</li>
+<li><b>Dlouhý stisk</b> na vlastní kostku → režim <b>spojení</b>, pak klik na sousední vlastní kostku (toast, pokud to nejde).</li>
+<li>Ikony dole (➕ ➤ 🔗) přepínají režim ručně.</li>
+<li>Desku posouvejte tažením, zoom tlačítky nebo gestem dvou prstů.</li>
+<li>Neviditelné tlačítko na názvu <b>CUBEO</b> zapne souřadnice.</li>
+</ul>
+<p class="ruleLegend"><b>Nápověda tahů na desce:</b></p>
+<ul class="hintLegend">
+<li><b style="color:var(--green)">zelená</b> = přidání</li>
+<li><b style="color:var(--accent)">modrá</b> = přesun</li>
+<li><b style="color:var(--gold)">zlatá</b> = spojení</li>
+<li><b style="color:var(--danger)">červený rámeček</b> = připnutá kostka</li>
+</ul>`,
+  },
+  en:{
+    turnTitle:"Turn",onBoard:"on board",pool:"pool",actionTitle:"Action",
+    add:"Add die",addHint:"always value 1",move:"Move die",moveHint:"1 space per pip",
+    merge:"Merge two dice",mergeHint:"sum values",diceTitle:"Pools",white:"White",black:"Black",
+    aiTitle:"Artificial intelligence",howTitle:"Controls",
+    howText:"Choose an action and click a highlighted cell. Drag the board to pan. Click the CUBEO title to show coordinates.",
+    drag:"drag to pan",logTitle:"Game log",helpTitle:"Help",playTitle:"Move player",
+    playInfo:"The board is locked during playback. Closing the player returns you to the current game position.",
+    whiteTurn:"White",blackTurn:"Black",aiThinking:"AI is thinking…",saved:"Game saved.",loaded:"Game loaded.",
+    noSave:"No saved game found.",newGame:"New game.",illegal:"That move is not legal.",
+    coords:"Coordinates",winMerge:"wins by merging to",winBlock:"wins by blocking the opponent",
+    chooseDie:"Select a die first.",noMoves:"The opponent has no legal move.",
+    ai1:"AI 1 — shallow minimax (depth 1).",ai2:"AI 2 — minimax depth 2, tracks merge threats.",ai3:"AI 3 — minimax depth 3 + alpha-beta; aggressive race to merge > 6 and threat blocking.",
+    addOk:"Die added.",moveOk:"Die moved.",mergeOk:"Dice merged.",
+    helpHtml:`<h3>About Cubeo</h3>
+<p style="font-style:italic;color:var(--muted);margin-top:0">© 2016 Designer: Marek Kolcun</p>
+<ul class="infoList">
+<li><b>Players:</b> 2</li>
+<li><b>Age:</b> 7+</li>
+<li><b>Play time:</b> 15–30 min</li>
+<li><b>Components:</b> 2 sets of 6 D6 dice in two different colours</li>
+</ul>
+
+<h3>Goal of the game</h3>
+<p>Dice are not rolled — the pip value is the move length, and values are added when merging. You win by being first to <b>merge two dice to a value greater than 6</b> (sum of 7 or more). The resulting die shows its value and a trophy blinks on its cell. You lose if you have no legal move.</p>
+<p class="ruleLegend">A merge adds the values of two adjacent friendly dice. One stays on the board with the new total; the other returns to your pool.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc w sel">4</div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w sel">3</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w" style="font-weight:800">7</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption"><b>Winning merge:</b> 4 + 3 = <b>7</b>. The resulting die shows 7 and a trophy blinks on its cell — you win.</p>
+
+<h3>The three ubiquitous rules</h3>
+<ol>
+<li><b>Single Formation:</b> all dice must form one connected group (side-adjacent, not merely corner-touching).</li>
+<li><b>Pinning (Freedom to Move):</b> imagine <b>removing</b> a die from the formation. If the remaining dice would <b>no longer form a single group</b>, that die is pinned and <b>cannot move</b> or be removed in a merge. On the board it has a <b style="color:var(--danger)">thin red outline</b>.<br>
+<b>Important:</b> it does not matter that the move’s destination would reconnect the formation — the test is only “what happens if the die is simply removed.” Official wording: <i>“Imagine removing a given die; if the remaining dice would break the Single Formation Rule, then that die is pinned and cannot move.”</i></li>
+<li><b>Slide Rule:</b> a die may be added or removed only if it can slide in or out on the surface without lifting and without moving other dice.</li>
+</ol>
+<p class="ruleCaption"><b>Pinning example</b> (after: + ⬜ (0,1), + ⬛ (1,-1), + ⬜ (0,2), + ⬛ (2,0), + ⬜ (1,2)):</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--green);font-weight:800;font-size:17px">✓</div>
+    <div class="rc w" style="box-shadow:0 0 0 2px var(--danger)">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc w">1</div><div class="rc w">1</div><div class="rc empty" style="color:var(--danger);font-weight:800;font-size:15px">✗</div>
+    <div class="rc empty" style="border:2px dashed var(--green)"></div><div class="rc empty" style="border:2px dashed var(--danger)"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc b">1</div><div class="rc b">1</div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">Left: <b>(0,1)</b> with red outline links the top dice <b>(0,2),(1,2)</b> to the rest. Right: after removal, two groups — the die is pinned; a move (e.g. to (1,1)) is illegal even if the destination would reconnect the formation (left green dashed cell = the die's former spot; right red dashed cell = illegal intended move).</p>
+
+<h3>Setup</h3>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(2,36px)">
+    <div class="rc w">1</div><div class="rc b">1</div>
+  </div>
+</div>
+<p class="ruleCaption">Each player places one die (value 1) in the centre, touching along a side. The other five dice are the pool. Choose who starts.</p>
+
+<h3>1. Add a die</h3>
+<p>The new die is always <b>1</b>. It must touch at least one of <b>your</b> dice and must <b>not</b> side-touch an opponent die (corners are allowed). It must be slidable into place.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc good">+</div>
+  </div>
+</div>
+<p class="ruleCaption">Black may add on the green cell (touches black, does not side-touch white).</p>
+
+<h3>2. Move a die</h3>
+<p>Move an <b>unpinned</b> die <b>around the outside of the formation</b> exactly as many spaces as its pip value. The path must:</p>
+<ul>
+<li>use empty cells around the formation (steps are orthogonal, never diagonal),</li>
+<li>the path may cross corners (going around a corner), but the <b>destination must share a side</b>,</li>
+<li>not jump or land on another die,</li>
+<li>not revisit a cell (no back-and-forth oscillation),</li>
+<li>allow changing direction,</li>
+<li>end on a different cell — the formation must change.</li>
+</ul>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
+    <div class="rc b move">2</div><div class="rc w">1</div><div class="rc empty"></div>
+    <div class="rc move">·</div><div class="rc move">·</div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">The black two must travel exactly 2 spaces along the perimeter (blue cells = example destinations).</p>
+
+<h3>3. Merge two dice</h3>
+<p>With at least 3 dice on the board, you may add the values of two <b>adjacent friendly</b> dice. At least one must be removable (not pinned + Slide). The removed die returns to your pool; the other shows the sum.</p>
+<div class="diagramRow">
+  <div class="ruleDiagram" style="grid-template-columns:repeat(4,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w">4</div><div class="rc w sel">1</div><div class="rc w sel">2</div>
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+  <div class="diagramArrow">→</div>
+  <div class="ruleDiagram" style="grid-template-columns:repeat(4,36px)">
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+    <div class="rc w">1</div><div class="rc w">4</div><div class="rc w">3</div><div class="rc empty"></div>
+    <div class="rc empty"></div><div class="rc w">1</div><div class="rc empty"></div><div class="rc empty"></div>
+  </div>
+</div>
+<p class="ruleCaption">Free 2 + adjacent 1 → 3. The four and other ones are pinned (removing them would break the formation).</p>
+<p><b>If the sum is greater than 6, you win.</b> The resulting die shows its value and a trophy blinks on its cell.</p>
+
+<h3>Controls</h3>
+<ul>
+<li><b>Single-click</b> your die → hints for <b>adding</b> (then tap a green cell).</li>
+<li><b>Double-click</b> your die → hints for <b>moving</b> (then tap a destination).</li>
+<li><b>Long-press</b> your die → <b>merge</b> mode, then click an adjacent friendly die (toast if illegal).</li>
+<li>Icons below (➕ ➤ 🔗) switch mode manually.</li>
+<li>Drag the board to pan; use zoom buttons or pinch to zoom.</li>
+<li>Invisible hit area on the <b>CUBEO</b> title toggles coordinates.</li>
+</ul>
+<p class="ruleLegend"><b>Board move hints:</b></p>
+<ul class="hintLegend">
+<li><b style="color:var(--green)">green</b> = add</li>
+<li><b style="color:var(--accent)">blue</b> = move</li>
+<li><b style="color:var(--gold)">gold</b> = merge</li>
+<li><b style="color:var(--danger)">red outline</b> = pinned die</li>
+</ul>`
+  }
+};
+
+let lang="cs";
+const $=id=>document.getElementById(id);
+const board=$("board"), ctx=board.getContext("2d");
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+const KEY=(x,y)=>x+","+y;
+const parseKey=k=>k.split(",").map(Number);
+
+let state;
+function defaultZoom(){
+  return window.matchMedia("(max-width:760px)").matches ? Math.pow(1.12,3) : 1;
+}
+let camera={x:0,y:0,zoom:defaultZoom()};
+let selected=null;
+let actionMode="add";
+let coords=false;
+let playback=false;
+let playIndex=0;
+let playTimer=null;
+let log=[];
+let history=[];
+let gameId=0;
+let starter=1;
+const STARTER_KEY="cubeo-next-starter";
+let aiLevel=3;
+
+function freshState(firstPlayer=1){
+  return {
+    board:{
+      "0,0":{owner:1,value:1},
+      "1,0":{owner:2,value:1}
+    },
+    pool:{1:5,2:5},
+    player:firstPlayer,gameOver:false,winner:null,winPair:null,winSum:null,turn:1
+  };
+}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function boardEntries(s=state){if(!s||!s.board)return [];return Object.entries(s.board).map(([k,d])=>{let [x,y]=parseKey(k);return {x,y,...d,key:k}})}
+function occupied(s=state){return new Set(Object.keys(s.board))}
+function neighbors(x,y){return DIRS.map(([dx,dy])=>[x+dx,y+dy])}
+function sideAdjacent(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)===1}
+
+function connectedAfterRemove(s,key){
+  const keys=Object.keys(s.board).filter(k=>k!==key);
+  if(keys.length<=1)return true;
+  const seen=new Set([keys[0]]), q=[keys[0]];
+  while(q.length){
+    const k=q.shift(),[x,y]=parseKey(k);
+    for(const [nx,ny] of neighbors(x,y)){
+      const nk=KEY(nx,ny);
+      if(nk!==key && s.board[nk] && !seen.has(nk)){seen.add(nk);q.push(nk)}
+    }
+  }
+  return seen.size===keys.length;
+}
+function canSlideOut(s,key){
+  const [x,y]=parseKey(key);
+  const occ=occupied(s); occ.delete(key);
+  for(const [dx,dy] of DIRS){
+    let cx=x+dx,cy=y+dy;
+    let clear=true;
+    while(Math.abs(cx)<=60 && Math.abs(cy)<=60){
+      if(occ.has(KEY(cx,cy))){clear=false;break}
+      // Once outside a practical formation envelope, the ray is open.
+      if(Math.abs(cx)>12 || Math.abs(cy)>12)break;
+      cx+=dx;cy+=dy;
+    }
+    if(clear)return true;
+  }
+  return false;
+}
+function removable(s,key){return connectedAfterRemove(s,key)&&canSlideOut(s,key)}
+
+function canSlideIn(s,x,y){
+  const candidate=KEY(x,y);
+  if(s.board[candidate])return false;
+  // The added die must be able to slide straight into the formation from
+  // at least one side without crossing another die.
+  for(const [dx,dy] of DIRS){
+    let cx=x+dx,cy=y+dy,clear=true;
+    while(Math.abs(cx)<=60 && Math.abs(cy)<=60){
+      if(s.board[KEY(cx,cy)]){clear=false;break}
+      cx+=dx;cy+=dy;
+    }
+    if(clear)return true;
+  }
+  return true;
+}
+function legalAdd(s,player){
+  if(s.pool[player]<=0)return [];
+  const own=boardEntries(s).filter(d=>d.owner===player);
+  const opp=player===1?2:1;
+  const out=[];
+  const seen=new Set();
+  for(const d of own){
+    for(const [x,y] of neighbors(d.x,d.y)){
+      const k=KEY(x,y);
+      if(seen.has(k)||s.board[k])continue;
+      let touchesOwn=false,touchesOpp=false;
+      for(const [nx,ny] of neighbors(x,y)){
+        const q=s.board[KEY(nx,ny)];
+        if(q){if(q.owner===player)touchesOwn=true;else touchesOpp=true}
+      }
+      if(touchesOwn&&!touchesOpp&&canSlideIn(s,x,y)){out.push({type:"add",x,y});seen.add(k)}
+    }
+  }
+  return out;
+}
+
+function isSideAdjacentToFormation(s, x, y){
+  // Orthogonal (side) contact with any remaining die.
+  for(const [nx,ny] of neighbors(x,y)){
+    if(s.board[KEY(nx,ny)]) return true;
+  }
+  return false;
+}
+function isCornerOrSideAdjacentToFormation(s, x, y){
+  // Side OR corner contact — path may graze the formation at a corner
+  // when sliding around the outside (official diagrams show paths around corners).
+  for(let dx=-1; dx<=1; dx++) for(let dy=-1; dy<=1; dy++){
+    if(dx===0 && dy===0) continue;
+    if(s.board[KEY(x+dx,y+dy)]) return true;
+  }
+  return false;
+}
+function movementDestinations(s,key){
+  const die=s.board[key]; if(!die)return [];
+  if(!removable(s,key))return [];
+  const [sx,sy]=parseKey(key), val=die.value;
+  const stationary=clone(s); delete stationary.board[key];
+  // Path of exactly `val` orthogonal steps around the outside:
+  // - steps are orthogonal (no diagonal jumps)
+  // - intermediate cells may touch the formation by side OR corner
+  // - final cell must touch the formation by SIDE (so the die reconnects properly)
+  // - simple path (no cell revisited)
+  // - destination ≠ start; final formation stays orthogonally connected
+  const out=[];
+  const seenDest=new Set();
+  function dfs(x, y, remaining, visited){
+    if(remaining===0){
+      const k=KEY(x,y);
+      if(k===key || s.board[k] || seenDest.has(k)) return;
+      // Destination must side-adjacent to the remaining formation
+      if(!isSideAdjacentToFormation(stationary, x, y)) return;
+      const ns=clone(stationary); ns.board[k]={owner:die.owner,value:die.value};
+      if(isFormation(ns)){
+        seenDest.add(k);
+        out.push({type:"move",from:key,to:k,value:die.value});
+      }
+      return;
+    }
+    for(const [dx,dy] of DIRS){
+      const nx=x+dx, ny=y+dy, nk=KEY(nx,ny);
+      if(visited.has(nk)) continue;
+      if(stationary.board[nk]) continue;
+      // Intermediate: side or corner contact is enough (path around corners)
+      if(!isCornerOrSideAdjacentToFormation(stationary, nx, ny)) continue;
+      visited.add(nk);
+      dfs(nx, ny, remaining-1, visited);
+      visited.delete(nk);
+    }
+  }
+  const visited0=new Set([KEY(sx,sy)]);
+  dfs(sx, sy, val, visited0);
+  return out;
+}
+function isFormation(s){
+  const keys=Object.keys(s.board); if(keys.length<=1)return true;
+  const seen=new Set([keys[0]]),q=[keys[0]];
+  while(q.length){
+    const k=q.shift(),[x,y]=parseKey(k);
+    for(const [nx,ny] of neighbors(x,y)){
+      const nk=KEY(nx,ny);
+      if(s.board[nk]&&!seen.has(nk)){seen.add(nk);q.push(nk)}
+    }
+  }
+  return seen.size===keys.length;
+}
+function legalMoves(s,player){
+  const out=[...legalAdd(s,player)];
+  for(const [k,d] of Object.entries(s.board)){
+    if(d.owner!==player)continue;
+    out.push(...movementDestinations(s,k));
+  }
+  if(Object.keys(s.board).length>=3){
+    const own=boardEntries(s).filter(d=>d.owner===player);
+    for(const a of own){
+      for(const [x,y] of neighbors(a.x,a.y)){
+        const bk=KEY(x,y),b=s.board[bk];
+        if(!b||b.owner!==player||a.key>=bk)continue;
+        if(removable(s,a.key)||removable(s,bk)){
+          out.push({type:"merge",from:a.key,to:bk,sum:a.value+b.value});
+        }
+      }
+    }
+  }
+  return dedupeActions(out);
+}
+function dedupeActions(arr){
+  const seen=new Set(),out=[];
+  for(const a of arr){
+    const k=a.type==="add"?`a:${a.x},${a.y}`:a.type==="move"?`m:${a.from}:${a.to}`:`g:${a.from}:${a.to}`;
+    if(!seen.has(k)){seen.add(k);out.push(a)}
+  }
+  return out;
+}
+
+function applyAction(s,a){
+  const ns=clone(s);
+  if(a.type==="add"){
+    ns.board[KEY(a.x,a.y)]={owner:s.player,value:1};
+    ns.pool[s.player]--;
+  }else if(a.type==="move"){
+    const d=ns.board[a.from]; delete ns.board[a.from]; ns.board[a.to]=d;
+  }else if(a.type==="merge"){
+    const A=ns.board[a.from],B=ns.board[a.to];
+    const sum=A.value+B.value;
+    // Prefer removing "from" if it is removable; otherwise remove "to".
+    let remove=a.from,keep=a.to;
+    if(!removable(s,remove)&&removable(s,a.to)){remove=a.to;keep=a.from}
+    ns.board[keep].value=sum; delete ns.board[remove]; ns.pool[s.player]++;
+    // Win only when two dice are merged to a value greater than 6
+    if(sum>6){
+      ns.gameOver=true;
+      ns.winner=s.player;
+      ns.winPair=[keep]; // the resulting die cell
+      ns.winSum=sum;
+    }
+  }
+  if(!ns.gameOver){ ns.player=3-s.player; }
+  ns.turn++;
+  return ns;
+}
+
+function checkBlocked(s){
+  if(s.gameOver)return false;
+  const moves=legalMoves(s,s.player);
+  if(moves.length===0){
+    s.gameOver=true;s.winner=3-s.player;s.winPair=null;s.winSum=null;
+    const msg=winLogLine(s);
+    addLog(msg);
+    history.push({label:msg,state:clone(s)});
+    announceWin(s);
+    return true;
+  }
+  return false;
+}
+function dieSym(owner, value, spaced){
+  // White / black die face; value in [brackets] when provided
+  const face = owner===1 ? "⬜" : "⬛";
+  if(value==null) return face;
+  return spaced ? `${face} [${value}]` : `${face}[${value}]`;
+}
+function fmtCell(key){
+  if(typeof key==="string" && key.includes(",")){
+    const [x,y]=key.split(",");
+    return `(${x},${y})`;
+  }
+  return `(${key})`;
+}
+/** Enrich action with values/owner/keep before applyAction mutates the board. */
+function enrichAction(s,a,player){
+  a.owner=player;
+  if(a.type==="add"){
+    a.value=1;
+  }else if(a.type==="move"){
+    a.value = s.board[a.from] ? s.board[a.from].value : a.value;
+  }else if(a.type==="merge"){
+    const A=s.board[a.from], B=s.board[a.to];
+    a.fromVal = A ? A.value : 0;
+    a.toVal = B ? B.value : 0;
+    a.sum = a.fromVal + a.toVal;
+    let remove=a.from, keep=a.to;
+    if(!removable(s,remove)&&removable(s,a.to)){ remove=a.to; keep=a.from; }
+    a.keep=keep;
+    a.remove=remove;
+  }
+  return a;
+}
+function actionLabel(a,player){
+  const owner = a.owner!=null ? a.owner : player;
+  if(a.type==="add"){
+    return `+ ${dieSym(owner)} ${fmtCell(KEY(a.x,a.y))}`;
+  }
+  if(a.type==="move"){
+    const v = a.value!=null ? a.value : 1;
+    return `➤ ${dieSym(owner,v,true)} ${fmtCell(a.from)} - ${fmtCell(a.to)}`;
+  }
+  // merge: 🔗 ⬜ [2] (x,y) + [1] (x,y) = [3] (keep)
+  const fv=a.fromVal!=null?a.fromVal:"?";
+  const tv=a.toVal!=null?a.toVal:"?";
+  const sum=a.sum!=null?a.sum:(fv+tv);
+  const keep=a.keep||a.to;
+  return `🔗 ${dieSym(owner,fv,true)} ${fmtCell(a.from)} + [${tv}] ${fmtCell(a.to)} = [${sum}] ${fmtCell(keep)}`;
+}
+function record(a, beforePlayer){
+  log.push(actionLabel(a,beforePlayer));
+  history.push({label:actionLabel(a,beforePlayer),state:clone(state)});
+}
+function addLog(t){log.push(t)}
+
+function execute(a){
+  if(playback||state.gameOver||state.player!==1)return;
+  const legal=legalMoves(state,1).some(x=>sameAction(x,a));
+  if(!legal){toast(I18N[lang].illegal);return}
+  const p=state.player;
+  enrichAction(state,a,p);
+  state=applyAction(state,a);
+  record(a,p);
+  if(state.gameOver&&state.winner===p){
+    const line=winLogLine(state);
+    addLog(line);
+    history.push({label:line,state:clone(state)});
+    renderAll();
+    announceWin(state);
+    return;
+  }
+  renderAll();
+  checkBlocked(state);
+  if(state.gameOver){renderAll();return}
+  setTimeout(aiTurn,250);
+}
+function sameAction(a,b){
+  if(a.type!==b.type)return false;
+  if(a.type==="add")return a.x===b.x&&a.y===b.y;
+  return a.from===b.from&&a.to===b.to || a.from===b.to&&a.to===b.from;
+}
+
+/** Best immediate merge sum available to player (0 if none). */
+function bestMergeSum(s, player){
+  let best=0;
+  const own=boardEntries(s).filter(d=>d.owner===player);
+  if(Object.keys(s.board).length<3) return 0;
+  for(const a of own){
+    for(const [x,y] of neighbors(a.x,a.y)){
+      const bk=KEY(x,y), b=s.board[bk];
+      if(!b||b.owner!==player||a.key>=bk) continue;
+      if(removable(s,a.key)||removable(s,bk)){
+        const sum=a.value+b.value;
+        if(sum>best) best=sum;
+      }
+    }
+  }
+  return best;
+}
+function evaluate(s,root){
+  if(s.gameOver) return s.winner===root ? 100000 : -100000;
+  const op=3-root;
+  const myDice=boardEntries(s).filter(d=>d.owner===root);
+  const opDice=boardEntries(s).filter(d=>d.owner===op);
+  const myValue=myDice.reduce((n,d)=>n+d.value,0);
+  const opValue=opDice.reduce((n,d)=>n+d.value,0);
+  const myMax=myDice.reduce((n,d)=>Math.max(n,d.value),0);
+  const opMax=opDice.reduce((n,d)=>Math.max(n,d.value),0);
+  const myMerge=bestMergeSum(s,root);
+  const opMerge=bestMergeSum(s,op);
+
+  // Immediate tactical threats
+  if(myMerge>6) return 90000 + myMerge;          // can win now
+  if(opMerge>6) return -85000 - opMerge;         // opponent wins next if we pass
+
+  let score=0;
+  // Race to high single die (path to merge > 6)
+  score += myMax * 55;
+  score -= opMax * 70;          // opponent high die is more urgent to stop/match
+  score += myValue * 6;
+  score -= opValue * 8;
+  // Prefer strong available merges (4,5,6)
+  score += myMerge * 35;
+  score -= opMerge * 50;
+  // Mobility & pool
+  const myMoves=legalMoves(s,root).length;
+  const opMoves=legalMoves(s,op).length;
+  score += (myMoves - opMoves) * 12;
+  score += (s.pool[root] - s.pool[op]) * 4;
+  // Slight pressure when opponent is one merge away from danger (max>=4)
+  if(opMax>=4) score -= opMax * 25;
+  if(myMax>=4) score += myMax * 18;
+  if(opMax>=5) score -= 80;
+  if(myMax>=5) score += 60;
+  if(opMax>=6) score -= 200;
+  if(myMax>=6) score += 150;
+  return score;
+}
+function orderActions(s,actions,root){
+  const op=3-root;
+  return actions.map(a=>{
+    let score=0;
+    // Absolute priority: winning merge
+    if(a.type==="merge" && a.sum>6) score += 100000;
+    else if(a.type==="merge") score += a.sum * 80 + (a.sum>=5 ? 40 : 0);
+    // Moves that free/position high dice
+    if(a.type==="move") score += a.value * 6;
+    if(a.type==="add") score += 8;
+    const ns=applyAction(s,a);
+    if(ns.gameOver && ns.winner===root) score += 100000;
+    // After our move, does opponent still threaten a winning merge?
+    if(!ns.gameOver){
+      const threat=bestMergeSum(ns, op);
+      if(threat>6) score -= 50000; // leaving opponent a win is disastrous
+      else score -= threat * 20;
+      score += bestMergeSum(ns, root) * 25;
+      const myMax=boardEntries(ns).filter(d=>d.owner===root).reduce((n,d)=>Math.max(n,d.value),0);
+      const opMax=boardEntries(ns).filter(d=>d.owner===op).reduce((n,d)=>Math.max(n,d.value),0);
+      score += myMax * 15 - opMax * 22;
+    }
+    return {a,score};
+  }).sort((x,y)=>y.score-x.score).map(x=>x.a);
+}
+function minimax(s,depth,alpha,beta,maximizing,root){
+  if(depth===0||s.gameOver)return {score:evaluate(s,root)};
+  const player=maximizing?root:3-root;
+  let moves=legalMoves(s,player);
+  if(!moves.length)return {score:maximizing?-90000:90000};
+  // Level 3 looks at more candidate moves; always keep winning/blocking first
+  const cap = depth>=3 ? 48 : depth>=2 ? 36 : 24;
+  moves=orderActions(s,moves,root).slice(0,cap);
+  let best=null;
+  if(maximizing){
+    let value=-Infinity;
+    for(const a of moves){
+      const ns=applyAction(s,a);
+      const r=minimax(ns,depth-1,alpha,beta,false,root).score;
+      if(r>value){value=r;best=a}
+      alpha=Math.max(alpha,value);if(beta<=alpha)break;
+    }
+    return {score:value,action:best};
+  }else{
+    let value=Infinity;
+    for(const a of moves){
+      const ns=applyAction(s,a);
+      const r=minimax(ns,depth-1,alpha,beta,true,root).score;
+      if(r<value){value=r;best=a}
+      beta=Math.min(beta,value);if(beta<=alpha)break;
+    }
+    return {score:value,action:best};
+  }
+}
+async function aiTurn(){
+  if(state.gameOver||state.player!==2||playback)return;
+  try{
+    toast(I18N[lang].aiThinking);
+    await new Promise(r=>setTimeout(r,80));
+    const depth=Math.max(1, Math.min(3, Number(aiLevel)||3));
+    const result=minimax(clone(state),depth,-Infinity,Infinity,true,2);
+    const a=result && result.action;
+    if(!a){
+      state.gameOver=true;state.winner=1;state.winPair=null;state.winSum=null;
+      const msg=winLogLine(state);
+      addLog(msg);history.push({label:msg,state:clone(state)});renderAll();announceWin(state);return;
+    }
+    const p=state.player;
+    enrichAction(state,a,p);
+    state=applyAction(state,a);
+    log.push(actionLabel(a,p));
+    history.push({label:actionLabel(a,p),state:clone(state)});
+    if(state.gameOver){
+      const line=winLogLine(state);
+      addLog(line);
+      history.push({label:line,state:clone(state)});
+      renderAll();
+      announceWin(state);
+      return;
+    }
+    checkBlocked(state);
+    renderAll();
+  }catch(err){
+    console.error("AI error", err);
+    toast(lang==="cs"?"Chyba AI — zkuste další tah.":"AI error — try another move.");
+  }
+}
+
+function newGameWithAlternatingStarter(showToast=true){
+  const first=Number(localStorage.getItem(STARTER_KEY)||1);
+  starter=first;
+  localStorage.setItem(STARTER_KEY,String(3-first));
+  state=freshState(first); selected=null; actionMode="add"; log=[]; gameId++;
+  const starterName=first===1?I18N[lang].whiteTurn:I18N[lang].blackTurn;
+  log.push(lang==="cs"?`— Nová hra · ${starterName} začíná —`:`— New game · ${starterName} starts —`);
+  history=[{label:"START",state:clone(state)}];
+  renderAll();
+  if(showToast)toast(lang==="cs"?`${starterName} začíná.`:`${starterName} starts.`);
+  if(first===2)setTimeout(aiTurn,350);
+}
+function resetGame(){newGameWithAlternatingStarter(true)}
+
+function serialize(){return JSON.stringify({state,log,history,lang,camera,coords,aiLevel})}
+function saveGame(){localStorage.setItem("cubeo-save",serialize());toast(I18N[lang].saved)}
+function loadGame(){
+  const raw=localStorage.getItem("cubeo-save"); if(!raw){toast(I18N[lang].noSave);return}
+  try{
+    const o=JSON.parse(raw);state=o.state;log=o.log||[];history=o.history||[{label:"START",state:clone(state)}];
+    lang=o.lang||lang;camera=o.camera||camera;coords=!!o.coords;aiLevel=Math.max(1,Math.min(3,Number(o.aiLevel)||3));
+    applyLang();selected=null;renderAll();toast(I18N[lang].loaded);if(!state.gameOver&&state.player===2)setTimeout(aiTurn,300);
+  }catch(e){toast("Save is invalid.")}
+}
+
+function diceDots(value,white=true){
+  const cls=["a","b","c","d","e","f"].slice(0,value);
+  return cls.map(c=>`<i class="dot ${c}"></i>`).join("");
+}
+function poolHTML(n,black=false){
+  let s="";for(let i=0;i<n;i++)s+=`<span class="miniDie ${black?"black":""} d1"><i class="dot a"></i></span>`;return s;
+}
+function resize(){
+  const r=board.getBoundingClientRect(),d=window.devicePixelRatio||1;
+  board.width=Math.max(1,Math.floor(r.width*d));board.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);draw();
+}
+function cellSize(){return Math.min(64,Math.max(34,Math.min(board.clientWidth,board.clientHeight)/11))*camera.zoom}
+function worldToScreen(x,y){
+  const cs=cellSize();
+  return {x:board.clientWidth/2+camera.x+x*cs,y:board.clientHeight/2+camera.y-y*cs}
+}
+function screenToWorld(px,py){
+  const cs=cellSize();
+  // worldToScreen() flips the y axis (screenY = oy - y*cs) so that
+  // world +y renders upward on screen. This inverse must flip it back
+  // the same way, otherwise a click on the cell rendered at world (x,1)
+  // resolves to (x,-1) — exactly mirrored across the x axis.
+  const ox=board.clientWidth/2+camera.x;
+  const oy=board.clientHeight/2+camera.y;
+  return {x:Math.floor((px-ox)/cs),y:-Math.floor((py-oy)/cs)};
+}
+function roundRect(c,x,y,w,h,r){
+  c.beginPath();c.roundRect(x,y,w,h,r);c.fill();c.stroke();
+}
+function drawWinTrophy(x,y,size,owner=1){
+  const pad=2;
+  ctx.save();
+  let grad=ctx.createLinearGradient(x,y,x+size,y+size);
+  // Same face colour as the winning player's die
+  if(owner===1){
+    grad.addColorStop(0,"#ffffff");grad.addColorStop(.45,"#e6e7e8");grad.addColorStop(1,"#9b9da1");
+    ctx.fillStyle=grad;ctx.strokeStyle="#6c717b";
+  }else{
+    grad.addColorStop(0,"#686c75");grad.addColorStop(.4,"#2c3038");grad.addColorStop(1,"#090b0f");
+    ctx.fillStyle=grad;ctx.strokeStyle="#858b96";
+  }
+  ctx.lineWidth=2;
+  roundRect(ctx,x+pad,y+pad,size-2*pad,size-2*pad,Math.max(4,size*.13));
+  ctx.font=`${Math.floor(size*0.55)}px system-ui,sans-serif`;
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("🏆", x+size/2, y+size/2+1);
+  ctx.restore();
+}
+function drawDie(x,y,size,owner,value,selectedDie=false,hint=false,winning=false,pinned=false){
+  const pad=2;
+  ctx.save();
+  let grad=ctx.createLinearGradient(x,y,x+size,y+size);
+  // Winning die keeps the player's colour; only the value (and blink trophy) mark the win
+  if(owner===1){
+    grad.addColorStop(0,"#ffffff");grad.addColorStop(.45,"#e6e7e8");grad.addColorStop(1,"#9b9da1");
+    ctx.fillStyle=grad;ctx.strokeStyle="#6c717b";ctx.lineWidth=winning?2:1.3;
+  }else{
+    grad.addColorStop(0,"#686c75");grad.addColorStop(.4,"#2c3038");grad.addColorStop(1,"#090b0f");
+    ctx.fillStyle=grad;ctx.strokeStyle="#858b96";ctx.lineWidth=winning?2:1.3;
+  }
+  roundRect(ctx,x+pad,y+pad,size-2*pad,size-2*pad,Math.max(4,size*.13));
+  // inset face
+  ctx.strokeStyle=owner===1?"#c6c9cd":"#151820";ctx.lineWidth=1;
+  ctx.strokeRect(x+size*.12,y+size*.12,size*.76,size*.76);
+  const pip=owner===1?"#171a20":"#f3f3ef";
+  if(value>6){
+    // Show numeric value for 7+ (winning merge)
+    ctx.fillStyle=pip;
+    ctx.font=`bold ${Math.floor(size*0.42)}px system-ui,sans-serif`;
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(value), x+size/2, y+size/2+1);
+  }else{
+    const p=size*.105, pos={
+      a:[.28,.28],b:[.72,.28],c:[.5,.5],d:[.28,.72],e:[.72,.72],f:[.28,.5],g:[.72,.5]
+    };
+    let list=[];
+    if(value===1)list=["c"]; if(value===2)list=["a","e"]; if(value===3)list=["a","c","e"];
+    if(value===4)list=["a","b","d","e"]; if(value===5)list=["a","b","c","d","e"];
+    if(value===6)list=["a","b","d","e","f","g"];
+    ctx.fillStyle=pip;
+    for(const k of list){ctx.beginPath();ctx.arc(x+size*pos[k][0],y+size*pos[k][1],p,0,Math.PI*2);ctx.fill()}
+  }
+  if(hint){ctx.strokeStyle="rgba(113,199,255,.85)";ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,size+4,size+4)}
+  if(selectedDie && !winning){ctx.strokeStyle="#f2c96d";ctx.lineWidth=4;ctx.strokeRect(x-3,y-3,size+6,size+6)}
+  // Thin red outline for pinned dice (cannot move / be removed in merge)
+  if(pinned && !winning){
+    ctx.strokeStyle="rgba(239,116,116,.95)";
+    ctx.lineWidth=1.75;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.roundRect(x+1,y+1,size-2,size-2,Math.max(4,size*.13));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function draw(){
+  if(!ctx||!state)return;
+  const W=board.clientWidth,H=board.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#0c1119";ctx.fillRect(0,0,W,H);
+  const cs=cellSize(), half=Math.ceil(Math.max(W,H)/cs)+2;
+  const center=screenToWorld(W/2,H/2);
+  ctx.lineWidth=1;ctx.strokeStyle="rgba(93,108,130,.16)";
+  for(let x=center.x-half;x<=center.x+half;x++){
+    const p=worldToScreen(x,0).x;ctx.beginPath();ctx.moveTo(p,0);ctx.lineTo(p,H);ctx.stroke();
+  }
+  for(let y=center.y-half;y<=center.y+half;y++){
+    const p=worldToScreen(0,y).y;ctx.beginPath();ctx.moveTo(0,p);ctx.lineTo(W,p);ctx.stroke();
+  }
+  // axis emphasis
+  ctx.strokeStyle="rgba(113,199,255,.12)";
+  const ox=worldToScreen(0,0).x,oy=worldToScreen(0,0).y;
+  ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,H);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(W,oy);ctx.stroke();
+
+  const hints=getHints();
+  for(const h of hints){
+    const p=worldToScreen(h.x,h.y),s=cs;
+    ctx.save();ctx.fillStyle=h.kind==="add"?"rgba(99,213,154,.22)":h.kind==="merge"?"rgba(242,201,109,.24)":"rgba(113,199,255,.22)";
+    ctx.strokeStyle=h.kind==="add"?"rgba(99,213,154,.7)":h.kind==="merge"?"rgba(242,201,109,.75)":"rgba(113,199,255,.75)";
+    ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(p.x+3,p.y+3,s-6,s-6,8);ctx.fill();ctx.stroke();ctx.restore();
+  }
+  for(const d of boardEntries()){
+    const p=worldToScreen(d.x,d.y);
+    const k=d.key;
+    const isWin=!!(state.winPair && state.winPair.includes(k));
+    const isPinned=!isWin && !removable(state,k);
+    if(isWin){
+      // Blink: alternate player-coloured die with value ↔ trophy
+      const showTrophy = Math.floor(performance.now()/550) % 2 === 1;
+      if(showTrophy){
+        drawWinTrophy(p.x, p.y, cs, d.owner);
+      }else{
+        drawDie(p.x,p.y,cs,d.owner,d.value,false,false,true,false);
+      }
+    }else{
+      drawDie(p.x,p.y,cs,d.owner,d.value,selected===k,false,false,isPinned);
+    }
+    if(coords){
+      // slight offset down+right from the corner; black bold on white dice
+      const cx=p.x+cs*0.14, cy=p.y+cs*0.28;
+      if(d.owner===1){
+        ctx.fillStyle="#12151c";
+        ctx.font="bold 10px ui-monospace,monospace";
+      }else{
+        ctx.fillStyle="rgba(225,232,241,.85)";
+        ctx.font="10px ui-monospace,monospace";
+      }
+      ctx.fillText(`${d.x},${d.y}`,cx,cy);
+    }
+  }
+  const op=worldToScreen(0,0);
+  if(coords){
+    ctx.fillStyle="rgba(190,202,219,.62)";ctx.font="9px ui-monospace,monospace";
+    const range=Math.ceil(Math.max(W,H)/cs)+2;
+    const cc=screenToWorld(W/2,H/2);
+    for(let x=cc.x-range;x<=cc.x+range;x++)for(let y=cc.y-range;y<=cc.y+range;y++){
+      const p=worldToScreen(x,y);
+      if(p.x+cs<0||p.x>W||p.y+cs<0||p.y>H)continue;
+      ctx.fillText(`${x},${y}`,p.x+4,p.y+11);
+    }
+  }
+}
+function getHints(){
+  if(!state||playback||state.gameOver||state.player!==1)return [];
+  const all=legalMoves(state,1),out=[];
+  if(actionMode==="add")for(const a of all)if(a.type==="add")out.push({x:a.x,y:a.y,kind:"add"});
+  if(actionMode==="move"){
+    if(selected){
+      for(const a of all)if(a.type==="move"&&a.from===selected) {const [x,y]=parseKey(a.to);out.push({x,y,kind:"move"})}
+    }else{
+      for(const a of all)if(a.type==="move"){const [x,y]=parseKey(a.from);out.push({x,y,kind:"move"})}
+    }
+  }
+  if(actionMode==="merge"){
+    if(selected){
+      for(const a of all)if(a.type==="merge"&&(a.from===selected||a.to===selected)){
+        const k=a.from===selected?a.to:a.from,[x,y]=parseKey(k);out.push({x,y,kind:"merge"});
+      }
+    }else{
+      for(const a of all)if(a.type==="merge"){const [x,y]=parseKey(a.from);out.push({x,y,kind:"merge"});const [x2,y2]=parseKey(a.to);out.push({x:x2,y:y2,kind:"merge"})}
+    }
+  }
+  const m=new Map();out.forEach(x=>m.set(KEY(x.x,x.y),x));return [...m.values()];
+}
+function renderSide(){
+  if(!state)return;
+  const w=state.pool[1],b=state.pool[2];
+  $("whitePoolTop").textContent=w;$("blackPoolTop").textContent=b;
+  $("whiteCounter").classList.toggle("active",state.player===1&&!state.gameOver);
+  $("blackCounter").classList.toggle("active",state.player===2&&!state.gameOver);
+  document.querySelectorAll(".actionBtn").forEach(btn=>{
+    const a=btn.dataset.action;
+    btn.classList.toggle("active",a===actionMode);
+    // Always allow switching mode on human turn; only hard-disable Add when pool is empty.
+    // Previously buttons stayed disabled whenever no legal of that type existed,
+    // which made Move/Merge appear broken when all dice were pinned or fewer than 3 dice.
+    btn.disabled = playback || state.gameOver || state.player !== 1 || (a === "add" && state.pool[1] <= 0);
+  });
+}
+function renderLog(){
+  if(!$("logList"))return;
+  $("logList").innerHTML=(log||[]).map((x,i)=>({n:i+1,x})).reverse()
+    .map(it=>{
+      let num = String(it.n).padStart(2,"0") + ".";
+      let m = it.x.match(/^([+➤🔗🏆])\s+(⬜|⬛)\s*(\[[^\]]+\])?\s*(.*)$/);
+      let inner = "";
+      if(m){
+        inner = `<span class="l-num">${num}</span><span class="l-ic">${m[1]}</span><span class="l-die">${m[2]}${m[3]?" "+m[3]:""}</span><span class="l-rest">${escapeHtml(m[4])}</span>`;
+      } else if(it.x.startsWith("—")) {
+        inner = `<span class="l-sys">${escapeHtml(it.x)}</span>`;
+      } else {
+        inner = `<span class="l-num">${num}</span><span class="l-rest" style="grid-column: 2 / -1">${escapeHtml(it.x)}</span>`;
+      }
+      return `<div class="logItem ${it.x.includes("🏆")?"win":""}">${inner}</div>`;
+    }).join("");
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function renderAll(){renderSide();renderLog();draw();updateCoordBadge()}
+function updateCoordBadge(){ $("coordBadge").classList.toggle("show",coords); $("coordBadge").textContent=I18N[lang].coords }
+
+function toast(text, opts={}){
+  const el=document.createElement("div");
+  el.className="toast"+(opts.win?" winToast":"");
+  el.textContent=text;
+  $("toastBox").appendChild(el);
+  setTimeout(()=>el.remove(), opts.win ? 5200 : 2200);
+}
+function announceWin(s){
+  if(!s.gameOver||!s.winner)return;
+  toast(winLogLine(s), {win:true});
+}
+function winLogLine(s){
+  const w = s.winner;
+  const l = 3-w;
+  if(s.winPair && s.winPair.length){
+    const k = s.winPair[0];
+    const val = s.winSum || (s.board[k] && s.board[k].value) || "?";
+    return `🏆 ${dieSym(w,val,true)} ${fmtCell(k)}`;
+  }
+  // Block win: trophy + plain dice symbols (no [1]) + "no legal move"
+  const msg = lang==="cs" ? "nemá platný tah" : "has no legal move";
+  return `🏆 ${dieSym(w)} - ${dieSym(l)} ${msg}`;
+}
+function openModal(id){$(id).classList.add("open")}
+function closeModal(id){$(id).classList.remove("open")}
+
+function updateAISignal(){
+  const el=$("aiSignal");
+  if(!el)return;
+  el.className="signalIcon level"+aiLevel;
+  el.parentElement.title=(lang==="cs"?"Úroveň AI ":"AI level ")+aiLevel;
+  el.parentElement.setAttribute("aria-label",(lang==="cs"?"Úroveň AI ":"AI level ")+aiLevel);
+}
+function applyLang(){
+  document.documentElement.lang=lang;
+  const labels=document.querySelectorAll(".playerCounter span:nth-child(2)");
+  if(labels[0])labels[0].textContent=lang==="cs"?"BÍLÝ":"WHITE";
+  if(labels[1])labels[1].textContent=lang==="cs"?"ČERNÝ":"BLACK";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.dataset.i18n;if(I18N[lang][k])el.textContent=I18N[lang][k]});
+  $("langBtn").textContent=lang==="cs"?"🇬🇧":"🇨🇿";
+  $("rulesText").innerHTML=I18N[lang].helpHtml;
+  updateAISignal();
+  $("aiInfo").textContent=I18N[lang]["ai"+aiLevel];
+  if(typeof updateActionTitles==="function") updateActionTitles();
+  renderAll();
+}
+function toggleLang(){lang=lang==="cs"?"en":"cs";applyLang();}
+
+/* Gesture / command layer
+   - 1× click on own die     → add mode (hint fields to place a new die)
+   - 2× click on own die     → move mode for that die (hint destinations)
+   - long-press on own die   → merge mode for that die (then click partner)
+   Action buttons still switch modes manually.
+*/
+let pendingSingle=null; // {key, timer}
+let longPress={timer:null, key:null, fired:false};
+const DBL_MS=300;
+const LONG_MS=480;
+function clearPendingSingle(){
+  if(pendingSingle){clearTimeout(pendingSingle.timer);pendingSingle=null}
+}
+function clearLongPress(){
+  if(longPress.timer){clearTimeout(longPress.timer);longPress.timer=null}
+  longPress.key=null; longPress.fired=false;
+}
+function setActionMode(mode, sel=null){
+  actionMode=mode;
+  selected=sel;
+  clearPendingSingle();
+  renderSide();
+  draw();
+}
+function tryStartLongPress(clientX, clientY){
+  clearLongPress();
+  if(playback||state.gameOver||state.player!==1)return;
+  const r=board.getBoundingClientRect();
+  const w=screenToWorld(clientX-r.left, clientY-r.top);
+  const k=KEY(w.x,w.y);
+  const die=state.board[k];
+  if(!die || die.owner!==1) return;
+  longPress.key=k;
+  longPress.fired=false;
+  longPress.timer=setTimeout(()=>{
+    longPress.timer=null;
+    longPress.fired=true;
+    // Long-press → merge mode
+    clearPendingSingle();
+    const all=legalMoves(state,1);
+    const canMerge=all.some(x=>x.type==="merge"&&(x.from===k||x.to===k));
+    if(!canMerge){
+      toast(lang==="cs"
+        ?"Tuto kostku nelze použít ke spojení (soused + aspoň jedna volná, ≥3 kostky na desce)."
+        :"This die cannot be used in a merge (need adjacent free partner, ≥3 dice on board).");
+      setActionMode("add",null);
+      return;
+    }
+    setActionMode("merge",k);
+    toast(lang==="cs"?"Spojení: klikněte na sousední vlastní kostku.":"Merge: click an adjacent friendly die.");
+  }, LONG_MS);
+}
+function handleBoardTap(e){
+  if(playback||state.gameOver||state.player!==1)return;
+  // If long-press already fired, ignore the following click
+  if(longPress.fired){ clearLongPress(); return; }
+  clearLongPress();
+  const r=board.getBoundingClientRect(),w=screenToWorld(e.clientX-r.left,e.clientY-r.top),k=KEY(w.x,w.y);
+  const all=legalMoves(state,1);
+  const die=state.board[k];
+
+  // --- Click on own die ---
+  if(die && die.owner===1){
+    // Merge mode: second die
+    if(selected && actionMode==="merge"){
+      clearPendingSingle();
+      if(selected===k){ return; }
+      const merge=all.find(x=>x.type==="merge"&&((x.from===selected&&x.to===k)||(x.to===selected&&x.from===k)));
+      if(merge){execute(merge);selected=null;renderSide();return}
+      toast(lang==="cs"
+        ? "Tyto kostky nelze spojit (musí sousedit, aspoň jedna volná)."
+        : "These dice cannot be merged (must be adjacent, at least one free).");
+      return;
+    }
+    // Move mode with selection: second die used to mean merge only via long-press now
+    if(selected && actionMode==="move" && selected!==k){
+      clearPendingSingle();
+      // Allow merge as convenience if legal, else toast
+      const merge=all.find(x=>x.type==="merge"&&((x.from===selected&&x.to===k)||(x.to===selected&&x.from===k)));
+      if(merge){execute(merge);selected=null;renderSide();return}
+      toast(lang==="cs"?"Pro spojení použijte dlouhý stisk na kostku.":"Use a long-press on a die to merge.");
+      return;
+    }
+    // Double-click same die → move mode
+    if(pendingSingle && pendingSingle.key===k){
+      clearPendingSingle();
+      const canMove=all.some(x=>x.type==="move"&&x.from===k);
+      if(!canMove){
+        toast(lang==="cs"?"Tuto kostku nelze přesunout (je připnutá nebo nemá platnou cestu).":"This die cannot move (pinned or no legal path).");
+        setActionMode("add",null);
+        return;
+      }
+      setActionMode("move",k);
+      return;
+    }
+    // First click: wait for possible double, then fall back to add mode
+    clearPendingSingle();
+    pendingSingle={
+      key:k,
+      timer:setTimeout(()=>{
+        pendingSingle=null;
+        setActionMode("add",null);
+      }, DBL_MS)
+    };
+    return;
+  }
+
+  // --- Empty / other cell: execute current mode ---
+  clearPendingSingle();
+  if(actionMode==="add"){
+    const a=all.find(x=>x.type==="add"&&x.x===w.x&&x.y===w.y);
+    if(a){execute(a);return}
+    return;
+  }
+  if(actionMode==="move"){
+    if(selected){
+      const a=all.find(x=>x.type==="move"&&x.from===selected&&x.to===k);
+      if(a){execute(a);selected=null;renderSide();return}
+      toast(I18N[lang].illegal);
+    }else{
+      toast(lang==="cs"?"Nejdřív 2× klikněte na kostku k přesunu.":"Double-click a die to move first.");
+    }
+    return;
+  }
+  if(actionMode==="merge"){
+    if(selected){
+      toast(lang==="cs"?"Klikněte na sousední vlastní kostku ke spojení.":"Click an adjacent friendly die to merge.");
+    }else{
+      toast(lang==="cs"?"Dlouhý stisk na kostku zahájí spojení.":"Long-press a die to start a merge.");
+    }
+  }
+}
+
+/* =========================
+   Board pointer / touch handling
+   Single finger/mouse = pan + click.
+   Two fingers = pinch zoom, with the zoom anchor kept under the fingers.
+   ========================= */
+const pointers=new Map();
+let gesture={
+  mode:"none", moved:false, x:0,y:0,sx:0,sy:0,
+  pinchStartDistance:0,pinchStartZoom:1,pinchWorldX:0,pinchWorldY:0
+};
+function pointerPoint(e){
+  const r=board.getBoundingClientRect();
+  return {x:e.clientX-r.left,y:e.clientY-r.top};
+}
+function pointerDistance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function pointerMidpoint(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
+function beginPinch(){
+  const pts=[...pointers.values()];
+  if(pts.length<2)return;
+  const a=pts[0],b=pts[1],mid=pointerMidpoint(a,b);
+  const w=screenToWorld(mid.x,mid.y),cs=cellSize();
+  // Keep the exact world point under the initial finger midpoint fixed.
+  gesture.mode="pinch";
+  gesture.moved=true;
+  gesture.pinchStartDistance=Math.max(1,pointerDistance(a,b));
+  gesture.pinchStartZoom=camera.zoom;
+  gesture.pinchWorldX=w.x+(mid.x-(board.clientWidth/2+camera.x))/cs;
+  gesture.pinchWorldY=w.y+(mid.y-(board.clientHeight/2+camera.y))/cs;
+}
+function updatePinch(){
+  const pts=[...pointers.values()];
+  if(pts.length<2)return;
+  const a=pts[0],b=pts[1],mid=pointerMidpoint(a,b);
+  const dist=pointerDistance(a,b);
+  const z=Math.max(.65,Math.min(1.8,gesture.pinchStartZoom*(dist/gesture.pinchStartDistance)));
+  camera.zoom=z;
+  const cs=cellSize();
+  camera.x=mid.x-board.clientWidth/2-gesture.pinchWorldX*cs;
+  camera.y=mid.y-board.clientHeight/2-gesture.pinchWorldY*cs;
+  draw();
+}
+board.addEventListener("pointerdown",e=>{
+  if(playback)return;
+  const p=pointerPoint(e);
+  pointers.set(e.pointerId,p);
+  try{board.setPointerCapture(e.pointerId)}catch(_){ }
+  if(pointers.size>=2){clearLongPress();beginPinch();board.classList.remove("dragging");return}
+  gesture={mode:"pan",moved:false,x:p.x,y:p.y,sx:p.x,sy:p.y,pinchStartDistance:0,pinchStartZoom:camera.zoom,pinchWorldX:0,pinchWorldY:0};
+  board.classList.add("dragging");
+  tryStartLongPress(e.clientX, e.clientY);
+});
+board.addEventListener("pointermove",e=>{
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,pointerPoint(e));
+  if(pointers.size>=2){
+    if(gesture.mode!=="pinch")beginPinch();
+    updatePinch();
+    return;
+  }
+  if(gesture.mode!=="pan")return;
+  const p=pointers.get(e.pointerId);
+  const dx=p.x-gesture.x,dy=p.y-gesture.y;
+  if(Math.abs(p.x-gesture.sx)+Math.abs(p.y-gesture.sy)>6){
+    gesture.moved=true;
+    clearLongPress(); // cancel long-press when panning
+  }
+  camera.x+=dx;camera.y+=dy;gesture.x=p.x;gesture.y=p.y;draw();
+});
+function finishPointer(e,cancel=false){
+  const p=pointers.get(e.pointerId);
+  const wasSingle=pointers.size===1 && gesture.mode==="pan";
+  const longFired=longPress.fired;
+  const shouldClick=wasSingle&&!cancel&&!gesture.moved&&!longFired;
+  pointers.delete(e.pointerId);
+  if(pointers.size===0){
+    board.classList.remove("dragging");
+    if(shouldClick)handleBoardTap(e);
+    else clearLongPress();
+    if(longFired) clearLongPress();
+    gesture.mode="none";
+  }else if(pointers.size===1){
+    clearLongPress();
+    // Do not generate a click after a pinch. Continue with a fresh pan
+    // reference if the user keeps one finger on the board.
+    const q=[...pointers.values()][0];
+    gesture.mode="pan";gesture.moved=true;gesture.x=q.x;gesture.y=q.y;gesture.sx=q.x;gesture.sy=q.y;
+  }
+}
+board.addEventListener("pointerup",e=>finishPointer(e,false));
+board.addEventListener("pointercancel",e=>finishPointer(e,true));
+board.addEventListener("pointerleave",()=>{});
+
+function stopPlayback(){if(playTimer){clearInterval(playTimer);playTimer=null}playback=false;$("pPlay").textContent="▶"}
+function showPlayback(){
+  if(!history.length){toast(lang==="cs"?"Žádné tahy k přehrání.":"No moves to replay.");return}
+  playback=true;playIndex=0;
+  $("actionDock").style.display="none";
+  $("playDock").classList.add("open");
+  $("playBtn").classList.add("active");
+  updatePlayback();
+  draw();
+  toast(lang==="cs"?"Přehrávač aktivní — deska je zablokována.":"Playback active — board locked.");
+}
+function updatePlayback(){
+  const max=Math.max(0,history.length-1);playIndex=Math.max(0,Math.min(playIndex,max));
+  $("pCounter").textContent=`${playIndex} / ${max}`;
+  const snap=history[playIndex];if(snap){state=clone(snap.state);renderSide();renderLog();draw()}
+}
+function closePlayback(){
+  stopPlayback();
+  if(history.length) state=clone(history[history.length-1].state);
+  selected=null;
+  $("playDock").classList.remove("open");
+  $("actionDock").style.display="";
+  $("playBtn").classList.remove("active");
+  renderAll();
+}
+function stepPlayback(dir){playIndex+=dir;updatePlayback()}
+function firstPlayback(){playIndex=0;updatePlayback()}
+function lastPlayback(){playIndex=history.length-1;updatePlayback()}
+function togglePlayback(){
+  if(!playback){showPlayback();return}
+  if(playTimer){clearInterval(playTimer);playTimer=null;$("pPlay").textContent="▶"}
+  else{
+    $("pPlay").textContent="Ⅱ";
+    playTimer=setInterval(()=>{
+      if(playIndex>=history.length-1){clearInterval(playTimer);playTimer=null;$("pPlay").textContent="▶";return}
+      playIndex++;updatePlayback();
+    },650);
+  }
+}
+
+$("saveBtn").onclick=saveGame;
+$("loadBtn").onclick=loadGame;
+$("restartBtn").onclick=resetGame;
+$("logBtn").onclick=()=>{renderLog();openModal("logModal")};
+$("helpBtn").onclick=()=>{ $("rulesText").innerHTML=I18N[lang].helpHtml; openModal("helpModal"); };
+$("aiBtn").onclick=()=>{
+  aiLevel=aiLevel>=3?1:aiLevel+1;
+  localStorage.setItem("cubeo-ai-level",String(aiLevel));
+  updateAISignal();
+  $("aiInfo").textContent=I18N[lang]["ai"+aiLevel];
+  toast((lang==="cs"?"Úroveň AI ":"AI level ")+aiLevel);
+};
+$("playBtn").onclick=()=>{ if(playback) closePlayback(); else showPlayback(); };
+$("closePlay").onclick=closePlayback;
+$("langBtn").onclick=toggleLang;
+
+$("titleHit").onclick=()=>{coords=!coords;updateCoordBadge();draw();toast(coords?(lang==="cs"?"Souřadnice zapnuty.":"Coordinates on."):(lang==="cs"?"Souřadnice vypnuty.":"Coordinates off."))};
+function updateActionTitles(){
+  const titles=lang==="cs"?{
+    add:"Přidat kostku — 1× klik na kostku, pak zelené pole",
+    move:"Přesunout — 2× klik na kostku, pak cílové pole",
+    merge:"Spojit — dlouhý stisk na kostku, pak klik na druhou"
+  }:{
+    add:"Add die — single-click a die, then a green cell",
+    move:"Move — double-click a die, then a destination",
+    merge:"Merge — long-press a die, then click another"
+  };
+  document.querySelectorAll(".actionBtn").forEach(b=>{
+    const a=b.dataset.action; if(titles[a]) b.title=titles[a];
+  });
+}
+document.querySelectorAll(".actionBtn").forEach(b=>b.onclick=()=>{
+  if(b.disabled)return;
+  clearPendingSingle();
+  setActionMode(b.dataset.action, null);
+  const has=legalMoves(state,1).some(x=>x.type===actionMode);
+  if(!has && !state.gameOver && state.player===1){
+    toast(actionMode==="add"?(lang==="cs"?"Žádné platné přidání.":"No legal add."):(actionMode==="move"?(lang==="cs"?"Žádný platný přesun (kostky jsou připnuté).":"No legal move (dice are pinned)."):(lang==="cs"?"Žádné platné spojení.":"No legal merge.")));
+  }
+});
+$("copyLog").onclick=async()=>{const text=log.map((x,i)=>`${String(i+1).padStart(2,"0")}. ${x}`).join("\n");try{await navigator.clipboard.writeText(text);toast(lang==="cs"?"Log zkopírován.":"Log copied.");}catch(e){toast("Clipboard unavailable.")}};
+function resetBoardView(){
+  camera.x=0;camera.y=0;camera.zoom=defaultZoom();draw();
+}
+function changeZoomAt(factor,anchorX=board.clientWidth/2,anchorY=board.clientHeight/2){
+  const oldCs=cellSize();
+  const ox=board.clientWidth/2+camera.x,oy=board.clientHeight/2+camera.y;
+  const wx=(anchorX-ox)/oldCs,wy=(anchorY-oy)/oldCs;
+  camera.zoom=Math.max(.65,Math.min(1.8,camera.zoom*factor));
+  const cs=cellSize();
+  camera.x=anchorX-board.clientWidth/2-wx*cs;
+  camera.y=anchorY-board.clientHeight/2-wy*cs;
+  draw();
+}
+$("zoomIn").onclick=()=>changeZoomAt(1.12);
+$("zoomOut").onclick=()=>changeZoomAt(1/1.12);
+$("zoomReset").onclick=resetBoardView;
+$("pFirst").onclick=firstPlayback;$("pPrev").onclick=()=>stepPlayback(-1);$("pNext").onclick=()=>stepPlayback(1);$("pLast").onclick=lastPlayback;$("pPlay").onclick=togglePlayback;
+
+document.querySelectorAll(".modalBack").forEach(back=>{
+  back.addEventListener("click",e=>{if(e.target===back) back.classList.remove("open")})
+});
+document.querySelectorAll(".closeModal").forEach(b=>b.onclick=()=>{
+  const back=b.closest(".modalBack"); if(back) back.classList.remove("open");
+});
+window.addEventListener("resize",resize);
+window.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){
+    if(playback) closePlayback();
+    else document.querySelectorAll(".modalBack.open").forEach(m=>m.classList.remove("open"));
+  }
+  if(e.key===" "&&playback){e.preventDefault();togglePlayback()}
+});
+
+newGameWithAlternatingStarter(false);
+applyLang();
+resize();
+// Defer layout + AI kick if Black starts
+requestAnimationFrame(()=>{
+  resize();
+  draw();
+  if(state && !state.gameOver && state.player===2) setTimeout(aiTurn, 200);
+});
+(function winPulseLoop(){
+  if(state && state.gameOver && state.winPair && state.winPair.length) draw();
+  requestAnimationFrame(winPulseLoop);
+})();
+
+</script>
+</body>
+</html>
