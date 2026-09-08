@@ -340,10 +340,9 @@ const I18N = {
 <p class="ruleCaption">Černý může přidat na zelené pole (dotýká se černé, nedotýká se bílé stranou).</p>
 
 <h3>2. Přesunout kostku</h3>
-<p>Přesuňte <b>nepřipnutou</b> kostku <b>po obvodu formace</b> přesně o tolik polí, kolik má pipů. Cesta:</p>
+<p>Přesuňte <b>nepřipnutou</b> kostku <b>po obvodu formace</b> přesně o tolik polí, kolik je hodnota kostky. Cesta:</p>
 <ul>
-<li>jde po prázdných polích kolem formace (kroky jsou vždy o stranu, ne úhlopříčkou),</li>
-<li>cesta smí vést i přes rohy (obcházení rohu), ale cíl musí sousedit stranou,</li>
+<li>jde po prázdných polích kolem formace, kroky jsou vždy o stranu, <b>přes roh se jde úhlopříčně</b>,</li>
 <li>nesmí přeskakovat ani končit na jiné kostce,</li>
 <li>nesmí opakovat stejné pole (žádné kmitání sem a tam),</li>
 <li>směr se může měnit,</li>
@@ -351,12 +350,12 @@ const I18N = {
 </ul>
 <div class="diagramRow">
   <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc move">·</div><div class="rc empty"></div>
     <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-    <div class="rc b move">2</div><div class="rc w">1</div><div class="rc empty"></div>
-    <div class="rc move">·</div><div class="rc move">·</div><div class="rc empty"></div>
+    <div class="rc b sel">2</div><div class="rc w">1</div><div class="rc move">·</div>
   </div>
 </div>
-<p class="ruleCaption">Černá dvojka musí ujít přesně 2 pole po obvodu (modrá pole = příklady cílů).</p>
+<p class="ruleCaption">Černá dvojka (žlutý rámeček) musí ujít přesně 2 pole po obvodu. Modrá pole = příklady cílů (vpravo od bílé 1 a nad černou 1). Přes roh se počítá úhlopříčný krok.</p>
 
 <h3>3. Spojit dvě kostky</h3>
 <p>Pokud máte na desce aspoň 3 kostky, můžete sečíst dvě <b>sousední vlastní</b> kostky. Aspoň jedna z nich musí jít odebrat (není připnutá + Slide). Odebraná se vrací do zásoby, zbývající dostane součet.</p>
@@ -478,23 +477,22 @@ const I18N = {
 <p class="ruleCaption">Black may add on the green cell (touches black, does not side-touch white).</p>
 
 <h3>2. Move a die</h3>
-<p>Move an <b>unpinned</b> die <b>around the outside of the formation</b> exactly as many spaces as its pip value. The path must:</p>
+<p>Move an <b>unpinned</b> die <b>around the outside of the formation</b> exactly as many spaces as its pip value. The path:</p>
 <ul>
-<li>use empty cells around the formation (steps are orthogonal, never diagonal),</li>
-<li>the path may cross corners (going around a corner), but the <b>destination must share a side</b>,</li>
-<li>not jump or land on another die,</li>
-<li>not revisit a cell (no back-and-forth oscillation),</li>
-<li>allow changing direction,</li>
-<li>end on a different cell — the formation must change.</li>
+<li>uses empty cells around the formation; steps are side-adjacent, and <b>around a corner the step is diagonal</b>,</li>
+<li>must not jump or land on another die,</li>
+<li>must not revisit a cell (no back-and-forth oscillation),</li>
+<li>may change direction,</li>
+<li>must end on a different cell — the formation must change.</li>
 </ul>
 <div class="diagramRow">
   <div class="ruleDiagram" style="grid-template-columns:repeat(3,36px)">
+    <div class="rc empty"></div><div class="rc move">·</div><div class="rc empty"></div>
     <div class="rc empty"></div><div class="rc b">1</div><div class="rc empty"></div>
-    <div class="rc b move">2</div><div class="rc w">1</div><div class="rc empty"></div>
-    <div class="rc move">·</div><div class="rc move">·</div><div class="rc empty"></div>
+    <div class="rc b sel">2</div><div class="rc w">1</div><div class="rc move">·</div>
   </div>
 </div>
-<p class="ruleCaption">The black two must travel exactly 2 spaces along the perimeter (blue cells = example destinations).</p>
+<p class="ruleCaption">The black two (gold outline) must travel exactly 2 spaces along the perimeter. Blue cells = example destinations (right of white 1 and above black 1). Around a corner the step is diagonal.</p>
 
 <h3>3. Merge two dice</h3>
 <p>With at least 3 dice on the board, you may add the values of two <b>adjacent friendly</b> dice. At least one must be removable (not pinned + Slide). The removed die returns to your pool; the other shows the sum.</p>
@@ -662,19 +660,17 @@ function movementDestinations(s,key){
   if(!removable(s,key))return [];
   const [sx,sy]=parseKey(key), val=die.value;
   const stationary=clone(s); delete stationary.board[key];
-  // Path of exactly `val` orthogonal steps around the outside:
-  // - steps are orthogonal (no diagonal jumps)
-  // - intermediate cells may touch the formation by side OR corner
-  // - final cell must touch the formation by SIDE (so the die reconnects properly)
-  // - simple path (no cell revisited)
-  // - destination ≠ start; final formation stays orthogonally connected
+  // Exactly `val` steps around the outside of the formation.
+  // Along sides: orthogonal steps. Around a corner: diagonal step (official rules diagrams).
+  // Intermediate cells must touch formation by side OR corner.
+  // Destination must share a SIDE; path is simple (no revisit); destination ≠ start.
+  const STEP8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
   const out=[];
   const seenDest=new Set();
   function dfs(x, y, remaining, visited){
     if(remaining===0){
       const k=KEY(x,y);
       if(k===key || s.board[k] || seenDest.has(k)) return;
-      // Destination must side-adjacent to the remaining formation
       if(!isSideAdjacentToFormation(stationary, x, y)) return;
       const ns=clone(stationary); ns.board[k]={owner:die.owner,value:die.value};
       if(isFormation(ns)){
@@ -683,11 +679,10 @@ function movementDestinations(s,key){
       }
       return;
     }
-    for(const [dx,dy] of DIRS){
+    for(const [dx,dy] of STEP8){
       const nx=x+dx, ny=y+dy, nk=KEY(nx,ny);
       if(visited.has(nk)) continue;
       if(stationary.board[nk]) continue;
-      // Intermediate: side or corner contact is enough (path around corners)
       if(!isCornerOrSideAdjacentToFormation(stationary, nx, ny)) continue;
       visited.add(nk);
       dfs(nx, ny, remaining-1, visited);
@@ -771,9 +766,9 @@ function checkBlocked(s){
   const moves=legalMoves(s,s.player);
   if(moves.length===0){
     s.gameOver=true;s.winner=3-s.player;s.winPair=null;s.winSum=null;
-    const msg=winLogLine(s);
-    addLog(msg);
-    history.push({label:msg,state:clone(s)});
+    const entry={kind:"win", winner:s.winner, winPair:null, winSum:null, board:clone(s.board)};
+    addLogEntry(entry);
+    history.push({label:formatLogEntry(entry), entry, state:clone(s)});
     announceWin(s);
     return true;
   }
@@ -828,10 +823,27 @@ function actionLabel(a,player){
   return `🔗 ${dieSym(owner,fv,true)} ${fmtCell(a.from)} + [${tv}] ${fmtCell(a.to)} = [${sum}] ${fmtCell(keep)}`;
 }
 function record(a, beforePlayer){
-  log.push(actionLabel(a,beforePlayer));
-  history.push({label:actionLabel(a,beforePlayer),state:clone(state)});
+  const entry={kind:"action", a:JSON.parse(JSON.stringify(a)), player:beforePlayer};
+  log.push(entry);
+  history.push({label:formatLogEntry(entry), entry, state:clone(state)});
 }
-function addLog(t){log.push(t)}
+function addLogEntry(entry){ log.push(entry); }
+function addLog(t){
+  if(typeof t==="string") log.push({kind:"text", text:t});
+  else log.push(t);
+}
+function formatLogEntry(e){
+  if(!e) return "";
+  if(typeof e==="string") return e;
+  if(e.kind==="start"){
+    const name=e.starter===1?(lang==="cs"?"Bílý":"White"):(lang==="cs"?"Černý":"Black");
+    return lang==="cs"?`— Nová hra · ${name} začíná —`:`— New game · ${name} starts —`;
+  }
+  if(e.kind==="action") return actionLabel(e.a, e.player);
+  if(e.kind==="win") return winLogLine(e);
+  if(e.kind==="text") return e.text;
+  return String(e);
+}
 
 function execute(a){
   if(playback||state.gameOver||state.player!==1)return;
@@ -842,9 +854,9 @@ function execute(a){
   state=applyAction(state,a);
   record(a,p);
   if(state.gameOver&&state.winner===p){
-    const line=winLogLine(state);
-    addLog(line);
-    history.push({label:line,state:clone(state)});
+    const entry={kind:"win", winner:state.winner, winPair:state.winPair?state.winPair.slice():null, winSum:state.winSum, board:clone(state.board)};
+    addLogEntry(entry);
+    history.push({label:formatLogEntry(entry), entry, state:clone(state)});
     renderAll();
     announceWin(state);
     return;
@@ -980,8 +992,8 @@ async function aiTurn(){
     const a=result && result.action;
     if(!a){
       state.gameOver=true;state.winner=1;state.winPair=null;state.winSum=null;
-      const msg=winLogLine(state);
-      addLog(msg);history.push({label:msg,state:clone(state)});renderAll();announceWin(state);return;
+      const entry={kind:"win", winner:1, winPair:null, winSum:null, board:clone(state.board)};
+      addLogEntry(entry);history.push({label:formatLogEntry(entry), entry, state:clone(state)});renderAll();announceWin(state);return;
     }
     const p=state.player;
     enrichAction(state,a,p);
@@ -989,9 +1001,9 @@ async function aiTurn(){
     log.push(actionLabel(a,p));
     history.push({label:actionLabel(a,p),state:clone(state)});
     if(state.gameOver){
-      const line=winLogLine(state);
-      addLog(line);
-      history.push({label:line,state:clone(state)});
+      const wentry={kind:"win", winner:state.winner, winPair:state.winPair?state.winPair.slice():null, winSum:state.winSum, board:clone(state.board)};
+      addLogEntry(wentry);
+      history.push({label:formatLogEntry(wentry), entry:wentry, state:clone(state)});
       renderAll();
       announceWin(state);
       return;
@@ -1010,7 +1022,7 @@ function newGameWithAlternatingStarter(showToast=true){
   localStorage.setItem(STARTER_KEY,String(3-first));
   state=freshState(first); selected=null; actionMode="add"; log=[]; gameId++;
   const starterName=first===1?I18N[lang].whiteTurn:I18N[lang].blackTurn;
-  log.push(lang==="cs"?`— Nová hra · ${starterName} začíná —`:`— New game · ${starterName} starts —`);
+  log.push({kind:"start", starter:first});
   history=[{label:"START",state:clone(state)}];
   renderAll();
   if(showToast)toast(lang==="cs"?`${starterName} začíná.`:`${starterName} starts.`);
@@ -1231,22 +1243,25 @@ function renderSide(){
 }
 function renderLog(){
   if(!$("logList"))return;
+  // Format structured entries with current language, then layout
   $("logList").innerHTML=(log||[]).map((x,i)=>({n:i+1,x})).reverse()
     .map(it=>{
+      const text=formatLogEntry(it.x);
       let num = String(it.n).padStart(2,"0") + ".";
-      let m = it.x.match(/^([+➤🔗🏆])\s+(⬜|⬛)\s*(\[[^\]]+\])?\s*(.*)$/);
+      let m = String(text).match(/^([+➤🔗🏆])\s+(⬜|⬛)\s*(\[[^\]]+\])?\s*(.*)$/);
       let inner = "";
       if(m){
         inner = `<span class="l-num">${num}</span><span class="l-ic">${m[1]}</span><span class="l-die">${m[2]}${m[3]?" "+m[3]:""}</span><span class="l-rest">${escapeHtml(m[4])}</span>`;
-      } else if(it.x.startsWith("—")) {
-        inner = `<span class="l-sys">${escapeHtml(it.x)}</span>`;
+      } else if(String(text).startsWith("—")) {
+        inner = `<span class="l-sys">${escapeHtml(text)}</span>`;
       } else {
-        inner = `<span class="l-num">${num}</span><span class="l-rest" style="grid-column: 2 / -1">${escapeHtml(it.x)}</span>`;
+        inner = `<span class="l-num">${num}</span><span class="l-rest" style="grid-column: 2 / -1">${escapeHtml(text)}</span>`;
       }
-      return `<div class="logItem ${it.x.includes("🏆")?"win":""}">${inner}</div>`;
+      const isWin=(typeof it.x==="object"&&it.x&&it.x.kind==="win")||String(text).includes("🏆");
+      return `<div class="logItem ${isWin?"win":""}">${inner}</div>`;
     }).join("");
 }
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function renderAll(){renderSide();renderLog();draw();updateCoordBadge()}
 function updateCoordBadge(){ $("coordBadge").classList.toggle("show",coords); $("coordBadge").textContent=I18N[lang].coords }
 
@@ -1283,6 +1298,25 @@ function updateAISignal(){
   el.parentElement.title=(lang==="cs"?"Úroveň AI ":"AI level ")+aiLevel;
   el.parentElement.setAttribute("aria-label",(lang==="cs"?"Úroveň AI ":"AI level ")+aiLevel);
 }
+function updateMenuTitles(){
+  const t=lang==="cs"?{
+    saveBtn:"Uložit", loadBtn:"Načíst", restartBtn:"Restart", logBtn:"Log hry",
+    aiBtn:"Úroveň AI", playBtn:"Přehrávač tahů", langBtn:"Jazyk", helpBtn:"Nápověda",
+    copyLog:"Kopírovat", closePlay:"Zavřít přehrávač", zoomReset:"Vycentrovat",
+    pFirst:"Začátek", pPrev:"Předchozí", pPlay:"Přehrát", pNext:"Další", pLast:"Konec",
+    titleHit:"Souřadnice"
+  }:{
+    saveBtn:"Save", loadBtn:"Load", restartBtn:"Restart", logBtn:"Game log",
+    aiBtn:"AI level", playBtn:"Move player", langBtn:"Language", helpBtn:"Help",
+    copyLog:"Copy", closePlay:"Close player", zoomReset:"Center board",
+    pFirst:"Start", pPrev:"Previous", pPlay:"Play", pNext:"Next", pLast:"End",
+    titleHit:"Coordinates"
+  };
+  for(const [id,title] of Object.entries(t)){
+    const el=$(id); if(el) el.title=title;
+  }
+  document.querySelectorAll(".closeModal").forEach(b=>b.title=lang==="cs"?"Zavřít":"Close");
+}
 function applyLang(){
   document.documentElement.lang=lang;
   const labels=document.querySelectorAll(".playerCounter span:nth-child(2)");
@@ -1294,6 +1328,10 @@ function applyLang(){
   updateAISignal();
   $("aiInfo").textContent=I18N[lang]["ai"+aiLevel];
   if(typeof updateActionTitles==="function") updateActionTitles();
+  updateMenuTitles();
+  if(history && history.length){
+    history.forEach(h=>{ if(h.entry) h.label=formatLogEntry(h.entry); });
+  }
   renderAll();
 }
 function toggleLang(){lang=lang==="cs"?"en":"cs";applyLang();}
@@ -1603,7 +1641,11 @@ document.querySelectorAll(".actionBtn").forEach(b=>b.onclick=()=>{
     toast(actionMode==="add"?(lang==="cs"?"Žádné platné přidání.":"No legal add."):(actionMode==="move"?(lang==="cs"?"Žádný platný přesun (kostky jsou připnuté).":"No legal move (dice are pinned)."):(lang==="cs"?"Žádné platné spojení.":"No legal merge.")));
   }
 });
-$("copyLog").onclick=async()=>{const text=log.map((x,i)=>`${String(i+1).padStart(2,"0")}. ${x}`).join("\n");try{await navigator.clipboard.writeText(text);toast(lang==="cs"?"Log zkopírován.":"Log copied.");}catch(e){toast("Clipboard unavailable.")}};
+$("copyLog").onclick=async()=>{
+  const text=log.map((x,i)=>String(i+1).padStart(2,"0")+". "+formatLogEntry(x)).join("\n");
+  try{await navigator.clipboard.writeText(text);toast(lang==="cs"?"Log zkopírován.":"Log copied.");}
+  catch(e){toast("Clipboard unavailable.")}
+};
 function resetBoardView(){
   camera.x=0;camera.y=0;camera.zoom=defaultZoom();draw();
 }
