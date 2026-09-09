@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>GENIUS SQUARE</title>
+<style>
+:root{
+  --bg:#111827;--panel:#1f2937;--panel2:#273449;--line:#4b5563;--text:#f8fafc;--muted:#cbd5e1;
+  --accent:#38bdf8;--good:#22c55e;--bad:#ef4444;--board:#173b63;--cell:#244d78;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;overflow-x:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+button{font:inherit;color:inherit}
+body{display:flex;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.app{width:min(100%,900px);padding:8px 10px 18px}
+.top{display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:5px}
+.title{font-weight:900;letter-spacing:1px;font-size:clamp(23px,4vw,30px);white-space:nowrap;text-align:center}
+.menu{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:nowrap}
+.iconBtn{width:40px;height:40px;border:1px solid #526074;border-radius:10px;background:#202b3b;display:grid;place-items:center;cursor:pointer;font-weight:800;font-size:20px}
+.iconBtn:active{transform:scale(.96)}
+.langFlag{font-size:21px}.modeBtn{font-size:17px}.help{font-size:21px}
+.info{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"status dice timer";align-items:center;gap:8px;background:var(--panel);border:1px solid #344256;border-radius:13px;padding:5px 8px;margin:4px 0 8px}
+.dice{grid-area:dice;display:flex;gap:3px;flex-wrap:nowrap;justify-content:center;width:auto;min-width:0}
+.die{width:32px;height:32px;flex:0 0 32px;border:2px solid #d7dde7;border-radius:6px;background:#f8fafc;color:#111827;display:grid;place-items:center;font-size:12px;font-weight:950;line-height:1.0;box-shadow:0 1px 2px #0008}
+.level{grid-area:status;text-align:left;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:700;font-size:13px;letter-spacing:.2px;line-height:1.2;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;cursor:pointer;user-select:none;border:0;background:transparent;padding:4px 2px;color:inherit}.level small{display:none}
+.level.armed{color:#ef4444}.level.running{color:#22c55e}.level.done{color:#94a3b8}
+.timer{grid-area:timer;text-align:right;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;letter-spacing:.2px;line-height:1.2;white-space:nowrap}
+.modeCard.active{outline:2px solid #22c55e;outline-offset:1px;border-color:#22c55e}
+.levelBtn.active{outline:2px solid #22c55e;border-color:#22c55e;background:#14532d}
+.timer.warn{color:#fbbf24}.timer.bad{color:#f87171}
+.boardWrap{display:grid;grid-template-columns:22px 1fr 22px;grid-template-rows:22px auto 22px;gap:0;align-items:stretch;margin:auto;width:min(78vw,360px)}
+.coord.top,.coord.bottom{display:grid;grid-template-columns:repeat(6,1fr);justify-items:center;text-align:center;font-weight:800;color:#dce7f5;font-size:13px;line-height:1}
+.coord.top{align-items:end;padding-bottom:4px}
+.coord.bottom{align-items:start;padding-top:4px}
+.coord.left,.coord.right{display:grid;grid-template-rows:repeat(6,1fr);align-items:center;text-align:center;font-weight:800;color:#dce7f5;font-size:13px;line-height:1}
+.coord.left{justify-items:end;padding-right:4px}
+.coord.right{justify-items:start;padding-left:4px}
+.board{grid-column:2;grid-row:2;aspect-ratio:1;background:var(--board);border:0;border-radius:5px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);position:relative;touch-action:none;box-shadow:0 0 0 4px #dbe5f2, 0 7px 20px #0006}
+.coord.top{grid-column:2;grid-row:1}.coord.bottom{grid-column:2;grid-row:3}
+.coord.left{grid-column:1;grid-row:2}.coord.right{grid-column:3;grid-row:2}
+body.dragging-piece{overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+.cell{border:1px solid #7ea0c2;position:relative;display:grid;place-items:center;user-select:none}
+.cell.blocker{background:#66727e}
+.cell.blocker::after{content:"";width:58%;height:58%;border-radius:50%;background:#f4c65e;box-shadow:0 1px 3px #0008}
+.cell.invalid{outline:2px solid #ef4444;outline-offset:-3px}
+.cell.hint{box-shadow:inset 0 0 0 3px #22c55e}
+.piece{position:absolute;z-index:5;display:grid;pointer-events:auto;touch-action:none;cursor:grab;filter:drop-shadow(0 2px 2px #0007);user-select:none;-webkit-user-select:none}
+.piece.dragging{z-index:30;cursor:grabbing;visibility:hidden}.dragProxy{position:fixed!important;z-index:200!important;pointer-events:none!important;margin:0!important}.dragProxy.invalid{filter:drop-shadow(0 2px 2px #0007) drop-shadow(0 0 4px #ef4444)}
+.piece .pCell{border:2px solid rgba(255,255,255,.68);display:grid;place-items:center;position:relative}
+.piece .pCell::after{content:"";width:45%;height:45%;background:rgba(255,255,255,.14);border-radius:2px}
+.piece[data-id="1"] .pCell{background:#304c9b}.piece[data-id="2"] .pCell{background:#9a531c}.piece[data-id="3"] .pCell{background:#f28c19}
+.piece[data-id="4"] .pCell{background:#a3249b}.piece[data-id="5"] .pCell{background:#737373}.piece[data-id="6"] .pCell{background:#10a6d7}
+.piece[data-id="7"] .pCell{background:#f1df00}.piece[data-id="8"] .pCell{background:#e51c45}.piece[data-id="9"] .pCell{background:#35b542}
+.piece.locked .pCell::after{background:#fff0}
+.trayTitle{text-align:center;margin:9px 0 5px;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.5px}
+.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;min-height:72px;padding:5px;border:1px solid #344256;background:var(--panel);border-radius:13px;touch-action:none}
+.traySlot{width:64px;height:52px;border:1px dashed #4c5b70;border-radius:9px;display:grid;place-items:center;position:relative;touch-action:none;-webkit-user-select:none;user-select:none}
+.traySlot .num{position:absolute;top:2px;left:5px;font-size:10px;color:#cbd5e1;font-weight:900}
+.controls{display:none}
+.actionBtn{border:1px solid #526074;background:#202b3b;border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:800}
+.actionBtn.primary{background:#075985;border-color:#0ea5e9}
+.toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#0b1220;border:1px solid #536174;border-radius:10px;padding:8px 16px;z-index:100;font-weight:600;font-size:13px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.2px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;transition:.2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.traySlot.restricted{background:rgba(239,68,68,.18);border-color:#f87171;border-style:solid}
+.piece.restricted-board{filter:drop-shadow(0 0 3px rgba(239,68,68,.55))}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:16px;z-index:80}
+.modal.show{display:flex}
+.dialog{width:min(94vw,570px);max-height:90vh;overflow:auto;background:#182333;border:1px solid #526074;border-radius:16px;padding:18px;box-shadow:0 15px 50px #0009;position:relative;scrollbar-width:thin;scrollbar-color:#4b5563 #111827}
+.dialog::-webkit-scrollbar{width:10px}
+.dialog::-webkit-scrollbar-track{background:#111827;border-radius:8px}
+.dialog::-webkit-scrollbar-thumb{background:#4b5563;border-radius:8px;border:2px solid #111827}
+.dialog::-webkit-scrollbar-thumb:hover{background:#64748b}
+.dialog h2{margin:0 0 10px;font-size:20px;font-weight:900;letter-spacing:.3px;color:#f8fafc}
+.dialog p,.dialog li{color:var(--muted);font-size:13.5px;line-height:1.55;font-family:Georgia,"Times New Roman",Times,serif}
+.dialog .helpCredits{font-style:italic;font-size:12px;color:#94a3b8;margin:4px 0 14px;font-family:Georgia,"Times New Roman",Times,serif}
+.dialog .helpMenu{list-style:none;padding:0;margin:8px 0 12px}
+.dialog .helpMenu li{padding:4px 0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;color:#e2e8f0}
+.dialog .helpSection{margin:14px 0 6px;font-weight:800;font-size:14px;color:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.2px}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.levelBtn{padding:10px 4px;border-radius:9px;border:1px solid #526074;background:#243246;font-weight:900;cursor:pointer;font-size:11px}
+.levelBtn.active{outline:2px solid #22c55e;border-color:#22c55e;background:#14532d}
+.modeChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.modeCard{border:1px solid #526074;background:#243246;border-radius:12px;padding:14px;cursor:pointer;text-align:left}
+.modeCard.active{outline:2px solid #22c55e;outline-offset:1px;border-color:#22c55e}
+.modeCard strong{font-size:20px}.modeCard small{display:block;color:var(--muted);margin-top:5px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row label{color:var(--muted)}
+input[type=number]{width:90px;background:#101827;border:1px solid #526074;border-radius:7px;padding:7px;color:white}
+.stats{width:100%;border-collapse:collapse;font-size:13px}.stats th,.stats td{padding:7px 5px;border-bottom:1px solid #3b4758;text-align:left}.stats th{color:#cbd5e1}
+.closeRow{display:none}
+.modalX{position:absolute;right:10px;top:8px;width:34px;height:34px;border:0;background:transparent;color:#dbe5f2;font-size:30px;line-height:1;cursor:pointer;border-radius:8px}.modalX:hover{background:#26364a}
+.modalClear{position:absolute;right:46px;top:8px;width:34px;height:34px;border:0;background:transparent;color:#f87171;font-size:18px;line-height:1;cursor:pointer;border-radius:8px;display:grid;place-items:center}.modalClear:hover{background:#3f1d1d}
+.statsBlock{margin-bottom:16px}
+.statsBlock h3{margin:0 0 8px;font-size:14px;font-weight:800;color:#e2e8f0;letter-spacing:.2px}
+.empty{color:#9aa8ba;text-align:center;padding:12px}
+@media(max-width:650px){
+ .app{padding:4px 5px 12px}.title{font-size:21px}.iconBtn{width:35px;height:35px;border-radius:8px}.menu{gap:3px}
+ .info{grid-template-columns:auto 1fr auto;gap:5px;padding:4px 5px;margin:3px 0 6px}.die{width:29px;height:29px;flex-basis:29px;font-size:11px}.level,.level small,.timer{font-size:12px;font-weight:700}.level{text-align:left}.boardWrap{width:min(86vw,350px);grid-template-columns:20px 1fr 20px;grid-template-rows:20px auto 20px}
+ .tray{gap:3px;padding:4px;touch-action:none}.traySlot{width:62px;height:54px;touch-action:none}
+ .levels{grid-template-columns:repeat(3,1fr)}.modeChoices{grid-template-columns:1fr}
+ .coord.top{padding-bottom:8px}
+.coord.bottom{padding-top:8px}
+.coord.left{padding-right:8px}
+.coord.right{padding-left:8px}
+}
+@media(max-width:380px){
+ .info{gap:3px;padding-left:3px;padding-right:3px}.die{width:25px;height:25px;flex-basis:25px;font-size:10px}.level,.level small,.timer{font-size:11px;font-weight:700}.level small{margin-right:2px}.level small::after{content:" · "}
+ .iconBtn{width:33px;height:33px;font-size:18px}.langFlag{font-size:19px}.help{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="title">GENIUS SQUARE</div>
+    <nav class="menu">
+      <button class="iconBtn" id="saveBtn" title="Uložit">💾</button>
+      <button class="iconBtn" id="loadBtn" title="Načíst">📂</button>
+      <button class="iconBtn" id="newBtn" title="Nová hra">↻</button>
+      <button class="iconBtn modeBtn" id="modeBtn" title="Režim hry">S</button>
+      <button class="iconBtn" id="statsBtn" title="Statistiky">▤</button>
+      <button class="iconBtn langFlag" id="langBtn" title="Language">🇬🇧</button>
+      <button class="iconBtn help" id="helpBtn" title="Nápověda">💡</button>
+    </nav>
+  </header>
+
+  <section class="info">
+    <button type="button" class="level armed" id="levelBtn" title="Kliknutím spustit časomíru"><small id="modeLabel">SOLO</small><span id="levelName">STARTER</span></button>
+    <div class="dice" id="dice"></div>
+    <div class="timer" id="timer">00:00.0</div>
+  </section>
+
+  <div class="boardWrap">
+    <div class="coord top"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span></div>
+    <div class="coord bottom"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span></div>
+    <div class="coord left"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+    <div class="coord right"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="trayTitle" id="trayTitle">ZÁSOBNÍK · 1× klik = rotace 90° · 2× klik = překlopení</div>
+  <div class="tray" id="tray"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="modeModal">
+ <div class="dialog">
+   <button class="modalX" data-close="modeModal" aria-label="Close">×</button>
+   <h2 data-t="gameMode">Režim hry</h2>
+   <div class="modeChoices">
+     <button class="modeCard" id="soloChoice"><strong>S · SOLO</strong><small data-t="soloDesc">Zvol úroveň dle svého uvážení. Čas každé úspěšně dokončené úrovně se uloží.</small></button>
+     <button class="modeCard" id="matchChoice"><strong>M · MATCH</strong><small data-t="matchDesc">Postup od STARTER po WIZARD. Lze hrát s limitem i bez limitu.</small></button>
+   </div>
+   <div id="soloOptions" style="margin-top:14px">
+     <p data-t="chooseLevel">Vyber úroveň:</p><div class="levels" id="levelButtons"></div>
+   </div>
+   <div id="matchOptions" style="display:none;margin-top:14px">
+     <div class="row"><label><input type="checkbox" id="limitToggle"> <span data-t="timeLimit">Časový limit</span></label>
+     <label data-t="limitSec">sekund:</label><input id="limitInput" type="number" min="30" max="900" step="10" value="180"></div>
+     <p data-t="matchRule">MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.</p>
+     <button class="actionBtn primary" id="startMatchBtn">M · START MATCH</button>
+   </div>
+   <div class="closeRow"><button class="actionBtn" id="modeClose" data-t="close">Zavřít</button></div>
+ </div>
+</div>
+
+<div class="modal" id="statsModal">
+ <div class="dialog">
+   <button class="modalClear" id="clearDataBtn" title="Smazat uložená data" aria-label="Clear data">🗑</button>
+   <button class="modalX" data-close="statsModal" aria-label="Close">×</button>
+   <h2 data-t="stats">Statistiky</h2>
+   <div id="statsContent"></div>
+   <div class="closeRow"><button class="actionBtn" id="statsClose" data-t="close">Zavřít</button></div>
+ </div>
+</div>
+
+<div class="modal" id="helpModal">
+ <div class="dialog">
+   <button class="modalX" data-close="helpModal" aria-label="Close">×</button>
+   <h2 id="helpHeading">Genius Square – nápověda</h2>
+   <div id="helpText"></div>
+   <div class="closeRow"><button class="actionBtn" id="helpClose" data-t="close">Zavřít</button></div>
+ </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ===== DATA ===== */
+const LEVELS = ["STARTER","JUNIOR","EXPERT","MASTER","WIZARD"];
+const DICE = [
+ ["A2","A3","B1","B2","B3","C2"],
+ ["A4","B5","C5","C6","D6","F6"],
+ ["B4","C3","C4","D3","D4","E3"],
+ ["A1","C1","D1","D2","E2","F3"],
+ ["D5","E4","E5","E6","F4","F5"],
+ ["A5","A5","B6","E1","F2","F2"],
+ ["A6","A6","A6","F1","F1","F1"]
+];
+// Shapes are the nine colourful pieces shown in the supplied rules.
+const SHAPES = {
+  1:[[0,0]],
+  2:[[0,0],[0,1]],
+  3:[[0,0],[0,1],[0,2]],
+  4:[[0,1],[1,0],[1,1]],
+  5:[[0,0],[0,1],[0,2],[0,3]],
+  6:[[0,0],[0,1],[0,2],[1,2]],
+  7:[[0,1],[1,0],[1,1],[1,2]],
+  8:[[0,1],[1,0],[1,1],[1,2]],
+  9:[[0,0],[0,1],[1,0],[1,1]]
+};
+const forbiddenByLevel = {
+ STARTER:[],
+ JUNIOR:[1,2],
+ EXPERT:[1,2,3],
+ MASTER:[2,3,4],
+ WIZARD:[1,2,3,4]
+};
+const PIECE_MARKED = new Set([1,2,3,4]);
+
+let state = {
+ mode:"SOLO", level:"STARTER", matchLevel:0, matchTimed:false, limit:180,
+ dice:[], blockers:[], pieces:{}, elapsed:0, running:false, startedAt:0,
+ finished:false, gameId:0, armed:false // armed=false → čeká na klik (červená); true → čas běží (zelená)
+};
+let drag = null, timerHandle = null, toastHandle = null, piece6ClickTimer = null;
+let lang = localStorage.getItem("geniusLang") || "cs";
+
+const T = {
+ cs:{
+  new:"Nová hra",check:"Zkontrolovat",gameMode:"Režim hry",soloDesc:"Zvol úroveň dle svého uvážení. Čas každé úspěšně dokončené úrovně se uloží.",
+  matchDesc:"Postup od STARTER po WIZARD. Lze hrát s limitem i bez limitu.",chooseLevel:"Vyber úroveň:",
+  timeLimit:"Časový limit",limitSec:"sekund:",matchRule:"MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.",
+  close:"Zavřít",stats:"Statistiky",help:"Nápověda",mode:"Režim",level:"Úroveň",time:"Čas",
+  noStats:"Zatím nejsou žádné dokončené hry.",solo:"SOLO",match:"MATCH",
+  helpTitle:"Genius Square – nápověda",
+  helpHtml:`
+  <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
+  <div class="helpSection">Cíl</div>
+  <p>Na začátku hry se provede automatický hod 7 kostek a umístí se blokátory na políčka odpovídající sedmi souřadnicím, které se objeví na kostkách.<br>Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.</p>
+  <div class="helpSection">Časomíra</div>
+  <p>Název úrovně vlevo je tlačítko: <span style="color:#ef4444">červená</span> = čas neběží, <span style="color:#22c55e">zelená</span> = čas běží. Spustíš ji kliknutím na text úrovně, nebo automaticky při položení prvního dílku na desku. Po dokončení úrovně v MATCH se čas znovu zastaví – další kolo spustíš až kliknutím / prvním dílkem.</p>
+  <div class="helpSection">Dílky</div>
+  <p>1× klik = rotace 90°. 2× klik = překlopení (u dílku 6: svisle → vodorovně → bez). Přetáhni dílek ze zásobníku na desku – zvětší se a připne na mřížku. Na desce ho přesuneš, nebo stáhneš zpět do zásobníku.</p>
+  <div class="helpSection">Úroveň</div>
+  <p>STARTER – bez omezení.<br>JUNIOR – omezení u 1, 2.<br>EXPERT – omezení u 1, 2, 3.<br>MASTER – omezení u 2, 3, 4.<br>WIZARD – omezení u 1, 2, 3, 4.<br>Vyjmenované dílky u daných úrovní se nesmí dotýkat stranou. Dotyk jen rohem je vždy povolen. Omezené dílky mají v zásobníku slabě červené pozadí.</p>
+  <div class="helpSection">Režimy (S / M)</div>
+  <p><b>SOLO</b> – zvolíš libovolnou úroveň, měří se čas, ukládá se do statistik.<br><b>MATCH</b> – postup STARTER → WIZARD. Volitelný časový limit: při překročení se vracíš o úroveň níž. Po úspěchu se připraví další úroveň, ale čas neběží, dokud nezahájíš.<br>Klik na konkrétní úroveň v menu vždy přepne do SOLO. Aktivní režim a úroveň jsou orámované zeleně.</p>
+  <div class="helpSection">Menu</div>
+  <ul class="helpMenu">
+    <li>💾 Uložit</li>
+    <li>📂 Načíst</li>
+    <li>↻ Nová hra</li>
+    <li>S/M Režim</li>
+    <li>▤ Statistiky (🗑 smaže uloženou hru i statistiky)</li>
+    <li>🇬🇧/🇨🇿 Jazyk</li>
+    <li>💡 Nápověda</li>
+  </ul>
+  <p>Uložení i statistiky jsou v prohlížeči (localStorage).</p>`
+ },
+ en:{
+  new:"New game",check:"Check",gameMode:"Game mode",soloDesc:"Choose any level. The time of each completed level is saved.",
+  matchDesc:"Progress from STARTER to WIZARD. Play with or without a time limit.",chooseLevel:"Choose level:",
+  timeLimit:"Time limit",limitSec:"seconds:",matchRule:"When the limit is exceeded, the level is repeated; after success you advance.",
+  close:"Close",stats:"Statistics",help:"Help",mode:"Mode",level:"Level",time:"Time",
+  noStats:"No completed games yet.",solo:"SOLO",match:"MATCH",
+  helpTitle:"Genius Square – help",
+  helpHtml:`
+  <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
+  <div class="helpSection">Goal</div>
+  <p>At the start of the game, 7 dice are rolled automatically and blockers are placed on the squares matching the seven coordinates shown on the dice.<br>29 free cells remain – fill them with all 9 coloured pieces without overlaps.</p>
+  <div class="helpSection">Timer</div>
+  <p>The level name on the left is a button: <span style="color:#ef4444">red</span> = timer stopped, <span style="color:#22c55e">green</span> = timer running. Start it by clicking the level text, or automatically when you place the first piece on the board. After finishing a MATCH level the timer stops again – start the next round by clicking / placing the first piece.</p>
+  <div class="helpSection">Pieces</div>
+  <p>1× click = rotate 90°. 2× click = flip (piece 6: vertical → horizontal → none). Drag from the tray onto the board – it scales up and snaps to the grid. On the board you can move a piece or drag it back to the tray.</p>
+  <div class="helpSection">Level</div>
+  <p>STARTER – no restrictions.<br>JUNIOR – restrictions for 1, 2.<br>EXPERT – restrictions for 1, 2, 3.<br>MASTER – restrictions for 2, 3, 4.<br>WIZARD – restrictions for 1, 2, 3, 4.<br>The listed pieces at each level may not touch by edge. Corner contact is always allowed. Restricted pieces have a light red tray background.</p>
+  <div class="helpSection">Modes (S / M)</div>
+  <p><b>SOLO</b> – pick any level; time is recorded in stats.<br><b>MATCH</b> – progress STARTER → WIZARD. Optional time limit: on timeout you drop one level. After success the next level is prepared but the timer stays off until you start it.<br>Picking a specific level in the menu always switches to SOLO. Active mode and level are outlined in green.</p>
+  <div class="helpSection">Menu</div>
+  <ul class="helpMenu">
+    <li>💾 Save</li>
+    <li>📂 Load</li>
+    <li>↻ New game</li>
+    <li>S/M Mode</li>
+    <li>▤ Statistics (🗑 clears saved game and stats)</li>
+    <li>🇬🇧/🇨🇿 Language</li>
+    <li>💡 Help</li>
+  </ul>
+  <p>Save and statistics are stored in the browser (localStorage).</p>`
+ }
+};
+
+function tr(k){return T[lang][k] || k}
+function applyLang(){
+ document.documentElement.lang=lang;
+ document.querySelectorAll("[data-t]").forEach(e=>e.textContent=tr(e.dataset.t));
+ document.getElementById("langBtn").textContent = lang==="cs" ? "🇬🇧" : "🇨🇿";
+ document.getElementById("helpText").innerHTML=tr("helpHtml");
+ const hh=document.getElementById("helpHeading"); if(hh) hh.textContent=tr("helpTitle");
+ document.title = "GENIUS SQUARE";
+ renderStats();
+ updateHeader();
+}
+function toast(msg){
+ const e=document.getElementById("toast"); e.textContent=msg; e.classList.add("show");
+ clearTimeout(toastHandle); toastHandle=setTimeout(()=>e.classList.remove("show"),1800);
+}
+function coordToRC(s){return [parseInt(s[1],10)-1,s.charCodeAt(0)-65]}
+function rcToCoord(r,c){return String.fromCharCode(65+c)+(r+1)}
+function cloneCells(a){return a.map(p=>[p[0],p[1]])}
+function rotateShape(cells, times){
+ let a=cloneCells(cells);
+ for(let t=0;t<times;t++) a=a.map(([r,c])=>[c,-r]);
+ const minR=Math.min(...a.map(x=>x[0])), minC=Math.min(...a.map(x=>x[1]));
+ return a.map(([r,c])=>[r-minR,c-minC]);
+}
+function normalize(cells){
+ const minR=Math.min(...cells.map(x=>x[0])), minC=Math.min(...cells.map(x=>x[1]));
+ return cells.map(([r,c])=>[r-minR,c-minC]);
+}
+function orientedShape(p){
+ let cells=rotateShape(SHAPES[p.id],p.rot||0);
+ // flip: 0=none, 1=vertical axis (left-right), 2=horizontal axis (up-down)
+ if(p.id===6){
+  const f = p.flip|0;
+  if(f===1) cells=cells.map(([r,c])=>[r,-c]);
+  else if(f===2) cells=cells.map(([r,c])=>[-r,c]);
+ }
+ return normalize(cells);
+}
+function makePiece(id, rot=0, placed=null){
+ return {id,rot,flip:0,cells:rotateShape(SHAPES[id],rot),placed};
+}
+function randomDice(){
+ return DICE.map(faces=>faces[Math.floor(Math.random()*faces.length)]);
+}
+function buildBlockers(dice){return dice.map(coordToRC)}
+function newGame(mode=state.mode, level=state.level){
+ state.mode=mode; state.level=level; state.finished=false; state.elapsed=0;
+ state.running=false; state.armed=false; // čeká na klik na úroveň (červená) → spustí čas
+ state.startedAt=0; state.gameId++;
+ state.dice=randomDice(); state.blockers=buildBlockers(state.dice);
+ state.pieces={}; for(let i=1;i<=9;i++) state.pieces[i]=makePiece(i);
+ if(mode==="MATCH"){state.matchLevel=LEVELS.indexOf(level); if(state.matchLevel<0)state.matchLevel=0}
+ stopTimer();
+ renderAll();
+ updateLevelBtn();
+ console.log("[GS] newGame (čeká na start)", {mode:state.mode, level:state.level, dice:state.dice.slice()});
+}
+function armAndStart(silent=false){
+ if(state.finished) return;
+ if(state.armed && state.running) return; // už běží
+ state.armed = true;
+ state.running = true;
+ state.startedAt = performance.now() - (state.elapsed||0)*1000;
+ startTimer();
+ updateLevelBtn();
+ console.log("[GS] armAndStart – časomíra běží", {silent});
+ if(!silent) toast(lang==="cs" ? "Časomíra běží" : "Timer started");
+}
+function startTimer(){
+ clearInterval(timerHandle);
+ if(!state.running || !state.armed) return;
+ timerHandle=setInterval(()=>{
+   if(!state.running || !state.armed) return;
+   state.elapsed=(performance.now()-state.startedAt)/1000;
+   updateTimer();
+ },100);
+}
+function updateLevelBtn(){
+ const btn = document.getElementById("levelBtn");
+ if(!btn) return;
+ document.getElementById("levelName").textContent = state.level;
+ btn.classList.remove("armed","running","done");
+ if(state.finished) btn.classList.add("done");
+ else if(state.armed && state.running) btn.classList.add("running");
+ else btn.classList.add("armed");
+ btn.title = state.finished
+  ? (lang==="cs"?"Hotovo":"Done")
+  : (state.armed
+     ? (lang==="cs"?"Časomíra běží":"Timer running")
+     : (lang==="cs"?"Kliknutím spustit časomíru":"Click to start timer"));
+}
+function stopTimer(){clearInterval(timerHandle);timerHandle=null}
+function formatTime(sec){
+ const m=Math.floor(sec/60), s=Math.floor(sec%60), d=Math.floor((sec*10)%10);
+ return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+d;
+}
+function updateTimer(){
+ const e=document.getElementById("timer"); e.textContent=formatTime(state.elapsed);
+ e.classList.toggle("warn",state.matchTimed && state.limit-state.elapsed<30 && state.limit-state.elapsed>=0);
+ e.classList.toggle("bad",state.matchTimed && state.elapsed>=state.limit);
+}
+function updateHeader(){
+ document.getElementById("modeBtn").textContent=state.mode==="SOLO"?"S":"M";
+ document.getElementById("dice").innerHTML=state.dice.map((d,i)=>`<div class="die" title="Kostka ${i+1}">${d}</div>`).join("");
+ updateLevelBtn();
+ updateTimer();
+}
+function renderBoard(){
+ const b=document.getElementById("board"); b.innerHTML="";
+ for(let r=0;r<6;r++)for(let c=0;c<6;c++){
+  const el=document.createElement("div"); el.className="cell"; el.dataset.r=r;el.dataset.c=c;
+  if(state.blockers.some(p=>p[0]===r&&p[1]===c)) el.classList.add("blocker");
+  b.appendChild(el);
+ }
+ // placed pieces
+ for(let id=1;id<=9;id++){const p=state.pieces[id];if(p.placed)renderPlaced(p)}
+}
+function isRestrictedPiece(id){
+ const list = forbiddenByLevel[state.level] || [];
+ return list.includes(id);
+}
+function renderPlaced(p){
+ const b=document.getElementById("board"), size=b.clientWidth/6;
+ const cells=orientedShape(p), h=Math.max(...cells.map(x=>x[0]))+1,w=Math.max(...cells.map(x=>x[1]))+1;
+ const el=document.createElement("div");
+ el.className="piece" + (isRestrictedPiece(p.id) ? " restricted-board" : "");
+ el.dataset.id=p.id;
+ el.style.width=(w*size)+"px"; el.style.height=(h*size)+"px";
+ el.style.gridTemplateRows=`repeat(${h},${size}px)`;el.style.gridTemplateColumns=`repeat(${w},${size}px)`;
+ el.style.left=(p.placed.c*size)+"px"; el.style.top=(p.placed.r*size)+"px";
+ cells.forEach(([r,c])=>{const x=document.createElement("div");x.className="pCell";x.style.gridRow=(r+1);x.style.gridColumn=(c+1);el.appendChild(x)});
+ b.appendChild(el); attachPiecePointer(el,p.id,true);
+}
+function renderTray(){
+ const t=document.getElementById("tray"); t.innerHTML="";
+ for(let id=1;id<=9;id++){
+  const p=state.pieces[id]; if(p.placed)continue;
+  const slot=document.createElement("div");
+  slot.className="traySlot" + (isRestrictedPiece(id) ? " restricted" : "");
+  slot.dataset.slot=id;
+  slot.innerHTML=`<span class="num">${id}</span>`;
+  const cells=orientedShape(p), h=Math.max(...cells.map(x=>x[0]))+1,w=Math.max(...cells.map(x=>x[1]))+1;
+  const size=Math.min(14,42/Math.max(h,w));
+  const el=document.createElement("div");el.className="piece";el.dataset.id=id;
+  el.style.width=(w*size)+"px";el.style.height=(h*size)+"px";
+  el.style.gridTemplateRows=`repeat(${h},${size}px)`;el.style.gridTemplateColumns=`repeat(${w},${size}px)`;
+  cells.forEach(([r,c])=>{const x=document.createElement("div");x.className="pCell";x.style.gridRow=r+1;x.style.gridColumn=c+1;el.appendChild(x)});
+  slot.appendChild(el);t.appendChild(slot);attachPiecePointer(el,id,false);
+ }
+ if(!t.children.length)t.innerHTML='<div class="empty">✓ Všechny dílky jsou na desce</div>';
+}
+function renderAll(){updateHeader();renderBoard();renderTray()}
+
+function createPieceElement(id, boardSize){
+ const p=state.pieces[id], cells=orientedShape(p);
+ const h=Math.max(...cells.map(x=>x[0]))+1,w=Math.max(...cells.map(x=>x[1]))+1;
+ const el=document.createElement("div");el.className="piece dragProxy";el.dataset.id=id;
+ el.style.width=(w*boardSize)+"px";el.style.height=(h*boardSize)+"px";
+ el.style.gridTemplateRows=`repeat(${h},${boardSize}px)`;
+ el.style.gridTemplateColumns=`repeat(${w},${boardSize}px)`;
+ cells.forEach(([r,c])=>{const x=document.createElement("div");x.className="pCell";x.style.gridRow=r+1;x.style.gridColumn=c+1;el.appendChild(x)});
+ return el;
+}
+function getCandidateFromPointer(id, clientX, clientY, center=true, offsetR=0, offsetC=0){
+ const b=document.getElementById("board").getBoundingClientRect(), cell=b.width/6;
+ const cells=orientedShape(state.pieces[id]);
+ const h=Math.max(...cells.map(x=>x[0]))+1,w=Math.max(...cells.map(x=>x[1]))+1;
+ let c, r;
+ if(center){
+  // Snap so the geometric center of the piece follows the pointer
+  c = Math.round((clientX - b.left) / cell - w / 2);
+  r = Math.round((clientY - b.top) / cell - h / 2);
+ } else {
+  c = Math.round((clientX - b.left) / cell) - offsetC;
+  r = Math.round((clientY - b.top) / cell) - offsetR;
+ }
+ return {r, c};
+}
+function pointerOverBoard(x,y){
+ // mírně rozšířená hit-area pro snazší drop na mobilu
+ const pad = 12;
+ const b=document.getElementById("board").getBoundingClientRect();
+ return x>=b.left-pad && x<=b.right+pad && y>=b.top-pad && y<=b.bottom+pad;
+}
+function setProxySize(proxy, id, size){
+ const cells=orientedShape(state.pieces[id]);
+ const h=Math.max(...cells.map(x=>x[0]))+1, w=Math.max(...cells.map(x=>x[1]))+1;
+ proxy.style.width=(w*size)+"px";
+ proxy.style.height=(h*size)+"px";
+ proxy.style.gridTemplateRows=`repeat(${h},${size}px)`;
+ proxy.style.gridTemplateColumns=`repeat(${w},${size}px)`;
+}
+// Global last-tap + pending rotate timers (survive re-render)
+const lastTapById = {};
+const pendingRotate = {};
+function doRotate(id){
+ const p = state.pieces[id];
+ if(!p) return;
+ p.rot = (p.rot + 1) % 4;
+ if(p.placed && placementErrors(id, p.placed).length){
+  p.rot = (p.rot + 3) % 4;
+  toast(lang==="cs" ? "Tato rotace není podle pravidel" : "This rotation is not legal");
+ }
+ renderAll(); saveState(true);
+}
+function doFlip6(){
+ const p = state.pieces[6];
+ if(!p) return;
+ // cycle: 0 (none) → 1 (svislá osa) → 2 (vodorovná osa) → 0
+ p.flip = ((p.flip|0) + 1) % 3;
+ if(p.placed && placementErrors(6, p.placed).length){
+  // try next if illegal
+  p.flip = ((p.flip|0) + 1) % 3;
+  if(p.placed && placementErrors(6, p.placed).length){
+   p.flip = ((p.flip|0) + 1) % 3; // back to original if both bad
+  }
+ }
+ const names = lang==="cs"
+  ? ["bez překlopení","překlopení svisle","překlopení vodorovně"]
+  : ["no flip","vertical flip","horizontal flip"];
+ toast("6: " + names[p.flip|0]);
+ renderAll(); saveState(true);
+}
+function attachPiecePointer(el, id, placed){
+ let sx=0, sy=0, moved=false, startPlaced=null, offsetR=0, offsetC=0;
+ let proxy=null, pointerId=null;
+
+ function onMove(ev){
+  if(pointerId===null || ev.pointerId!==pointerId) return;
+  // zabránit scrollování stránky během tahu
+  if(ev.cancelable) ev.preventDefault();
+  const dist = Math.hypot(ev.clientX - sx, ev.clientY - sy);
+  // nižší práh na touch zařízeních
+  const threshold = (ev.pointerType === "touch") ? 5 : 8;
+  if(dist > threshold) moved = true;
+  if(!moved) return;
+  if(pendingRotate[id]){ clearTimeout(pendingRotate[id]); delete pendingRotate[id]; }
+  el.classList.add("dragging");
+  document.body.classList.add("dragging-piece");
+  const board = document.getElementById("board");
+  const br = board.getBoundingClientRect();
+  const bs = br.width / 6;
+  if(!proxy){
+   proxy = createPieceElement(id, bs);
+   document.body.appendChild(proxy);
+  }
+  const over = pointerOverBoard(ev.clientX, ev.clientY);
+  if(over){
+   setProxySize(proxy, id, bs);
+   // ze zásobníku vždy centrovaný snap; na desce zachovat offset úchopu
+   const cand = getCandidateFromPointer(id, ev.clientX, ev.clientY, !placed, offsetR, offsetC);
+   proxy.style.left = (br.left + cand.c * bs) + "px";
+   proxy.style.top  = (br.top  + cand.r * bs) + "px";
+   proxy.classList.toggle("invalid", placementErrors(id, cand).length > 0);
+  } else {
+   const cells = orientedShape(state.pieces[id]);
+   const h = Math.max(...cells.map(x=>x[0]))+1, w = Math.max(...cells.map(x=>x[1]))+1;
+   const ts = Math.min(18, 48 / Math.max(h, w));
+   setProxySize(proxy, id, ts);
+   proxy.style.left = (ev.clientX - proxy.offsetWidth / 2) + "px";
+   proxy.style.top  = (ev.clientY - proxy.offsetHeight / 2) + "px";
+   proxy.classList.remove("invalid");
+  }
+ }
+
+ function cleanupListeners(){
+  document.removeEventListener("pointermove", onMove, true);
+  document.removeEventListener("pointerup", onUp, true);
+  document.removeEventListener("pointercancel", onUp, true);
+  document.body.classList.remove("dragging-piece");
+ }
+
+ function onUp(ev){
+  if(pointerId===null || ev.pointerId!==pointerId) return;
+  if(ev.cancelable) ev.preventDefault();
+  try { el.releasePointerCapture(pointerId); } catch(_){}
+  const p = state.pieces[id];
+  if(proxy){ proxy.remove(); proxy = null; }
+  el.classList.remove("dragging");
+  cleanupListeners();
+
+  if(!moved){
+   const now = Date.now();
+   if(id === 6){
+    if(lastTapById[6] && (now - lastTapById[6] < 380)){
+     lastTapById[6] = 0;
+     if(pendingRotate[6]){ clearTimeout(pendingRotate[6]); delete pendingRotate[6]; }
+     doFlip6();
+     drag = null; pointerId = null; return;
+    }
+    lastTapById[6] = now;
+    if(pendingRotate[6]) clearTimeout(pendingRotate[6]);
+    pendingRotate[6] = setTimeout(()=>{
+     delete pendingRotate[6];
+     doRotate(6);
+    }, 320);
+    drag = null; pointerId = null; return;
+   }
+   lastTapById[id] = now;
+   doRotate(id);
+   drag = null; pointerId = null; return;
+  }
+
+  const over = pointerOverBoard(ev.clientX, ev.clientY);
+  if(over){
+   const cand = getCandidateFromPointer(id, ev.clientX, ev.clientY, !placed, offsetR, offsetC);
+   const errs = placementErrors(id, cand);
+   if(errs.length){
+    toast(lang==="cs" ? "Neplatné umístění: "+errs[0] : "Illegal placement: "+errs[0]);
+    p.placed = startPlaced;
+    renderAll(); drag = null; pointerId = null; return;
+   }
+   p.placed = cand;
+   if(!state.armed && !state.finished) armAndStart(true);
+   renderAll(); saveState(true);
+   if(Object.values(state.pieces).every(x => x.placed)) checkWin();
+  } else {
+   if(placed){ p.placed = null; renderAll(); saveState(true); }
+   else renderAll();
+  }
+  drag = null; pointerId = null;
+ }
+
+ el.addEventListener("pointerdown", ev=>{
+  if(ev.button!==undefined && ev.button!==0) return;
+  // kritické pro mobil: zabránit scrollu / gestům
+  if(ev.cancelable) ev.preventDefault();
+  sx=ev.clientX; sy=ev.clientY; moved=false;
+  pointerId = ev.pointerId;
+  const p=state.pieces[id];
+  startPlaced = p.placed ? {...p.placed} : null;
+  if(placed && p.placed){
+   const b=document.getElementById("board").getBoundingClientRect(), cell=b.width/6;
+   offsetC = Math.floor((ev.clientX - b.left) / cell) - p.placed.c;
+   offsetR = Math.floor((ev.clientY - b.top) / cell) - p.placed.r;
+  } else {
+   offsetR = 0; offsetC = 0;
+  }
+  drag = {id, placed, pointerId: ev.pointerId, el};
+  try { el.setPointerCapture(ev.pointerId); } catch(_){}
+  // document-level tracking – spolehlivější na touch (prst opustí element)
+  document.addEventListener("pointermove", onMove, {capture:true, passive:false});
+  document.addEventListener("pointerup", onUp, {capture:true, passive:false});
+  document.addEventListener("pointercancel", onUp, {capture:true, passive:false});
+ }, {passive:false});
+}
+
+function occupiedMap(ignoreId=null){
+ const map=new Map();
+ for(let id=1;id<=9;id++){
+  if(id===ignoreId)continue; const p=state.pieces[id]; if(!p.placed)continue;
+  for(const [dr,dc] of orientedShape(p)){
+   map.set(`${p.placed.r+dr},${p.placed.c+dc}`,id);
+  }
+ }
+ return map;
+}
+function placementErrors(id, placed, rot=state.pieces[id].rot){
+ const errs=[];
+ if(!placed || !Number.isFinite(placed.r) || !Number.isFinite(placed.c)) return ["neplatná pozice"];
+ const cells=orientedShape({...state.pieces[id],rot});
+ const map=occupiedMap(id);
+ const blockers=new Set((state.blockers||[]).map(([r,c])=>`${r},${c}`));
+ for(const [dr,dc] of cells){
+  const r=placed.r+dr,c=placed.c+dc,key=`${r},${c}`;
+  if(r<0||r>=6||c<0||c>=6){errs.push("mimo desku");continue}
+  if(blockers.has(key))errs.push("překrývá blokátor");
+  if(map.has(key))errs.push("překrývá jiný dílek");
+ }
+ const restricted=new Set(forbiddenByLevel[state.level]);
+ if(restricted.has(id)){
+  for(const [dr,dc] of cells){
+   const r=placed.r+dr,c=placed.c+dc;
+   for(const [ar,ac,side] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]]){
+    const other=map.get(`${r+ar},${c+ac}`);
+    if(other && other!==id && restricted.has(other)) errs.push(`zakázané sousedství ${id}–${other}`);
+   }
+  }
+ }
+ return [...new Set(errs)];
+}
+function validate(){
+ const errors=[];
+ const map=new Map();
+ const blockers=new Set((state.blockers||[]).map(([r,c])=>`${r},${c}`));
+ for(let id=1;id<=9;id++){
+  const p=state.pieces[id]; if(!p.placed){errors.push(`Dílek ${id} není umístěn.`);continue}
+  for(const [dr,dc] of orientedShape(p)){
+   const r=p.placed.r+dr,c=p.placed.c+dc,key=`${r},${c}`;
+   if(r<0||r>=6||c<0||c>=6){errors.push(`Dílek ${id} je mimo desku.`);continue}
+   if(blockers.has(key))errors.push(`Dílek ${id} překrývá blokátor ${rcToCoord(r,c)}.`);
+   if(map.has(key)&&map.get(key)!==id)errors.push(`Dílky ${map.get(key)} a ${id} se překrývají na ${rcToCoord(r,c)}.`);
+   map.set(key,id);
+  }
+ }
+ // adjacency restrictions: edge-touch between two different restricted pieces is forbidden.
+ const restricted=new Set(forbiddenByLevel[state.level]);
+ for(const [key,id] of map){
+  if(!restricted.has(id))continue; const [r,c]=key.split(",").map(Number);
+  for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const other=map.get(`${r+dr},${c+dc}`);
+   if(other && other!==id && restricted.has(other)){
+    errors.push(`Zakázané sousedství dílků ${id} a ${other}.`); break;
+   }
+  }
+ }
+ if(map.size!==29)errors.push(`Zaplněno ${map.size}/29 volných polí.`);
+ return [...new Set(errors)];
+}
+function checkWin(){
+ const errors=validate();
+ if(errors.length){toast(errors[0]);return false}
+ if(!state.armed){
+  toast(lang==="cs"?"Nejdřív klikni na úroveň a spusť časomíru":"Click the level first to start the timer");
+  return false;
+ }
+ finishLevel();return true;
+}
+function finishLevel(){
+ if(state.armed && state.running){
+  state.elapsed=(performance.now()-state.startedAt)/1000;
+ }
+ state.running=false; state.armed=false; state.finished=true; stopTimer();
+ updateLevelBtn();
+ recordStat(state.mode,state.level,state.elapsed);
+ if(state.mode==="SOLO"){
+  saveState(false); toast(`${state.level} ✓  ${formatTime(state.elapsed)}`);
+ }else{
+  const old=state.level;
+  if(state.matchLevel>=LEVELS.length-1){
+    saveState(false); toast(`MATCH ✓ WIZARD  ${formatTime(state.elapsed)}`);
+  }else{
+    state.matchLevel++;
+    state.level=LEVELS[state.matchLevel];
+    toast(`${old} ✓ → ${state.level} · klikni na úroveň`);
+    // Připraví další úroveň, ale časomíra NEBĚŽÍ, dokud hráč neklikne na červený text úrovně
+    setTimeout(()=>newGame("MATCH",state.level),450);
+  }
+ }
+}
+function recordStat(mode,level,time){
+ const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
+ arr.push({mode,level,time,ts:Date.now()});
+ arr.splice(100);localStorage.setItem("geniusStats",JSON.stringify(arr));
+ renderStats();
+}
+function renderStats(){
+ const box=document.getElementById("statsContent"); if(!box)return;
+ const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
+ if(!arr.length){box.innerHTML=`<div class="empty">${tr("noStats")}</div>`;return}
+
+ // Nejlepší (nejrychlejší) čas pro každou úroveň
+ const bestByLevel = {};
+ arr.forEach(x=>{
+  const lv = x.level || "?";
+  if(!bestByLevel[lv] || Number(x.time) < Number(bestByLevel[lv].time)){
+   bestByLevel[lv] = x;
+  }
+ });
+ // Poslední záznam pro každou úroveň (podle pořadí v poli = chronologické push)
+ const lastByLevel = {};
+ arr.forEach(x=>{ lastByLevel[x.level || "?"] = x; });
+
+ const levelOrder = LEVELS.filter(l => bestByLevel[l] || lastByLevel[l]);
+ // include any unknown levels
+ Object.keys(bestByLevel).forEach(l=>{ if(!levelOrder.includes(l)) levelOrder.push(l); });
+
+ const row = (x) => `<tr><td>${x.mode||"—"}</td><td>${x.level||"—"}</td><td>${formatTime(x.time)}</td></tr>`;
+ const table = (rows) =>
+  `<table class="stats"><thead><tr><th>${tr("mode")}</th><th>${tr("level")}</th><th>${tr("time")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+ const bestRows = levelOrder.map(l => row(bestByLevel[l])).join("");
+ const lastRows = levelOrder.map(l => row(lastByLevel[l])).join("");
+
+ box.innerHTML =
+  `<div class="statsBlock"><h3>${lang==="cs"?"Nejlepší výsledky":"Best times"}</h3>${table(bestRows)}</div>` +
+  `<div class="statsBlock"><h3>${lang==="cs"?"Poslední záznam":"Latest per level"}</h3>${table(lastRows)}</div>`;
+}
+function clearAllData(){
+ const msg = lang==="cs"
+  ? "Opravdu smazat uloženou hru i všechny statistiky? Tuto akci nelze vrátit."
+  : "Really delete the saved game and all statistics? This cannot be undone.";
+ if(!confirm(msg)) return;
+ try{
+  localStorage.removeItem("geniusSave");
+  localStorage.removeItem("geniusStats");
+  console.log("[GS] localStorage cleared: geniusSave, geniusStats");
+  renderStats();
+  toast(lang==="cs"?"Data smazána":"Data cleared");
+ }catch(e){
+  console.error("[GS] clearAllData", e);
+  toast(lang==="cs"?"Smazání selhalo":"Clear failed");
+ }
+}
+function serializeState(){
+ // Build a clean, JSON-safe snapshot
+ const pieces = {};
+ for(let id=1; id<=9; id++){
+  const p = state.pieces[id] || makePiece(id);
+  pieces[id] = {
+   id: id,
+   rot: ((Number(p.rot)||0)%4+4)%4,
+   flip: (p.flip|0) % 3,
+   placed: p.placed ? { r: Number(p.placed.r), c: Number(p.placed.c) } : null
+  };
+ }
+ const elapsed = state.running
+  ? Math.max(0, (performance.now() - state.startedAt) / 1000)
+  : Number(state.elapsed) || 0;
+ return {
+  version: 2,
+  mode: state.mode,
+  level: state.level,
+  matchLevel: state.matchLevel|0,
+  matchTimed: !!state.matchTimed,
+  limit: Number(state.limit)||180,
+  dice: (state.dice||[]).slice(),
+  blockers: (state.blockers||[]).map(([r,c]) => [Number(r), Number(c)]),
+  pieces,
+  elapsed,
+  running: !!(state.running && !state.finished),
+  armed: !!state.armed,
+  finished: !!state.finished,
+  savedAt: Date.now()
+ };
+}
+function saveState(silent=false){
+ try{
+  const data = serializeState();
+  const json = JSON.stringify(data);
+  console.log("[GS] saveState → writing", {
+   silent,
+   bytes: json.length,
+   dice: data.dice,
+   blockers: data.blockers,
+   placed: Object.fromEntries(
+    Object.entries(data.pieces).map(([k,v]) => [k, v.placed])
+   ),
+   elapsed: data.elapsed,
+   level: data.level
+  });
+  localStorage.setItem("geniusSave", json);
+  // verify write
+  const verify = localStorage.getItem("geniusSave");
+  if(!verify || verify.length !== json.length){
+   console.error("[GS] saveState verify FAILED", {written: json.length, read: verify ? verify.length : 0});
+   throw new Error("localStorage verify failed");
+  }
+  const parsed = JSON.parse(verify);
+  console.log("[GS] saveState ✓ verified", {
+   dice: parsed.dice,
+   blockers: parsed.blockers,
+   placedCount: Object.values(parsed.pieces).filter(p => p && p.placed).length
+  });
+  state.elapsed = data.elapsed;
+  if(!silent) toast(lang==="cs" ? "Hra uložena" : "Game saved");
+ }catch(e){
+  console.error("[GS] saveState ERROR", e);
+  toast(lang==="cs" ? "Uložení selhalo (localStorage?)" : "Save failed (localStorage?)");
+ }
+}
+function loadState(){
+ console.log("[GS] loadState → reading localStorage…");
+ const raw = localStorage.getItem("geniusSave");
+ if(!raw){
+  console.warn("[GS] loadState: no geniusSave key in localStorage");
+  toast(lang==="cs" ? "Žádná uložená hra" : "No saved game");
+  return;
+ }
+ console.log("[GS] loadState raw bytes", raw.length, raw.slice(0, 200) + "…");
+ try{
+  const x = JSON.parse(raw);
+  if(!x || typeof x !== "object") throw new Error("invalid root");
+  if(!x.pieces || !Array.isArray(x.dice) || !Array.isArray(x.blockers)){
+   console.error("[GS] loadState missing fields", {hasPieces:!!x.pieces, dice:x.dice, blockers:x.blockers});
+   throw new Error("missing fields");
+  }
+
+  stopTimer();
+
+  state.mode = x.mode === "MATCH" ? "MATCH" : "SOLO";
+  state.level = LEVELS.includes(x.level) ? x.level : "STARTER";
+  state.matchLevel = Number(x.matchLevel)||0;
+  state.matchTimed = !!x.matchTimed;
+  state.limit = Math.max(30, Math.min(900, Number(x.limit)||180));
+  state.dice = x.dice.map(String);
+  state.blockers = x.blockers.map(v => [Number(v[0]), Number(v[1])]);
+  state.finished = !!x.finished;
+  state.elapsed = Number(x.elapsed)||0;
+  state.armed = !!x.armed && !x.finished;
+  state.running = !!x.running && !!x.armed && !x.finished;
+  state.startedAt = performance.now() - state.elapsed * 1000;
+  state.gameId = (state.gameId||0) + 1;
+
+  state.pieces = {};
+  for(let id=1; id<=9; id++){
+   const rawP = x.pieces[id] || x.pieces[String(id)] || {};
+   const p = makePiece(id, Number(rawP.rot)||0, null);
+   p.flip = (rawP.flip|0) % 3;
+   if(rawP.flip === true) p.flip = 1;
+   if(rawP.placed && Number.isFinite(Number(rawP.placed.r)) && Number.isFinite(Number(rawP.placed.c))){
+    p.placed = { r: Number(rawP.placed.r), c: Number(rawP.placed.c) };
+   } else {
+    p.placed = null;
+   }
+   state.pieces[id] = p;
+  }
+
+  console.log("[GS] loadState applied", {
+   mode: state.mode,
+   level: state.level,
+   dice: state.dice.slice(),
+   blockers: state.blockers.map(b=>b.slice()),
+   placed: Object.fromEntries(
+    Object.entries(state.pieces).map(([k,v]) => [k, v.placed])
+   ),
+   elapsed: state.elapsed,
+   running: state.running
+  });
+
+  startTimer();
+  renderAll();
+  console.log("[GS] loadState ✓ renderAll done, board cells:", document.querySelectorAll("#board .cell.blocker").length, "blockers visible");
+  toast(lang==="cs" ? "Hra načtena" : "Game loaded");
+ }catch(e){
+  console.error("[GS] loadState ERROR", e);
+  toast(lang==="cs" ? "Uložená hra je poškozená" : "Saved game is invalid");
+ }
+}
+function openModal(id){document.getElementById(id).classList.add("show")}
+function closeModal(id){document.getElementById(id).classList.remove("show")}
+function setupModeModal(){
+ const lb=document.getElementById("levelButtons");
+ // Zeleně orámuj aktivní úroveň (v SOLO) nebo aktuální MATCH úroveň
+ const activeLevel = state.level;
+ lb.innerHTML=LEVELS.map(l=>`<button class="levelBtn ${l===activeLevel?"active":""}" data-level="${l}">${l}</button>`).join("");
+ lb.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+   // Ruční výběr úrovně → vždy SOLO
+   newGame("SOLO", b.dataset.level);
+   closeModal("modeModal");
+ });
+ document.getElementById("startMatchBtn").onclick=()=>{
+   state.matchTimed=document.getElementById("limitToggle").checked;
+   state.limit=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
+   state.matchLevel=0; newGame("MATCH","STARTER"); closeModal("modeModal");
+ };
+ // Zelený rám aktivního režimu
+ document.getElementById("soloChoice").classList.toggle("active", state.mode==="SOLO");
+ document.getElementById("matchChoice").classList.toggle("active", state.mode==="MATCH");
+}
+document.getElementById("modeBtn").onclick=()=>{
+ document.getElementById("soloOptions").style.display = state.mode==="MATCH" ? "none" : "block";
+ document.getElementById("matchOptions").style.display = state.mode==="MATCH" ? "block" : "none";
+ setupModeModal();
+ openModal("modeModal");
+};
+document.getElementById("soloChoice").onclick=()=>{
+ document.getElementById("soloOptions").style.display="block";
+ document.getElementById("matchOptions").style.display="none";
+ document.getElementById("soloChoice").classList.add("active");
+ document.getElementById("matchChoice").classList.remove("active");
+};
+document.getElementById("matchChoice").onclick=()=>{
+ document.getElementById("soloOptions").style.display="none";
+ document.getElementById("matchOptions").style.display="block";
+ document.getElementById("matchChoice").classList.add("active");
+ document.getElementById("soloChoice").classList.remove("active");
+ setupModeModal();
+};
+document.getElementById("modeClose").onclick=()=>closeModal("modeModal");
+document.getElementById("statsBtn").onclick=()=>{renderStats();openModal("statsModal")};
+document.getElementById("statsClose").onclick=()=>closeModal("statsModal");
+document.getElementById("clearDataBtn").onclick=clearAllData;
+document.getElementById("helpBtn").onclick=()=>{
+ document.getElementById("helpHeading").textContent = tr("helpTitle");
+ document.getElementById("helpText").innerHTML=tr("helpHtml");
+ openModal("helpModal");
+};
+document.getElementById("saveBtn").onclick=()=>saveState(false);
+document.getElementById("loadBtn").onclick=loadState;
+document.getElementById("langBtn").onclick=()=>{lang=lang==="cs"?"en":"cs";localStorage.setItem("geniusLang",lang);applyLang()};
+document.getElementById("newBtn").onclick=()=>newGame(state.mode,state.level);
+document.getElementById("levelBtn").onclick=()=>{
+ if(state.finished){
+  toast(lang==="cs"?"Úroveň hotová – nová hra nebo další MATCH":"Level done – new game or next MATCH");
+  return;
+ }
+ if(!state.armed) armAndStart();
+};
+document.querySelectorAll(".modalX").forEach(x=>x.onclick=()=>closeModal(x.dataset.close));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("pointerdown",e=>{if(e.target===m)closeModal(m.id)}));
+document.getElementById("board").addEventListener("pointerdown",e=>{
+ if(e.target!==e.currentTarget)return;
+});
+setInterval(()=>{
+ if(state.running && state.armed && state.mode==="MATCH" && state.matchTimed && state.elapsed>=state.limit){
+   state.running=false;stopTimer();
+   const idx=Math.max(0,LEVELS.indexOf(state.level)-1);
+   const backLevel=LEVELS[idx];
+   state.matchLevel=idx;
+   toast(lang==="cs"?`Čas vypršel – návrat na ${backLevel}`:`Time is up – back to ${backLevel}`);
+   setTimeout(()=>newGame("MATCH",backLevel),650);
+ }
+},100);
+
+applyLang();
+(function init(){
+ const existing = localStorage.getItem("geniusSave");
+ console.log("[GS] init", {
+  hasSave: !!existing,
+  saveBytes: existing ? existing.length : 0,
+  lang
+ });
+ // Always start a fresh board; user loads manually via 📂 so we never overwrite their save on open
+ newGame("SOLO","STARTER");
+ if(existing){
+  console.log("[GS] init: uložená hra je k dispozici — klikni 📂 pro načtení");
+ }
+})();
+})();
+</script>
+</body>
+</html>
