@@ -96,12 +96,12 @@ input[type=number]{width:90px;background:#101827;border:1px solid #526074;border
 @media(max-width:650px){
  .app{padding:4px 5px 12px}.title{font-size:21px}.iconBtn{width:35px;height:35px;border-radius:8px}.menu{gap:3px}
  .info{grid-template-columns:auto 1fr auto;gap:5px;padding:4px 5px;margin:3px 0 6px}.die{width:29px;height:29px;flex-basis:29px;font-size:11px}.level,.level small,.timer{font-size:12px;font-weight:700}.level{text-align:left}.boardWrap{width:min(86vw,350px);grid-template-columns:20px 1fr 20px;grid-template-rows:20px auto 20px}
+ .coord.top{padding-bottom:8px}
+ .coord.bottom{padding-top:8px}
+ .coord.left{padding-right:8px}
+ .coord.right{padding-left:8px}
  .tray{gap:3px;padding:4px;touch-action:none}.traySlot{width:62px;height:54px;touch-action:none}
  .levels{grid-template-columns:repeat(3,1fr)}.modeChoices{grid-template-columns:1fr}
- .coord.top{padding-bottom:8px}
-.coord.bottom{padding-top:8px}
-.coord.left{padding-right:8px}
-.coord.right{padding-left:8px}
 }
 @media(max-width:380px){
  .info{gap:3px;padding-left:3px;padding-right:3px}.die{width:25px;height:25px;flex-basis:25px;font-size:10px}.level,.level small,.timer{font-size:11px;font-weight:700}.level small{margin-right:2px}.level small::after{content:" · "}
@@ -236,6 +236,7 @@ const T = {
   timeLimit:"Časový limit",limitSec:"sekund:",matchRule:"MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.",
   close:"Zavřít",stats:"Statistiky",help:"Nápověda",mode:"Režim",level:"Úroveň",time:"Čas",
   noStats:"Zatím nejsou žádné dokončené hry.",solo:"SOLO",match:"MATCH",
+  trayTitle:"ZÁSOBNÍK · 1× klik = rotace 90° · 2× klik = překlopení",
   helpTitle:"Genius Square – nápověda",
   helpHtml:`
   <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
@@ -267,6 +268,7 @@ const T = {
   timeLimit:"Time limit",limitSec:"seconds:",matchRule:"When the limit is exceeded, the level is repeated; after success you advance.",
   close:"Close",stats:"Statistics",help:"Help",mode:"Mode",level:"Level",time:"Time",
   noStats:"No completed games yet.",solo:"SOLO",match:"MATCH",
+  trayTitle:"TRAY · 1× click = rotate 90° · 2× click = flip",
   helpTitle:"Genius Square – help",
   helpHtml:`
   <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
@@ -301,6 +303,7 @@ function applyLang(){
  document.getElementById("langBtn").textContent = lang==="cs" ? "🇬🇧" : "🇨🇿";
  document.getElementById("helpText").innerHTML=tr("helpHtml");
  const hh=document.getElementById("helpHeading"); if(hh) hh.textContent=tr("helpTitle");
+ const tt=document.getElementById("trayTitle"); if(tt) tt.textContent=tr("trayTitle");
  document.title = "GENIUS SQUARE";
  renderStats();
  updateHeader();
