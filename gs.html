@@ -255,7 +255,7 @@ const SHAPES = {
   5:[[0,0],[0,1],[0,2],[0,3]],
   6:[[0,0],[0,1],[0,2],[1,2]],
   7:[[0,1],[1,0],[1,1],[1,2]],
-  8:[[0,1],[1,0],[1,1],[1,2]],
+  8:[[0,0],[0,1],[1,1],[1,2]],
   9:[[0,0],[0,1],[1,0],[1,1]]
 };
 const forbiddenByLevel = {
@@ -308,7 +308,7 @@ const T = {
   helpHtml:`
   <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
   <div class="helpSection">Cíl</div>
-  <p>Na začátku hry se provede automatický hod 7 kostek a umístí se blokátory na políčka odpovídající sedmi souřadnicím, které se objeví na kostkách.<br>Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.</p>
+  <p>Na začátku hry se provede automatický hod 7 kostek a umístí se blokátory na políčka odpovídající 7 souřadnicím hozeným na kostkách.<br>Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.<br>Ačkoli se to zdá nepravděpodobné, hrací plochy s blokátory souřadnic hozených na kostkách lze skutečně vyřešit ve všech 62 208 možných kombinacích, přičemž často existuje více řešení. Hodně štěstí.</p>
   <div class="helpSection">Časomíra</div>
   <p>Název úrovně vlevo je tlačítko: <span style="color:#ef4444">červená</span> = čas neběží, <span style="color:#22c55e">zelená</span> = čas běží. Spustíš ji kliknutím na text úrovně, nebo automaticky při položení prvního dílku na desku. Po dokončení úrovně v MATCH se čas znovu zastaví – další kolo spustíš až kliknutím / prvním dílkem.</p>
   <div class="helpSection">Dílky</div>
@@ -400,7 +400,9 @@ function buildHelpHtml(){
   return `
   <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
   <div class="helpSection">Cíl</div>
-  <p>Na začátku hry se provede automatický hod 7 kostek (s animací) a umístí se blokátory na políčka odpovídající sedmi souřadnicím na kostkách.<br>Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.</p>
+  <p>Na začátku hry se provede automatický hod 7 kostek a umístí se blokátory na políčka odpovídající 7 souřadnicím hozeným na kostkách.<br>
+  Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.<br>
+  Ačkoli se to zdá nepravděpodobné, hrací plochy s blokátory souřadnic hozených na kostkách lze skutečně vyřešit ve všech 62&nbsp;208 možných kombinacích, přičemž často existuje více řešení. Hodně štěstí.</p>
   <div class="helpSection">Časomíra</div>
   <p>Název úrovně vlevo: <span style="color:#ef4444">červená</span> = neběží, <span style="color:#22c55e">zelená</span> = běží. Start kliknutím na úroveň nebo položením prvního dílku. V MATCH s limitem běží odpočet (např. 01:00.0); posledních 10 s žlutě, po vypršení 00:00.0 červeně a návrat o úroveň níž.</p>
   <div class="helpSection">Dílky</div>
@@ -440,7 +442,9 @@ function buildHelpHtml(){
  return `
   <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
   <div class="helpSection">Goal</div>
-  <p>At start, 7 dice are rolled (with animation) and blockers are placed on the coordinates shown.<br>Fill the remaining 29 cells with all 9 pieces without overlaps.</p>
+  <p>At the start of the game the 7 dice are rolled automatically and blockers are placed on the squares matching the 7 coordinates shown on the dice.<br>
+  29 free squares remain – fill them with all 9 coloured pieces without overlapping.<br>
+  Although it may seem unlikely, boards with blockers from the dice coordinates can indeed be solved in all 62,208 possible combinations, and there are often multiple solutions. Good luck.</p>
   <div class="helpSection">Timer</div>
   <p>Level name: <span style="color:#ef4444">red</span> = stopped, <span style="color:#22c55e">green</span> = running. Start by click or first piece. MATCH with limit counts down; last 10 s yellow, then 00:00.0 red and drop one level.</p>
   <div class="helpSection">Pieces</div>
