@@ -31,11 +31,11 @@ body{display:flex;justify-content:center;overflow-y:auto;-webkit-overflow-scroll
 .timer.warn{color:#fbbf24}.timer.bad{color:#f87171}
 .boardWrap{display:grid;grid-template-columns:22px 1fr 22px;grid-template-rows:22px auto 22px;gap:0;align-items:stretch;margin:auto;width:min(78vw,360px)}
 .coord.top,.coord.bottom{display:grid;grid-template-columns:repeat(6,1fr);justify-items:center;text-align:center;font-weight:800;color:#dce7f5;font-size:13px;line-height:1}
-.coord.top{align-items:end;padding-bottom:4px}
-.coord.bottom{align-items:start;padding-top:4px}
+.coord.top{align-items:end;padding-bottom:8px}
+.coord.bottom{align-items:start;padding-top:8px}
 .coord.left,.coord.right{display:grid;grid-template-rows:repeat(6,1fr);align-items:center;text-align:center;font-weight:800;color:#dce7f5;font-size:13px;line-height:1}
-.coord.left{justify-items:end;padding-right:4px}
-.coord.right{justify-items:start;padding-left:4px}
+.coord.left{justify-items:end;padding-right:8px}
+.coord.right{justify-items:start;padding-left:8px}
 .board{grid-column:2;grid-row:2;aspect-ratio:1;background:var(--board);border:0;border-radius:5px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);position:relative;touch-action:none;box-shadow:0 0 0 4px #dbe5f2, 0 7px 20px #0006}
 .coord.top{grid-column:2;grid-row:1}.coord.bottom{grid-column:2;grid-row:3}
 .coord.left{grid-column:1;grid-row:2}.coord.right{grid-column:3;grid-row:2}
@@ -54,8 +54,9 @@ body.dragging-piece{overflow:hidden;touch-action:none;-webkit-user-select:none;u
 .piece[data-id="7"] .pCell{background:#f1df00}.piece[data-id="8"] .pCell{background:#e51c45}.piece[data-id="9"] .pCell{background:#35b542}
 .piece.locked .pCell::after{background:#fff0}
 .trayTitle{text-align:center;margin:9px 0 5px;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.5px}
-.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;min-height:72px;padding:5px;border:1px solid #344256;background:var(--panel);border-radius:13px;touch-action:none}
-.traySlot{width:64px;height:52px;border:1px dashed #4c5b70;border-radius:9px;display:grid;place-items:center;position:relative;touch-action:none;-webkit-user-select:none;user-select:none}
+.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;min-height:56px;padding:4px;border:1px solid #344256;background:var(--panel);border-radius:13px;touch-action:none}
+.traySlot{width:58px;height:48px;border:1px dashed #4c5b70;border-radius:8px;display:grid;place-items:center;position:relative;touch-action:none;-webkit-user-select:none;user-select:none}
+.traySlot .piece{pointer-events:none}
 .traySlot .num{position:absolute;top:2px;left:5px;font-size:10px;color:#cbd5e1;font-weight:900}
 .controls{display:none}
 .actionBtn{border:1px solid #526074;background:#202b3b;border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:800}
@@ -63,7 +64,33 @@ body.dragging-piece{overflow:hidden;touch-action:none;-webkit-user-select:none;u
 .toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#0b1220;border:1px solid #536174;border-radius:10px;padding:8px 16px;z-index:100;font-weight:600;font-size:13px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.2px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;transition:.2s}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .traySlot.restricted{background:rgba(239,68,68,.18);border-color:#f87171;border-style:solid}
+.traySlot.flippable{background:rgba(167,139,250,.22);border-color:#a78bfa;border-style:solid}
 .piece.restricted-board{filter:drop-shadow(0 0 3px rgba(239,68,68,.55))}
+.timer.good{color:#22c55e}
+.die.rolling{animation:dieSpin .12s linear infinite}
+@keyframes dieSpin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(.92)}100%{transform:rotate(360deg) scale(1)}}
+.cell.blocker-pop{animation:blockerPop .35s ease-out}
+@keyframes blockerPop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.toast .t-good{color:#22c55e;font-weight:800}
+.toast .t-bad{color:#ef4444;font-weight:800}
+.toast.fireworks{overflow:visible}
+.fw-particle{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;animation:fwFly .9s ease-out forwards}
+@keyframes fwFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+.confirmOverlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:120;padding:16px}
+.confirmOverlay.show{display:flex}
+.confirmBox{background:#182333;border:1px solid #526074;border-radius:16px;padding:20px;max-width:340px;text-align:center;box-shadow:0 15px 50px #0009}
+.confirmBox p{margin:0 0 16px;color:#e2e8f0;font-size:15px;line-height:1.4}
+.confirmBtns{display:flex;gap:16px;justify-content:center}
+.confirmYes,.confirmNo{width:52px;height:52px;border-radius:50%;border:2px solid;font-size:26px;cursor:pointer;display:grid;place-items:center}
+.confirmYes{background:#14532d;border-color:#22c55e;color:#22c55e}
+.confirmNo{background:#450a0a;border-color:#ef4444;color:#ef4444}
+.helpMiniTray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px}
+.helpMiniSlot{width:52px;height:44px;border-radius:8px;border:1px dashed #4c5b70;display:grid;place-items:center;position:relative;background:#1a2332}
+.helpMiniSlot.restricted{background:rgba(239,68,68,.18);border-color:#f87171;border-style:solid}
+.helpMiniSlot.flippable{background:rgba(167,139,250,.22);border-color:#a78bfa;border-style:solid}
+.helpMiniSlot .num{position:absolute;top:1px;left:4px;font-size:9px;color:#cbd5e1;font-weight:900;font-family:system-ui,sans-serif}
+.helpMiniPiece{display:grid}
+.helpMiniPiece .pCell{border:1.5px solid rgba(255,255,255,.55)}
 .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:16px;z-index:80}
 .modal.show{display:flex}
 .dialog{width:min(94vw,570px);max-height:90vh;overflow:auto;background:#182333;border:1px solid #526074;border-radius:16px;padding:18px;box-shadow:0 15px 50px #0009;position:relative;scrollbar-width:thin;scrollbar-color:#4b5563 #111827}
@@ -100,7 +127,26 @@ input[type=number]{width:90px;background:#101827;border:1px solid #526074;border
  .coord.bottom{padding-top:8px}
  .coord.left{padding-right:8px}
  .coord.right{padding-left:8px}
- .tray{gap:3px;padding:4px;touch-action:none}.traySlot{width:62px;height:54px;touch-action:none}
+ .tray{
+   display:grid;
+   grid-template-columns:repeat(5, 54px);
+   grid-template-rows:46px 46px;
+   gap:2px;
+   padding:3px;
+   justify-content:center;
+   touch-action:none;
+ }
+ .traySlot{width:54px;height:46px;touch-action:none}
+ .traySlot[data-slot="1"]{grid-area:1/1}
+ .traySlot[data-slot="2"]{grid-area:1/2}
+ .traySlot[data-slot="3"]{grid-area:1/3}
+ .traySlot[data-slot="4"]{grid-area:1/4}
+ .traySlot[data-slot="5"]{grid-area:1/5}
+ .traySlot[data-slot="6"]{grid-area:2/1}
+ .traySlot[data-slot="7"]{grid-area:2/2}
+ .traySlot[data-slot="8"]{grid-area:2/3}
+ .traySlot[data-slot="9"]{grid-area:2/4}
+ .traySlot.empty-slot{opacity:.25;pointer-events:none;border-style:dotted}
  .levels{grid-template-columns:repeat(3,1fr)}.modeChoices{grid-template-columns:1fr}
 }
 @media(max-width:380px){
@@ -118,7 +164,7 @@ input[type=number]{width:90px;background:#101827;border:1px solid #526074;border
       <button class="iconBtn" id="loadBtn" title="Načíst">📂</button>
       <button class="iconBtn" id="newBtn" title="Nová hra">↻</button>
       <button class="iconBtn modeBtn" id="modeBtn" title="Režim hry">S</button>
-      <button class="iconBtn" id="statsBtn" title="Statistiky">▤</button>
+      <button class="iconBtn" id="statsBtn" title="Statistiky">📊</button>
       <button class="iconBtn langFlag" id="langBtn" title="Language">🇬🇧</button>
       <button class="iconBtn help" id="helpBtn" title="Nápověda">💡</button>
     </nav>
@@ -220,12 +266,33 @@ const forbiddenByLevel = {
  WIZARD:[1,2,3,4]
 };
 const PIECE_MARKED = new Set([1,2,3,4]);
+const FLIPPABLE = new Set([6,7,8]); // 2× klik: osa dle rotace (0/180 vodorovně, 90/270 svisle)
+
+function modeKey(mode, matchTimed, limit){
+ if(mode!=="MATCH") return "SOLO";
+ if(matchTimed) return `MATCH M${Number(limit)||60}-`;
+ return "MATCH";
+}
+function currentModeKey(){
+ return modeKey(state.mode, state.matchTimed, state.limit);
+}
+function saveKeyFor(mode){
+ return mode==="MATCH" ? "geniusSave_MATCH" : "geniusSave_SOLO";
+}
 
 let state = {
  mode:"SOLO", level:"STARTER", matchLevel:0, matchTimed:false, limit:180,
  dice:[], blockers:[], pieces:{}, elapsed:0, running:false, startedAt:0,
  finished:false, gameId:0, armed:false // armed=false → čeká na klik (červená); true → čas běží (zelená)
 };
+// načti uložený limit MATCH
+try{
+ const lim = Number(localStorage.getItem("geniusMatchLimit"));
+ if(lim>=30 && lim<=900) state.limit = lim;
+ const mt = localStorage.getItem("geniusMatchTimed");
+ if(mt==="1") state.matchTimed = true;
+ if(mt==="0") state.matchTimed = false;
+}catch(_){}
 let drag = null, timerHandle = null, toastHandle = null, piece6ClickTimer = null;
 let lang = localStorage.getItem("geniusLang") || "cs";
 
@@ -245,7 +312,7 @@ const T = {
   <div class="helpSection">Časomíra</div>
   <p>Název úrovně vlevo je tlačítko: <span style="color:#ef4444">červená</span> = čas neběží, <span style="color:#22c55e">zelená</span> = čas běží. Spustíš ji kliknutím na text úrovně, nebo automaticky při položení prvního dílku na desku. Po dokončení úrovně v MATCH se čas znovu zastaví – další kolo spustíš až kliknutím / prvním dílkem.</p>
   <div class="helpSection">Dílky</div>
-  <p>1× klik = rotace 90°. 2× klik = překlopení (u dílku 6: svisle → vodorovně → bez). Přetáhni dílek ze zásobníku na desku – zvětší se a připne na mřížku. Na desce ho přesuneš, nebo stáhneš zpět do zásobníku.</p>
+  <p>1× klik = rotace 90°. 2× klik u 6/7/8 = překlopení (0°/180° vodorovně, 90°/270° svisle). Přetáhni dílek ze zásobníku na desku – zvětší se a připne na mřížku. Na desce ho přesuneš, nebo stáhneš zpět do zásobníku.</p>
   <div class="helpSection">Úroveň</div>
   <p>STARTER – bez omezení.<br>JUNIOR – omezení u 1, 2.<br>EXPERT – omezení u 1, 2, 3.<br>MASTER – omezení u 2, 3, 4.<br>WIZARD – omezení u 1, 2, 3, 4.<br>Vyjmenované dílky u daných úrovní se nesmí dotýkat stranou. Dotyk jen rohem je vždy povolen. Omezené dílky mají v zásobníku slabě červené pozadí.</p>
   <div class="helpSection">Režimy (S / M)</div>
@@ -277,7 +344,7 @@ const T = {
   <div class="helpSection">Timer</div>
   <p>The level name on the left is a button: <span style="color:#ef4444">red</span> = timer stopped, <span style="color:#22c55e">green</span> = timer running. Start it by clicking the level text, or automatically when you place the first piece on the board. After finishing a MATCH level the timer stops again – start the next round by clicking / placing the first piece.</p>
   <div class="helpSection">Pieces</div>
-  <p>1× click = rotate 90°. 2× click = flip (piece 6: vertical → horizontal → none). Drag from the tray onto the board – it scales up and snaps to the grid. On the board you can move a piece or drag it back to the tray.</p>
+  <p>1× click = rotate 90°. 2× click on 6/7/8 = flip (0°/180° horizontal, 90°/270° vertical). Drag from the tray onto the board – it scales up and snaps to the grid. On the board you can move a piece or drag it back to the tray.</p>
   <div class="helpSection">Level</div>
   <p>STARTER – no restrictions.<br>JUNIOR – restrictions for 1, 2.<br>EXPERT – restrictions for 1, 2, 3.<br>MASTER – restrictions for 2, 3, 4.<br>WIZARD – restrictions for 1, 2, 3, 4.<br>The listed pieces at each level may not touch by edge. Corner contact is always allowed. Restricted pieces have a light red tray background.</p>
   <div class="helpSection">Modes (S / M)</div>
@@ -301,7 +368,7 @@ function applyLang(){
  document.documentElement.lang=lang;
  document.querySelectorAll("[data-t]").forEach(e=>e.textContent=tr(e.dataset.t));
  document.getElementById("langBtn").textContent = lang==="cs" ? "🇬🇧" : "🇨🇿";
- document.getElementById("helpText").innerHTML=tr("helpHtml");
+ try{ document.getElementById("helpText").innerHTML=buildHelpHtml(); }catch(_){}
  const hh=document.getElementById("helpHeading"); if(hh) hh.textContent=tr("helpTitle");
  const tt=document.getElementById("trayTitle"); if(tt) tt.textContent=tr("trayTitle");
  document.title = "GENIUS SQUARE";
@@ -309,8 +376,100 @@ function applyLang(){
  updateHeader();
 }
 function toast(msg){
- const e=document.getElementById("toast"); e.textContent=msg; e.classList.add("show");
+ const e=document.getElementById("toast");
+ e.classList.remove("fireworks");
+ e.querySelectorAll(".fw-particle").forEach(p=>p.remove());
+ e.textContent=msg; e.classList.add("show");
  clearTimeout(toastHandle); toastHandle=setTimeout(()=>e.classList.remove("show"),1800);
+}
+function miniPieceHtml(id, extraClass=""){
+ const cells = normalize(rotateShape(SHAPES[id],0));
+ const h=Math.max(...cells.map(x=>x[0]))+1, w=Math.max(...cells.map(x=>x[1]))+1;
+ const size=Math.min(12, 36/Math.max(h,w));
+ let cellsHtml="";
+ cells.forEach(([r,c])=>{
+  cellsHtml += `<div class="pCell" style="grid-row:${r+1};grid-column:${c+1}"></div>`;
+ });
+ return `<div class="helpMiniSlot ${extraClass}"><span class="num">${id}</span>
+  <div class="helpMiniPiece piece" data-id="${id}" style="width:${w*size}px;height:${h*size}px;grid-template-rows:repeat(${h},${size}px);grid-template-columns:repeat(${w},${size}px)">${cellsHtml}</div></div>`;
+}
+function buildHelpHtml(){
+ const restricted = [1,2,3,4].map(id=>miniPieceHtml(id,"restricted")).join("");
+ const flips = [6,7,8].map(id=>miniPieceHtml(id,"flippable")).join("");
+ if(lang==="cs"){
+  return `
+  <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
+  <div class="helpSection">Cíl</div>
+  <p>Na začátku hry se provede automatický hod 7 kostek (s animací) a umístí se blokátory na políčka odpovídající sedmi souřadnicím na kostkách.<br>Zbývá 29 volných polí – vyplň je všemi 9 barevnými dílky bez překrytí.</p>
+  <div class="helpSection">Časomíra</div>
+  <p>Název úrovně vlevo: <span style="color:#ef4444">červená</span> = neběží, <span style="color:#22c55e">zelená</span> = běží. Start kliknutím na úroveň nebo položením prvního dílku. V MATCH s limitem běží odpočet (např. 01:00.0); posledních 10 s žlutě, po vypršení 00:00.0 červeně a návrat o úroveň níž.</p>
+  <div class="helpSection">Dílky</div>
+  <p>1× klik = rotace o 90° (opakovaně dokola).<br>
+  2× klik u dílků 6, 7 a 8 = překlopení podle aktuální orientace:<br>
+  • rotace 0° nebo 180° → překlopení <b>vodorovně</b><br>
+  • rotace 90° nebo 270° → překlopení <b>svisle</b><br>
+  Další 2× klik překlopí dílek zpět. U ostatních dílků 2× klik nic nemění.</p>
+  <div class="helpMiniTray">${flips}</div>
+  <p>Přetáhni dílek ze zásobníku na desku – zvětší se a připne na mřížku. Na desce ho přesuneš, nebo stáhneš zpět do zásobníku. Překlopitelné dílky (6, 7, 8) mají ve zásobníku světle fialové pozadí.</p>
+  <div class="helpSection">Úroveň</div>
+  <p>STARTER – bez omezení.<br>JUNIOR – omezení u 1, 2.<br>EXPERT – omezení u 1, 2, 3.<br>MASTER – omezení u 2, 3, 4.<br>WIZARD – omezení u 1, 2, 3, 4.</p>
+  <div class="helpMiniTray">${restricted}</div>
+  <p>Vyjmenované dílky u daných úrovní se nesmí dotýkat stranou. Dotyk jen rohem je vždy povolen. Omezené dílky mají v zásobníku slabě červené pozadí.</p>
+  <div class="helpSection">Hodnoty souřadnic na kostkách</div>
+  <p>1. kostka: A2 A3 B1 B2 B3 C2<br>
+  2. kostka: A4 B5 C5 C6 D6 F6<br>
+  3. kostka: B4 C3 C4 D3 D4 E3<br>
+  4. kostka: A1 C1 D1 D2 E2 F3<br>
+  5. kostka: D5 E4 E5 E6 F4 F5<br>
+  6. kostka: A5 A5 B6 E1 F2 F2<br>
+  7. kostka: A6 A6 A6 F1 F1 F1</p>
+  <div class="helpSection">Režimy (S / M)</div>
+  <p><b>SOLO</b> – libovolná úroveň, měří se čas.<br><b>MATCH</b> – postup STARTER → WIZARD. Volitelný limit (ukládá se); ve statistikách jako MATCH nebo MATCH M60- podle limitu.<br>Uložení SOLO a MATCH je oddělené. MATCH po každém kole automaticky ukládá. Načtení se řídí aktuálním režimem; při rozehrané hře potvrzení ✓ / ✕.</p>
+  <div class="helpSection">Menu</div>
+  <ul class="helpMenu">
+    <li>💾 Uložit (podle režimu S/M)</li>
+    <li>📂 Načíst (podle režimu S/M)</li>
+    <li>↻ Nová hra</li>
+    <li>S/M Režim</li>
+    <li>📊 Statistiky (🗑 smaže data)</li>
+    <li>🇬🇧/🇨🇿 Jazyk</li>
+    <li>💡 Nápověda</li>
+  </ul>
+  <p>Uložení i statistiky jsou v prohlížeči (localStorage).</p>`;
+ }
+ return `
+  <p class="helpCredits">Design and rulebook © 2018 Salim Berghiche, Alain Brobecker, Cameron Browne</p>
+  <div class="helpSection">Goal</div>
+  <p>At start, 7 dice are rolled (with animation) and blockers are placed on the coordinates shown.<br>Fill the remaining 29 cells with all 9 pieces without overlaps.</p>
+  <div class="helpSection">Timer</div>
+  <p>Level name: <span style="color:#ef4444">red</span> = stopped, <span style="color:#22c55e">green</span> = running. Start by click or first piece. MATCH with limit counts down; last 10 s yellow, then 00:00.0 red and drop one level.</p>
+  <div class="helpSection">Pieces</div>
+  <p>1× click = rotate 90° (repeats around).<br>
+  2× click on pieces 6, 7 and 8 = flip according to current orientation:<br>
+  • rotation 0° or 180° → <b>horizontal</b> flip<br>
+  • rotation 90° or 270° → <b>vertical</b> flip<br>
+  Another 2× click flips it back. Other pieces ignore double-click.</p>
+  <div class="helpMiniTray">${flips}</div>
+  <p>Drag from the tray onto the board – it scales up and snaps to the grid. On the board you can move a piece or drag it back to the tray. Flippable pieces (6, 7, 8) have a light purple tray background.</p>
+  <div class="helpSection">Level</div>
+  <p>STARTER – none.<br>JUNIOR – 1, 2.<br>EXPERT – 1, 2, 3.<br>MASTER – 2, 3, 4.<br>WIZARD – 1, 2, 3, 4.</p>
+  <div class="helpMiniTray">${restricted}</div>
+  <p>Listed pieces may not touch by edge. Corner contact is always allowed. Restricted pieces have a light red tray background.</p>
+  <div class="helpSection">Dice coordinate values</div>
+  <p>1st die: A2 A3 B1 B2 B3 C2<br>
+  2nd die: A4 B5 C5 C6 D6 F6<br>
+  3rd die: B4 C3 C4 D3 D4 E3<br>
+  4th die: A1 C1 D1 D2 E2 F3<br>
+  5th die: D5 E4 E5 E6 F4 F5<br>
+  6th die: A5 A5 B6 E1 F2 F2<br>
+  7th die: A6 A6 A6 F1 F1 F1</p>
+  <div class="helpSection">Modes (S / M)</div>
+  <p><b>SOLO</b> – any level.<br><b>MATCH</b> – STARTER → WIZARD; optional limit stored as MATCH M60- etc.<br>Separate saves for SOLO/MATCH; MATCH autosaves each round. Load follows current mode; confirm ✓ / ✕ if a game is in progress.</p>
+  <div class="helpSection">Menu</div>
+  <ul class="helpMenu">
+    <li>💾 Save · 📂 Load · ↻ New · S/M · 📊 Stats · 🇬🇧/🇨🇿 · 💡</li>
+  </ul>
+  <p>Save and stats use browser localStorage.</p>`;
 }
 function coordToRC(s){return [parseInt(s[1],10)-1,s.charCodeAt(0)-65]}
 function rcToCoord(r,c){return String.fromCharCode(65+c)+(r+1)}
@@ -327,11 +486,12 @@ function normalize(cells){
 }
 function orientedShape(p){
  let cells=rotateShape(SHAPES[p.id],p.rot||0);
- // flip: 0=none, 1=vertical axis (left-right), 2=horizontal axis (up-down)
- if(p.id===6){
-  const f = p.flip|0;
-  if(f===1) cells=cells.map(([r,c])=>[r,-c]);
-  else if(f===2) cells=cells.map(([r,c])=>[-r,c]);
+ // dílky 6,7,8: flip je zap/vyp (0/1)
+ // osa podle aktuální rotace: 0°/180° → vodorovně (U-D), 90°/270° → svisle (L-R)
+ if(FLIPPABLE.has(p.id) && (p.flip|0)){
+  const r = ((p.rot|0)%4+4)%4;
+  if(r===0 || r===2) cells=cells.map(([rr,cc])=>[-rr,cc]); // vodorovná osa
+  else cells=cells.map(([rr,cc])=>[rr,-cc]);                 // svislá osa
  }
  return normalize(cells);
 }
@@ -342,17 +502,78 @@ function randomDice(){
  return DICE.map(faces=>faces[Math.floor(Math.random()*faces.length)]);
 }
 function buildBlockers(dice){return dice.map(coordToRC)}
-function newGame(mode=state.mode, level=state.level){
+function newGame(mode=state.mode, level=state.level, opts={}){
  state.mode=mode; state.level=level; state.finished=false; state.elapsed=0;
- state.running=false; state.armed=false; // čeká na klik na úroveň (červená) → spustí čas
+ state.running=false; state.armed=false;
  state.startedAt=0; state.gameId++;
- state.dice=randomDice(); state.blockers=buildBlockers(state.dice);
  state.pieces={}; for(let i=1;i<=9;i++) state.pieces[i]=makePiece(i);
  if(mode==="MATCH"){state.matchLevel=LEVELS.indexOf(level); if(state.matchLevel<0)state.matchLevel=0}
+ try{
+  localStorage.setItem("geniusLastMode", state.mode);
+  localStorage.setItem("geniusLastLevel", state.level);
+  localStorage.setItem("geniusMatchLimit", String(state.limit||180));
+  localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
+ }catch(_){}
  stopTimer();
- renderAll();
- updateLevelBtn();
- console.log("[GS] newGame (čeká na start)", {mode:state.mode, level:state.level, dice:state.dice.slice()});
+ const animate = opts.animate!==false;
+ if(animate){
+  runDiceAndBlockerAnimation(()=>{
+   updateLevelBtn();
+   updateTimer();
+   console.log("[GS] newGame ready", {mode:state.mode, level:state.level, dice:state.dice.slice()});
+  });
+ } else {
+  state.dice=randomDice(); state.blockers=buildBlockers(state.dice);
+  state._rolling=false;
+  renderAll();
+  updateLevelBtn();
+ }
+}
+function runDiceAndBlockerAnimation(done){
+ // Celková animace ~0.75 s
+ state._rolling = true;
+ state.blockers = [];
+ state.dice = randomDice();
+ const finalDice = state.dice.slice();
+ const finalBlockers = buildBlockers(finalDice);
+ renderBoard();
+ renderTray();
+ const diceEl = document.getElementById("dice");
+ const totalMs = 750;
+ const maxTicks = 8;
+ const rollStep = Math.max(40, Math.floor(totalMs * 0.55 / maxTicks));
+ let ticks = 0;
+ const rollIv = setInterval(()=>{
+  ticks++;
+  diceEl.innerHTML = DICE.map((faces,i)=>{
+   const face = ticks>=maxTicks ? finalDice[i] : faces[Math.floor(Math.random()*faces.length)];
+   return `<div class="die${ticks<maxTicks?" rolling":""}" title="Kostka ${i+1}">${face}</div>`;
+  }).join("");
+  if(ticks>=maxTicks){
+   clearInterval(rollIv);
+   state.dice = finalDice;
+   const n = Math.max(1, finalBlockers.length);
+   const blockStep = Math.max(30, Math.floor((totalMs * 0.45) / n));
+   let bi = 0;
+   state.blockers = [];
+   const placeNext = ()=>{
+    if(bi>=finalBlockers.length){
+     state.blockers = finalBlockers.map(b=>b.slice());
+     state._rolling = false;
+     renderBoard();
+     if(done) done();
+     return;
+    }
+    state.blockers.push(finalBlockers[bi].slice());
+    bi++;
+    renderBoard();
+    const cells = document.querySelectorAll("#board .cell.blocker");
+    if(cells.length) cells[cells.length-1].classList.add("blocker-pop");
+    setTimeout(placeNext, blockStep);
+   };
+   placeNext();
+  }
+ }, rollStep);
 }
 function armAndStart(silent=false){
  if(state.finished) return;
@@ -390,17 +611,35 @@ function updateLevelBtn(){
 }
 function stopTimer(){clearInterval(timerHandle);timerHandle=null}
 function formatTime(sec){
+ sec = Math.max(0, Number(sec)||0);
  const m=Math.floor(sec/60), s=Math.floor(sec%60), d=Math.floor((sec*10)%10);
  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+d;
 }
+function displayTimerValue(){
+ // MATCH s limitem = odpočet zbývajícího času
+ if(state.mode==="MATCH" && state.matchTimed){
+  const left = Math.max(0, state.limit - (state.elapsed||0));
+  return formatTime(left);
+ }
+ return formatTime(state.elapsed||0);
+}
 function updateTimer(){
- const e=document.getElementById("timer"); e.textContent=formatTime(state.elapsed);
- e.classList.toggle("warn",state.matchTimed && state.limit-state.elapsed<30 && state.limit-state.elapsed>=0);
- e.classList.toggle("bad",state.matchTimed && state.elapsed>=state.limit);
+ const e=document.getElementById("timer");
+ e.textContent = displayTimerValue();
+ e.classList.remove("warn","bad","good");
+ if(state.mode==="MATCH" && state.matchTimed){
+  const left = state.limit - (state.elapsed||0);
+  if(left<=0) e.classList.add("bad");
+  else if(left<=10) e.classList.add("warn");
+  else if(state.armed && state.running) e.classList.add("good");
+ }
 }
 function updateHeader(){
  document.getElementById("modeBtn").textContent=state.mode==="SOLO"?"S":"M";
- document.getElementById("dice").innerHTML=state.dice.map((d,i)=>`<div class="die" title="Kostka ${i+1}">${d}</div>`).join("");
+ // dice HTML se nastavuje i v animaci – nepřepisuj, pokud právě rollujeme
+ if(!state._rolling){
+  document.getElementById("dice").innerHTML=state.dice.map((d,i)=>`<div class="die" title="Kostka ${i+1}">${d}</div>`).join("");
+ }
  updateLevelBtn();
  updateTimer();
 }
@@ -432,21 +671,39 @@ function renderPlaced(p){
 }
 function renderTray(){
  const t=document.getElementById("tray"); t.innerHTML="";
+ let any = false;
  for(let id=1;id<=9;id++){
-  const p=state.pieces[id]; if(p.placed)continue;
+  const p=state.pieces[id];
   const slot=document.createElement("div");
-  slot.className="traySlot" + (isRestrictedPiece(id) ? " restricted" : "");
   slot.dataset.slot=id;
+  if(p.placed){
+   // prázdný slot drží pozici v mobilní mřížce 1–5 / 6–9
+   slot.className="traySlot empty-slot";
+   slot.innerHTML=`<span class="num">${id}</span>`;
+   t.appendChild(slot);
+   continue;
+  }
+  any = true;
+  let sc = "traySlot";
+  if(isRestrictedPiece(id)) sc += " restricted";
+  if(FLIPPABLE.has(id)) sc += " flippable";
+  slot.className=sc;
   slot.innerHTML=`<span class="num">${id}</span>`;
   const cells=orientedShape(p), h=Math.max(...cells.map(x=>x[0]))+1,w=Math.max(...cells.map(x=>x[1]))+1;
-  const size=Math.min(14,42/Math.max(h,w));
+  const size=Math.min(12,36/Math.max(h,w));
   const el=document.createElement("div");el.className="piece";el.dataset.id=id;
   el.style.width=(w*size)+"px";el.style.height=(h*size)+"px";
   el.style.gridTemplateRows=`repeat(${h},${size}px)`;el.style.gridTemplateColumns=`repeat(${w},${size}px)`;
   cells.forEach(([r,c])=>{const x=document.createElement("div");x.className="pCell";x.style.gridRow=r+1;x.style.gridColumn=c+1;el.appendChild(x)});
-  slot.appendChild(el);t.appendChild(slot);attachPiecePointer(el,id,false);
+  slot.appendChild(el);t.appendChild(slot);
+  attachPiecePointer(slot,id,false);
  }
- if(!t.children.length)t.innerHTML='<div class="empty">✓ Všechny dílky jsou na desce</div>';
+ if(!any){
+  // všechny na desce – na PC zobraz hlášku, na mobilu mřížka prázdných slotů stačí
+  if(!window.matchMedia || !window.matchMedia("(max-width:650px)").matches){
+   t.innerHTML='<div class="empty">✓ Všechny dílky jsou na desce</div>';
+  }
+ }
 }
 function renderAll(){updateHeader();renderBoard();renderTray()}
 
@@ -476,8 +733,8 @@ function getCandidateFromPointer(id, clientX, clientY, center=true, offsetR=0, o
  return {r, c};
 }
 function pointerOverBoard(x,y){
- // mírně rozšířená hit-area pro snazší drop na mobilu
- const pad = 12;
+ // větší hit-area pro snazší drop na mobilu
+ const pad = 28;
  const b=document.getElementById("board").getBoundingClientRect();
  return x>=b.left-pad && x<=b.right+pad && y>=b.top-pad && y<=b.bottom+pad;
 }
@@ -495,6 +752,8 @@ const pendingRotate = {};
 function doRotate(id){
  const p = state.pieces[id];
  if(!p) return;
+ // klik na dílek v zásobníku (nebo na desce) spustí časomíru
+ if(!state.armed && !state.finished) armAndStart(true);
  p.rot = (p.rot + 1) % 4;
  if(p.placed && placementErrors(id, p.placed).length){
   p.rot = (p.rot + 3) % 4;
@@ -502,22 +761,25 @@ function doRotate(id){
  }
  renderAll(); saveState(true);
 }
-function doFlip6(){
- const p = state.pieces[6];
+function doFlip(id){
+ if(!FLIPPABLE.has(id)) return;
+ const p = state.pieces[id];
  if(!p) return;
- // cycle: 0 (none) → 1 (svislá osa) → 2 (vodorovná osa) → 0
- p.flip = ((p.flip|0) + 1) % 3;
- if(p.placed && placementErrors(6, p.placed).length){
-  // try next if illegal
-  p.flip = ((p.flip|0) + 1) % 3;
-  if(p.placed && placementErrors(6, p.placed).length){
-   p.flip = ((p.flip|0) + 1) % 3; // back to original if both bad
-  }
+ if(!state.armed && !state.finished) armAndStart(true);
+ // 2× klik = jedno překlopení podle rotace (toggle zap/vyp)
+ // 0°/180° → vodorovná osa; 90°/270° → svislá osa — žádný stav „bez překlopení“ v UI
+ const prev = p.flip|0;
+ p.flip = prev ? 0 : 1;
+ if(p.placed && placementErrors(id, p.placed).length){
+  p.flip = prev;
+  toast(lang==="cs" ? "Toto překlopení není podle pravidel" : "This flip is not legal");
+  return;
  }
- const names = lang==="cs"
-  ? ["bez překlopení","překlopení svisle","překlopení vodorovně"]
-  : ["no flip","vertical flip","horizontal flip"];
- toast("6: " + names[p.flip|0]);
+ const r = ((p.rot|0)%4+4)%4;
+ const axis = (r===0 || r===2)
+  ? (lang==="cs" ? "vodorovně" : "horizontal")
+  : (lang==="cs" ? "svisle" : "vertical");
+ toast(id + ": " + (lang==="cs" ? "překlopení " : "flip ") + axis);
  renderAll(); saveState(true);
 }
 function attachPiecePointer(el, id, placed){
@@ -530,11 +792,13 @@ function attachPiecePointer(el, id, placed){
   if(ev.cancelable) ev.preventDefault();
   const dist = Math.hypot(ev.clientX - sx, ev.clientY - sy);
   // nižší práh na touch zařízeních
-  const threshold = (ev.pointerType === "touch") ? 5 : 8;
+  const threshold = (ev.pointerType === "touch") ? 3 : 6;
   if(dist > threshold) moved = true;
   if(!moved) return;
   if(pendingRotate[id]){ clearTimeout(pendingRotate[id]); delete pendingRotate[id]; }
   el.classList.add("dragging");
+  const pieceEl = el.classList.contains("piece") ? el : el.querySelector(".piece");
+  if(pieceEl) pieceEl.classList.add("dragging");
   document.body.classList.add("dragging-piece");
   const board = document.getElementById("board");
   const br = board.getBoundingClientRect();
@@ -554,7 +818,7 @@ function attachPiecePointer(el, id, placed){
   } else {
    const cells = orientedShape(state.pieces[id]);
    const h = Math.max(...cells.map(x=>x[0]))+1, w = Math.max(...cells.map(x=>x[1]))+1;
-   const ts = Math.min(18, 48 / Math.max(h, w));
+   const ts = Math.min(22, 56 / Math.max(h, w));
    setProxySize(proxy, id, ts);
    proxy.style.left = (ev.clientX - proxy.offsetWidth / 2) + "px";
    proxy.style.top  = (ev.clientY - proxy.offsetHeight / 2) + "px";
@@ -576,26 +840,32 @@ function attachPiecePointer(el, id, placed){
   const p = state.pieces[id];
   if(proxy){ proxy.remove(); proxy = null; }
   el.classList.remove("dragging");
+  const pieceEl2 = el.classList.contains("piece") ? el : el.querySelector(".piece");
+  if(pieceEl2) pieceEl2.classList.remove("dragging");
   cleanupListeners();
 
   if(!moved){
    const now = Date.now();
-   if(id === 6){
-    if(lastTapById[6] && (now - lastTapById[6] < 380)){
-     lastTapById[6] = 0;
-     if(pendingRotate[6]){ clearTimeout(pendingRotate[6]); delete pendingRotate[6]; }
-     doFlip6();
+   // 1× klik = JEN rotace 90°; 2× klik (6/7/8) = JEN jedno vodorovné překlopení
+   if(FLIPPABLE.has(id)){
+    if(lastTapById[id] && (now - lastTapById[id] < 320)){
+     // druhý klik → zruš čekající rotaci, proveď pouze flip
+     lastTapById[id] = 0;
+     if(pendingRotate[id]){ clearTimeout(pendingRotate[id]); delete pendingRotate[id]; }
+     doFlip(id);
      drag = null; pointerId = null; return;
     }
-    lastTapById[6] = now;
-    if(pendingRotate[6]) clearTimeout(pendingRotate[6]);
-    pendingRotate[6] = setTimeout(()=>{
-     delete pendingRotate[6];
-     doRotate(6);
-    }, 320);
+    // první klik → naplánuj rotaci (dvojklik ji stihne zrušit)
+    lastTapById[id] = now;
+    if(pendingRotate[id]) clearTimeout(pendingRotate[id]);
+    pendingRotate[id] = setTimeout(()=>{
+     delete pendingRotate[id];
+     lastTapById[id] = 0;
+     doRotate(id);
+    }, 280);
     drag = null; pointerId = null; return;
    }
-   lastTapById[id] = now;
+   // ostatní dílky: okamžitá rotace
    doRotate(id);
    drag = null; pointerId = null; return;
   }
@@ -715,81 +985,220 @@ function checkWin(){
  }
  finishLevel();return true;
 }
+function bestTimeFor(modeK, level){
+ const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
+ let best = null;
+ arr.forEach(x=>{
+  if(x.mode===modeK && x.level===level){
+   if(best===null || Number(x.time)<Number(best)) best = Number(x.time);
+  }
+ });
+ return best;
+}
+function maxLevelIndexForMode(modeK){
+ const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
+ let mx = -1;
+ arr.forEach(x=>{
+  if(x.mode===modeK){
+   const i = LEVELS.indexOf(x.level);
+   if(i>mx) mx=i;
+  }
+ });
+ return mx;
+}
+function isBetterRecord(modeK, level, time){
+ // pro MATCH: nižší úroveň než max dosažená = horší
+ if(modeK.startsWith("MATCH")){
+  const li = LEVELS.indexOf(level);
+  const maxI = maxLevelIndexForMode(modeK);
+  // maxI is before this record is added when checking for toast after recordStat - call before push for "was better"
+ }
+ const prev = bestTimeFor(modeK, level);
+ if(prev===null) return true; // first = best
+ return Number(time) < Number(prev);
+}
 function finishLevel(){
  if(state.armed && state.running){
   state.elapsed=(performance.now()-state.startedAt)/1000;
  }
  state.running=false; state.armed=false; state.finished=true; stopTimer();
  updateLevelBtn();
- recordStat(state.mode,state.level,state.elapsed);
+ const mk = currentModeKey();
+ const t = state.elapsed;
+ const prevBest = bestTimeFor(mk, state.level);
+ const better = prevBest===null || Number(t) < Number(prevBest);
+ // MATCH: pokud existuje vyšší dokončená úroveň, last není „lepší achievement"
+ let achievementBetter = better;
+ if(mk.startsWith("MATCH")){
+  const maxI = maxLevelIndexForMode(mk);
+  const li = LEVELS.indexOf(state.level);
+  if(maxI > li) achievementBetter = false;
+  else if(maxI < li) achievementBetter = true;
+  else achievementBetter = better;
+ }
+ recordStat(mk, state.level, t);
+ toastLevelComplete(state.level, t, achievementBetter);
  if(state.mode==="SOLO"){
-  saveState(false); toast(`${state.level} ✓  ${formatTime(state.elapsed)}`);
+  saveState(true);
  }else{
+  // MATCH autosave po každém kole
+  saveState(true);
   const old=state.level;
   if(state.matchLevel>=LEVELS.length-1){
-    saveState(false); toast(`MATCH ✓ WIZARD  ${formatTime(state.elapsed)}`);
+    // hotovo celé MATCH
   }else{
     state.matchLevel++;
     state.level=LEVELS[state.matchLevel];
-    toast(`${old} ✓ → ${state.level} · klikni na úroveň`);
-    // Připraví další úroveň, ale časomíra NEBĚŽÍ, dokud hráč neklikne na červený text úrovně
-    setTimeout(()=>newGame("MATCH",state.level),450);
+    setTimeout(()=>newGame("MATCH",state.level),550);
   }
+ }
+}
+function toastLevelComplete(level, time, better){
+ const cls = better ? "t-good" : "t-bad";
+ const mk = currentModeKey();
+ const html = `${mk} · ${level} ✓  <span class="${cls}">${formatTime(time)}</span>`;
+ const e=document.getElementById("toast");
+ e.querySelectorAll(".fw-particle").forEach(p=>p.remove());
+ e.innerHTML = html;
+ e.classList.add("show");
+ e.classList.toggle("fireworks", !!better);
+ clearTimeout(toastHandle);
+ if(better){
+  spawnFireworks(e);
+  setTimeout(()=>spawnFireworks(e), 350);
+  setTimeout(()=>spawnFireworks(e), 700);
+  setTimeout(()=>spawnFireworks(e), 1100);
+ }
+ // vždy 2.5 s
+ toastHandle=setTimeout(()=>{
+  e.classList.remove("show","fireworks");
+  e.querySelectorAll(".fw-particle").forEach(p=>p.remove());
+ }, 2500);
+}
+function spawnFireworks(host){
+ const colors = ["#22c55e","#fbbf24","#38bdf8","#f472b6","#a78bfa","#f97316","#ef4444","#fff"];
+ for(let i=0;i<22;i++){
+  const p=document.createElement("span");
+  p.className="fw-particle";
+  const ang = (Math.PI*2*i)/22 + Math.random()*0.4;
+  const dist = 24 + Math.random()*56;
+  p.style.setProperty("--dx", (Math.cos(ang)*dist)+"px");
+  p.style.setProperty("--dy", (Math.sin(ang)*dist - 10)+"px");
+  p.style.background = colors[i%colors.length];
+  p.style.left = (40 + Math.random()*20) + "%";
+  p.style.top = (30 + Math.random()*30) + "%";
+  host.appendChild(p);
  }
 }
 function recordStat(mode,level,time){
  const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
  arr.push({mode,level,time,ts:Date.now()});
- arr.splice(100);localStorage.setItem("geniusStats",JSON.stringify(arr));
+ arr.splice(150);localStorage.setItem("geniusStats",JSON.stringify(arr));
  renderStats();
+}
+function levelRank(level){
+ const i = LEVELS.indexOf(level);
+ return i < 0 ? -1 : i;
+}
+// A lepší než B? Vyšší úroveň vždy vyhraje; při stejné úrovni menší čas.
+function isBetterStat(a, b){
+ if(!b) return true;
+ const ra = levelRank(a.level), rb = levelRank(b.level);
+ if(ra !== rb) return ra > rb;
+ return Number(a.time) < Number(b.time);
 }
 function renderStats(){
  const box=document.getElementById("statsContent"); if(!box)return;
  const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
  if(!arr.length){box.innerHTML=`<div class="empty">${tr("noStats")}</div>`;return}
 
- // Nejlepší (nejrychlejší) čas pro každou úroveň
- const bestByLevel = {};
+ // 1 řádek na režim (SOLO / MATCH / MATCH M60- / …)
+ // Junior přepíše Starter, Expert přepíše Junior; stejná úroveň → lepší čas
+ const best = {};
+ const last = {};
  arr.forEach(x=>{
-  const lv = x.level || "?";
-  if(!bestByLevel[lv] || Number(x.time) < Number(bestByLevel[lv].time)){
-   bestByLevel[lv] = x;
-  }
+  const mode = x.mode || "?";
+  const rec = {mode, level: x.level||"?", time: Number(x.time)||0, ts: x.ts||0};
+  if(isBetterStat(rec, best[mode])) best[mode] = rec;
+  last[mode] = rec;
  });
- // Poslední záznam pro každou úroveň (podle pořadí v poli = chronologické push)
- const lastByLevel = {};
- arr.forEach(x=>{ lastByLevel[x.level || "?"] = x; });
 
- const levelOrder = LEVELS.filter(l => bestByLevel[l] || lastByLevel[l]);
- // include any unknown levels
- Object.keys(bestByLevel).forEach(l=>{ if(!levelOrder.includes(l)) levelOrder.push(l); });
+ const modes = Object.keys(best).sort((a,b)=>a.localeCompare(b));
 
- const row = (x) => `<tr><td>${x.mode||"—"}</td><td>${x.level||"—"}</td><td>${formatTime(x.time)}</td></tr>`;
- const table = (rows) =>
-  `<table class="stats"><thead><tr><th>${tr("mode")}</th><th>${tr("level")}</th><th>${tr("time")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+ const bestRows = modes.map(m=>{
+  const x = best[m];
+  return `<tr><td>${x.mode}</td><td>${x.level}</td><td>${formatTime(x.time)}</td></tr>`;
+ }).join("");
 
- const bestRows = levelOrder.map(l => row(bestByLevel[l])).join("");
- const lastRows = levelOrder.map(l => row(lastByLevel[l])).join("");
+ const lastRows = modes.map(m=>{
+  const x = last[m];
+  if(!x) return "";
+  const b = best[m];
+  let color = "#22c55e";
+  if(b){
+   const rl = levelRank(x.level), rb = levelRank(b.level);
+   if(rl < rb) color = "#ef4444";
+   else if(rl === rb && Number(x.time) > Number(b.time)) color = "#ef4444";
+   else color = "#22c55e";
+  }
+  return `<tr><td>${x.mode}</td><td>${x.level}</td><td style="color:${color};font-weight:700">${formatTime(x.time)}</td></tr>`;
+ }).join("");
 
  box.innerHTML =
-  `<div class="statsBlock"><h3>${lang==="cs"?"Nejlepší výsledky":"Best times"}</h3>${table(bestRows)}</div>` +
-  `<div class="statsBlock"><h3>${lang==="cs"?"Poslední záznam":"Latest per level"}</h3>${table(lastRows)}</div>`;
+  `<div class="statsBlock"><h3>${lang==="cs"?"Nejlepší výsledky":"Best results"}</h3>
+   <table class="stats"><thead><tr><th>${tr("mode")}</th><th>${tr("level")}</th><th>${tr("time")}</th></tr></thead><tbody>${bestRows}</tbody></table></div>` +
+  `<div class="statsBlock"><h3>${lang==="cs"?"Poslední hra":"Last game"}</h3>
+   <table class="stats"><thead><tr><th>${tr("mode")}</th><th>${tr("level")}</th><th>${tr("time")}</th></tr></thead><tbody>${lastRows}</tbody></table></div>`;
 }
-function clearAllData(){
+async function clearAllData(){
  const msg = lang==="cs"
-  ? "Opravdu smazat uloženou hru i všechny statistiky? Tuto akci nelze vrátit."
-  : "Really delete the saved game and all statistics? This cannot be undone.";
- if(!confirm(msg)) return;
+  ? "Opravdu smazat uložené hry (SOLO i MATCH) i všechny statistiky?"
+  : "Really delete saved games (SOLO & MATCH) and all statistics?";
+ const ok = await showConfirm(msg);
+ if(!ok) return;
  try{
   localStorage.removeItem("geniusSave");
+  localStorage.removeItem("geniusSave_SOLO");
+  localStorage.removeItem("geniusSave_MATCH");
   localStorage.removeItem("geniusStats");
-  console.log("[GS] localStorage cleared: geniusSave, geniusStats");
+  console.log("[GS] localStorage cleared");
   renderStats();
   toast(lang==="cs"?"Data smazána":"Data cleared");
  }catch(e){
   console.error("[GS] clearAllData", e);
   toast(lang==="cs"?"Smazání selhalo":"Clear failed");
  }
+}
+function gameInProgress(){
+ // hra zahájena = armed nebo nějaký dílek na desce
+ if(state.armed || state.running) return true;
+ return Object.values(state.pieces||{}).some(p=>p && p.placed);
+}
+function showConfirm(message){
+ return new Promise(resolve=>{
+  let ov = document.getElementById("confirmOverlay");
+  if(!ov){
+   ov = document.createElement("div");
+   ov.id = "confirmOverlay";
+   ov.className = "confirmOverlay";
+   ov.innerHTML = `<div class="confirmBox"><p id="confirmMsg"></p><div class="confirmBtns">
+     <button type="button" class="confirmYes" id="confirmYes" title="Ano">✓</button>
+     <button type="button" class="confirmNo" id="confirmNo" title="Ne">✕</button>
+    </div></div>`;
+   document.body.appendChild(ov);
+  }
+  document.getElementById("confirmMsg").textContent = message;
+  ov.classList.add("show");
+  const yes = document.getElementById("confirmYes");
+  const no = document.getElementById("confirmNo");
+  const done = (v)=>{
+   ov.classList.remove("show");
+   yes.onclick = null; no.onclick = null;
+   resolve(v);
+  };
+  yes.onclick = ()=>done(true);
+  no.onclick = ()=>done(false);
+ });
 }
 function serializeState(){
  // Build a clean, JSON-safe snapshot
@@ -799,7 +1208,7 @@ function serializeState(){
   pieces[id] = {
    id: id,
    rot: ((Number(p.rot)||0)%4+4)%4,
-   flip: (p.flip|0) % 3,
+   flip: FLIPPABLE.has(id) ? ((p.flip|0) % 2) : 0,
    placed: p.placed ? { r: Number(p.placed.r), c: Number(p.placed.c) } : null
   };
  }
@@ -827,55 +1236,42 @@ function saveState(silent=false){
  try{
   const data = serializeState();
   const json = JSON.stringify(data);
-  console.log("[GS] saveState → writing", {
-   silent,
-   bytes: json.length,
-   dice: data.dice,
-   blockers: data.blockers,
-   placed: Object.fromEntries(
-    Object.entries(data.pieces).map(([k,v]) => [k, v.placed])
-   ),
-   elapsed: data.elapsed,
-   level: data.level
-  });
-  localStorage.setItem("geniusSave", json);
-  // verify write
-  const verify = localStorage.getItem("geniusSave");
-  if(!verify || verify.length !== json.length){
-   console.error("[GS] saveState verify FAILED", {written: json.length, read: verify ? verify.length : 0});
-   throw new Error("localStorage verify failed");
-  }
-  const parsed = JSON.parse(verify);
-  console.log("[GS] saveState ✓ verified", {
-   dice: parsed.dice,
-   blockers: parsed.blockers,
-   placedCount: Object.values(parsed.pieces).filter(p => p && p.placed).length
-  });
+  const key = saveKeyFor(state.mode);
+  console.log("[GS] saveState →", key, {silent, bytes: json.length, level: data.level});
+  localStorage.setItem(key, json);
+  // legacy cleanup optional
+  const verify = localStorage.getItem(key);
+  if(!verify || verify.length !== json.length) throw new Error("localStorage verify failed");
   state.elapsed = data.elapsed;
-  if(!silent) toast(lang==="cs" ? "Hra uložena" : "Game saved");
+  if(!silent) toast(lang==="cs" ? "Hra uložena ("+state.mode+")" : "Game saved ("+state.mode+")");
  }catch(e){
   console.error("[GS] saveState ERROR", e);
   toast(lang==="cs" ? "Uložení selhalo (localStorage?)" : "Save failed (localStorage?)");
  }
 }
-function loadState(){
- console.log("[GS] loadState → reading localStorage…");
- const raw = localStorage.getItem("geniusSave");
+async function loadState(){
+ const key = saveKeyFor(state.mode);
+ console.log("[GS] loadState →", key);
+ let raw = localStorage.getItem(key);
+ // zpětná kompatibilita se starým klíčem
+ if(!raw && state.mode==="SOLO") raw = localStorage.getItem("geniusSave");
  if(!raw){
-  console.warn("[GS] loadState: no geniusSave key in localStorage");
-  toast(lang==="cs" ? "Žádná uložená hra" : "No saved game");
+  toast(lang==="cs" ? "Žádná uložená hra pro "+state.mode : "No saved game for "+state.mode);
   return;
  }
- console.log("[GS] loadState raw bytes", raw.length, raw.slice(0, 200) + "…");
+ if(gameInProgress()){
+  const ok = await showConfirm(
+   lang==="cs" ? "Opravdu přepsat rozehranou hru?" : "Really overwrite the current game?"
+  );
+  if(!ok) return;
+ }
  try{
   const x = JSON.parse(raw);
   if(!x || typeof x !== "object") throw new Error("invalid root");
-  if(!x.pieces || !Array.isArray(x.dice) || !Array.isArray(x.blockers)){
-   console.error("[GS] loadState missing fields", {hasPieces:!!x.pieces, dice:x.dice, blockers:x.blockers});
-   throw new Error("missing fields");
-  }
+  if(!x.pieces || !Array.isArray(x.dice) || !Array.isArray(x.blockers)) throw new Error("missing fields");
 
   stopTimer();
+  state._rolling = false;
 
   state.mode = x.mode === "MATCH" ? "MATCH" : "SOLO";
   state.level = LEVELS.includes(x.level) ? x.level : "STARTER";
@@ -895,7 +1291,7 @@ function loadState(){
   for(let id=1; id<=9; id++){
    const rawP = x.pieces[id] || x.pieces[String(id)] || {};
    const p = makePiece(id, Number(rawP.rot)||0, null);
-   p.flip = (rawP.flip|0) % 3;
+   p.flip = FLIPPABLE.has(id) ? ((rawP.flip|0) % 2) : 0;
    if(rawP.flip === true) p.flip = 1;
    if(rawP.placed && Number.isFinite(Number(rawP.placed.r)) && Number.isFinite(Number(rawP.placed.c))){
     p.placed = { r: Number(rawP.placed.r), c: Number(rawP.placed.c) };
@@ -905,22 +1301,22 @@ function loadState(){
    state.pieces[id] = p;
   }
 
-  console.log("[GS] loadState applied", {
-   mode: state.mode,
-   level: state.level,
-   dice: state.dice.slice(),
-   blockers: state.blockers.map(b=>b.slice()),
-   placed: Object.fromEntries(
-    Object.entries(state.pieces).map(([k,v]) => [k, v.placed])
-   ),
-   elapsed: state.elapsed,
-   running: state.running
-  });
+  // MATCH: po dokončeném kole automaticky připrav další úroveň a čekej na start
+  if(state.mode==="MATCH" && state.finished){
+   const idx = LEVELS.indexOf(state.level);
+   if(idx >= 0 && idx < LEVELS.length-1){
+    const next = LEVELS[idx+1];
+    state.matchLevel = idx+1;
+    toast(lang==="cs" ? "MATCH: další kolo "+next : "MATCH: next round "+next);
+    newGame("MATCH", next);
+    return;
+   }
+   // WIZARD hotovo – jen zobraz stav
+  }
 
   startTimer();
   renderAll();
-  console.log("[GS] loadState ✓ renderAll done, board cells:", document.querySelectorAll("#board .cell.blocker").length, "blockers visible");
-  toast(lang==="cs" ? "Hra načtena" : "Game loaded");
+  toast(lang==="cs" ? "Hra načtena ("+state.mode+")" : "Game loaded ("+state.mode+")");
  }catch(e){
   console.error("[GS] loadState ERROR", e);
   toast(lang==="cs" ? "Uložená hra je poškozená" : "Saved game is invalid");
@@ -938,10 +1334,24 @@ function setupModeModal(){
    newGame("SOLO", b.dataset.level);
    closeModal("modeModal");
  });
+ document.getElementById("limitToggle").checked = !!state.matchTimed;
+ document.getElementById("limitInput").value = state.limit||180;
  document.getElementById("startMatchBtn").onclick=()=>{
    state.matchTimed=document.getElementById("limitToggle").checked;
    state.limit=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
+   try{
+    localStorage.setItem("geniusMatchLimit", String(state.limit));
+    localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
+   }catch(_){}
    state.matchLevel=0; newGame("MATCH","STARTER"); closeModal("modeModal");
+ };
+ document.getElementById("limitInput").onchange=()=>{
+   const v=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
+   state.limit=v;
+   try{ localStorage.setItem("geniusMatchLimit", String(v)); }catch(_){}
+ };
+ document.getElementById("limitToggle").onchange=()=>{
+   try{ localStorage.setItem("geniusMatchTimed", document.getElementById("limitToggle").checked?"1":"0"); }catch(_){}
  };
  // Zelený rám aktivního režimu
  document.getElementById("soloChoice").classList.toggle("active", state.mode==="SOLO");
@@ -954,16 +1364,22 @@ document.getElementById("modeBtn").onclick=()=>{
  openModal("modeModal");
 };
 document.getElementById("soloChoice").onclick=()=>{
+ state.mode="SOLO";
+ try{ localStorage.setItem("geniusLastMode","SOLO"); }catch(_){}
  document.getElementById("soloOptions").style.display="block";
  document.getElementById("matchOptions").style.display="none";
  document.getElementById("soloChoice").classList.add("active");
  document.getElementById("matchChoice").classList.remove("active");
+ document.getElementById("modeBtn").textContent="S";
 };
 document.getElementById("matchChoice").onclick=()=>{
+ state.mode="MATCH";
+ try{ localStorage.setItem("geniusLastMode","MATCH"); }catch(_){}
  document.getElementById("soloOptions").style.display="none";
  document.getElementById("matchOptions").style.display="block";
  document.getElementById("matchChoice").classList.add("active");
  document.getElementById("soloChoice").classList.remove("active");
+ document.getElementById("modeBtn").textContent="M";
  setupModeModal();
 };
 document.getElementById("modeClose").onclick=()=>closeModal("modeModal");
@@ -972,7 +1388,7 @@ document.getElementById("statsClose").onclick=()=>closeModal("statsModal");
 document.getElementById("clearDataBtn").onclick=clearAllData;
 document.getElementById("helpBtn").onclick=()=>{
  document.getElementById("helpHeading").textContent = tr("helpTitle");
- document.getElementById("helpText").innerHTML=tr("helpHtml");
+ document.getElementById("helpText").innerHTML = buildHelpHtml();
  openModal("helpModal");
 };
 document.getElementById("saveBtn").onclick=()=>saveState(false);
@@ -993,7 +1409,9 @@ document.getElementById("board").addEventListener("pointerdown",e=>{
 });
 setInterval(()=>{
  if(state.running && state.armed && state.mode==="MATCH" && state.matchTimed && state.elapsed>=state.limit){
-   state.running=false;stopTimer();
+   state.elapsed = state.limit;
+   state.running=false; state.armed=false; stopTimer();
+   updateTimer();
    const idx=Math.max(0,LEVELS.indexOf(state.level)-1);
    const backLevel=LEVELS[idx];
    state.matchLevel=idx;
@@ -1004,16 +1422,20 @@ setInterval(()=>{
 
 applyLang();
 (function init(){
- const existing = localStorage.getItem("geniusSave");
- console.log("[GS] init", {
-  hasSave: !!existing,
-  saveBytes: existing ? existing.length : 0,
-  lang
- });
- // Always start a fresh board; user loads manually via 📂 so we never overwrite their save on open
- newGame("SOLO","STARTER");
+ let mode = "SOLO", level = "STARTER";
+ try{
+  const lm = localStorage.getItem("geniusLastMode");
+  const ll = localStorage.getItem("geniusLastLevel");
+  if(lm==="MATCH" || lm==="SOLO") mode = lm;
+  if(LEVELS.includes(ll)) level = ll;
+  // MATCH vždy začíná na uložené úrovni (nebo STARTER)
+  if(mode==="MATCH" && !LEVELS.includes(ll)) level = "STARTER";
+ }catch(_){}
+ const existing = localStorage.getItem(saveKeyFor(mode)) || localStorage.getItem("geniusSave");
+ console.log("[GS] init", {mode, level, hasSave: !!existing, lang});
+ newGame(mode, level);
  if(existing){
-  console.log("[GS] init: uložená hra je k dispozici — klikni 📂 pro načtení");
+  console.log("[GS] init: uložená hra pro", mode, "— klikni 📂 pro načtení");
  }
 })();
 })();
