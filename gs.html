@@ -203,8 +203,8 @@ input[type=number]{width:90px;background:#101827;border:1px solid #526074;border
      <p data-t="chooseLevel">Vyber úroveň:</p><div class="levels" id="levelButtons"></div>
    </div>
    <div id="matchOptions" style="display:none;margin-top:14px">
-     <div class="row"><label><input type="checkbox" id="limitToggle"> <span data-t="timeLimit">Časový limit</span></label>
-     <label data-t="limitSec">sekund:</label><input id="limitInput" type="number" min="30" max="900" step="10" value="180"></div>
+     <div class="row"><label><input type="checkbox" id="limitToggle"> <span data-t="timeLimit">Časový limit (s):</span></label>
+     <input id="limitInput" type="number" min="30" max="900" step="10" value="60"></div>
      <p data-t="matchRule">MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.</p>
      <button class="actionBtn primary" id="startMatchBtn">M · START MATCH</button>
    </div>
@@ -281,7 +281,7 @@ function saveKeyFor(mode){
 }
 
 let state = {
- mode:"SOLO", level:"STARTER", matchLevel:0, matchTimed:false, limit:180,
+ mode:"SOLO", level:"STARTER", matchLevel:0, matchTimed:false, limit:60,
  dice:[], blockers:[], pieces:{}, elapsed:0, running:false, startedAt:0,
  finished:false, gameId:0, armed:false // armed=false → čeká na klik (červená); true → čas běží (zelená)
 };
@@ -300,7 +300,7 @@ const T = {
  cs:{
   new:"Nová hra",check:"Zkontrolovat",gameMode:"Režim hry",soloDesc:"Zvol úroveň dle svého uvážení. Čas každé úspěšně dokončené úrovně se uloží.",
   matchDesc:"Postup od STARTER po WIZARD. Lze hrát s limitem i bez limitu.",chooseLevel:"Vyber úroveň:",
-  timeLimit:"Časový limit",limitSec:"sekund:",matchRule:"MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.",
+  timeLimit:"Časový limit (s):",matchRule:"MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.",
   close:"Zavřít",stats:"Statistiky",help:"Nápověda",mode:"Režim",level:"Úroveň",time:"Čas",
   noStats:"Zatím nejsou žádné dokončené hry.",solo:"SOLO",match:"MATCH",
   trayTitle:"ZÁSOBNÍK · 1× klik = rotace 90° · 2× klik = překlopení",
@@ -332,7 +332,7 @@ const T = {
  en:{
   new:"New game",check:"Check",gameMode:"Game mode",soloDesc:"Choose any level. The time of each completed level is saved.",
   matchDesc:"Progress from STARTER to WIZARD. Play with or without a time limit.",chooseLevel:"Choose level:",
-  timeLimit:"Time limit",limitSec:"seconds:",matchRule:"When the limit is exceeded, the level is repeated; after success you advance.",
+  timeLimit:"Time limit (s):",matchRule:"When the limit is exceeded, the level is repeated; after success you advance.",
   close:"Close",stats:"Statistics",help:"Help",mode:"Mode",level:"Level",time:"Time",
   noStats:"No completed games yet.",solo:"SOLO",match:"MATCH",
   trayTitle:"TRAY · 1× click = rotate 90° · 2× click = flip",
@@ -515,7 +515,7 @@ function newGame(mode=state.mode, level=state.level, opts={}){
  try{
   localStorage.setItem("geniusLastMode", state.mode);
   localStorage.setItem("geniusLastLevel", state.level);
-  localStorage.setItem("geniusMatchLimit", String(state.limit||180));
+  localStorage.setItem("geniusMatchLimit", String(state.limit||60));
   localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
  }catch(_){}
  stopTimer();
@@ -1165,6 +1165,12 @@ async function clearAllData(){
   localStorage.removeItem("geniusSave_SOLO");
   localStorage.removeItem("geniusSave_MATCH");
   localStorage.removeItem("geniusStats");
+  localStorage.removeItem("geniusMatchLimit");
+  localStorage.removeItem("geniusMatchTimed");
+  state.limit=60;
+  state.matchTimed=false;
+  const limitInput=document.getElementById("limitInput");
+  if(limitInput) limitInput.value="60";
   console.log("[GS] localStorage cleared");
   renderStats();
   toast(lang==="cs"?"Data smazána":"Data cleared");
@@ -1225,7 +1231,7 @@ function serializeState(){
   level: state.level,
   matchLevel: state.matchLevel|0,
   matchTimed: !!state.matchTimed,
-  limit: Number(state.limit)||180,
+  limit: Number(state.limit)||60,
   dice: (state.dice||[]).slice(),
   blockers: (state.blockers||[]).map(([r,c]) => [Number(r), Number(c)]),
   pieces,
@@ -1281,7 +1287,7 @@ async function loadState(){
   state.level = LEVELS.includes(x.level) ? x.level : "STARTER";
   state.matchLevel = Number(x.matchLevel)||0;
   state.matchTimed = !!x.matchTimed;
-  state.limit = Math.max(30, Math.min(900, Number(x.limit)||180));
+  state.limit = Math.max(30, Math.min(900, Number(x.limit)||60));
   state.dice = x.dice.map(String);
   state.blockers = x.blockers.map(v => [Number(v[0]), Number(v[1])]);
   state.finished = !!x.finished;
@@ -1339,7 +1345,7 @@ function setupModeModal(){
    closeModal("modeModal");
  });
  document.getElementById("limitToggle").checked = !!state.matchTimed;
- document.getElementById("limitInput").value = state.limit||180;
+ document.getElementById("limitInput").value = state.limit||60;
  document.getElementById("startMatchBtn").onclick=()=>{
    state.matchTimed=document.getElementById("limitToggle").checked;
    state.limit=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
