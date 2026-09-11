@@ -273,6 +273,10 @@ function modeKey(mode, matchTimed, limit){
  if(matchTimed) return `MATCH M${Number(limit)||60}-`;
  return "MATCH";
 }
+function parseTimedMatchLimit(mode){
+ const m = String(mode||"").match(/^MATCH M(\d+)-$/);
+ return m ? Number(m[1]) : null;
+}
 function currentModeKey(){
  return modeKey(state.mode, state.matchTimed, state.limit);
 }
@@ -427,6 +431,12 @@ function buildHelpHtml(){
   7. kostka: A6 A6 A6 F1 F1 F1</p>
   <div class="helpSection">Režimy (S / M)</div>
   <p><b>SOLO</b> – libovolná úroveň, měří se čas.<br><b>MATCH</b> – postup STARTER → WIZARD. Volitelný limit (ukládá se); ve statistikách jako MATCH nebo MATCH M60- podle limitu.<br>Uložení SOLO a MATCH je oddělené. MATCH po každém kole automaticky ukládá. Načtení se řídí aktuálním režimem; při rozehrané hře potvrzení ✓ / ✕.</p>
+  <div class="helpSection">Statistiky</div>
+  <p><b>Nejlepší výsledky</b> a <b>Poslední hra</b> – u každého režimu nejvýše 1 řádek (SOLO, MATCH, MATCH M60-, …).<br>
+  V nejlepších výsledcích vyšší dokončená úroveň přepíše nižší; při stejné úrovni platí lepší (nižší) čas.<br>
+  <b>Barva času</b> (Poslední hra i toast) se porovnává vždy s nejlepším časem <b>stejné úrovně</b> ve stejném režimu – ne s celkovým Wizardem. Lepší/stejný čas = <span style="color:#22c55e">zeleně</span>, horší = <span style="color:#ef4444">červeně</span>. Název úrovně je <span style="color:#ef4444">červený</span> jen po vypršení limitu, jinak <span style="color:#22c55e">zelený</span>.<br>
+  <b>MATCH s limitem:</b> zápis <b>WIZARD</b> s nižším limitem (např. MATCH M55-) smaže záznamy stejného typu s vyšším limitem (MATCH M60-, M75-, …).<br>
+  <b>Vypršení limitu:</b> zapíše se sestup na nižší úroveň, čas <b>00:00.0</b> (úroveň i čas červeně). Timeout nepřepíše úspěšný nejlepší výsledek.</p>
   <div class="helpSection">Menu</div>
   <ul class="helpMenu">
     <li>💾 Uložit (podle režimu S/M)</li>
@@ -469,6 +479,12 @@ function buildHelpHtml(){
   7th die: A6 A6 A6 F1 F1 F1</p>
   <div class="helpSection">Modes (S / M)</div>
   <p><b>SOLO</b> – any level.<br><b>MATCH</b> – STARTER → WIZARD; optional limit stored as MATCH M60- etc.<br>Separate saves for SOLO/MATCH; MATCH autosaves each round. Load follows current mode; confirm ✓ / ✕ if a game is in progress.</p>
+  <div class="helpSection">Statistics</div>
+  <p><b>Best results</b> and <b>Last game</b> – at most one row per mode (SOLO, MATCH, MATCH M60-, …).<br>
+  In Best results a higher completed level replaces a lower one; on the same level the faster time wins.<br>
+  <b>Time colour</b> (Last game and toast) is always compared to the best time on the <b>same level</b> in the same mode – not only to Wizard. Better/equal = <span style="color:#22c55e">green</span>, worse = <span style="color:#ef4444">red</span>. Level name is <span style="color:#ef4444">red</span> only after the limit expires; otherwise <span style="color:#22c55e">green</span>.<br>
+  <b>Timed MATCH:</b> a <b>WIZARD</b> entry with a lower limit (e.g. MATCH M55-) deletes same-type entries with a higher limit (MATCH M60-, M75-, …).<br>
+  <b>Time expired:</b> records a drop to the lower level with time <b>00:00.0</b> (level and time red). A timeout never overwrites a successful best result.</p>
   <div class="helpSection">Menu</div>
   <ul class="helpMenu">
     <li>💾 Save · 📂 Load · ↻ New · S/M · 📊 Stats · 🇬🇧/🇨🇿 · 💡</li>
@@ -519,18 +535,18 @@ function newGame(mode=state.mode, level=state.level, opts={}){
   localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
  }catch(_){}
  stopTimer();
+ // ihned aktualizuj ikonu režimu (S/M), nenechávat čekat na konec animace
+ syncModeUi();
  const animate = opts.animate!==false;
  if(animate){
   runDiceAndBlockerAnimation(()=>{
-   updateLevelBtn();
-   updateTimer();
+   updateHeader();
    console.log("[GS] newGame ready", {mode:state.mode, level:state.level, dice:state.dice.slice()});
   });
  } else {
   state.dice=randomDice(); state.blockers=buildBlockers(state.dice);
   state._rolling=false;
   renderAll();
-  updateLevelBtn();
  }
 }
 function runDiceAndBlockerAnimation(done){
@@ -638,8 +654,14 @@ function updateTimer(){
   else if(state.armed && state.running) e.classList.add("good");
  }
 }
+function syncModeUi(){
+ const isMatch = state.mode==="MATCH";
+ const btn = document.getElementById("modeBtn");
+ if(btn) btn.textContent = isMatch ? "M" : "S";
+ try{ localStorage.setItem("geniusLastMode", isMatch ? "MATCH" : "SOLO"); }catch(_){}
+}
 function updateHeader(){
- document.getElementById("modeBtn").textContent=state.mode==="SOLO"?"S":"M";
+ syncModeUi();
  // dice HTML se nastavuje i v animaci – nepřepisuj, pokud právě rollujeme
  if(!state._rolling){
   document.getElementById("dice").innerHTML=state.dice.map((d,i)=>`<div class="die" title="Kostka ${i+1}">${d}</div>`).join("");
@@ -993,6 +1015,7 @@ function bestTimeFor(modeK, level){
  const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
  let best = null;
  arr.forEach(x=>{
+  if(x.timeout) return; // timeout 00:00.0 se nepočítá jako rekord
   if(x.mode===modeK && x.level===level){
    if(best===null || Number(x.time)<Number(best)) best = Number(x.time);
   }
@@ -1029,19 +1052,11 @@ function finishLevel(){
  updateLevelBtn();
  const mk = currentModeKey();
  const t = state.elapsed;
+ // barva času / ohňostroj: porovnej jen s nejlepším časem STEJNÉ úrovně v tomto režimu
  const prevBest = bestTimeFor(mk, state.level);
- const better = prevBest===null || Number(t) < Number(prevBest);
- // MATCH: pokud existuje vyšší dokončená úroveň, last není „lepší achievement"
- let achievementBetter = better;
- if(mk.startsWith("MATCH")){
-  const maxI = maxLevelIndexForMode(mk);
-  const li = LEVELS.indexOf(state.level);
-  if(maxI > li) achievementBetter = false;
-  else if(maxI < li) achievementBetter = true;
-  else achievementBetter = better;
- }
+ const better = prevBest===null || Number(t) <= Number(prevBest);
  recordStat(mk, state.level, t);
- toastLevelComplete(state.level, t, achievementBetter);
+ toastLevelComplete(state.level, t, better);
  if(state.mode==="SOLO"){
   saveState(true);
  }else{
@@ -1094,10 +1109,23 @@ function spawnFireworks(host){
   host.appendChild(p);
  }
 }
-function recordStat(mode,level,time){
- const arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
- arr.push({mode,level,time,ts:Date.now()});
- arr.splice(150);localStorage.setItem("geniusStats",JSON.stringify(arr));
+function recordStat(mode,level,time,opts={}){
+ let arr=JSON.parse(localStorage.getItem("geniusStats")||"[]");
+ const rec = {mode,level,time,ts:Date.now()};
+ if(opts.timeout) rec.timeout = true;
+ arr.push(rec);
+ // MATCH s limitem na WIZARD: nižší limit vymaže záznamy stejného typu s vyšším limitem
+ // (MATCH M55- WIZARD → smaže MATCH M60-, MATCH M75-, …)
+ const lim = parseTimedMatchLimit(mode);
+ if(lim!==null && level==="WIZARD" && !opts.timeout){
+  arr = arr.filter(x=>{
+   const xl = parseTimedMatchLimit(x.mode);
+   if(xl===null) return true; // SOLO / MATCH beze limitu nechat
+   return xl <= lim;
+  });
+ }
+ arr.splice(150);
+ localStorage.setItem("geniusStats",JSON.stringify(arr));
  renderStats();
 }
 function levelRank(level){
@@ -1105,10 +1133,14 @@ function levelRank(level){
  return i < 0 ? -1 : i;
 }
 // A lepší než B? Vyšší úroveň vždy vyhraje; při stejné úrovni menší čas.
+// Timeout (vypršení limitu) nikdy nepřebije úspěšný výsledek.
 function isBetterStat(a, b){
  if(!b) return true;
+ if(a.timeout && !b.timeout) return false;
+ if(!a.timeout && b.timeout) return true;
  const ra = levelRank(a.level), rb = levelRank(b.level);
  if(ra !== rb) return ra > rb;
+ if(a.timeout && b.timeout) return false;
  return Number(a.time) < Number(b.time);
 }
 function renderStats(){
@@ -1122,30 +1154,66 @@ function renderStats(){
  const last = {};
  arr.forEach(x=>{
   const mode = x.mode || "?";
-  const rec = {mode, level: x.level||"?", time: Number(x.time)||0, ts: x.ts||0};
+  const rec = {mode, level: x.level||"?", time: Number(x.time)||0, ts: x.ts||0, timeout: !!x.timeout};
   if(isBetterStat(rec, best[mode])) best[mode] = rec;
   last[mode] = rec;
  });
 
- const modes = Object.keys(best).sort((a,b)=>a.localeCompare(b));
+ // Pokud existuje MATCH M{n}- s WIZARD, skryj vyšší limity (n větší)
+ let minWizardLim = null;
+ Object.values(best).forEach(r=>{
+  const lim = parseTimedMatchLimit(r.mode);
+  if(lim!==null && r.level==="WIZARD"){
+   if(minWizardLim===null || lim < minWizardLim) minWizardLim = lim;
+  }
+ });
+ const modes = Object.keys(best).filter(m=>{
+  const lim = parseTimedMatchLimit(m);
+  if(lim===null || minWizardLim===null) return true;
+  return lim <= minWizardLim;
+ }).sort((a,b)=>{
+  // SOLO, MATCH, pak timed od nižšího limitu
+  const order = (m)=>{
+   if(m==="SOLO") return 0;
+   if(m==="MATCH") return 1;
+   const lim = parseTimedMatchLimit(m);
+   return lim===null ? 50 : 10 + lim/1000;
+  };
+  return order(a)-order(b) || a.localeCompare(b);
+ });
 
  const bestRows = modes.map(m=>{
   const x = best[m];
   return `<tr><td>${x.mode}</td><td>${x.level}</td><td>${formatTime(x.time)}</td></tr>`;
  }).join("");
 
+ // Nejlepší úspěšný čas pro každou dvojici režim+úroveň (timeout se nepočítá)
+ const bestTimeByModeLevel = {};
+ arr.forEach(x=>{
+  if(x.timeout) return;
+  const k = (x.mode||"?")+"|"+(x.level||"?");
+  const t = Number(x.time);
+  if(!Number.isFinite(t)) return;
+  if(bestTimeByModeLevel[k]===undefined || t < bestTimeByModeLevel[k]) bestTimeByModeLevel[k] = t;
+ });
+
  const lastRows = modes.map(m=>{
   const x = last[m];
   if(!x) return "";
-  const b = best[m];
-  let color = "#22c55e";
-  if(b){
-   const rl = levelRank(x.level), rb = levelRank(b.level);
-   if(rl < rb) color = "#ef4444";
-   else if(rl === rb && Number(x.time) > Number(b.time)) color = "#ef4444";
-   else color = "#22c55e";
+  // Název úrovně červeně JEN při vypršení limitu; jinak zeleně.
+  // Čas: porovnej s nejlepším časem STEJNÉ úrovně v daném režimu (ne s Wizardem).
+  let levelColor = "#22c55e";
+  let timeColor = "#22c55e";
+  if(x.timeout){
+   levelColor = "#ef4444";
+   timeColor = "#ef4444";
+  } else {
+   const k = (x.mode||"?")+"|"+(x.level||"?");
+   const bestT = bestTimeByModeLevel[k];
+   if(bestT!==undefined && Number(x.time) > bestT) timeColor = "#ef4444";
   }
-  return `<tr><td>${x.mode}</td><td>${x.level}</td><td style="color:${color};font-weight:700">${formatTime(x.time)}</td></tr>`;
+  const timeStr = x.timeout ? formatTime(0) : formatTime(x.time);
+  return `<tr><td>${x.mode}</td><td style="color:${levelColor};font-weight:700">${x.level}</td><td style="color:${timeColor};font-weight:700">${timeStr}</td></tr>`;
  }).join("");
 
  box.innerHTML =
@@ -1324,8 +1392,10 @@ async function loadState(){
    // WIZARD hotovo – jen zobraz stav
   }
 
+  try{ localStorage.setItem("geniusLastMode", state.mode); localStorage.setItem("geniusLastLevel", state.level); }catch(_){}
   startTimer();
   renderAll();
+  syncModeUi();
   toast(lang==="cs" ? "Hra načtena ("+state.mode+")" : "Game loaded ("+state.mode+")");
  }catch(e){
   console.error("[GS] loadState ERROR", e);
@@ -1348,7 +1418,7 @@ function setupModeModal(){
  document.getElementById("limitInput").value = state.limit||60;
  document.getElementById("startMatchBtn").onclick=()=>{
    state.matchTimed=document.getElementById("limitToggle").checked;
-   state.limit=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
+   state.limit=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||60));
    try{
     localStorage.setItem("geniusMatchLimit", String(state.limit));
     localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
@@ -1356,21 +1426,23 @@ function setupModeModal(){
    state.matchLevel=0; newGame("MATCH","STARTER"); closeModal("modeModal");
  };
  document.getElementById("limitInput").onchange=()=>{
-   const v=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||180));
+   const v=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||60));
    state.limit=v;
    try{ localStorage.setItem("geniusMatchLimit", String(v)); }catch(_){}
  };
  document.getElementById("limitToggle").onchange=()=>{
    try{ localStorage.setItem("geniusMatchTimed", document.getElementById("limitToggle").checked?"1":"0"); }catch(_){}
  };
- // Zelený rám aktivního režimu
- document.getElementById("soloChoice").classList.toggle("active", state.mode==="SOLO");
- document.getElementById("matchChoice").classList.toggle("active", state.mode==="MATCH");
+ // Vždy označ aktuální režim (SOLO / MATCH)
+ const isMatch = state.mode==="MATCH";
+ document.getElementById("soloChoice").classList.toggle("active", !isMatch);
+ document.getElementById("matchChoice").classList.toggle("active", isMatch);
+ document.getElementById("soloOptions").style.display = isMatch ? "none" : "block";
+ document.getElementById("matchOptions").style.display = isMatch ? "block" : "none";
+ document.getElementById("modeBtn").textContent = isMatch ? "M" : "S";
 }
 document.getElementById("modeBtn").onclick=()=>{
- document.getElementById("soloOptions").style.display = state.mode==="MATCH" ? "none" : "block";
- document.getElementById("matchOptions").style.display = state.mode==="MATCH" ? "block" : "none";
- setupModeModal();
+ setupModeModal(); // nejdřív označ aktuální režim + panel
  openModal("modeModal");
 };
 document.getElementById("soloChoice").onclick=()=>{
@@ -1420,12 +1492,19 @@ document.getElementById("board").addEventListener("pointerdown",e=>{
 setInterval(()=>{
  if(state.running && state.armed && state.mode==="MATCH" && state.matchTimed && state.elapsed>=state.limit){
    state.elapsed = state.limit;
-   state.running=false; state.armed=false; stopTimer();
+   state.running=false; state.armed=false; state.finished=true; stopTimer();
    updateTimer();
+   updateLevelBtn();
+   const failedLevel = state.level;
    const idx=Math.max(0,LEVELS.indexOf(state.level)-1);
    const backLevel=LEVELS[idx];
    state.matchLevel=idx;
-   toast(lang==="cs"?`Čas vypršel – návrat na ${backLevel}`:`Time is up – back to ${backLevel}`);
+   // Poslední hra: sestup na nižší úroveň, čas 00:00.0, červeně
+   const mk = currentModeKey();
+   recordStat(mk, backLevel, 0, {timeout:true});
+   toast(lang==="cs"
+    ? `Čas vypršel (${failedLevel}) – návrat na ${backLevel}`
+    : `Time is up (${failedLevel}) – back to ${backLevel}`);
    setTimeout(()=>newGame("MATCH",backLevel),650);
  }
 },100);
