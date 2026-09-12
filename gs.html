@@ -206,7 +206,10 @@ input[type=number]{width:90px;background:#101827;border:1px solid #526074;border
      <div class="row"><label><input type="checkbox" id="limitToggle"> <span data-t="timeLimit">Časový limit (s):</span></label>
      <input id="limitInput" type="number" min="30" max="900" step="10" value="60"></div>
      <p data-t="matchRule">MATCH vždy začíná na STARTER. Při překročení limitu se vracíš o jednu úroveň zpět; na STARTER se úroveň opakuje.</p>
-     <button class="actionBtn primary" id="startMatchBtn">M · START MATCH</button>
+     <div class="row" style="margin-top:10px;justify-content:space-between;gap:10px">
+       <button class="actionBtn primary" id="startMatchBtn" style="flex:1">START MATCH</button>
+       <button class="actionBtn" id="loadMatchBtn" style="flex:1">LOAD MATCH</button>
+     </div>
    </div>
    <div class="closeRow"><button class="actionBtn" id="modeClose" data-t="close">Zavřít</button></div>
  </div>
@@ -1425,6 +1428,16 @@ function setupModeModal(){
    }catch(_){}
    state.matchLevel=0; newGame("MATCH","STARTER"); closeModal("modeModal");
  };
+ const loadMatchBtn = document.getElementById("loadMatchBtn");
+ if(loadMatchBtn){
+  loadMatchBtn.onclick=async ()=>{
+   state.mode="MATCH";
+   try{ localStorage.setItem("geniusLastMode","MATCH"); }catch(_){}
+   syncModeUi();
+   closeModal("modeModal");
+   await loadState(); // načte geniusSave_MATCH podle state.mode
+  };
+ }
  document.getElementById("limitInput").onchange=()=>{
    const v=Math.max(30,Math.min(900,+document.getElementById("limitInput").value||60));
    state.limit=v;
@@ -1447,7 +1460,10 @@ document.getElementById("modeBtn").onclick=()=>{
 };
 document.getElementById("soloChoice").onclick=()=>{
  state.mode="SOLO";
- try{ localStorage.setItem("geniusLastMode","SOLO"); }catch(_){}
+ try{
+  localStorage.setItem("geniusLastMode","SOLO");
+  localStorage.setItem("geniusLastLevel", state.level);
+ }catch(_){}
  document.getElementById("soloOptions").style.display="block";
  document.getElementById("matchOptions").style.display="none";
  document.getElementById("soloChoice").classList.add("active");
@@ -1456,7 +1472,12 @@ document.getElementById("soloChoice").onclick=()=>{
 };
 document.getElementById("matchChoice").onclick=()=>{
  state.mode="MATCH";
- try{ localStorage.setItem("geniusLastMode","MATCH"); }catch(_){}
+ try{
+  localStorage.setItem("geniusLastMode","MATCH");
+  localStorage.setItem("geniusLastLevel", state.level);
+  localStorage.setItem("geniusMatchLimit", String(state.limit||60));
+  localStorage.setItem("geniusMatchTimed", state.matchTimed?"1":"0");
+ }catch(_){}
  document.getElementById("soloOptions").style.display="none";
  document.getElementById("matchOptions").style.display="block";
  document.getElementById("matchChoice").classList.add("active");
@@ -1511,20 +1532,35 @@ setInterval(()=>{
 
 applyLang();
 (function init(){
- let mode = "SOLO", level = "STARTER";
+ // Obnov poslední režim, úroveň, limit a timed z localStorage
  try{
   const lm = localStorage.getItem("geniusLastMode");
+  if(lm==="MATCH" || lm==="SOLO") state.mode = lm;
   const ll = localStorage.getItem("geniusLastLevel");
-  if(lm==="MATCH" || lm==="SOLO") mode = lm;
-  if(LEVELS.includes(ll)) level = ll;
-  // MATCH vždy začíná na uložené úrovni (nebo STARTER)
-  if(mode==="MATCH" && !LEVELS.includes(ll)) level = "STARTER";
+  if(LEVELS.includes(ll)) state.level = ll;
+  else if(state.mode==="MATCH") state.level = "STARTER";
+  const lim = Number(localStorage.getItem("geniusMatchLimit"));
+  if(lim>=30 && lim<=900) state.limit = lim;
+  const mt = localStorage.getItem("geniusMatchTimed");
+  if(mt==="1") state.matchTimed = true;
+  if(mt==="0") state.matchTimed = false;
  }catch(_){}
- const existing = localStorage.getItem(saveKeyFor(mode)) || localStorage.getItem("geniusSave");
- console.log("[GS] init", {mode, level, hasSave: !!existing, lang});
- newGame(mode, level);
+ if(state.mode==="MATCH"){
+  state.matchLevel = Math.max(0, LEVELS.indexOf(state.level));
+ }
+ syncModeUi();
+ const existing = localStorage.getItem(saveKeyFor(state.mode)) || localStorage.getItem("geniusSave");
+ console.log("[GS] init", {
+  mode: state.mode,
+  level: state.level,
+  matchTimed: state.matchTimed,
+  limit: state.limit,
+  hasSave: !!existing,
+  lang
+ });
+ newGame(state.mode, state.level);
  if(existing){
-  console.log("[GS] init: uložená hra pro", mode, "— klikni 📂 pro načtení");
+  console.log("[GS] init: uložená hra pro", state.mode, "— klikni 📂 / LOAD MATCH");
  }
 })();
 })();
