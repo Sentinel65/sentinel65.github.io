@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SECOND CHANCE</title>
+<style>
+:root{--bg:#f4f1e8;--panel:#fffdf7;--ink:#202020;--muted:#777;--line:#bbb5a7;--accent:#355c7d;--danger:#b33}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+body{display:flex;justify-content:center}
+button{font:inherit}
+.app{width:min(100%,760px);padding:10px 10px 18px}
+.header{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.title{font-size:clamp(25px,7vw,42px);font-weight:900;letter-spacing:.05em;line-height:1}
+.subtitle{font-size:11px;color:var(--muted);margin-top:3px}
+.menu{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap}
+.menu button{width:50px;height:46px;border:1px solid #aaa;border-radius:10px;background:#fff;cursor:pointer;font-size:23px;display:grid;place-items:center;box-shadow:0 1px 2px #0001}
+.menu button:hover{background:#f0eee8}
+.menu .lang{font-size:19px;padding:0;line-height:1;display:grid!important;place-items:center}
+.status{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px;font-size:12px}
+.status b{font-size:14px}
+.boardWrap{width:100%;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;position:relative}
+.boardBar{display:none;align-items:center;justify-content:space-between;gap:8px;margin:4px auto 2px;width:min(94vw,600px);font-size:12px}
+.boardBar .boardTitle{font-weight:700;color:var(--ink);font-size:18px;line-height:1}
+.boardBar .boardHint{color:var(--muted);font-weight:500;text-align:right}
+.board{position:relative;width:min(94vw,600px);aspect-ratio:1/1;border:2px solid #555;background:#fff;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);touch-action:none;user-select:none}
+.board.aiBoard{border-color:#355c7d}
+.boardLabel{text-align:center;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--muted)}
+.cell{border:1px solid #d8d8d8;position:relative}
+.cell.center::after,.cell.lastDot::after{content:"";position:absolute;width:17%;aspect-ratio:1;border-radius:50%;background:#111;left:41.5%;top:41.5%;z-index:2;pointer-events:none}
+.cell.center.filled.start::after{background:#fff;border:1px solid #777}
+.cell.center.empty::after{background:#fff;border:1px solid #777}
+.cell.filled{background:var(--fill,#aaa)}
+.cell.filled.start{background:#555}
+.cell.filled.second{outline:2px solid #fff;outline-offset:-3px}
+.cell.one{background:#222;color:#fff;display:grid;place-items:center;font-weight:900;font-size:clamp(14px,4vw,22px)}
+.cell.one.lastDot::after{display:none}
+.iconBtn{font-size:18px;line-height:1}
+.modeBtn .modeIcons{font-size:22px;margin-right:6px}
+.cell.hatch0{background-image:repeating-linear-gradient(45deg,transparent 0 4px,#0003 4px 6px)}
+.cell.hatch1{background-image:repeating-linear-gradient(-45deg,transparent 0 4px,#0003 4px 6px)}
+.cell.hatch2{background-image:repeating-linear-gradient(0deg,transparent 0 4px,#0003 4px 6px)}
+.cell.hatch3{background-image:repeating-linear-gradient(90deg,transparent 0 4px,#0003 4px 6px)}
+.cell.hatch4{background-image:repeating-linear-gradient(45deg,transparent 0 5px,#fff5 5px 7px)}
+.cell.hatch5{background-image:repeating-linear-gradient(-45deg,transparent 0 5px,#fff5 5px 7px)}
+.ghost{position:absolute;pointer-events:none;z-index:20;opacity:.62;display:grid}
+.ghostCell{background:#777;border:1px solid #222}
+.ghostCell.invalid{background:#d33}
+.trayTitle{display:flex;align-items:center;justify-content:center;flex-wrap:nowrap;margin:10px 2px 5px;font-weight:800;font-size:13px;gap:8px;white-space:nowrap;width:100%;box-sizing:border-box}
+.trayTitle #trayLabel{text-align:left;flex:0 0 auto}
+.trayTitle .rotHint{text-align:center;font-weight:500;font-size:11px;color:#555;pointer-events:none;flex:0 0 auto}
+.trayTitle #selectionLabel{text-align:right;min-width:3.5em;flex:0 0 auto}
+.trayTitle.centered{justify-content:center;white-space:normal;text-align:center}
+.trayTitle.centered #trayLabel{text-align:center;flex:0 1 auto;max-width:100%}
+.trayTitle.centered #trayLabel:empty,
+.trayTitle.centered .rotHint:empty,
+.trayTitle.centered #selectionLabel:empty{display:none}
+.trayTitle.centered #selectionLabel{min-width:0}
+.tray{display:flex;justify-content:center;gap:10px;min-height:96px}
+.card{position:relative;width:140px;min-height:88px;border:2px solid #555;border-radius:12px;background:linear-gradient(145deg,#fff,#f0eee8);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:none;user-select:none;box-shadow:0 2px 4px #0002}
+.card.selected{border-color:#111;box-shadow:0 0 0 3px #355c7d55,0 3px 7px #0003;transform:translateY(-2px)}
+.card.second{border-color:#a45}
+.card.discarded{opacity:.35}
+.card .num{position:absolute;top:4px;right:7px;font-size:10px;color:#777}
+.shape{display:grid;position:relative}
+.sq{border:1px solid #222}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:max(10px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box}
+.modal.open{display:flex}
+.dialog{background:var(--panel);border-radius:14px;width:min(94vw,520px);max-width:100%;max-height:min(88vh,88dvh);overflow-x:hidden;overflow-y:auto;padding:14px;box-shadow:0 15px 50px #0005;box-sizing:border-box;margin:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+.dialog.wide{width:min(96vw,720px)}
+.dialog.narrow{width:min(90vw,380px)}
+.dialogHead{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:10px}
+.dialogHead h2{margin:0;font-size:19px}
+.close{border:0;background:none;font-size:26px;cursor:pointer;line-height:1}
+.overview{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ovCard{display:flex;align-items:center;justify-content:center;min-height:105px;border:1px solid #ccc;border-radius:9px;background:#fff;padding:4px}
+.ovHeading{margin:14px 0 6px;font-size:14px;font-weight:800;border-top:1px solid #ddd;padding-top:10px}
+.ovCard.used{filter:grayscale(1);opacity:.4}.ovRow{display:flex;align-items:center;gap:8px;width:100%}.ovRow .ovNum{width:32px;text-align:right;font-size:11px;color:#777;flex-shrink:0}.ovRow .shape{flex:1;justify-content:center}
+@media(max-width:420px){.overview{grid-template-columns:1fr 1fr;gap:5px}.ovRow{gap:4px}}
+.statsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}
+.stat{border:1px solid #ccc;border-radius:8px;padding:8px;text-align:center;background:#fff}
+.stat b{display:block;font-size:21px}
+.actions{display:flex;justify-content:flex-end;gap:7px;margin-top:12px;flex-wrap:wrap}
+.actions button{border:1px solid #aaa;border-radius:8px;padding:7px 12px;background:#fff;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(15px);background:#222;color:#fff;padding:9px 13px;border-radius:9px;font-size:13px;line-height:1.35;opacity:0;pointer-events:none;transition:.2s;z-index:200;max-width:min(92vw,360px);text-align:center;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.helpText{font-size:14px;line-height:1.55}
+.helpText .credit{font-style:italic;color:#666;margin:0 0 14px;font-size:12px}
+.helpText h3{margin:14px 0 6px;font-size:15px}
+.helpText ul{margin:6px 0 10px;padding-left:1.2em}
+.helpText li{margin:4px 0}
+.helpText strong{color:#111}
+.resultLine{font-size:22px;font-weight:700;letter-spacing:0.02em;margin:10px 0}
+.resultMsg{font-size:15px;color:#444;margin-bottom:6px}
+.hint{font-size:11px;color:#666;text-align:center;margin-top:5px}
+.result{text-align:center;font-size:17px;padding:8px}
+.result strong{font-size:26px}
+.modeBtn{display:block;width:100%;margin:8px 0;padding:14px;font-size:16px;font-weight:700;border:2px solid #555;border-radius:12px;background:#fff;cursor:pointer}
+.modeBtn:hover{background:#f0eee8}
+.boardsCompare{display:flex;flex-direction:column;flex-wrap:nowrap;gap:8px;align-items:center;justify-content:center}
+.boardsCompare>div{flex:0 0 auto;text-align:center;width:100%}
+.boardsCompare .miniBoard{width:min(78vw,300px);margin:0 auto}
+.dialog.narrow .boardsCompare .miniBoard{width:min(76vw,280px)}
+.dialog.boardsFit{max-height:min(94vh,94dvh);overflow-y:auto;overflow-x:hidden;padding:10px;-webkit-overflow-scrolling:touch}
+.dialog.boardsFit .actions{margin-top:8px;justify-content:center}
+.dialog.boardsFit .boardLabel{margin-bottom:2px;font-size:12px}
+.card.nofit{opacity:.4;filter:grayscale(1);pointer-events:none}
+.histBlock{border:1px solid #ccc;border-radius:10px;padding:10px;margin:8px 0;background:#fff}
+.histBlock h3{margin:0 0 6px;font-size:14px}
+.histRow{display:flex;flex-direction:column;gap:4px}
+.histItem{border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;background:#fafafa;font-size:13px;text-align:left}
+.histItem:hover{background:#f0eee8;border-color:#aaa}
+.histItem .histMeta{color:#666;font-size:11px;margin-top:2px}
+.histEmpty{color:#888;font-size:12px;padding:4px 0}
+@media(max-width:560px){
+ .app{padding:7px 7px 14px}
+ .menu{gap:5px}
+ .menu button{width:42px;height:40px;font-size:20px}
+ .title{font-size:25px}
+ .subtitle{display:none}
+ .status{margin-top:6px}
+ .card{width:calc((100vw - 32px)/2);max-width:150px;min-height:82px}
+ .tray{gap:8px;min-height:90px}
+ .modal{align-items:flex-start;padding-top:max(8px,env(safe-area-inset-top,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+ .dialog{width:min(92vw,400px);max-height:min(85vh,85dvh);margin:8px auto 20px}
+ .dialog.narrow{width:min(90vw,360px)}
+ .dialog.wide{width:min(94vw,100%)}
+ .boardsCompare{flex-direction:column;gap:6px}
+ .boardsCompare .miniBoard{width:min(58vw,240px)}
+ .dialog.narrow .boardsCompare .miniBoard{width:min(58vw,240px)}
+ .dialog.boardsFit{padding:8px;max-height:min(94vh,94dvh);width:min(94vw,360px)}
+ .dialog.boardsFit .dialogHead h2{font-size:16px}
+ .resultLine{font-size:18px}
+ .dialogHead h2{font-size:17px}
+}
+@media(max-width:370px){
+ .menu{gap:3px}
+ .menu button{width:34px;height:33px;font-size:16px}
+ .title{font-size:22px}
+ .resultLine{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div><div class="title">SECOND CHANCE</div><div class="subtitle" id="subTitle">SOLO · 3 hry</div></div>
+    <nav class="menu" aria-label="Menu">
+      <button id="saveBtn" title="Uložit">💾</button>
+      <button id="loadBtn" title="Načíst">📂</button>
+      <button id="restartBtn" title="Nová hra">🔄</button>
+      <button id="undoBtn" title="Zpět">↩️</button>
+      <button id="statsBtn" title="Přehledová karta">📇</button>
+      <button id="settingsBtn" title="Režim">🎯</button>
+      <button id="historyBtn" title="Statistiky">📊</button>
+      <button id="langBtn" class="lang" title="Jazyk">🇬🇧</button>
+      <button id="helpBtn" title="Nápověda">💡</button>
+    </nav>
+  </header>
+
+  <div class="status">
+    <span id="gameStatus">Hra 1 / 3</span>
+    <span><span id="metricLabel">Deska</span>: <b id="emptyCount">81</b> · <span id="deckLabel">Balíček</span>: <b id="deckCount">40</b></span>
+  </div>
+
+  <div class="boardBar" id="boardBar">
+    <span class="boardTitle" id="boardTitle">Deska Hráč</span>
+    <span class="boardHint" id="boardHint">2× klik na desku = přepnutí desky</span>
+  </div>
+  <div class="boardWrap">
+    <div id="playerBoardWrap">
+      <div id="board" class="board"></div>
+    </div>
+    <div id="aiBoardWrap" style="display:none">
+      <div id="aiBoard" class="board aiBoard"></div>
+    </div>
+  </div>
+
+  <div class="trayTitle">
+    <span id="trayLabel">Vyber 1 kartu</span>
+    <span class="rotHint" id="rotHint">1× klik = otočit · 2× klik = překlopit</span>
+    <span id="selectionLabel"></span>
+  </div>
+  <div id="tray" class="tray"></div>
+</div>
+
+<div id="modal" class="modal">
+ <div class="dialog">
+  <div class="dialogHead"><h2 id="modalTitle"></h2><button class="close" id="modalClose">×</button></div>
+  <div id="modalBody"></div>
+ </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const NORMAL_CARDS = [
+{id:1,shape:[[0,1],[1,0],[1,1],[1,2],[1,3],[2,1],[3,1]],size:7,color:'#00ff66'},
+{id:2,shape:[[0,0],[0,1],[1,0],[1,1],[1,2],[2,1],[2,2]],size:7,color:'#00ff66'},
+{id:3,shape:[[0,2],[0,3],[1,1],[1,2],[2,0],[2,1],[3,0]],size:7,color:'#00ff66'},
+{id:4,shape:[[0,0],[0,2],[1,0],[1,1],[1,2],[2,1],[3,1]],size:7,color:'#00ff66'},
+{id:5,shape:[[0,1],[1,0],[1,1],[2,1],[3,0],[3,1],[4,1]],size:7,color:'#00ff66'},
+{id:6,shape:[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,1]],size:7,color:'#00ff66'},
+{id:7,shape:[[0,0],[0,1],[0,2],[1,1],[2,0],[2,1],[2,2]],size:7,color:'#00ff66'},
+{id:8,shape:[[0,0],[0,1],[0,2],[1,0],[2,0],[2,1],[2,2]],size:7,color:'#00ff66'},
+{id:9,shape:[[0,0],[0,1],[1,0],[1,1],[1,2],[2,1]],size:6,color:'#9999ff'},
+{id:10,shape:[[0,1],[1,0],[1,1],[2,0],[2,1],[3,1]],size:6,color:'#9999ff'},
+{id:11,shape:[[0,1],[1,0],[1,1],[1,2],[2,1],[3,1]],size:6,color:'#9999ff'},
+{id:12,shape:[[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]],size:6,color:'#9999ff'},
+{id:13,shape:[[0,0],[0,1],[1,1],[1,2],[2,0],[2,1]],size:6,color:'#9999ff'},
+{id:14,shape:[[0,1],[1,1],[2,0],[2,1],[3,1],[4,1]],size:6,color:'#9999ff'},
+{id:15,shape:[[0,0],[0,1],[0,2],[1,0],[1,1],[2,0]],size:6,color:'#9999ff'},
+{id:16,shape:[[0,0],[0,3],[1,0],[1,1],[1,2],[1,3]],size:6,color:'#9999ff'},
+{id:17,shape:[[0,1],[1,0],[1,1],[1,2],[2,1]],size:5,color:'#ffff66'},
+{id:18,shape:[[0,1],[1,1],[2,0],[2,1],[3,0]],size:5,color:'#ffff66'},
+{id:19,shape:[[0,0],[0,1],[0,2],[1,0],[2,0]],size:5,color:'#ffff66'},
+{id:20,shape:[[0,0],[0,1],[1,1],[2,0],[2,1]],size:5,color:'#ffff66'},
+{id:21,shape:[[0,2],[1,0],[1,1],[1,2],[2,2]],size:5,color:'#ffff66'},
+{id:22,shape:[[0,0],[0,1],[1,0],[1,1],[2,1]],size:5,color:'#ffff66'},
+{id:23,shape:[[0,1],[0,2],[1,0],[1,1],[2,0]],size:5,color:'#ffff66'},
+{id:24,shape:[[0,1],[1,1],[2,0],[2,1],[3,1]],size:5,color:'#ffff66'},
+{id:25,shape:[[0,1],[0,2],[1,1],[2,0],[2,1]],size:5,color:'#ffff66'},
+{id:26,shape:[[0,0],[1,0],[2,0],[3,0]],size:4,color:'#ff6666'},
+{id:27,shape:[[0,0],[0,1],[1,1],[2,1]],size:4,color:'#ff6666'},
+{id:28,shape:[[0,0],[0,1],[1,0],[1,1]],size:4,color:'#ff6666'},
+{id:29,shape:[[0,1],[1,0],[1,1],[2,0]],size:4,color:'#ff6666'},
+{id:30,shape:[[0,1],[1,0],[1,1],[2,1]],size:4,color:'#ff6666'},
+{id:31,shape:[[0,0],[0,1],[0,2]],size:3,color:'#ff9900'},
+{id:32,shape:[[0,0],[0,1],[0,2]],size:3,color:'#ff9900'},
+{id:33,shape:[[0,0],[0,1],[1,0]],size:3,color:'#ff9900'},
+{id:34,shape:[[0,0],[0,1],[1,0]],size:3,color:'#ff9900'},
+{id:35,shape:[[0,0],[0,1]],size:2,color:'#ff99ff'},
+{id:36,shape:[[0,0],[0,1]],size:2,color:'#ff99ff'},
+{id:37,shape:[[0,0],[0,1]],size:2,color:'#ff99ff'},
+{id:38,shape:[[0,0]],size:1,color:'#66ccff'},
+{id:39,shape:[[0,0]],size:1,color:'#66ccff'},
+{id:40,shape:[[0,0]],size:1,color:'#66ccff'}
+];
+const START_CARDS = [
+{suit:'♥',label:'2',shape:[[0,0],[0,1],[1,1],[1,2],[2,0],[2,1],[3,1],[3,2]]},
+{suit:'♠',label:'2',shape:[[0,1],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],[3,1]]},
+{suit:'♥',label:'3',shape:[[0,2],[1,1],[1,2],[1,3],[2,0],[2,1],[2,3],[2,4]]},
+{suit:'♠',label:'3',shape:[[0,1],[1,0],[1,1],[1,2],[2,1],[3,0],[3,1],[3,2]]},
+{suit:'♥',label:'4',shape:[[0,4],[1,0],[1,4],[2,0],[2,1],[2,2],[2,3],[2,4]]},
+{suit:'♠',label:'4',shape:[[0,0],[0,1],[0,2],[1,1],[2,1],[3,0],[3,1],[3,2]]},
+{suit:'♦',label:'2',shape:[[0,1],[0,2],[1,0],[1,1],[1,2],[1,3],[2,0],[2,3]]},
+{suit:'♣',label:'2',shape:[[0,3],[1,2],[1,3],[2,1],[2,2],[3,0],[3,1],[4,0]]},
+{suit:'♦',label:'3',shape:[[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,1],[2,2]]},
+{suit:'♣',label:'3',shape:[[0,0],[0,3],[1,0],[1,3],[2,0],[2,1],[2,2],[2,3]]},
+{suit:'♦',label:'4',shape:[[0,1],[1,0],[1,1],[1,2],[2,0],[2,2],[3,0],[3,2]]},
+{suit:'♣',label:'4',shape:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,0],[1,2],[1,4]]},
+{suit:'★',label:'',shape:[[0,1],[1,1],[2,0],[2,1],[2,2],[2,3],[3,0],[3,1]]}
+];
+const START_STORAGE = 'secondChance_v3';
+const I18N = {
+ cs:{
+  sub:'SOLO · 3 hry',subAi:'PROTI AI',save:'Uložit',load:'Načíst',stats:'Přehledová karta',restart:'Nová hra',undo:'Zpět',lang:'Přepnout do angličtiny',help:'Nápověda',
+  game:'Hra',of:' / 3',empty:'Prázdná',board:'Deska',deck:'Balíček',choose:'Vyber kartu',second:'DRUHÁ ŠANCE',hint:'1× klik = otočit · 2× klik = překlopit',
+  rotHint:'1× klik = otočit · 2× klik = překlopit',
+  noFit:'Ani jedna ze dvou karet se nevejde. Aktivuje se Druhá šance.',secondFit:'Druhá šance se vejde. Umísti ji na desku.',secondNo:'Druhá šance se také nevejde. Hra končí.',
+  saved:'Hra byla uložena.',loaded:'Hra byla načtena.',badLoad:'Uloženou hru se nepodařilo načíst.',newGame:'Nová hra byla zahájena.',undoDone:'Poslední tah byl vrácen.',noUndo:'Není co vrátit.',saveError:'Hru se nepodařilo uložit.',
+  overview:'Přehledová karta',helpTitle:'Nápověda',statsTitle:'Vyhodnocení hry',close:'Zavřít',
+  rulesHtml:`<p class="credit">Design and rulebook © 2019 Uwe Rosenberg</p>
+<h3>Cíl hry</h3>
+<ul>
+<li><strong>SOLO:</strong> 3 hry za sebou. Součet prázdných polí &lt; <strong>10</strong> = výhra.</li>
+<li><strong>Proti AI:</strong> 1 deska. Méně prázdných než AI = výhra. Při rovnosti vyhrává ten, kdo má na desce <strong>1</strong>.</li>
+</ul>
+<h3>Průběh tahu</h3>
+<ul>
+<li>Startovní dílek (8 polí) <strong>musí zakrýt střed</strong>.</li>
+<li>Nabídka <strong>2 karet</strong> – vyber jednu, druhá se zahodí.</li>
+<li>Dílky lze <strong>otáčet</strong> (1× klik) a <strong>překlápět</strong> (2× klik).</li>
+<li>Nesmí přesahovat desku ani se překrývat.</li>
+<li>Karta, kterou <strong>nejde umístit</strong> na desku, je <strong>šedá</strong>.</li>
+</ul>
+<h3>Druhá šance</h3>
+<ul>
+<li>Nejde-li umístit ani jednu z 2 karet, dorazí <strong>Druhá šance</strong>.</li>
+<li>Nejde-li ani ta: první, kdo nemůže, zapíše <strong>1</strong> na prázdné pole a končí; soupeř dohrává.</li>
+</ul>
+<h3>Proti AI</h3>
+<ul>
+<li>Každý má <strong>vlastní start</strong> a <strong>vlastní desku</strong>.</li>
+<li>Stejná nabídka 2 karet – oba mohou použít stejnou.</li>
+<li><strong>Dvojklik na desku</strong> = přepnutí 👤 / 🖥️.</li>
+</ul>`,
+  statsGame:'Hra',statsEmpty:'Prázdná pole',statsTotal:'Součet',remaining:'zbývá',win:'VYHRÁL JSI',lose:'PROHRÁL JSI',next:'Začíná další hra',end:'Konec hry',
+  startTiles:'Startovní dílky',
+  modeTitle:'Volba režimu',modeSolo:'👤 SOLO (3 hry)',modeAi:'👤 × 🖥️',modeDesc:'SOLO = 3 hry podle pravidel. 👤 × 🖥️ = jedna deska proti AI.',
+  player:'Hráč',ai:'AI',yourTurn:'Tvůj tah',aiThinking:'AI přemýšlí…',markOne:'Označ prázdné pole číslicí 1 (končíš)',viewBoards:'Prohlédnout desky',aiWins:'AI má méně prázdných',youWin:'Máš méně prázdných',winByOne:'Při rovnosti rozhoduje 1',draw:'Remíza',placeStart:'Umísti kartu',settings:'Režim',history:'Statistiky',best:'Nejlepší',lastGame:'Poslední hra',noHistory:'Zatím žádná odehraná hra',loadGame:'Načíst tuto hru',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× klik na desku = přepnutí desky'
+ },
+ en:{
+  sub:'SOLO · 3 games',subAi:'VS AI',save:'Save',load:'Load',stats:'Overview card',restart:'New game',undo:'Undo',lang:'Switch to Czech',help:'Help',
+  game:'Game',of:' / 3',empty:'Empty',board:'Board',deck:'Deck',choose:'Choose a card',second:'SECOND CHANCE',hint:'1× click = rotate · 2× click = flip',
+  rotHint:'1× click = rotate · 2× click = flip',
+  noFit:'Neither revealed card fits. Second Chance is activated.',secondFit:'The Second Chance fits. Place it on the board.',secondNo:'The Second Chance also does not fit. The game ends.',
+  saved:'Game saved.',loaded:'Game loaded.',badLoad:'The saved game could not be loaded.',newGame:'New game started.',undoDone:'The last move was undone.',noUndo:'There is nothing to undo.',saveError:'The game could not be saved.',
+  overview:'Overview card',helpTitle:'Help',statsTitle:'Game result',close:'Close',
+  rulesHtml:`<p class="credit">Design and rulebook © 2019 Uwe Rosenberg</p>
+<h3>Goal</h3>
+<ul>
+<li><strong>SOLO:</strong> 3 games in a row. Total empty squares &lt; <strong>10</strong> = win.</li>
+<li><strong>VS AI:</strong> 1 board. Fewer empties than AI = win. On a tie, the one with a <strong>1</strong> on the board wins.</li>
+</ul>
+<h3>Turn</h3>
+<ul>
+<li>Starting tile (8 squares) <strong>must cover the center</strong>.</li>
+<li>Offer of <strong>2 cards</strong> – pick one, the other is discarded.</li>
+<li>Tiles can be <strong>rotated</strong> (1× click) and <strong>flipped</strong> (2× click).</li>
+<li>No overlap or going outside the grid.</li>
+<li>A card that <strong>cannot be placed</strong> is shown in <strong>grey</strong>.</li>
+</ul>
+<h3>Second Chance</h3>
+<ul>
+<li>If neither card fits, you get a <strong>Second Chance</strong> card.</li>
+<li>If that fails too: the first who cannot place writes a <strong>1</strong> on an empty square and stops; the other finishes.</li>
+</ul>
+<h3>VS AI</h3>
+<ul>
+<li>Each has an <strong>own start</strong> and <strong>own board</strong>.</li>
+<li>Same 2-card offer – both may use the same one.</li>
+<li><strong>Double-click the board</strong> to switch 👤 / 🖥️.</li>
+</ul>`,
+  statsGame:'Game',statsEmpty:'Empty squares',statsTotal:'Total',remaining:'remaining',win:'YOU WIN',lose:'YOU LOSE',next:'Starting next game',end:'Game over',
+  startTiles:'Starting tiles',
+  modeTitle:'Choose mode',modeSolo:'👤 SOLO (3 games)',modeAi:'👤 × 🖥️',modeDesc:'SOLO = 3 games by the rules. 👤 × 🖥️ = one board vs AI.',
+  player:'Player',ai:'AI',yourTurn:'Your turn',aiThinking:'AI is thinking…',markOne:'Mark an empty square with 1 (you end)',viewBoards:'View boards',aiWins:'AI has fewer empties',youWin:'You have fewer empties',winByOne:'On a tie, the 1 decides',draw:'Draw',placeStart:'Place the card',settings:'Mode',history:'Statistics',best:'Best',lastGame:'Last game',noHistory:'No games played yet',loadGame:'Load this game',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× click on board = switch board'
+ }
+};
+const HISTORY_STORAGE='secondChance_history_v1';
+let lang='cs';
+let state;
+let drag={active:false,id:null,moved:false,downX:0,downY:0};
+let rotateTimer=null;
+let roundTimer=null;
+
+function t(k){return I18N[lang][k]||k}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function normalize(shape){
+ const mr=Math.min(...shape.map(p=>p[0])),mc=Math.min(...shape.map(p=>p[1]));
+ return shape.map(([r,c])=>[r-mr,c-mc]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+}
+function orient(shape,rot,flip){
+ let s=shape.map(p=>[p[0],p[1]]);
+ for(let i=0;i<rot;i++) s=s.map(([r,c])=>[c,-r]);
+ s=normalize(s);
+ if(flip){
+   if(rot%2===0){const mc=Math.max(...s.map(p=>p[1]));s=s.map(([r,c])=>[r,mc-c])}
+   else {const mr=Math.max(...s.map(p=>p[0]));s=s.map(([r,c])=>[mr-r,c])}
+ }
+ return normalize(s);
+}
+function key(s){return s.map(p=>p.join(',')).join(';')}
+function emptyBoard(){return Array.from({length:9},()=>Array(9).fill(null))}
+function countEmpty(board){return (board||state.board).flat().filter(v=>!v).length}
+function allOrientations(card){
+ const out=[], seen=new Set();
+ for(let r=0;r<4;r++)for(const f of [false,true]){
+  const s=orient(card.shape,r,f), k=key(s);
+  if(!seen.has(k)){seen.add(k);out.push({shape:s,rot:r,flip:f})}
+ }
+ return out;
+}
+function fits(shape,r0,c0,board){
+ board=board||(state.player?state.player.board:state.board);
+ for(const [r,c] of shape){
+  const r1=r0+r,c1=c0+c;
+  if(r1<0||r1>=9||c1<0||c1>=9||board[r1][c1])return false;
+ }
+ return true;
+}
+function pickPattern(shape,r0,c0,color,board){
+ board=board||(state.player?state.player.board:state.board);
+ const used=new Set();
+ for(const [r,c] of shape){
+  const R=r0+r,C=c0+c;
+  for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+   const nr=R+dr,nc=C+dc;
+   if(nr<0||nr>=9||nc<0||nc>=9)continue;
+   const cell=board[nr][nc];
+   if(cell&&cell.color===color)used.add(cell.pattern==null?'none':cell.pattern);
+  }
+ }
+ if(used.size===0)return null;
+ for(const p of [null,0,1,2,3,4,5]){
+  if(!used.has(p==null?'none':p))return p;
+ }
+ return 0;
+}
+function canFit(card,board){
+ board=board||(state.player?state.player.board:state.board);
+ return allOrientations(card).some(o=>{
+  const h=Math.max(...o.shape.map(p=>p[0]))+1,w=Math.max(...o.shape.map(p=>p[1]))+1;
+  for(let r=0;r<=9-h;r++)for(let c=0;c<=9-w;c++)if(fits(o.shape,r,c,board))return true;
+  return false;
+ });
+}
+function getCard(id){return NORMAL_CARDS.find(c=>c.id===id)}
+
+/* ========== AI minimax + alpha-beta (improved) ========== */
+function evaluateBoard(board){
+ let empty=0,isolated=0,edgeEmpty=0,components=0;
+ const seen=Array.from({length:9},()=>Array(9).fill(false));
+ const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+ for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+  if(!board[r][c]){
+   empty++;
+   if(r===0||r===8||c===0||c===8) edgeEmpty++;
+   let neigh=0;
+   for(const [dr,dc] of dirs){
+    const rr=r+dr,cc=c+dc;
+    if(rr>=0&&rr<9&&cc>=0&&cc<9&&!board[rr][cc])neigh++;
+   }
+   if(neigh===0)isolated++;
+   if(!seen[r][c]){
+    components++;
+    const q=[[r,c]]; seen[r][c]=true;
+    while(q.length){
+     const [cr,cc]=q.pop();
+     for(const [dr,dc] of dirs){
+      const nr=cr+dr,nc=cc+dc;
+      if(nr>=0&&nr<9&&nc>=0&&nc<9&&!board[nr][nc]&&!seen[nr][nc]){seen[nr][nc]=true;q.push([nr,nc]);}
+     }
+    }
+   }
+  }
+ }
+ // Fewer empties, fewer isolated holes, fewer fragmented regions, mild edge preference
+ return -empty*12 - isolated*8 - components*4 - edgeEmpty*0.5;
+}
+function scorePlacement(board,shape,r0,c0){
+ // How well does this placement sit against existing filled cells / edges
+ let contact=0, overhang=0;
+ const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+ for(const [rr,cc] of shape){
+  const R=r0+rr,C=c0+cc;
+  for(const [dr,dc] of dirs){
+   const nr=R+dr,nc=C+dc;
+   if(nr<0||nr>=9||nc<0||nc>=9){ overhang++; continue; }
+   if(board[nr][nc]) contact++;
+  }
+ }
+ const nb=applyPlacement(board,shape,r0,c0,{color:'#x'});
+ return evaluateBoard(nb) + contact*1.5 - overhang*0.3;
+}
+function findAllPlacements(card,board){
+ const res=[];
+ for(const o of allOrientations(card)){
+  const h=Math.max(...o.shape.map(p=>p[0]))+1,w=Math.max(...o.shape.map(p=>p[1]))+1;
+  for(let r=0;r<=9-h;r++)for(let c=0;c<=9-w;c++){
+   if(fits(o.shape,r,c,board)){
+    const sc=scorePlacement(board,o.shape,r,c);
+    res.push({shape:o.shape,rot:o.rot,flip:o.flip,r,c,score:sc});
+   }
+  }
+ }
+ res.sort((a,b)=>b.score-a.score);
+ // Keep best candidates to limit branching
+ return res.slice(0,10);
+}
+function applyPlacement(board,shape,r,c,meta){
+ const b=clone(board);
+ shape.forEach(([rr,cc])=>{b[r+rr][c+cc]=meta||{color:'#888'}});
+ return b;
+}
+function minimaxAI(board,deck,cards,depth,alpha,beta,maximizing){
+ if(depth<=0||(cards.length===0&&deck.length===0)) return {score:evaluateBoard(board)};
+ let curCards=cards.slice(), curDeck=deck.slice();
+ if(curCards.length===0){
+  if(curDeck.length<2) return {score:evaluateBoard(board)};
+  curCards=[curDeck.shift(),curDeck.shift()];
+ }
+ // Prefer trying larger tiles first (harder to place later)
+ curCards=curCards.slice().sort((a,b)=>{
+  const ca=getCard(a),cb=getCard(b);
+  return (cb?cb.size:0)-(ca?ca.size:0);
+ });
+ let best={score:maximizing?-Infinity:Infinity,card:null,place:null};
+ const tryCard=(id)=>{
+  const card=getCard(id);
+  if(!card||!canFit(card,board)) return;
+  const places=findAllPlacements(card,board);
+  for(const pl of places){
+   const nb=applyPlacement(board,pl.shape,pl.r,pl.c,{color:card.color});
+   // After choosing one card from the offer the other is discarded (shared table)
+   const nextCards=[];
+   const child=minimaxAI(nb,curDeck.slice(),nextCards,depth-1,alpha,beta,true);
+   // Bonus for placing larger pieces now
+   const sizeBonus=(card.size||0)*0.4;
+   const sc=child.score+sizeBonus;
+   if(maximizing){
+    if(sc>best.score) best={score:sc,card:id,place:pl};
+    alpha=Math.max(alpha,sc);
+   }else{
+    if(sc<best.score) best={score:sc,card:id,place:pl};
+    beta=Math.min(beta,sc);
+   }
+   if(beta<=alpha) return;
+  }
+ };
+ for(const id of curCards) tryCard(id);
+ // Second chance from deck if nothing fits
+ if(best.card===null&&curDeck.length>0){
+  const extra=curDeck[0];
+  const card=getCard(extra);
+  if(card&&canFit(card,board)){
+   const places=findAllPlacements(card,board);
+   if(places.length){
+    const pl=places[0];
+    const nb=applyPlacement(board,pl.shape,pl.r,pl.c,{color:card.color});
+    const child=minimaxAI(nb,curDeck.slice(1),[],depth-1,alpha,beta,true);
+    const sc=child.score+(card.size||0)*0.4;
+    if(sc>best.score) best={score:sc,card:extra,place:pl,second:true};
+   }
+  }
+ }
+ if(best.card===null) best.score=evaluateBoard(board);
+ return best;
+}
+function aiChooseAndPlace(){
+ if(!state.ai||state.ai.gameOver) return;
+ const board=state.ai.board;
+ // Depth 3 with improved eval; fall back to greedy best placement if search is heavy
+ let decision;
+ try{
+  decision=minimaxAI(board,state.deck.slice(),state.cards.slice(),3,-Infinity,Infinity,true);
+ }catch(e){
+  decision={score:-Infinity,card:null,place:null};
+ }
+ // Greedy fallback / refinement: among offer, pick best scored placement
+ if(state.cards&&state.cards.length){
+  let greedy={score:-Infinity,card:null,place:null};
+  for(const id of state.cards){
+   const card=getCard(id);
+   if(!card||!canFit(card,board)) continue;
+   const places=findAllPlacements(card,board);
+   if(places.length){
+    const pl=places[0];
+    const sc=pl.score+(card.size||0)*0.5;
+    if(sc>greedy.score) greedy={score:sc,card:id,place:pl};
+   }
+  }
+  if(greedy.card!=null&&(decision.card==null||greedy.score>decision.score+2)) decision=greedy;
+ }
+ if(decision.card!=null&&decision.place){
+  const card=getCard(decision.card);
+  const pl=decision.place;
+  const pattern=pickPattern(pl.shape,pl.r,pl.c,card.color,board);
+  state.ai.placeSeq=(state.ai.placeSeq||0)+1;
+  state.ai.lastSeq=state.ai.placeSeq;
+  pl.shape.forEach(([rr,cc])=>{
+   state.ai.board[pl.r+rr][pl.c+cc]={color:card.color,pattern,start:false,second:!!decision.second,tileId:decision.card,seq:state.ai.placeSeq};
+  });
+  state.ai.used.push(decision.card);
+  state.ai.placed++;
+  state.ai.history.push({id:decision.card,r:pl.r,c:pl.c,rot:pl.rot,flip:pl.flip});
+  toast(lang==='cs'?'AI umístila dílek':'AI placed a tile');
+ }else{
+  // Number 1 is written only by the side that fails first on second chance
+  if(!state.firstFailed){
+   state.firstFailed='ai';
+   let placed=false;
+   for(let r=0;r<9&&!placed;r++) for(let c=0;c<9&&!placed;c++){
+    if(!state.ai.board[r][c]){ state.ai.board[r][c]={one:true,color:'#222'}; placed=true; }
+   }
+   toast(lang==='cs'?'AI nemohla umístit a označila 1':'AI could not place and marked 1');
+  }else{
+   toast(lang==='cs'?'AI už nemůže umístit dílek':'AI can no longer place a tile');
+  }
+  state.ai.gameOver=true;
+ }
+ render();
+}
+
+/* ========== GAME FLOW ========== */
+function createPlayerState(){
+ const idx=Math.floor(Math.random()*START_CARDS.length);
+ const shape=clone(START_CARDS[idx].shape);
+ return {
+  board:emptyBoard(), startShape:shape, startCardIndex:idx,
+  startCard:{id:'start',shape:shape,color:'#555',size:8},
+  phase:'start', selected:null, rot:0, flip:false,
+  used:[], discarded:[], placed:0, gameOver:false, history:[], undo:null, placeSeq:0, lastSeq:0
+ };
+}
+function autoPlaceStart(who){
+ const shape=who.startShape;
+ for(let r=0;r<9;r++) for(let c=0;c<9;c++){
+  if(fits(shape,r,c,who.board)&&shape.some(([rr,cc])=>r+rr===4&&c+cc===4)){
+   shape.forEach(([rr,cc])=>{who.board[r+rr][c+cc]={color:'#555',start:true,tileId:'start'}});
+   who.phase='normal';
+   who.history.push({id:'start',r,c,rot:0,flip:false,start:true});
+   return;
+  }
+ }
+ who.board[4][4]={color:'#555',start:true,tileId:'start'};
+ who.phase='normal';
+}
+function setVisibleBoard(which){
+ const playerWrap=document.getElementById('playerBoardWrap');
+ const aiWrap=document.getElementById('aiBoardWrap');
+ const bar=document.getElementById('boardBar');
+ const title=document.getElementById('boardTitle');
+ const hint=document.getElementById('boardHint');
+ if(state&&state.mode==='ai'){
+  bar.style.display='flex';
+  hint.textContent=t('boardSwitchHint');
+  if(which==='ai'){
+   playerWrap.style.display='none';
+   aiWrap.style.display='block';
+   title.textContent=t('boardAi');
+   state.viewBoard='ai';
+  }else{
+   playerWrap.style.display='block';
+   aiWrap.style.display='none';
+   title.textContent=t('boardPlayer');
+   state.viewBoard='player';
+  }
+  updateStatusCounts();
+ }else{
+  bar.style.display='none';
+  playerWrap.style.display='block';
+  aiWrap.style.display='none';
+  if(state) state.viewBoard='player';
+  updateStatusCounts();
+ }
+}
+function remainingInDeck(){
+ // Cards still available to be drawn or currently offered (matches non-grey in overview)
+ return (state.deck?state.deck.length:0)+((state.cards&&state.cards.length)?state.cards.length:0);
+}
+function updateStatusCounts(){
+ if(!state||!state.player) return;
+ const board=(state.mode==='ai'&&state.viewBoard==='ai'&&state.ai)?state.ai.board:state.player.board;
+ document.getElementById('metricLabel').textContent=t('board');
+ document.getElementById('emptyCount').textContent=countEmpty(board);
+ document.getElementById('deckLabel').textContent=t('deck');
+ document.getElementById('deckCount').textContent=remainingInDeck();
+}
+function lastPlacedSeq(who){
+ return (who&&who.lastSeq)?who.lastSeq:0;
+}
+function toggleBoardView(){
+ if(!state||state.mode!=='ai') return;
+ setVisibleBoard(state.viewBoard==='ai'?'player':'ai');
+}
+function newGame(mode){
+ clearTimeout(roundTimer); clearTimeout(rotateTimer); removeGhost();
+ state={
+  version:3, mode:mode||'solo',
+  game:1, total:0,
+  deck:shuffle(NORMAL_CARDS.map(c=>c.id)),
+  cards:[], selected:null, rot:0, flip:false,
+  history:[], undo:null,
+  player:null, ai:null, viewBoard:'player', firstFailed:null
+ };
+ state.player=createPlayerState();
+ if(mode==='ai'){
+  state.ai=createPlayerState();
+  autoPlaceStart(state.ai);
+  document.getElementById('subTitle').textContent=t('subAi');
+  setVisibleBoard('player');
+ }else{
+  document.getElementById('subTitle').textContent=t('sub');
+  setVisibleBoard('player');
+ }
+ state.board=state.player.board;
+ render();
+}
+function drawCard(){
+ if(!state.deck.length) return null;
+ return state.deck.shift();
+}
+function afterPlayerPlacement(){
+ if(state.mode==='solo'){
+  if(state.player.phase==='start'){
+   state.player.phase='normal';
+   state.cards=[drawCard(),drawCard()].filter(Boolean);
+   render(); return;
+  }
+  if(countEmpty(state.player.board)===0){ finishSoloGame(true); return; }
+  if(state.player.phase==='second'){
+   state.player.phase='normal';
+   state.cards=[drawCard(),drawCard()].filter(Boolean);
+   nextSoloRound(); return;
+  }
+  const justPlaced=state.player.used[state.player.used.length-1];
+  (state.cards||[]).forEach(cid=>{ if(cid!==justPlaced) state.player.discarded.push(cid); });
+  const a=drawCard(), b=drawCard();
+  if(a==null||b==null){ if(a!=null) state.player.discarded.push(a); state.cards=[]; finishSoloGame(false); return; }
+  state.cards=[a,b];
+  nextSoloRound();
+ }else{
+  // AI mode: shared offer of 2 cards – both may use the same shape.
+  // After start is placed, only draw the first pair for the player (AI already placed start).
+  if(state.player.phase==='start'){
+   state.player.phase='normal';
+   state.cards=[drawCard(),drawCard()].filter(Boolean);
+   render();
+   autoSecondChancePlayer();
+   return;
+  }
+  // Player just placed a normal / second-chance tile → AI plays from the SAME offer, then new pair.
+  if(state.player.phase==='second') state.player.phase='normal';
+  // Keep a snapshot of the current offer so AI sees the same two cards the player had.
+  const offerForAi=state.cards.slice();
+  setTimeout(()=>{
+   // Temporarily ensure AI evaluates the same offer
+   const saved=state.cards;
+   state.cards=offerForAi;
+   aiChooseAndPlace();
+   state.cards=saved;
+   afterBothPlayed();
+  },500);
+ }
+}
+function afterBothPlayed(){
+ // Discard the shared offer (both could have used either card independently)
+ if(state.cards&&state.cards.length){
+  // Keep discarded for overview (cards that left the table this round)
+  state.player.discarded.push(...state.cards);
+  if(state.ai) state.ai.discarded.push(...state.cards);
+ }
+ state.cards=[];
+ if(state.player.gameOver && state.ai.gameOver){ finishAiGame(); return; }
+ if(state.player.gameOver){ continueAiAlone(); return; }
+ const a=drawCard(), b=drawCard();
+ if(a==null||b==null){
+  if(!state.player.gameOver) state.player.gameOver=true;
+  if(!state.ai.gameOver) state.ai.gameOver=true;
+  finishAiGame(); return;
+ }
+ state.cards=[a,b];
+ render();
+ autoSecondChancePlayer();
+}
+function continueAiAlone(){
+ // Discard previous offer if any
+ if(state.cards&&state.cards.length){
+  state.player.discarded.push(...state.cards);
+  if(state.ai) state.ai.discarded.push(...state.cards);
+  state.cards=[];
+ }
+ const a=drawCard(), b=drawCard();
+ if(a==null||b==null){ state.ai.gameOver=true; finishAiGame(); return; }
+ state.cards=[a,b];
+ render();
+ setTimeout(()=>{
+  aiChooseAndPlace();
+  if(state.ai.gameOver) finishAiGame();
+  else setTimeout(continueAiAlone,600);
+ },400);
+}
+function nextSoloRound(){
+ if(state.cards.length<2){ finishSoloGame(false); return; }
+ render();
+ autoSecondChancePlayer();
+}
+function playerCannotContinue(){
+ // If AI already wrote the 1, player just ends without writing another 1
+ if(state.mode==='ai'){
+  if(state.firstFailed){
+   state.player.gameOver=true;
+   state.player.phase='ended';
+   state.cards=[];
+   render();
+   finishAiGame();
+  }else{
+   state.player.phase='mark1';
+   render();
+   toast(t('markOne'));
+  }
+ }else{
+  finishSoloGame(false);
+ }
+}
+function autoSecondChancePlayer(){
+ if(state.player.phase!=='normal'||state.cards.length<2) return;
+ const board=state.player.board;
+ const a=getCard(state.cards[0]), b=getCard(state.cards[1]);
+ if(!canFit(a,board)&&!canFit(b,board)){
+  toast(t('noFit'));
+  setTimeout(()=>{
+   state.player.discarded.push(...state.cards);
+   state.cards=[];
+   const extra=drawCard();
+   if(extra==null){
+    playerCannotContinue();
+    return;
+   }
+   state.player.phase='second';
+   state.cards=[extra];
+   state.selected=null; state.rot=0; state.flip=false;
+   render();
+   if(canFit(getCard(extra),board)) toast(t('secondFit'));
+   else setTimeout(()=>{
+    if(state.mode==='ai'){
+     state.player.discarded.push(extra);
+     state.cards=[];
+     playerCannotContinue();
+    }else{
+     state.player.discarded.push(extra); state.cards=[]; finishSoloGame(false);
+    }
+   },500);
+  },500);
+ }
+}
+function finishSoloGame(full){
+ const empty=countEmpty(state.player.board);
+ state.total+=empty;
+ state.player.gameOver=true; state.player.phase='ended';
+ state.history.push({end:true,empty,full});
+ render();
+ roundTimer=setTimeout(()=>{
+  if(state.game<3){
+   const next=state.game+1, total=state.total;
+   toast(t('next')+' '+next);
+   roundTimer=setTimeout(()=>{
+    state.game=next; state.total=total;
+    state.player=createPlayerState();
+    state.deck=shuffle(NORMAL_CARDS.map(c=>c.id));
+    state.cards=[]; state.board=state.player.board;
+    render();
+   },900);
+  }else showSoloResult();
+ },250);
+}
+function boardHasOne(board){
+ for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]&&board[r][c].one) return true;
+ return false;
+}
+function finishAiGame(){
+ state.player.gameOver=true;
+ state.ai.gameOver=true;
+ state.player.phase='ended';
+ render();
+ const pe=countEmpty(state.player.board);
+ const ae=countEmpty(state.ai.board);
+ let winner, byOne=false;
+ if(pe<ae) winner='player';
+ else if(ae<pe) winner='ai';
+ else{
+  // Equal empties → who has the digit 1 wins (no draws by the rules)
+  byOne=true;
+  const p1=boardHasOne(state.player.board), a1=boardHasOne(state.ai.board);
+  if(p1&&!a1) winner='player';
+  else if(a1&&!p1) winner='ai';
+  else if(state.firstFailed==='player') winner='player';
+  else if(state.firstFailed==='ai') winner='ai';
+  else winner='player';
+ }
+ const msg=byOne?t('winByOne'):(winner==='player'?t('youWin'):t('aiWins'));
+ const pIcon=winner==='player'?'🏆👤':'👤';
+ const aIcon=winner==='ai'?'🏆🖥️':'🖥️';
+ recordHistory('ai',{pe,ae,winner,byOne,snapshot:clone(state)});
+ openModal(t('statsTitle'),`
+  <div class="result">
+   <div class="resultMsg">${msg}</div>
+   <div class="resultLine">${pIcon} [${pe}] : ${aIcon} [${ae}]</div>
+  </div>
+  <div class="actions">
+   <button onclick="showBothBoards()">${t('viewBoards')}</button>
+   <button onclick="closeModal()">${t('close')}</button>
+  </div>`);
+}
+function showSoloResult(){
+ const won=state.total<10;
+ recordHistory('solo',{total:state.total,won,snapshot:clone(state)});
+ openModal(t('statsTitle'),`<div class="result">${won?'<strong>🏆 '+t('win')+'</strong>':'<strong>✕ '+t('lose')+'</strong>'}<p>${t('statsTotal')}: <strong>${state.total}</strong></p></div><div class="actions"><button onclick="closeModal()">${t('close')}</button></div>`);
+}
+function showBothBoards(){
+ const pe=countEmpty(state.player.board);
+ const ae=countEmpty(state.ai.board);
+ openModal(t('viewBoards'),`
+  <div class="boardsCompare">
+   <div><div class="boardLabel">👤 ${t('player')} (${pe})</div><div id="cmpPlayer" class="board miniBoard"></div></div>
+   <div><div class="boardLabel">🖥️ ${t('ai')} (${ae})</div><div id="cmpAi" class="board miniBoard aiBoard"></div></div>
+  </div>
+  <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>`,'narrow');
+ const dlg=document.querySelector('#modal .dialog');
+ if(dlg) dlg.classList.add('boardsFit');
+ setTimeout(()=>{
+  renderBoardTo(document.getElementById('cmpPlayer'),state.player.board,lastPlacedSeq(state.player));
+  renderBoardTo(document.getElementById('cmpAi'),state.ai.board,lastPlacedSeq(state.ai));
+ },50);
+}
+function loadHistoryStore(){
+ try{ return JSON.parse(localStorage.getItem(HISTORY_STORAGE))||{solo:{},ai:{}}; }
+ catch(e){ return {solo:{},ai:{}}; }
+}
+function recordHistory(mode,data){
+ const h=loadHistoryStore();
+ if(!h[mode]) h[mode]={};
+ const entry={...data,date:new Date().toISOString()};
+ h[mode].last=entry;
+ if(mode==='solo'){
+  if(!h.solo.best||entry.total<(h.solo.best.total??Infinity)) h.solo.best=entry;
+ }else{
+  const better=!h.ai.best
+   || entry.pe<(h.ai.best.pe??Infinity)
+   || (entry.pe===h.ai.best.pe&&entry.winner==='player'&&h.ai.best.winner!=='player');
+  if(better) h.ai.best=entry;
+ }
+ try{ localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h)); }catch(e){}
+}
+function formatHistDate(iso){
+ if(!iso) return '';
+ try{
+  const d=new Date(iso);
+  return d.toLocaleString(lang==='cs'?'cs-CZ':'en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+ }catch(e){ return iso; }
+}
+function showHistory(){
+ const h=loadHistoryStore();
+ const soloBest=h.solo&&h.solo.best, soloLast=h.solo&&h.solo.last;
+ const aiBest=h.ai&&h.ai.best, aiLast=h.ai&&h.ai.last;
+ const soloItem=(entry,label)=>entry?`<button type="button" class="histItem" data-mode="solo" data-kind="${label}">
+  <strong>${label==='best'?t('best'):t('lastGame')}</strong>: ${t('statsTotal')} <b>${entry.total}</b>${entry.won?' 🏆':''}
+  <div class="histMeta">${formatHistDate(entry.date)} · ${t('loadGame')}</div>
+ </button>`:`<div class="histEmpty">${t('noHistory')}</div>`;
+ const aiItem=(entry,label)=>entry?`<button type="button" class="histItem" data-mode="ai" data-kind="${label}">
+  <strong>${label==='best'?t('best'):t('lastGame')}</strong>: 👤 [${entry.pe}] : 🖥️ [${entry.ae}] ${entry.winner==='player'?'🏆👤':'🏆🖥️'}
+  <div class="histMeta">${formatHistDate(entry.date)} · ${t('loadGame')}</div>
+ </button>`:`<div class="histEmpty">${t('noHistory')}</div>`;
+ openModal(t('history'),`
+  <div class="histBlock"><h3>👤 SOLO</h3><div class="histRow">${soloItem(soloBest,'best')}${soloItem(soloLast,'last')}</div></div>
+  <div class="histBlock"><h3>👤 × 🖥️</h3><div class="histRow">${aiItem(aiBest,'best')}${aiItem(aiLast,'last')}</div></div>
+  <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>
+ `,'narrow');
+ setTimeout(()=>{
+  document.querySelectorAll('.histItem').forEach(btn=>{
+   btn.onclick=()=>{
+    const mode=btn.dataset.mode, kind=btn.dataset.kind;
+    const store=loadHistoryStore();
+    const entry=store[mode]&&store[mode][kind==='best'?'best':'last'];
+    if(entry&&entry.snapshot) loadHistorySnapshot(entry.snapshot);
+   };
+  });
+ },30);
+}
+function loadHistorySnapshot(snapshot){
+ try{
+  state=clone(snapshot);
+  if(!state.viewBoard) state.viewBoard='player';
+  document.getElementById('subTitle').textContent=state.mode==='ai'?t('subAi'):t('sub');
+  setVisibleBoard(state.mode==='ai'?(state.viewBoard||'player'):'player');
+  render();
+  closeModal();
+  toast(t('loaded'));
+ }catch(e){ toast(t('badLoad')); }
+}
+function renderBoardTo(el,board,lastSeq){
+ el.innerHTML='';
+ for(let r=0;r<9;r++) for(let c=0;c<9;c++){
+  const q=document.createElement('div'); q.className='cell';
+  if(r===4&&c===4) q.classList.add('center');
+  const v=board[r][c];
+  if(v){
+   if(v.one){ q.classList.add('one'); q.textContent='1'; }
+   else{
+    q.classList.add('filled');
+    q.style.setProperty('--fill',v.color||'#777');
+    if(v.pattern!=null) q.classList.add('hatch'+(v.pattern%6));
+    if(v.start) q.classList.add('start');
+    if(v.second) q.classList.add('second');
+    // Black dots only on the single last non-start placement
+    if(lastSeq&&v.seq===lastSeq&&!v.start) q.classList.add('lastDot');
+   }
+  }else if(r===4&&c===4) q.classList.add('empty');
+  q.dataset.r=r; q.dataset.c=c;
+  el.appendChild(q);
+ }
+}
+
+/* ========== RENDER ========== */
+function renderShape(card,scale=1){
+ const s=card.shape||card;
+ const maxR=Math.max(...s.map(p=>p[0])),maxC=Math.max(...s.map(p=>p[1]));
+ const el=document.createElement('div'); el.className='shape';
+ const unit=Math.max(10,Math.min(25,22*scale));
+ el.style.gridTemplateRows=`repeat(${maxR+1},${unit}px)`;
+ el.style.gridTemplateColumns=`repeat(${maxC+1},${unit}px)`;
+ for(const [r,c] of s){ const q=document.createElement('div'); q.className='sq'; q.style.gridRow=r+1; q.style.gridColumn=c+1; q.style.background=card.color||'#555'; el.appendChild(q); }
+ return el;
+}
+function renderBoard(){
+ const pLast=state.player?lastPlacedSeq(state.player):0;
+ renderBoardTo(document.getElementById('board'), state.player?state.player.board:emptyBoard(), pLast);
+ if(state.mode==='ai'&&state.ai){
+  const aLast=lastPlacedSeq(state.ai);
+  renderBoardTo(document.getElementById('aiBoard'), state.ai.board, aLast);
+ }
+}
+function renderTray(){
+ const tray=document.getElementById('tray'); tray.innerHTML='';
+ const who=state.player;
+ const trayTitle=document.querySelector('.trayTitle');
+ if(!who) return;
+ const noCards=who.phase==='mark1'||who.phase==='ended'||(state.mode==='ai'&&who.gameOver&&state.ai&&state.ai.gameOver);
+ trayTitle.classList.toggle('centered', noCards||who.phase==='mark1');
+ if(who.phase==='ended'||(state.mode==='ai'&&who.gameOver&&state.ai&&state.ai.gameOver)){
+  document.getElementById('trayLabel').textContent='';
+  document.getElementById('selectionLabel').textContent='';
+  document.getElementById('rotHint').textContent=t('rotHint');
+  return;
+ }
+ if(who.phase==='mark1'){
+  document.getElementById('trayLabel').textContent=t('markOne');
+  document.getElementById('selectionLabel').textContent='';
+  document.getElementById('rotHint').textContent='';
+  return;
+ }
+ if(who.phase==='start'){
+  document.getElementById('trayLabel').textContent=t('placeStart');
+  document.getElementById('rotHint').textContent=t('rotHint');
+  tray.appendChild(cardEl(who.startCard,false,true));
+ }else if(who.phase==='second'){
+  document.getElementById('trayLabel').textContent=t('second');
+  document.getElementById('rotHint').textContent=t('rotHint');
+  const id=state.cards[0], card=getCard(id); if(card) tray.appendChild(cardEl(card,true,false));
+ }else{
+  document.getElementById('trayLabel').textContent=t('choose');
+  document.getElementById('rotHint').textContent=t('rotHint');
+  state.cards.forEach(id=>{ const card=getCard(id); if(card) tray.appendChild(cardEl(card,false,false)); });
+ }
+ document.getElementById('selectionLabel').textContent=state.selected!=null?`↻ ${state.rot*90}°${state.flip?' ↔':''}`:'';
+}
+function cardEl(card,isSecond,isStart=false){
+ const el=document.createElement('div'); el.className='card'+(isSecond?' second':'');
+ if(state.selected===card.id) el.classList.add('selected');
+ const board=state.player?state.player.board:null;
+ const nofit=!isStart&&board&&!canFit(card,board);
+ if(nofit) el.classList.add('nofit');
+ const n=document.createElement('span'); n.className='num'; n.textContent=isStart?'START':'#'+String(card.id).padStart(2,'0'); el.appendChild(n);
+ const o=orient(card.shape,state.selected===card.id?state.rot:0,state.selected===card.id?state.flip:false);
+ el.appendChild(renderShape({shape:o,color:nofit?'#999':card.color},.65));
+ el.dataset.id=card.id;
+ if(nofit) return el;
+ el.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(drag.moved){ drag.moved=false; return; }
+  if(state.selected!==card.id){ state.selected=card.id; state.rot=0; state.flip=false; renderTray(); return; }
+  clearTimeout(rotateTimer);
+  rotateTimer=setTimeout(()=>{ state.rot=(state.rot+1)%4; renderTray(); },230);
+ });
+ el.addEventListener('dblclick',e=>{
+  e.preventDefault(); e.stopPropagation(); drag.moved=false; clearTimeout(rotateTimer);
+  if(state.selected!==card.id){ state.selected=card.id; state.rot=0; state.flip=false; }
+  state.flip=!state.flip; renderTray();
+ });
+ el.addEventListener('pointerdown',e=>{
+  if(e.button!==0) return;
+  drag.active=true; drag.id=card.id; drag.moved=false; drag.downX=e.clientX; drag.downY=e.clientY;
+  if(state.selected!==card.id){ state.selected=card.id; state.rot=0; state.flip=false; renderTray(); }
+  updateGhost(e.clientX,e.clientY);
+ });
+ return el;
+}
+function updateGhost(x,y){
+ const b=document.getElementById('board'), rect=b.getBoundingClientRect();
+ if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom){ removeGhost(); return; }
+ const cellW=rect.width/9, cellH=rect.height/9;
+ const c=Math.floor((x-rect.left)/cellW), r=Math.floor((y-rect.top)/cellH);
+ const who=state.player;
+ const card=(who.phase==='start'&&who.startCard&&(drag.id==='start'||state.selected==='start'))?who.startCard:getCard(drag.id||state.selected);
+ if(!card) return;
+ const shape=orient(card.shape,state.rot,state.flip);
+ const maxR=Math.max(...shape.map(p=>p[0])), maxC=Math.max(...shape.map(p=>p[1]));
+ const ghost=document.getElementById('ghost')||document.createElement('div'); ghost.id='ghost'; ghost.className='ghost';
+ ghost.style.left=(c*cellW)+'px'; ghost.style.top=(r*cellH)+'px';
+ ghost.style.width=((maxC+1)*cellW)+'px'; ghost.style.height=((maxR+1)*cellH)+'px';
+ ghost.style.gridTemplateRows=`repeat(${maxR+1},${cellH}px)`; ghost.style.gridTemplateColumns=`repeat(${maxC+1},${cellW}px)`;
+ ghost.innerHTML='';
+ const ok=fits(shape,r,c,who.board);
+ for(const [rr,cc] of shape){ const q=document.createElement('div'); q.className='ghostCell'+(ok?'':' invalid'); q.style.gridRow=rr+1; q.style.gridColumn=cc+1; ghost.appendChild(q); }
+ if(!ghost.parentElement) b.appendChild(ghost);
+}
+function removeGhost(){ document.getElementById('ghost')?.remove(); }
+function placeSelectedAt(r,c){
+ const who=state.player;
+ if(who.phase==='mark1'){
+  if(who.board[r][c]) return false;
+  // Only the first side that fails second chance writes a 1
+  if(!state.firstFailed){
+   state.firstFailed='player';
+   who.board[r][c]={one:true,color:'#222'};
+  }
+  who.gameOver=true; who.phase='ended';
+  state.selected=null; removeGhost(); render();
+  toast(lang==='cs'?'Končíš. AI dohrává.':'You end. AI finishes.');
+  // AI still gets the current shared offer (if any), then continues alone
+  setTimeout(()=>{
+   if(state.cards&&state.cards.length){
+    aiChooseAndPlace();
+   }
+   setTimeout(continueAiAlone,400);
+  },500);
+  return true;
+ }
+ const id=state.selected; if(id==null) return false;
+ const isStart=id==='start';
+ const card=isStart?who.startCard:getCard(id); if(!card) return false;
+ const shape=orient(card.shape,state.rot,state.flip);
+ if(isStart && !shape.some(([rr,cc])=>r+rr===4&&c+cc===4)){
+  toast(lang==='cs'?'Startovní dílek musí zakrývat středové kolečko.':'The starting tile must cover the center circle.'); return false;
+ }
+ if(!fits(shape,r,c,who.board)){ toast(lang==='cs'?'Tento dílek sem nelze umístit.':'This tile cannot be placed here.'); return false; }
+ const snapshot=clone(state); snapshot.undo=null;
+ state.undo=snapshot;
+ const pattern=isStart?null:pickPattern(shape,r,c,card.color,who.board);
+ if(!isStart){ who.placeSeq=(who.placeSeq||0)+1; who.lastSeq=who.placeSeq; }
+ const seq=isStart?0:who.placeSeq;
+ shape.forEach(([rr,cc])=>who.board[r+rr][c+cc]={color:card.color,pattern,start:isStart,second:who.phase==='second',tileId:isStart?'start':id,seq});
+ if(!isStart){ who.used.push(id); who.placed++; }
+ who.history.push({id,r,c,rot:state.rot,flip:state.flip,start:isStart});
+ state.selected=null; state.rot=0; state.flip=false; removeGhost(); render();
+ clearTimeout(roundTimer); roundTimer=setTimeout(afterPlayerPlacement,50); return true;
+}
+function undoLast(){
+ if(!state.undo){ toast(t('noUndo')); return; }
+ clearTimeout(roundTimer); clearTimeout(rotateTimer); removeGhost();
+ const restored=clone(state.undo); restored.undo=null; state=restored;
+ drag={active:false,id:null,moved:false,downX:0,downY:0}; render(); toast(t('undoDone'));
+}
+
+/* ========== UI ========== */
+function openModal(title,body,size){
+ const dlg=document.querySelector('#modal .dialog');
+ dlg.classList.remove('narrow','wide');
+ if(size==='narrow'||size==='wide') dlg.classList.add(size);
+ document.getElementById('modalTitle').textContent=title;
+ document.getElementById('modalBody').innerHTML=body;
+ document.getElementById('modal').classList.add('open');
+ document.getElementById('modal').scrollTop=0;
+}
+function closeModal(){
+ document.getElementById('modal').classList.remove('open');
+ const dlg=document.querySelector('#modal .dialog');
+ if(dlg) dlg.classList.remove('narrow','wide','boardsFit');
+}
+function showOverview(){
+ const usedP=state.player?state.player.used:[];
+ const discP=state.player?state.player.discarded:[];
+ const usedA=state.ai?state.ai.used:[];
+ const discA=state.ai?state.ai.discarded:[];
+ const items=NORMAL_CARDS.map(card=>{
+  const isUsed=usedP.includes(card.id)||discP.includes(card.id)||usedA.includes(card.id)||discA.includes(card.id);
+  const o=orient(card.shape,0,false);
+  const d=document.createElement('div'); d.className='ovCard'+(isUsed?' used':'');
+  const row=document.createElement('div'); row.className='ovRow';
+  const num=document.createElement('div'); num.className='ovNum'; num.textContent='#'+String(card.id).padStart(2,'0'); row.appendChild(num);
+  row.appendChild(renderShape({shape:o,color:isUsed?'#777':card.color},.8)); d.appendChild(row);
+  return d.outerHTML;
+ }).join('');
+ const startItems=START_CARDS.map((sc,i)=>{
+  const usedS=(state.player&&state.player.startCardIndex===i)||(state.ai&&state.ai.startCardIndex===i);
+  const o=orient(sc.shape,0,false);
+  const d=document.createElement('div'); d.className='ovCard'+(usedS?' used':'');
+  const row=document.createElement('div'); row.className='ovRow';
+  const num=document.createElement('div'); num.className='ovNum'; num.textContent='#'+String(i+1).padStart(2,'0'); row.appendChild(num);
+  row.appendChild(renderShape({shape:o,color:usedS?'#ccc':'#555'},.8)); d.appendChild(row);
+  return d.outerHTML;
+ }).join('');
+ openModal(t('overview'),`<p>${lang==='cs'?'Šedé dílky už nejsou v této hře k dispozici (umístěny hráčem/AI nebo zahozeny).':'Grey tiles are no longer available (placed by player/AI or discarded).'}</p><div class="overview">${items}</div><h3 class="ovHeading">${t('startTiles')}</h3><div class="overview">${startItems}</div><div class="actions"><button onclick="closeModal()">${t('close')}</button></div>`,'wide');
+}
+function showHelp(){
+ openModal(t('helpTitle'),`<div class="helpText">${t('rulesHtml')}<div class="actions"><button onclick="closeModal()">${t('close')}</button></div></div>`,'narrow');
+}
+function showModeSelect(){
+ openModal(t('modeTitle'),`
+  <p>${t('modeDesc')}</p>
+  <button class="modeBtn" onclick="startMode('solo')">${t('modeSolo')}</button>
+  <button class="modeBtn" onclick="startMode('ai')">${t('modeAi')}</button>
+  <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>`);
+}
+function startMode(m){ closeModal(); newGame(m); toast(t('newGame')); }
+function saveGame(){
+ try{ localStorage.setItem(START_STORAGE,JSON.stringify(state)); toast(t('saved')); }catch(e){ toast(t('saveError')); }
+}
+function loadGame(){
+ try{
+  const x=JSON.parse(localStorage.getItem(START_STORAGE));
+  if(!x||x.version!==3) throw Error();
+  state=x;
+  if(!state.viewBoard) state.viewBoard='player';
+  if(state.mode==='ai'){
+   document.getElementById('subTitle').textContent=t('subAi');
+   setVisibleBoard(state.viewBoard||'player');
+  }else{
+   document.getElementById('subTitle').textContent=t('sub');
+   setVisibleBoard('player');
+  }
+  render(); toast(t('loaded'));
+ }catch(e){ toast(t('badLoad')); }
+}
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),1900); }
+function applyLang(){
+ document.documentElement.lang=lang;
+ document.getElementById('subTitle').textContent=state&&state.mode==='ai'?t('subAi'):t('sub');
+ document.getElementById('undoBtn').title=t('undo');
+ document.getElementById('saveBtn').title=t('save'); document.getElementById('loadBtn').title=t('load');
+ document.getElementById('statsBtn').title=t('stats'); document.getElementById('restartBtn').title=t('restart');
+ document.getElementById('langBtn').title=t('lang'); document.getElementById('helpBtn').title=t('help');
+ document.getElementById('settingsBtn').title=t('settings');
+ document.getElementById('historyBtn').title=t('history');
+ document.getElementById('langBtn').textContent=lang==='cs'?'🇬🇧':'🇨🇿';
+ document.getElementById('rotHint').textContent=t('rotHint');
+ document.getElementById('boardHint').textContent=t('boardSwitchHint');
+ if(state&&state.mode==='ai'){
+  document.getElementById('boardTitle').textContent=state.viewBoard==='ai'?t('boardAi'):t('boardPlayer');
+ }
+ render();
+}
+function render(){
+ if(!state||!state.player) return;
+ renderBoard(); renderTray();
+ if(state.mode==='solo'){
+  document.getElementById('gameStatus').textContent=t('game')+' '+state.game+t('of');
+ }else{
+  document.getElementById('gameStatus').textContent=state.player.gameOver?(state.ai&&state.ai.gameOver?t('end'):t('aiThinking')):t('yourTurn');
+ }
+ updateStatusCounts();
+}
+
+/* ========== EVENTS ========== */
+document.addEventListener('pointermove',e=>{ if(!drag.active) return; if(Math.hypot(e.clientX-drag.downX,e.clientY-drag.downY)>6) drag.moved=true; updateGhost(e.clientX,e.clientY); });
+document.addEventListener('pointerup',e=>{
+ if(!drag.active) return;
+ const moved=drag.moved; drag.active=false; removeGhost();
+ const b=document.getElementById('board'), rect=b.getBoundingClientRect();
+ if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
+  const c=Math.floor((e.clientX-rect.left)/(rect.width/9)), r=Math.floor((e.clientY-rect.top)/(rect.height/9));
+  placeSelectedAt(r,c);
+ }
+ drag.id=null; if(!moved) drag.moved=false;
+});
+document.getElementById('board').addEventListener('click',e=>{
+ if(state.player&&state.player.phase==='mark1'){
+  const cell=e.target.closest('.cell'); if(!cell) return;
+  placeSelectedAt(+cell.dataset.r,+cell.dataset.c); return;
+ }
+ if(!state.selected) return;
+ const cell=e.target.closest('.cell'); if(!cell) return;
+ placeSelectedAt(+cell.dataset.r,+cell.dataset.c);
+});
+document.getElementById('saveBtn').onclick=saveGame;
+document.getElementById('loadBtn').onclick=loadGame;
+document.getElementById('statsBtn').onclick=showOverview;
+document.getElementById('settingsBtn').onclick=showModeSelect;
+document.getElementById('historyBtn').onclick=showHistory;
+document.getElementById('undoBtn').onclick=undoLast;
+document.getElementById('helpBtn').onclick=showHelp;
+document.getElementById('modalClose').onclick=closeModal;
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+document.getElementById('restartBtn').onclick=()=>{ showModeSelect(); };
+document.getElementById('langBtn').onclick=()=>{ lang=lang==='cs'?'en':'cs'; applyLang(); };
+document.getElementById('board').addEventListener('dblclick',e=>{ e.preventDefault(); toggleBoardView(); });
+document.getElementById('aiBoard').addEventListener('dblclick',e=>{ e.preventDefault(); toggleBoardView(); });
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape') closeModal();
+ if(e.key==='r'&&state.selected){ state.rot=(state.rot+1)%4; renderTray(); }
+});
+
+/* Default: vs AI */
+newGame('ai');
+</script>
+</body>
+</html>
