@@ -770,12 +770,15 @@ function afterPlayerPlacement(){
   if(state.player.phase==='second') state.player.phase='normal';
   // Keep a snapshot of the current offer so AI sees the same two cards the player had.
   const offerForAi=state.cards.slice();
+  state.aiThinking=true;
+  document.getElementById('gameStatus').textContent=t('aiThinking');
   setTimeout(()=>{
    // Temporarily ensure AI evaluates the same offer
    const saved=state.cards;
    state.cards=offerForAi;
    aiChooseAndPlace();
    state.cards=saved;
+   state.aiThinking=false;
    afterBothPlayed();
   },500);
  }
@@ -808,12 +811,14 @@ function continueAiAlone(){
   state.cards=[];
  }
  const a=drawCard(), b=drawCard();
- if(a==null||b==null){ state.ai.gameOver=true; finishAiGame(); return; }
+ if(a==null||b==null){ state.ai.gameOver=true; state.aiThinking=false; finishAiGame(); return; }
  state.cards=[a,b];
+ state.aiThinking=true;
+ document.getElementById('gameStatus').textContent=t('aiThinking');
  render();
  setTimeout(()=>{
   aiChooseAndPlace();
-  if(state.ai.gameOver) finishAiGame();
+  if(state.ai.gameOver){ state.aiThinking=false; finishAiGame(); }
   else setTimeout(continueAiAlone,600);
  },400);
 }
@@ -1252,11 +1257,14 @@ function placeSelectedAt(r,c){
   who.gameOver=true; who.phase='ended';
   state.selected=null; removeGhost(); render();
   toast(lang==='cs'?'Končíš. AI dohrává.':'You end. AI finishes.');
+  state.aiThinking=true;
+  document.getElementById('gameStatus').textContent=t('aiThinking');
   // AI still gets the current shared offer (if any), then continues alone
   setTimeout(()=>{
    if(state.cards&&state.cards.length){
     aiChooseAndPlace();
    }
+   state.aiThinking=false;
    setTimeout(continueAiAlone,400);
   },500);
   return true;
@@ -1379,8 +1387,12 @@ function render(){
  renderBoard(); renderTray();
  if(state.mode==='solo'){
   document.getElementById('gameStatus').textContent=t('game')+' '+state.game+t('of');
+ }else if(state.aiThinking){
+  document.getElementById('gameStatus').textContent=t('aiThinking');
+ }else if(state.player.gameOver){
+  document.getElementById('gameStatus').textContent=(state.ai&&state.ai.gameOver)?t('end'):t('aiThinking');
  }else{
-  document.getElementById('gameStatus').textContent=state.player.gameOver?(state.ai&&state.ai.gameOver?t('end'):t('aiThinking')):t('yourTurn');
+  document.getElementById('gameStatus').textContent=t('yourTurn');
  }
  updateStatusCounts();
 }
