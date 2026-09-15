@@ -97,21 +97,38 @@ button{font:inherit}
 .result strong{font-size:26px}
 .modeBtn{display:block;width:100%;margin:8px 0;padding:14px;font-size:16px;font-weight:700;border:2px solid #555;border-radius:12px;background:#fff;cursor:pointer}
 .modeBtn:hover{background:#f0eee8}
-.boardsCompare{display:flex;flex-direction:column;flex-wrap:nowrap;gap:8px;align-items:center;justify-content:center}
+.boardsCompare{display:flex;flex-direction:column;flex-wrap:nowrap;gap:4px;align-items:center;justify-content:center}
 .boardsCompare>div{flex:0 0 auto;text-align:center;width:100%}
-.boardsCompare .miniBoard{width:min(78vw,300px);margin:0 auto}
-.dialog.narrow .boardsCompare .miniBoard{width:min(76vw,280px)}
-.dialog.boardsFit{max-height:min(94vh,94dvh);overflow-y:auto;overflow-x:hidden;padding:10px;-webkit-overflow-scrolling:touch}
-.dialog.boardsFit .actions{margin-top:8px;justify-content:center}
-.dialog.boardsFit .boardLabel{margin-bottom:2px;font-size:12px}
+.boardsCompare .miniBoard{width:min(48vw,170px);margin:0 auto}
+.dialog.narrow .boardsCompare .miniBoard{width:min(46vw,160px)}
+.dialog.boardsFit{max-height:min(94vh,94dvh);overflow:hidden;padding:8px}
+.dialog.boardsFit .actions{margin-top:6px;justify-content:center}
+.dialog.boardsFit .boardLabel{margin-bottom:1px;font-size:11px}
+.dialog.boardsFit .dialogHead{padding-bottom:4px;margin-bottom:4px}
+.dialog.boardsFit .dialogHead h2{font-size:16px}
 .card.nofit{opacity:.4;filter:grayscale(1);pointer-events:none}
 .histBlock{border:1px solid #ccc;border-radius:10px;padding:10px;margin:8px 0;background:#fff}
 .histBlock h3{margin:0 0 6px;font-size:14px}
 .histRow{display:flex;flex-direction:column;gap:4px}
-.histItem{border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;background:#fafafa;font-size:13px;text-align:left}
+.histItem{border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;background:#fafafa;font-size:13px;text-align:left;flex:1}
 .histItem:hover{background:#f0eee8;border-color:#aaa}
 .histItem .histMeta{color:#666;font-size:11px;margin-top:2px}
 .histEmpty{color:#888;font-size:12px;padding:4px 0}
+.histItemWrap{display:flex;align-items:center;gap:8px}
+.histCheck{display:none;flex-shrink:0}
+.histSelectOn .histCheck{display:block}
+.actions .iconAct{border:1px solid #aaa;border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer;font-size:18px;line-height:1}
+.actions .iconAct:hover{background:#f0eee8}
+.actions{align-items:center;justify-content:flex-start}
+.actions .actionsRight{margin-left:auto}
+.confirmDialog{width:min(90vw,320px);text-align:center;padding:18px 16px}
+.confirmDialog p{margin:0 0 16px;font-size:15px;line-height:1.4}
+.confirmActions{display:flex;justify-content:center;gap:18px}
+.confirmYes,.confirmNo{width:52px;height:52px;border-radius:50%;border:0;font-size:26px;cursor:pointer;line-height:1;box-shadow:0 2px 6px #0003}
+.confirmYes{background:#2a9d5c;color:#fff}
+.confirmYes:hover{background:#238a50}
+.confirmNo{background:#d64545;color:#fff}
+.confirmNo:hover{background:#c03939}
 @media(max-width:560px){
  .app{padding:7px 7px 14px}
  .menu{gap:5px}
@@ -125,11 +142,12 @@ button{font:inherit}
  .dialog{width:min(92vw,400px);max-height:min(85vh,85dvh);margin:8px auto 20px}
  .dialog.narrow{width:min(90vw,360px)}
  .dialog.wide{width:min(94vw,100%)}
- .boardsCompare{flex-direction:column;gap:6px}
+ .boardsCompare{flex-direction:column;gap:3px}
  .boardsCompare .miniBoard{width:min(58vw,240px)}
  .dialog.narrow .boardsCompare .miniBoard{width:min(58vw,240px)}
- .dialog.boardsFit{padding:8px;max-height:min(94vh,94dvh);width:min(94vw,360px)}
- .dialog.boardsFit .dialogHead h2{font-size:16px}
+ .dialog.boardsFit{padding:6px;max-height:min(92vh,92dvh);width:min(92vw,340px);overflow:hidden}
+ .dialog.boardsFit .dialogHead h2{font-size:15px}
+ .dialog.boardsFit .actions button{padding:6px 10px;font-size:13px}
  .resultLine{font-size:18px}
  .dialogHead h2{font-size:17px}
 }
@@ -160,7 +178,11 @@ button{font:inherit}
 
   <div class="status">
     <span id="gameStatus">Hra 1 / 3</span>
-    <span><span id="metricLabel">Deska</span>: <b id="emptyCount">81</b> · <span id="deckLabel">Balíček</span>: <b id="deckCount">40</b></span>
+    <span>
+      <span id="scoreWrap" style="display:none"><span id="scoreLabel">Body</span>: <b id="scoreCount">0</b> · </span>
+      <span id="metricLabel">Deska</span>: <b id="emptyCount">81</b> ·
+      <span id="deckLabel">Balíček</span>: <b id="deckCount">40</b>
+    </span>
   </div>
 
   <div class="boardBar" id="boardBar">
@@ -188,6 +210,15 @@ button{font:inherit}
  <div class="dialog">
   <div class="dialogHead"><h2 id="modalTitle"></h2><button class="close" id="modalClose">×</button></div>
   <div id="modalBody"></div>
+ </div>
+</div>
+<div id="confirmModal" class="modal">
+ <div class="dialog confirmDialog">
+  <p id="confirmMsg"></p>
+  <div class="confirmActions">
+   <button type="button" class="confirmYes" id="confirmYes" title="OK">✓</button>
+   <button type="button" class="confirmNo" id="confirmNo" title="Cancel">✕</button>
+  </div>
  </div>
 </div>
 <div id="toast" class="toast"></div>
@@ -254,7 +285,7 @@ const START_STORAGE = 'secondChance_v3';
 const I18N = {
  cs:{
   sub:'SOLO · 3 hry',subAi:'PROTI AI',save:'Uložit',load:'Načíst',stats:'Přehledová karta',restart:'Nová hra',undo:'Zpět',lang:'Přepnout do angličtiny',help:'Nápověda',
-  game:'Hra',of:' / 3',empty:'Prázdná',board:'Deska',deck:'Balíček',choose:'Vyber kartu',second:'DRUHÁ ŠANCE',hint:'1× klik = otočit · 2× klik = překlopit',
+  game:'Hra',of:' / 3',empty:'Prázdná',board:'Deska',deck:'Balíček',score:'Body',soloBoards:'Desky SOLO hry',choose:'Vyber kartu',second:'DRUHÁ ŠANCE',hint:'1× klik = otočit · 2× klik = překlopit',
   rotHint:'1× klik = otočit · 2× klik = překlopit',
   noFit:'Ani jedna ze dvou karet se nevejde. Aktivuje se Druhá šance.',secondFit:'Druhá šance se vejde. Umísti ji na desku.',secondNo:'Druhá šance se také nevejde. Hra končí.',
   saved:'Hra byla uložena.',loaded:'Hra byla načtena.',badLoad:'Uloženou hru se nepodařilo načíst.',newGame:'Nová hra byla zahájena.',undoDone:'Poslední tah byl vrácen.',noUndo:'Není co vrátit.',saveError:'Hru se nepodařilo uložit.',
@@ -283,15 +314,22 @@ const I18N = {
 <li>Každý má <strong>vlastní start</strong> a <strong>vlastní desku</strong>.</li>
 <li>Stejná nabídka 2 karet – oba mohou použít stejnou.</li>
 <li><strong>Dvojklik na desku</strong> = přepnutí 👤 / 🖥️.</li>
+</ul>
+<h3>Statistiky 📊</h3>
+<ul>
+<li>Ukládá se <strong>nejlepší</strong> a <strong>poslední</strong> hra pro SOLO i AI.</li>
+<li>Klik na záznam <strong>načte</strong> uloženou hru.</li>
+<li><strong>📈</strong> – zapne výběr záznamů; po označení se změní na <strong>📉</strong>. Dvojklik smaže označené (potvrzení ✓ / ✕).</li>
+<li><strong>🗑️</strong> – smaže všechna uložená data po potvrzení (✓ / ✕).</li>
 </ul>`,
   statsGame:'Hra',statsEmpty:'Prázdná pole',statsTotal:'Součet',remaining:'zbývá',win:'VYHRÁL JSI',lose:'PROHRÁL JSI',next:'Začíná další hra',end:'Konec hry',
   startTiles:'Startovní dílky',
   modeTitle:'Volba režimu',modeSolo:'👤 SOLO (3 hry)',modeAi:'👤 × 🖥️',modeDesc:'SOLO = 3 hry podle pravidel. 👤 × 🖥️ = jedna deska proti AI.',
-  player:'Hráč',ai:'AI',yourTurn:'Tvůj tah',aiThinking:'AI přemýšlí…',markOne:'Označ prázdné pole číslicí 1 (končíš)',viewBoards:'Prohlédnout desky',aiWins:'AI má méně prázdných',youWin:'Máš méně prázdných',winByOne:'Při rovnosti rozhoduje 1',draw:'Remíza',placeStart:'Umísti kartu',settings:'Režim',history:'Statistiky',best:'Nejlepší',lastGame:'Poslední hra',noHistory:'Zatím žádná odehraná hra',loadGame:'Načíst tuto hru',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× klik na desku = přepnutí desky'
+  player:'Hráč',ai:'AI',yourTurn:'Tvůj tah',aiThinking:'AI přemýšlí…',markOne:'Označ prázdné pole číslicí 1 (končíš)',viewBoards:'Prohlédnout desky',aiWins:'AI má méně prázdných',youWin:'Máš méně prázdných',winByOne:'Při rovnosti rozhoduje 1',draw:'Remíza',placeStart:'Umísti kartu',settings:'Režim',history:'Statistiky',best:'Nejlepší',lastGame:'Poslední hra',noHistory:'Zatím žádná odehraná hra',loadGame:'Načíst tuto hru',clearAll:'Smazat všechna data',clearAllConfirm:'Opravdu smazat všechny uložené hry a statistiky?',clearSelected:'Smazat označené',clearSelectedConfirm:'Opravdu smazat označené záznamy?',selectRecords:'Označ záznamy ke smazání',dataCleared:'Data smazána',recordsCleared:'Záznamy smazány',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× klik na desku = přepnutí desky'
  },
  en:{
   sub:'SOLO · 3 games',subAi:'VS AI',save:'Save',load:'Load',stats:'Overview card',restart:'New game',undo:'Undo',lang:'Switch to Czech',help:'Help',
-  game:'Game',of:' / 3',empty:'Empty',board:'Board',deck:'Deck',choose:'Choose a card',second:'SECOND CHANCE',hint:'1× click = rotate · 2× click = flip',
+  game:'Game',of:' / 3',empty:'Empty',board:'Board',deck:'Deck',score:'Score',soloBoards:'SOLO game boards',choose:'Choose a card',second:'SECOND CHANCE',hint:'1× click = rotate · 2× click = flip',
   rotHint:'1× click = rotate · 2× click = flip',
   noFit:'Neither revealed card fits. Second Chance is activated.',secondFit:'The Second Chance fits. Place it on the board.',secondNo:'The Second Chance also does not fit. The game ends.',
   saved:'Game saved.',loaded:'Game loaded.',badLoad:'The saved game could not be loaded.',newGame:'New game started.',undoDone:'The last move was undone.',noUndo:'There is nothing to undo.',saveError:'The game could not be saved.',
@@ -320,11 +358,18 @@ const I18N = {
 <li>Each has an <strong>own start</strong> and <strong>own board</strong>.</li>
 <li>Same 2-card offer – both may use the same one.</li>
 <li><strong>Double-click the board</strong> to switch 👤 / 🖥️.</li>
+</ul>
+<h3>Statistics 📊</h3>
+<ul>
+<li>Stores the <strong>best</strong> and <strong>last</strong> game for SOLO and AI.</li>
+<li>Tap a record to <strong>load</strong> that game.</li>
+<li><strong>📈</strong> – enables selection; after checking items it becomes <strong>📉</strong>. Double-click deletes selected (confirm with ✓ / ✕).</li>
+<li><strong>🗑️</strong> – clears all saved data after confirmation (✓ / ✕).</li>
 </ul>`,
   statsGame:'Game',statsEmpty:'Empty squares',statsTotal:'Total',remaining:'remaining',win:'YOU WIN',lose:'YOU LOSE',next:'Starting next game',end:'Game over',
   startTiles:'Starting tiles',
   modeTitle:'Choose mode',modeSolo:'👤 SOLO (3 games)',modeAi:'👤 × 🖥️',modeDesc:'SOLO = 3 games by the rules. 👤 × 🖥️ = one board vs AI.',
-  player:'Player',ai:'AI',yourTurn:'Your turn',aiThinking:'AI is thinking…',markOne:'Mark an empty square with 1 (you end)',viewBoards:'View boards',aiWins:'AI has fewer empties',youWin:'You have fewer empties',winByOne:'On a tie, the 1 decides',draw:'Draw',placeStart:'Place the card',settings:'Mode',history:'Statistics',best:'Best',lastGame:'Last game',noHistory:'No games played yet',loadGame:'Load this game',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× click on board = switch board'
+  player:'Player',ai:'AI',yourTurn:'Your turn',aiThinking:'AI is thinking…',markOne:'Mark an empty square with 1 (you end)',viewBoards:'View boards',aiWins:'AI has fewer empties',youWin:'You have fewer empties',winByOne:'On a tie, the 1 decides',draw:'Draw',placeStart:'Place the card',settings:'Mode',history:'Statistics',best:'Best',lastGame:'Last game',noHistory:'No games played yet',loadGame:'Load this game',clearAll:'Delete all data',clearAllConfirm:'Really delete all saved games and statistics?',clearSelected:'Delete selected',clearSelectedConfirm:'Really delete the selected records?',selectRecords:'Select records to delete',dataCleared:'Data cleared',recordsCleared:'Records deleted',boardPlayer:'👤',boardAi:'🖥️',boardSwitchHint:'2× click on board = switch board'
  }
 };
 const HISTORY_STORAGE='secondChance_history_v1';
@@ -633,17 +678,36 @@ function remainingInDeck(){
 function updateStatusCounts(){
  if(!state||!state.player) return;
  const board=(state.mode==='ai'&&state.viewBoard==='ai'&&state.ai)?state.ai.board:state.player.board;
+ const empty=countEmpty(board);
  document.getElementById('metricLabel').textContent=t('board');
- document.getElementById('emptyCount').textContent=countEmpty(board);
+ document.getElementById('emptyCount').textContent=empty;
  document.getElementById('deckLabel').textContent=t('deck');
  document.getElementById('deckCount').textContent=remainingInDeck();
+ const scoreWrap=document.getElementById('scoreWrap');
+ if(state.mode==='solo'){
+  scoreWrap.style.display='';
+  document.getElementById('scoreLabel').textContent=t('score');
+  // Running points = empties from finished games + current board empties (if current game not yet counted)
+  const currentCounted=state.player.phase==='ended';
+  const running=(state.total||0)+(currentCounted?0:empty);
+  document.getElementById('scoreCount').textContent=running;
+ }else{
+  scoreWrap.style.display='none';
+ }
 }
 function lastPlacedSeq(who){
  return (who&&who.lastSeq)?who.lastSeq:0;
 }
 function toggleBoardView(){
- if(!state||state.mode!=='ai') return;
- setVisibleBoard(state.viewBoard==='ai'?'player':'ai');
+ if(!state) return;
+ if(state.mode==='ai'){
+  setVisibleBoard(state.viewBoard==='ai'?'player':'ai');
+  return;
+ }
+ // SOLO: double-click shows all boards of the series (after rounds played / loaded from stats)
+ if(state.mode==='solo'&&state.soloBoards&&state.soloBoards.length){
+  showSoloBoards();
+ }
 }
 function newGame(mode){
  clearTimeout(roundTimer); clearTimeout(rotateTimer); removeGhost();
@@ -653,7 +717,8 @@ function newGame(mode){
   deck:shuffle(NORMAL_CARDS.map(c=>c.id)),
   cards:[], selected:null, rot:0, flip:false,
   history:[], undo:null,
-  player:null, ai:null, viewBoard:'player', firstFailed:null
+  player:null, ai:null, viewBoard:'player', firstFailed:null,
+  soloBoards:[]
  };
  state.player=createPlayerState();
  if(mode==='ai'){
@@ -811,6 +876,8 @@ function finishSoloGame(full){
  state.total+=empty;
  state.player.gameOver=true; state.player.phase='ended';
  state.history.push({end:true,empty,full});
+ if(!state.soloBoards) state.soloBoards=[];
+ state.soloBoards.push({game:state.game,empty,full,board:clone(state.player.board),lastSeq:state.player.lastSeq||0});
  render();
  roundTimer=setTimeout(()=>{
   if(state.game<3){
@@ -825,6 +892,26 @@ function finishSoloGame(full){
    },900);
   }else showSoloResult();
  },250);
+}
+function showSoloBoards(){
+ if(!state.soloBoards||!state.soloBoards.length) return;
+ const items=state.soloBoards.map((sb,i)=>`
+  <div>
+   <div class="boardLabel">${t('game')} ${sb.game}${t('of')} · ${sb.empty}</div>
+   <div id="soloBoard${i}" class="board miniBoard"></div>
+  </div>`).join('');
+ openModal(t('soloBoards'),`
+  <div class="boardsCompare">${items}</div>
+  <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>
+ `,'narrow');
+ const dlg=document.querySelector('#modal .dialog');
+ if(dlg) dlg.classList.add('boardsFit');
+ setTimeout(()=>{
+  state.soloBoards.forEach((sb,i)=>{
+   const el=document.getElementById('soloBoard'+i);
+   if(el) renderBoardTo(el,sb.board,sb.lastSeq||0);
+  });
+ },50);
 }
 function boardHasOne(board){
  for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]&&board[r][c].one) return true;
@@ -911,32 +998,108 @@ function formatHistDate(iso){
   return d.toLocaleString(lang==='cs'?'cs-CZ':'en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
  }catch(e){ return iso; }
 }
+let histSelectMode=false;
+let confirmCallback=null;
+function gameConfirm(msg,onYes){
+ confirmCallback=onYes||null;
+ document.getElementById('confirmMsg').textContent=msg;
+ document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm(){
+ document.getElementById('confirmModal').classList.remove('open');
+ confirmCallback=null;
+}
 function showHistory(){
  const h=loadHistoryStore();
  const soloBest=h.solo&&h.solo.best, soloLast=h.solo&&h.solo.last;
  const aiBest=h.ai&&h.ai.best, aiLast=h.ai&&h.ai.last;
- const soloItem=(entry,label)=>entry?`<button type="button" class="histItem" data-mode="solo" data-kind="${label}">
+ const soloItem=(entry,label)=>entry?`<div class="histItemWrap">
+  <label class="histCheck"><input type="checkbox" data-mode="solo" data-kind="${label}"></label>
+  <button type="button" class="histItem" data-mode="solo" data-kind="${label}">
   <strong>${label==='best'?t('best'):t('lastGame')}</strong>: ${t('statsTotal')} <b>${entry.total}</b>${entry.won?' 🏆':''}
   <div class="histMeta">${formatHistDate(entry.date)} · ${t('loadGame')}</div>
- </button>`:`<div class="histEmpty">${t('noHistory')}</div>`;
- const aiItem=(entry,label)=>entry?`<button type="button" class="histItem" data-mode="ai" data-kind="${label}">
+ </button></div>`:`<div class="histEmpty">${t('noHistory')}</div>`;
+ const aiItem=(entry,label)=>entry?`<div class="histItemWrap">
+  <label class="histCheck"><input type="checkbox" data-mode="ai" data-kind="${label}"></label>
+  <button type="button" class="histItem" data-mode="ai" data-kind="${label}">
   <strong>${label==='best'?t('best'):t('lastGame')}</strong>: 👤 [${entry.pe}] : 🖥️ [${entry.ae}] ${entry.winner==='player'?'🏆👤':'🏆🖥️'}
   <div class="histMeta">${formatHistDate(entry.date)} · ${t('loadGame')}</div>
- </button>`:`<div class="histEmpty">${t('noHistory')}</div>`;
+ </button></div>`:`<div class="histEmpty">${t('noHistory')}</div>`;
+ histSelectMode=false;
  openModal(t('history'),`
-  <div class="histBlock"><h3>👤 SOLO</h3><div class="histRow">${soloItem(soloBest,'best')}${soloItem(soloLast,'last')}</div></div>
-  <div class="histBlock"><h3>👤 × 🖥️</h3><div class="histRow">${aiItem(aiBest,'best')}${aiItem(aiLast,'last')}</div></div>
-  <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>
+  <div id="histBody">
+   <div class="histBlock"><h3>👤 SOLO</h3><div class="histRow">${soloItem(soloBest,'best')}${soloItem(soloLast,'last')}</div></div>
+   <div class="histBlock"><h3>👤 × 🖥️</h3><div class="histRow">${aiItem(aiBest,'best')}${aiItem(aiLast,'last')}</div></div>
+  </div>
+  <div class="actions">
+   <button type="button" class="iconAct" id="histChart" title="${t('selectRecords')}">📈</button>
+   <button type="button" class="iconAct" id="histTrash" title="${t('clearAll')}">🗑️</button>
+   <button class="actionsRight" onclick="closeModal()">${t('close')}</button>
+  </div>
  `,'narrow');
  setTimeout(()=>{
+  const updateChartIcon=()=>{
+   const chart=document.getElementById('histChart');
+   if(!chart) return;
+   const n=document.querySelectorAll('#histBody input[type=checkbox]:checked').length;
+   chart.textContent=n>0?'📉':'📈';
+  };
   document.querySelectorAll('.histItem').forEach(btn=>{
    btn.onclick=()=>{
+    if(histSelectMode) return;
     const mode=btn.dataset.mode, kind=btn.dataset.kind;
     const store=loadHistoryStore();
     const entry=store[mode]&&store[mode][kind==='best'?'best':'last'];
     if(entry&&entry.snapshot) loadHistorySnapshot(entry.snapshot);
    };
   });
+  document.querySelectorAll('#histBody input[type=checkbox]').forEach(cb=>{
+   cb.addEventListener('change',updateChartIcon);
+  });
+  const trash=document.getElementById('histTrash');
+  const chart=document.getElementById('histChart');
+  if(trash) trash.onclick=()=>{
+   gameConfirm(t('clearAllConfirm'),()=>{
+    try{
+     localStorage.removeItem(START_STORAGE);
+     localStorage.removeItem(HISTORY_STORAGE);
+    }catch(e){}
+    toast(t('dataCleared'));
+    showHistory();
+   });
+  };
+  if(chart){
+   let chartTimer=null;
+   chart.onclick=()=>{
+    clearTimeout(chartTimer);
+    chartTimer=setTimeout(()=>{
+     histSelectMode=!histSelectMode;
+     const body=document.getElementById('histBody');
+     if(body) body.classList.toggle('histSelectOn',histSelectMode);
+     if(!histSelectMode){
+      document.querySelectorAll('#histBody input[type=checkbox]').forEach(cb=>{cb.checked=false;});
+     }
+     updateChartIcon();
+     if(histSelectMode) toast(t('selectRecords'));
+    },280);
+   };
+   chart.ondblclick=(e)=>{
+    e.preventDefault(); e.stopPropagation();
+    clearTimeout(chartTimer);
+    const checked=[...document.querySelectorAll('#histBody input[type=checkbox]:checked')];
+    if(!checked.length){ toast(t('selectRecords')); return; }
+    gameConfirm(t('clearSelectedConfirm'),()=>{
+     const store=loadHistoryStore();
+     checked.forEach(cb=>{
+      const mode=cb.dataset.mode, kind=cb.dataset.kind==='best'?'best':'last';
+      if(store[mode]) delete store[mode][kind];
+     });
+     try{ localStorage.setItem(HISTORY_STORAGE,JSON.stringify(store)); }catch(err){}
+     toast(t('recordsCleared'));
+     showHistory();
+    });
+   };
+  }
  },30);
 }
 function loadHistorySnapshot(snapshot){
@@ -1169,7 +1332,6 @@ function showHelp(){
 }
 function showModeSelect(){
  openModal(t('modeTitle'),`
-  <p>${t('modeDesc')}</p>
   <button class="modeBtn" onclick="startMode('solo')">${t('modeSolo')}</button>
   <button class="modeBtn" onclick="startMode('ai')">${t('modeAi')}</button>
   <div class="actions"><button onclick="closeModal()">${t('close')}</button></div>`);
@@ -1253,6 +1415,11 @@ document.getElementById('undoBtn').onclick=undoLast;
 document.getElementById('helpBtn').onclick=showHelp;
 document.getElementById('modalClose').onclick=closeModal;
 document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+document.getElementById('confirmYes').onclick=()=>{
+ const fn=confirmCallback; closeConfirm(); if(fn) fn();
+};
+document.getElementById('confirmNo').onclick=closeConfirm;
+document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target.id==='confirmModal') closeConfirm(); });
 document.getElementById('restartBtn').onclick=()=>{ showModeSelect(); };
 document.getElementById('langBtn').onclick=()=>{ lang=lang==='cs'?'en':'cs'; applyLang(); };
 document.getElementById('board').addEventListener('dblclick',e=>{ e.preventDefault(); toggleBoardView(); });
