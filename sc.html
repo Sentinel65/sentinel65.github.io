@@ -1266,12 +1266,14 @@ function updateGhost(x,y){
  if(!card) return;
  const shape=orient(card.shape,state.rot,state.flip);
  const maxR=Math.max(...shape.map(p=>p[0])), maxC=Math.max(...shape.map(p=>p[1]));
+ // Pin ghost to bottom edge of the tile (cursor sits on the bottom row of the shape)
+ const placeR=r-maxR, placeC=c;
  const ghost=document.getElementById('ghost')||document.createElement('div'); ghost.id='ghost'; ghost.className='ghost';
- ghost.style.left=(c*cellW)+'px'; ghost.style.top=(r*cellH)+'px';
+ ghost.style.left=(placeC*cellW)+'px'; ghost.style.top=(placeR*cellH)+'px';
  ghost.style.width=((maxC+1)*cellW)+'px'; ghost.style.height=((maxR+1)*cellH)+'px';
  ghost.style.gridTemplateRows=`repeat(${maxR+1},${cellH}px)`; ghost.style.gridTemplateColumns=`repeat(${maxC+1},${cellW}px)`;
  ghost.innerHTML='';
- const ok=fits(shape,r,c,who.board);
+ const ok=fits(shape,placeR,placeC,who.board);
  for(const [rr,cc] of shape){ const q=document.createElement('div'); q.className='ghostCell'+(ok?'':' invalid'); q.style.gridRow=rr+1; q.style.gridColumn=cc+1; ghost.appendChild(q); }
  if(!ghost.parentElement) b.appendChild(ghost);
 }
@@ -1460,7 +1462,18 @@ document.addEventListener('pointerup',e=>{
  const b=document.getElementById('board'), rect=b.getBoundingClientRect();
  if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
   const c=Math.floor((e.clientX-rect.left)/(rect.width/9)), r=Math.floor((e.clientY-rect.top)/(rect.height/9));
-  placeSelectedAt(r,c);
+  // Match ghost: pin placement to bottom edge of the tile
+  let placeR=r, placeC=c;
+  if(moved){
+   const who=state.player;
+   const card=(who&&who.phase==='start'&&who.startCard&&(drag.id==='start'||state.selected==='start'))?who.startCard:getCard(drag.id||state.selected);
+   if(card){
+    const shape=orient(card.shape,state.rot,state.flip);
+    const maxR=Math.max(...shape.map(p=>p[0]));
+    placeR=r-maxR;
+   }
+  }
+  placeSelectedAt(placeR,placeC);
  }
  drag.id=null; if(!moved) drag.moved=false;
 });
