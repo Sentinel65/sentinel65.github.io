@@ -1154,11 +1154,7 @@ function doMove(fr,fc,tr,tc,info){
  state.log.push(logMsg);endTurn();
 }
 
-/* ===================== AI ENGINE =====================
-   Negamax + α-β + iterative deepening
-   E = w1·ΔS + w2·ΔM + w3·Bc + w4·Bp
-   Priority: keep own mobility, squeeze opponent, avoid edge traps
-====================================================== */
+/* ===================== AI (helpers + engine v2 below) ===================== */
 function countTiles(board,color){
  let n=0;
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]?.type==='tile'&&board[r][c].color===color)n++;
@@ -1179,233 +1175,502 @@ function applyMove(board,m){
  nb[m.r][m.c]=piece;
  return nb;
 }
-/** True if `byColor` can capture whatever stands on (tr,tc) with a full-move capture. */
-function canCaptureAt(board, tr, tc, byColor){
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-  const x=board[r][c];
-  if(x?.type!=='tile'||x.color!==byColor) continue;
-  const moves=getPossibleMoves(r,c,board,byColor);
-  if(moves.some(m=>m.r===tr&&m.c===tc&&m.capture)) return true;
- }
- return false;
+/* ===================== AI ENGINE v2 =====================
+   Fast typed-array engine.  Board = Int8Array(63), index = r*7+c.
+   0 empty | white tile 2/3/4 | brown tile 12/13/14 | barragoon 20+sym*4+orient
+   Colors: 0 = white, 1 = brown.
+   Search: negamax + alpha-beta + iterative deepening + TT (with bounds) + quiescence.
+   A capture "turn" includes the Barragoon placements that follow it, so the
+   search sees entombment (the way a human wins this game).
+========================================================= */
+const AI2=(function(){
+'use strict';
+const R=9,C=7,NS=63;
+const DR=[-1,0,1,0], DC=[0,1,0,-1];
+const RIGHT_OF=[1,2,3,0], LEFT_OF=[3,0,1,2], OPP=[2,3,0,1];
+const SYM_NAMES=['X','ONE','TWO','RIGHT','LEFT','ALL'];
+const NB=new Int8Array(NS*4).fill(-1);
+for(let r=0;r<R;r++)for(let c=0;c<C;c++)for(let d=0;d<4;d++){
+  const nr=r+DR[d],nc=c+DC[d];
+  if(nr>=0&&nr<R&&nc>=0&&nc<C)NB[(r*C+c)*4+d]=nr*C+nc;
 }
-/** Count own tiles that white can capture next. */
-function countHanging(board, color){
- const opp=other(color);
- let n=0;
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-  const x=board[r][c];
-  if(x?.type==='tile'&&x.color===color&&canCaptureAt(board,r,c,opp)) n+=x.val;
- }
- return n;
-}
-
-// Fast single-pass evaluation from `color` perspective
-function evaluate(board, color){
- const opp=other(color);
- let myT=0,oppT=0,myM=0,oppM=0,myThreat=0,oppThreat=0,myPos=0,oppPos=0,myEdge=0,oppEdge=0;
- // Precompute moves once per piece
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-  const x=board[r][c];
-  if(x?.type!=='tile') continue;
-  const moves=getPossibleMoves(r,c,board,x.color);
-  const edgePenalty = (c===0||c===COLS-1) ? 1 : 0;
-  if(x.color===color){
-   myT++; myM+=moves.length; myEdge+=edgePenalty;
-   // Brown advances to high r; white to low r
-   myPos += (color==='brown' ? r : (ROWS-1-r)) * 2;
-   myPos += (3.5-Math.abs(c-3))*1.5; // prefer center files
-   for(const m of moves){ if(m.capture==='tile') myThreat+=12; else if(m.capture==='barra') myThreat+=4; }
-  }else{
-   oppT++; oppM+=moves.length; oppEdge+=edgePenalty;
-   oppPos += (opp==='brown' ? r : (ROWS-1-r)) * 2;
-   oppPos += (3.5-Math.abs(c-3))*1.5;
-   for(const m of moves){ if(m.capture==='tile') oppThreat+=12; else if(m.capture==='barra') oppThreat+=4; }
-  }
- }
- // Barragoon control Bc — walls near opponent in their depth
- let Bc=0;
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-  const x=board[r][c]; if(x?.type!=='barra') continue;
-  const inOppDepth = (opp==='white' && r>=5) || (opp==='brown' && r<=3);
-  for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
-   const nr=r+dr,nc=c+dc; if(!inBounds(nr,nc)) continue;
-   const n=board[nr][nc];
-   if(n?.type==='tile'&&n.color===opp){ Bc += x.sym==='X' ? 4 : 1; }
-   if(n?.type==='tile'&&n.color===color){ Bc -= x.sym==='X' ? 3 : 0.5; }
-  }
-  if(inOppDepth && x.sym==='X') Bc += 2;
- }
-
- // Hanging pieces (can be captured next) — critical
- const myHang=countHanging(board,color);
- const oppHang=countHanging(board,opp);
- // Human wins by walling + immobilizing. Mobility difference is decisive.
- // Material matters, but a mobile 2-tile side beats a stuck 4-tile side.
- // Offense: advance into white, threaten captures, then wall. Defense alone loses (see logs).
- // Marathon logs: white wins by farming walls + slowly freezing brown.
- // Counter: cut white mobility hard, threaten tiles, place walls in white half.
- let E = 120*(myT-oppT) + 32*(myM-oppM) + 16*Bc + 32*(myThreat-oppThreat) + 6*(myPos-oppPos) - 3*myEdge + 4*oppEdge;
- E -= myHang * 55;
- E += oppHang * 55;
-
- if(oppT===0) return 1e6;
- if(myT===0) return -1e6;
- if(oppM===0 && oppT>0) E += 1e5;
- if(myM===0 && myT>0) E -= 1e5;
- if(myM<=3 && myT>0) E -= 85*(4-myM);
- if(oppM<=4 && oppT>0) E += 110*(5-oppM); // reward squeezing white early
- if(myM>oppM) E += 20;
- return E;
-}
-
-function orderMoves(moves, side, board){
- return moves.slice().sort((a,b)=>{
-  const score=m=>{
-   let s=0;
-   if(m.capture==='tile') s+=240;
-   else if(m.capture==='barra') s+=95;
-   else s+=15;
-   s += (3.5-Math.abs(m.c-3))*3;
-   // Strong forward bias — logs show AI retreating into a cage
-   const fwd = side==='brown' ? (m.r-m.fromR) : (m.fromR-m.r);
-   s += fwd*8;
-   if(fwd<0) s -= 25; // retreat penalty
-   if(!m.capture && (m.c===0||m.c===COLS-1)) s-=20;
-   if(m.moveType==='full') s+=4;
-   if(board && m.capture!=='tile'){
-    const after=applyMove(board,m);
-    if(canCaptureAt(after,m.r,m.c,other(side))) s -= 500;
-   }
-   return s;
-  };
-  return score(b)-score(a);
- });
-}
-
-const AI_TT=new Map();
-let AI_nodes=0, AI_deadline=0;
-
-function negamax(board, depth, alpha, beta, side){
- if(Date.now()>AI_deadline) return {score:0, move:null, timeout:true};
- AI_nodes++;
- const moves=orderMoves(genMoves(board,side), side, board);
- if(!moves.length){
-  // no moves for side → loss for side; score from brown root perspective handled by sign flips
-  return {score: side==='brown' ? -4e5 : 4e5, move:null};
- }
- if(depth===0){
-  const stand = evaluate(board,'brown') * (side==='brown' ? 1 : -1);
-  return {score: stand, move:null};
- }
- // TT
- const key=side+'|'+depth+'|'+JSON.stringify(board).length; // cheap; full hash below
- // Use simple position key
- let h=side==='brown'?1:2;
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-  const x=board[r][c];
-  if(!x) h=h*17+1;
-  else if(x.type==='tile') h=h*17+(x.color==='w'?3:5)+x.val+(r<<3)+c;
-  else h=h*17+7+(x.orient||0)+(r<<3)+c;
- }
- const ttKey=h+'@'+depth+'@'+side;
- const hit=AI_TT.get(ttKey);
- if(hit) return {score:hit.s, move:hit.m};
-
- const limit = depth>=3 ? 12 : depth===2 ? 16 : 22;
- let bestScore=-Infinity, bestMove=null;
- for(const m of moves.slice(0,limit)){
-  if(Date.now()>AI_deadline) return {score:bestScore, move:bestMove, timeout:true};
-  // Barragoon captures are strategic (wall building) — keep them
-  const child=negamax(applyMove(board,m), depth-1, -beta, -alpha, other(side));
-  if(child.timeout) return {score:bestScore, move:bestMove, timeout:true};
-  const sc=-child.score;
-  if(sc>bestScore){bestScore=sc; bestMove=m;}
-  if(sc>alpha) alpha=sc;
-  if(alpha>=beta) break;
- }
- AI_TT.set(ttKey,{s:bestScore,m:bestMove});
- if(AI_TT.size>6000) AI_TT.clear();
- return {score:bestScore, move:bestMove};
-}
-
-function iterativeDeepening(board, maxDepth, timeMs){
- AI_deadline=Date.now()+timeMs;
- AI_TT.clear(); AI_nodes=0;
- let best={score:0, move:null};
- // Opening: prefer developing from back rank toward center
- for(let d=1; d<=maxDepth; d++){
-  const res=negamax(board, d, -Infinity, Infinity, 'brown');
-  if(res.move) best=res;
-  if(res.timeout) break;
- }
- // Fallback: best ordered legal move
- if(!best.move){
-  const all=orderMoves(genMoves(board,'brown'),'brown',board);
-  best={score:0, move:all[0]||null};
- }
- return best;
-}
-
-function placeAIBarra(reuse=null){
- // Mirror human wall strategy: maximize cut to WHITE mobility, protect own paths
- const empties=[];
- for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++) if(!state.board[r][c]) empties.push([r,c]);
- if(!empties.length) return;
-
- function mob(board,color){
+const EXITM=new Uint8Array(24*4);
+for(let sym=0;sym<6;sym++)for(let o=0;o<4;o++)for(let d=0;d<4;d++){
   let m=0;
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-   const x=board[r][c];
-   if(x?.type==='tile'&&x.color===color) m+=getPossibleMoves(r,c,board,color).length;
-  }
-  return m;
- }
- const baseW=mob(state.board,'white'), baseB=mob(state.board,'brown');
- const symbols=reuse?[reuse]:[
-  {sym:'X',orient:0},
-  {sym:'ONE',orient:0},{sym:'ONE',orient:1},{sym:'ONE',orient:2},{sym:'ONE',orient:3},
-  {sym:'TWO',orient:0},{sym:'TWO',orient:1}
- ];
+  if(sym===1)m=1<<o;
+  else if(sym===2)m=(1<<o)|(1<<OPP[o]);
+  else if(sym===3)m=(RIGHT_OF[d]===o)?(1<<o):0;
+  else if(sym===4)m=(LEFT_OF[d]===o)?(1<<o):0;
+  else if(sym===5)m=(1<<RIGHT_OF[d])|(1<<LEFT_OF[d]);
+  EXITM[(sym*4+o)*4+d]=m;
+}
+const FORCED=[0,0,0,1,1,1];
+const XCODE=20;
 
- // Prefer squares near white pieces and in white half (r>=5); avoid own cluster
- const ranked=empties.map(([r,c])=>{
-  let pr = (r>=5 ? r*5 : -r*3);
-  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
-   const x=state.board[rr][cc];
-   if(!x||x.type!=='tile') continue;
-   const d=Math.abs(rr-r)+Math.abs(cc-c);
-   if(x.color==='white') pr += Math.max(0, 7-d)*4;
-   else pr -= Math.max(0, 5-d)*5;
+/* ---------- conversion from/to the game's board format ---------- */
+function toFast(board){
+  const B=new Int8Array(NS);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const x=board[r][c]; if(!x)continue;
+    if(x.type==='tile')B[r*C+c]=x.val+(x.color==='brown'?10:0);
+    else B[r*C+c]=20+SYM_NAMES.indexOf(x.sym)*4+(x.orient||0);
   }
-  return {r,c,pr};
- }).sort((a,b)=>b.pr-a.pr);
+  return B;
+}
 
- const candidates=ranked.slice(0, Math.min(18, ranked.length));
- let best=null, bestScore=-Infinity;
- for(const {r,c} of candidates){
-  for(const s of symbols){
-   const b=deepClone(state.board);
-   b[r][c]={type:'barra',sym:s.sym,orient:s.orient||0};
-   const w=mob(b,'white'), br=mob(b,'brown');
-   // Steal as many white moves as possible; never tank own mobility
-   let score = (baseW-w)*36 + (br-baseB)*14;
-   if(w===0 && baseW>0) score += 120;
-   if(w<=2 && baseW>2) score += 40;
-   if(br===0 && baseB>0) score -= 120;
-   if(r>=5) score += 14;
-   if(r>=6) score += 10;
-   if(s.sym==='X' && w<baseW) score += 8;
-   for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
-    const nr=r+dr,nc=c+dc;
-    if(inBounds(nr,nc) && state.board[nr][nc]?.type==='tile' && state.board[nr][nc].color==='brown') score -= 20;
-    if(inBounds(nr,nc) && state.board[nr][nc]?.type==='tile' && state.board[nr][nc].color==='white') score += 8;
-   }
-   if(score>bestScore){ bestScore=score; best=[r,c,s]; }
+/* ---------- move generation (exact port of getPossibleMoves) ---------- */
+let gB=null,gFrom=0,gColor=0,gVal=0,gN=0,gType=0,gOut=null,gCnt=0,gStamp=1;
+const gSeen=new Int32Array(NS*2);
+function addMove(to){
+  if(to===gFrom)return;
+  const tg=gB[to]; let cap=0;
+  if(tg!==0){
+    if(gType===1)return;
+    if(tg<20){ if((tg>=12?1:0)===gColor)return; cap=1; }
+    else{ if(gVal===2&&((tg-20)>>2)===5)return; cap=2; }
+  }
+  const key=to*2+gType;
+  if(gSeen[key]===gStamp)return; gSeen[key]=gStamp;
+  gOut[gCnt++]=gFrom|(to<<6)|(gType<<12)|(cap<<13);
+}
+function dfs(cur,steps,lastDir,turned){
+  if(steps===gN){addMove(cur);return;}
+  for(let d=0;d<4;d++){
+    if(lastDir!==-1){ if(d===OPP[lastDir])continue; if(turned&&d!==lastDir)continue; }
+    const nxt=NB[cur*4+d]; if(nxt<0)continue;
+    const ns=steps+1, mid=gB[nxt];
+    if(mid!==0){
+      if(mid<20){ if(ns===gN)addMove(nxt); continue; }
+      if(ns===gN){addMove(nxt);continue;}
+      const code=mid-20, sym=code>>2;
+      const mask=EXITM[code*4+d]; if(!mask)continue;
+      const forced=FORCED[sym]; if(forced&&turned)continue;
+      for(let od=0;od<4;od++){
+        if(!((mask>>od)&1))continue;
+        if(od===OPP[d])continue;
+        const changed=od!==d; if(changed&&turned)continue;
+        const nt=turned||changed||forced;
+        const en=NB[nxt*4+od]; if(en<0)continue;
+        const ec=gB[en]; if(ec!==0&&ec<20)continue;
+        dfs(nxt,ns,od,nt);
+      }
+      continue;
+    }
+    const changed=lastDir!==-1&&d!==lastDir;
+    if(changed&&turned)continue;
+    dfs(nxt,ns,d,turned||changed);
+  }
+}
+function genTile(B,i,out,cnt){
+  const p=B[i]; gB=B; gFrom=i; gColor=p>=12?1:0; gVal=p-(gColor?10:0); gOut=out; gCnt=cnt; gStamp++;
+  gType=0; gN=gVal; dfs(i,0,-1,false);
+  if(gVal>1){ gType=1; gN=gVal-1; dfs(i,0,-1,false); }
+  return gCnt;
+}
+function genSide(B,color,out){
+  let cnt=0;
+  for(let i=0;i<NS;i++){
+    const p=B[i]; if(p===0||p>=20)continue;
+    if((p>=12?1:0)!==color)continue;
+    cnt=genTile(B,i,out,cnt);
+  }
+  return cnt;
+}
+const mvFrom=m=>m&63, mvTo=m=>(m>>6)&63, mvType=m=>(m>>12)&1, mvCap=m=>(m>>13)&3;
+
+/* ---------- Zobrist hashing ---------- */
+let seed=0x9E3779B9|0;
+function rnd(){ seed^=seed<<13; seed^=seed>>>17; seed^=seed<<5; return seed|0; }
+const Z1=new Int32Array(NS*44), Z2=new Int32Array(NS*44);
+for(let i=0;i<Z1.length;i++){Z1[i]=rnd();Z2[i]=rnd();}
+const SIDE1=rnd(),SIDE2=rnd(),POOL1=rnd(),POOL2=rnd();
+let H1=0,H2=0;
+function fullHash(B,side,pool){
+  let a=0,b=0;
+  for(let i=0;i<NS;i++){const p=B[i]; if(p){a^=Z1[i*44+p];b^=Z2[i*44+p];}}
+  if(side){a^=SIDE1;b^=SIDE2;}
+  if(pool<2){a^=POOL1;b^=POOL2;}
+  H1=a;H2=b;
+}
+
+/* ---------- static evaluation ---------- */
+const PARAMS={MOBK:22,DEAD_F:0.2,FRAG_F:0.6,BAROPT:14,W_TERR:2.6,W_REACH:2.0,OPEN0:-30,OPEN1:-13,OPEN2:-3,LIVE0:-300,LIVE1:-200,LIVE2:-90,LIVE3:-35,ALIVE:1};
+const MOBV=new Float64Array(80);
+let OPENPEN=[-30,-13,-3,0,0],LIVEPEN=[-300,-200,-90,-35];
+let DEAD_F=0.2,FRAG_F=0.6,BAROPT=14,ALIVE=1;
+function setParams(o){
+  if(o)Object.assign(PARAMS,o);
+  for(let m=0;m<80;m++)MOBV[m]=PARAMS.MOBK*Math.log(1+m);
+  OPENPEN=[PARAMS.OPEN0,PARAMS.OPEN1,PARAMS.OPEN2,0,0];
+  LIVEPEN=[PARAMS.LIVE0,PARAMS.LIVE1,PARAMS.LIVE2,PARAMS.LIVE3];
+  DEAD_F=PARAMS.DEAD_F;FRAG_F=PARAMS.FRAG_F;BAROPT=PARAMS.BAROPT;ALIVE=PARAMS.ALIVE;
+  W_TERR=PARAMS.W_TERR;W_REACH=PARAMS.W_REACH;
+}
+const scrM=new Int32Array(200);
+const barSeen=new Int32Array(NS); let barStamp=1;
+function openN(B,s){
+  let n=0;
+  for(let d=0;d<4;d++){const q=NB[s*4+d]; if(q>=0&&B[q]===0)n++;}
+  return n;
+}
+/* per-side score; fills tile stats. */
+function sideScore(B,color){
+  let sc=0,live=0,barOpts=0;
+  for(let i=0;i<NS;i++){
+    const p=B[i]; if(p===0||p>=20)continue;
+    if((p>=12?1:0)!==color)continue;
+    const v=p-(color?10:0);
+    const cnt=genTile(B,i,scrM,0);
+    let bc=0;
+    for(let k=0;k<cnt;k++){
+      if(((scrM[k]>>13)&3)===2){const t=(scrM[k]>>6)&63; if(barSeen[t]!==barStamp){barSeen[t]=barStamp;bc++;}}
+    }
+    barOpts+=bc;
+    const o=openN(B,i);
+    // a tile that cannot move is (almost) permanently dead: it is worth little
+    let f=1;
+    if(cnt===0)f=DEAD_F; else if(cnt<=2||o<=1)f=FRAG_F;
+    sc+=(100+12*(v-2))*f;
+    if(cnt>0){live++;sc+=MOBV[cnt>79?79:cnt];sc+=OPENPEN[o];}
+    const c=i%C;
+    if(c===0||c===C-1)sc-=5;
+    sc-=1.5*Math.abs(c-3);
+  }
+  sc+=BAROPT*(barOpts>3?3:barOpts);
+  if(live<=3)sc+=LIVEPEN[live]*ALIVE;
+  return sc;
+}
+const dW=new Int8Array(NS),dB=new Int8Array(NS),bq=new Int8Array(NS);
+function bfs(B,color,dist){
+  dist.fill(-1);let h=0,t=0;
+  for(let i=0;i<NS;i++){const p=B[i];if(p>0&&p<20&&(p>=12?1:0)===color){dist[i]=0;bq[t++]=i;}}
+  while(h<t){
+    const c=bq[h++],dc=dist[c];
+    for(let d=0;d<4;d++){const n=NB[c*4+d];if(n>=0&&B[n]===0&&dist[n]<0){dist[n]=dc+1;bq[t++]=n;}}
+  }
+}
+/* space = (#empty squares I reach first) - (#empty squares the opponent reaches first) + reach bonus */
+function spaceScore(B,color){
+  bfs(B,color,dW);bfs(B,1-color,dB);
+  let mine=0,theirs=0,rm=0,ro=0;
+  for(let i=0;i<NS;i++){
+    if(B[i]!==0)continue;
+    const a=dW[i],b=dB[i];
+    if(a>=0)rm++; if(b>=0)ro++;
+    if(a>=0&&(b<0||a<b))mine++; else if(b>=0&&(a<0||b<a))theirs++;
+  }
+  return W_TERR*(mine-theirs)+W_REACH*(Math.min(rm,24)-Math.min(ro,24));
+}
+let W_TERR=2.6,W_REACH=2.0;
+setParams();
+function evalPos(B,side){
+  barStamp++; const a=sideScore(B,side);
+  barStamp++; const b=sideScore(B,1-side);
+  return a-b+spaceScore(B,side);
+}
+
+/* ---------- placement heuristic used inside the search ---------- */
+function quickPlace(B,pc){
+  let best=-1,bestS=-1e9,firstEmpty=-1;
+  for(let s=0;s<NS;s++){
+    if(B[s]!==0)continue;
+    if(firstEmpty<0)firstEmpty=s;
+    let sc=0,any=false;
+    for(let d=0;d<4;d++){
+      const n=NB[s*4+d]; if(n<0)continue;
+      const q=B[n]; if(q===0||q>=20)continue;
+      const col=q>=12?1:0, v=q-(col?10:0);
+      const o=openN(B,n)-1;
+      any=true;
+      if(col!==pc)sc+=(o<=0?34:o===1?16:o===2?7:3)+v;
+      else sc-=(o<=0?45:o===1?22:o===2?10:4);
+    }
+    if(!any)continue;
+    if(sc>bestS){bestS=sc;best=s;}
+  }
+  return best>=0?best:firstEmpty;
+}
+
+/* ---------- turn application with undo ---------- */
+const UMAX=64;
+const uFrom=new Int32Array(UMAX),uTo=new Int32Array(UMAX),uPiece=new Int32Array(UMAX),uTarget=new Int32Array(UMAX);
+const uP1=new Int32Array(UMAX),uP2=new Int32Array(UMAX),uH1=new Int32Array(UMAX),uH2=new Int32Array(UMAX);
+function applyTurn(B,mv,side,pool,u){
+  const f=mv&63,t=(mv>>6)&63,cap=(mv>>13)&3;
+  const piece=B[f],target=B[t];
+  uFrom[u]=f;uTo[u]=t;uPiece[u]=piece;uTarget[u]=target;uH1[u]=H1;uH2[u]=H2;uP1[u]=-1;uP2[u]=-1;
+  H1^=Z1[f*44+piece]^Z1[t*44+piece]; H2^=Z2[f*44+piece]^Z2[t*44+piece];
+  if(target){H1^=Z1[t*44+target];H2^=Z2[t*44+target];}
+  B[f]=0;B[t]=piece;
+  let newPool=pool;
+  if(cap===1){
+    if(pool>=2){
+      newPool=pool-2;
+      if(newPool<2){H1^=POOL1;H2^=POOL2;}
+      const s1=quickPlace(B,1-side); if(s1>=0){B[s1]=XCODE;uP1[u]=s1;H1^=Z1[s1*44+XCODE];H2^=Z2[s1*44+XCODE];}
+      const s2=quickPlace(B,side);   if(s2>=0){B[s2]=XCODE;uP2[u]=s2;H1^=Z1[s2*44+XCODE];H2^=Z2[s2*44+XCODE];}
+    }
+  }else if(cap===2){
+    const s1=quickPlace(B,side); if(s1>=0){B[s1]=XCODE;uP1[u]=s1;H1^=Z1[s1*44+XCODE];H2^=Z2[s1*44+XCODE];}
+  }
+  H1^=SIDE1;H2^=SIDE2;
+  return newPool;
+}
+function undoTurn(B,u){
+  if(uP2[u]>=0)B[uP2[u]]=0;
+  if(uP1[u]>=0)B[uP1[u]]=0;
+  B[uFrom[u]]=uPiece[u];B[uTo[u]]=uTarget[u];
+  H1=uH1[u];H2=uH2[u];
+}
+
+/* ---------- transposition table ---------- */
+const TT_BITS=18,TT_SIZE=1<<TT_BITS,TT_MASK=TT_SIZE-1;
+const ttK1=new Int32Array(TT_SIZE),ttK2=new Int32Array(TT_SIZE),ttScore=new Int32Array(TT_SIZE),ttMove=new Int32Array(TT_SIZE),ttInfo=new Int8Array(TT_SIZE*2);
+function ttClear(){ttK1.fill(0);ttK2.fill(0);ttInfo.fill(0);}
+
+/* ---------- search ---------- */
+const MATE=100000;
+const MB=[];for(let i=0;i<64;i++)MB.push(new Int32Array(200));
+const SC=[];for(let i=0;i<64;i++)SC.push(new Int32Array(200));
+const hist=new Int32Array(NS*NS);
+const killer=new Int32Array(64*2);
+let nodes=0,deadline=0,aborted=false,maxNodes=Infinity;
+let Q_TILE_ONLY=true;
+function chk(){ if((nodes&511)===0&&(Date.now()>deadline||nodes>maxNodes))aborted=true; }
+
+function orderMoves(B,mvs,n,ply,ttm,sc){
+  for(let i=0;i<n;i++){
+    const m=mvs[i]; let s=0;
+    if(m===ttm)s=1e6;
+    else{
+      const cap=(m>>13)&3, t=(m>>6)&63,f=m&63;
+      if(cap===1)s=20000+100*(B[t]>=12?B[t]-10:B[t])-(B[f]>=12?B[f]-10:B[f]);
+      else if(cap===2)s=9000-(B[f]>=12?B[f]-10:B[f])*10;
+      else{
+        s=hist[f*NS+t];
+        if(m===killer[ply*2]||m===killer[ply*2+1])s+=3000;
+        s+=(3-Math.abs(t%C-3));
+      }
+    }
+    sc[i]=s;
+  }
+}
+function pick(mvs,sc,i,n){
+  let bi=i,bs=sc[i];
+  for(let j=i+1;j<n;j++)if(sc[j]>bs){bs=sc[j];bi=j;}
+  if(bi!==i){const tm=mvs[i];mvs[i]=mvs[bi];mvs[bi]=tm;const ts=sc[i];sc[i]=sc[bi];sc[bi]=ts;}
+  return mvs[i];
+}
+
+function qsearch(B,alpha,beta,side,pool,ply,qd){
+  nodes++;chk();if(aborted)return 0;
+  const mvs=MB[ply];
+  const n=genSide(B,side,mvs);
+  if(n===0)return -MATE+ply;
+  let stand=evalPos(B,side);
+  if(qd<=0)return stand;
+  if(stand>=beta)return stand;
+  if(stand>alpha)alpha=stand;
+  let best=stand;
+  // tile captures only, most valuable first
+  const sc=SC[ply];
+  let k=0;
+  for(let i=0;i<n;i++){
+    const cp=(mvs[i]>>13)&3;
+    if(cp===1){const t=(mvs[i]>>6)&63; sc[k]=100*(B[t]>=12?B[t]-10:B[t]);mvs[k]=mvs[i];k++;}
+    else if(cp===2&&qd>=2){sc[k]=50;mvs[k]=mvs[i];k++;}
+  }
+  if(k===0)return stand;
+  // sort small list
+  for(let i=1;i<k;i++){const m=mvs[i],s=sc[i];let j=i-1;while(j>=0&&sc[j]<s){mvs[j+1]=mvs[j];sc[j+1]=sc[j];j--;}mvs[j+1]=m;sc[j+1]=s;}
+  for(let i=0;i<k;i++){
+    const m=mvs[i];
+    const np=applyTurn(B,m,side,pool,ply);
+    const v=-qsearch(B,-beta,-alpha,1-side,np,ply+1,qd-1);
+    undoTurn(B,ply);
+    if(aborted)return 0;
+    if(v>best){best=v;if(v>alpha){alpha=v;if(alpha>=beta)break;}}
+  }
+  return best;
+}
+
+function negamax(B,depth,alpha,beta,side,pool,ply){
+  nodes++;chk();if(aborted)return 0;
+  if(depth<=0)return qsearch(B,alpha,beta,side,pool,ply,2);
+  const alpha0=alpha;
+  const idx=H2&TT_MASK; let ttm=0;
+  if(ttK1[idx]===H1&&ttK2[idx]===H2){
+    ttm=ttMove[idx];
+    if(ttInfo[idx*2]>=depth){
+      const s=ttScore[idx],fl=ttInfo[idx*2+1];
+      if(fl===0)return s;
+      if(fl===1&&s>=beta)return s;
+      if(fl===2&&s<=alpha)return s;
+    }
+  }
+  const mvs=MB[ply],sc=SC[ply];
+  const n=genSide(B,side,mvs);
+  if(n===0)return -MATE+ply;
+  orderMoves(B,mvs,n,ply,ttm,sc);
+  let best=-Infinity,bestMove=0;
+  const limit=depth>=3?n:(depth===2?Math.min(n,18):Math.min(n,12));
+  for(let i=0;i<limit;i++){
+    const m=pick(mvs,sc,i,n);
+    const np=applyTurn(B,m,side,pool,ply);
+    let v;
+    v=-negamax(B,depth-1,-beta,-alpha,1-side,np,ply+1);
+    undoTurn(B,ply);
+    if(aborted)return 0;
+    if(v>best){best=v;bestMove=m;}
+    if(v>alpha){alpha=v;}
+    if(alpha>=beta){
+      if(((m>>13)&3)===0){
+        hist[(m&63)*NS+((m>>6)&63)]+=depth*depth;
+        if(killer[ply*2]!==m){killer[ply*2+1]=killer[ply*2];killer[ply*2]=m;}
+      }
+      break;
+    }
+  }
+  ttK1[idx]=H1;ttK2[idx]=H2;ttScore[idx]=best;ttMove[idx]=bestMove;ttInfo[idx*2]=depth;
+  ttInfo[idx*2+1]=best<=alpha0?2:(best>=beta?1:0);
+  return best;
+}
+
+/* ---------- public: choose a move ---------- */
+function chooseMove(board,side,opts){
+  opts=opts||{};
+  const B=board instanceof Int8Array?board.slice():toFast(board);
+  const pool=opts.pool==null?24:opts.pool;
+  const color=side==='brown'?1:0;
+  const maxDepth=opts.maxDepth||6, timeMs=opts.timeMs||1000;
+  deadline=Date.now()+timeMs; aborted=false; nodes=0; maxNodes=opts.maxNodes||Infinity;
+  if(opts.params)setParams(opts.params);
+  ttClear();
+  fullHash(B,color,pool);
+  const root=new Int32Array(200);
+  const n=genSide(B,color,root);
+  if(n===0)return null;
+  if(n===1)return {move:decode(root[0],B),score:0,depth:0,nodes:0,list:[]};
+  hist.fill(0);killer.fill(0);
+  let order=Array.from(root.subarray(0,n));
+  if(opts.exclude&&opts.exclude.size){const f=order.filter(m=>!opts.exclude.has(m));if(f.length)order=f;}
+  if(order.length===1)return {move:decode(order[0],B),score:0,depth:0,nodes:0,list:[]};
+  let best=null,bestScore=0,doneDepth=0,scores=new Map();
+  for(let d=1;d<=maxDepth;d++){
+    let alpha=-Infinity,beta=Infinity,iterBest=null,iterScore=-Infinity;
+    const iterScores=new Map();
+    for(let i=0;i<order.length;i++){
+      const m=order[i];
+      const np=applyTurn(B,m,color,pool,0);
+      let v;
+      if(i===0)v=-negamax(B,d-1,-beta,-alpha,1-color,np,1);
+      else{
+        v=-negamax(B,d-1,-alpha-1,-alpha,1-color,np,1);
+        if(!aborted&&v>alpha)v=-negamax(B,d-1,-beta,-alpha,1-color,np,1);
+      }
+      undoTurn(B,0);
+      if(aborted)break;
+      iterScores.set(m,v);
+      if(v>iterScore){iterScore=v;iterBest=m;}
+      if(v>alpha)alpha=v;
+    }
+    if(aborted)break;
+    best=iterBest;bestScore=iterScore;doneDepth=d;scores=iterScores;
+    // best first for the next iteration
+    order.sort((a,b)=>(iterScores.get(b)??-1e9)-(iterScores.get(a)??-1e9));
+    if(Math.abs(bestScore)>MATE-100)break;
+  }
+  if(best===null)best=order[0];
+  const list=[];scores.forEach((v,m)=>list.push({m,v}));
+  return {move:decode(best,B),score:bestScore,depth:doneDepth,nodes,list:list.map(x=>({move:decode(x.m,B),score:x.v}))};
+}
+function decode(m,B){
+  const f=mvFrom(m),t=mvTo(m),cap=mvCap(m);
+  return {fromR:Math.floor(f/C),fromC:f%C,r:Math.floor(t/C),c:t%C,moveType:mvType(m)?'short':'full',capture:cap===1?'tile':cap===2?'barra':null,raw:m};
+}
+
+/* ---------- placement chooser (root) ----------
+   role: 'victim' (my tile was captured: I place first, the capturer places after me),
+         'capturer' (I captured a tile: I place second), 'reuse' (I captured a Barragoon). */
+function choosePlacement(board,side,ctx,opts){
+  opts=opts||{}; ctx=ctx||{};
+  const B=board instanceof Int8Array?board.slice():toFast(board);
+  const me=side==='brown'?1:0, opp=1-me, role=ctx.role||'capturer';
+  const pool=ctx.pool==null?24:ctx.pool;
+  const t0=Date.now(), budget=opts.placeMs||450;
+  if(opts.params)setParams(opts.params);
+  ttClear();
+  const empt=[];for(let s=0;s<NS;s++)if(B[s]===0)empt.push(s);
+  if(!empt.length)return {sq:-1,code:XCODE};
+  const adjTile=s=>{for(let d=0;d<4;d++){const n=NB[s*4+d];if(n>=0&&B[n]>0&&B[n]<20)return true;}return false;};
+  // stage 1: static value of every candidate (from my point of view)
+  const scored=[];
+  for(const s of empt){
+    B[s]=XCODE;
+    let v;
+    if(role==='victim'){
+      // the capturer answers with his best placement (static)
+      let worst=Infinity;
+      for(const o of empt){
+        if(o===s||!adjTile(o))continue;
+        B[o]=XCODE;
+        const e=evalPos(B,me); B[o]=0;
+        if(e<worst)worst=e;
+      }
+      v=worst===Infinity?evalPos(B,me):worst;
+    }else v=evalPos(B,me);
+    B[s]=0;
+    scored.push({s,v});
+  }
+  scored.sort((a,b)=>b.v-a.v);
+  // stage 2: verify the best few with a short search
+  const K=Math.min(opts.placeK||7,scored.length), PD=opts.placeDepth||3;
+  let best=scored[0].s,bestV=-Infinity;
+  deadline=t0+budget; aborted=false; nodes=0; maxNodes=Infinity;
+  hist.fill(0);killer.fill(0);
+  for(let i=0;i<K;i++){
+    const s=scored[i].s;
+    B[s]=XCODE;
+    let np=pool,o=-1;
+    if(role==='victim'){
+      o=quickPlace(B,opp); if(o>=0)B[o]=XCODE;
+    }
+    fullHash(B,role==='victim'?me:opp,np);
+    let v=-negamax(B,PD,-Infinity,Infinity,role==='victim'?me:opp,np,1);
+    if(role!=='victim')v=v; // negamax returned score for the side to move (opp) -> already negated above
+    if(role==='victim')v=-v;  // side to move is me: score is from my view
+    if(o>=0)B[o]=0; B[s]=0;
+    if(aborted){ if(i===0)bestV=scored[0].v; break; }
+    const tot=v+0.15*scored[i].v;
+    if(tot>bestV){bestV=tot;best=s;}
+  }
+  return {sq:best,code:XCODE};
+}
+
+return {setParams,PARAMS,choosePlacement,toFast,genSide,genTile,evalPos,quickPlace,chooseMove,decode,fullHash,NS,C,R,NB,openN,
+        _internals:{applyTurn,undoTurn,negamax,qsearch,ttClear,setNodes:(n)=>{nodes=n;}}};
+})();
+
+/* Placement of a Barragoon by the AI (always the blocking X face).
+   role: 'victim' = my tile was just captured (I place first, the opponent places after me),
+         'capturer' = I captured a tile (I place second), 'reuse' = I captured a Barragoon. */
+function placeAIBarra(reuse=null){
+ const q=state.placeQueue||[];
+ const role=reuse?'reuse':((q.length>1&&q[1].who==='white')?'victim':'capturer');
+ let r=-1,c=-1;
+ try{
+  const res=AI2.choosePlacement(state.board,'brown',{role,pool:state.pool},{placeMs:450});
+  if(res&&res.sq>=0){r=Math.floor(res.sq/COLS);c=res.sq%COLS;}
+ }catch(e){console.error('AI placement failed',e);}
+ if(r<0||state.board[r][c]){ // fallback: first empty square next to a white tile, otherwise any empty square
+  outer:for(let pass=0;pass<2;pass++)for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
+   if(state.board[rr][cc])continue;
+   if(pass===0&&![[-1,0],[1,0],[0,-1],[0,1]].some(([dr,dc])=>inBounds(rr+dr,cc+dc)&&state.board[rr+dr][cc+dc]?.type==='tile'&&state.board[rr+dr][cc+dc].color==='white'))continue;
+   r=rr;c=cc;break outer;
   }
  }
- const [r,c,s]=best || [candidates[0].r, candidates[0].c, {sym:'X',orient:0}];
- state.board[r][c]={type:'barra',sym:s.sym,orient:s.orient||0};
+ if(r<0)return;
+ state.board[r][c]={type:'barra',sym:'X',orient:0};
  state.lastPlaced={r,c};
 }
 
@@ -1473,15 +1738,62 @@ function endTurn(){
 }
 
 function pushHistory(){
- const snap={board:deepClone(state.board),turn:state.turn,pool:state.pool,log:state.log.slice(),gameOver:state.gameOver,winner:state.winner,draw:state.draw,overReason:state.overReason,lastPlaced:state.lastPlaced?{...state.lastPlaced}:null};
+ // Replay is event-based: every log entry must correspond to exactly one
+ // replay step. Do NOT deduplicate snapshots by board position here.
+ // A different event can legitimately produce the same board/turn/pool
+ // combination, and PLACE events are especially important for replay.
+ const snap={
+  board:deepClone(state.board),
+  turn:state.turn,
+  pool:state.pool,
+  log:state.log.slice(),
+  gameOver:state.gameOver,
+  winner:state.winner,
+  draw:state.draw,
+  overReason:state.overReason,
+  lastPlaced:state.lastPlaced?{...state.lastPlaced}:null
+ };
  const last=state.history[state.history.length-1];
- const key=JSON.stringify({board:snap.board,turn:snap.turn,pool:snap.pool});
- if(!last||JSON.stringify({board:last.board,turn:last.turn,pool:last.pool})!==key) state.history.push(snap);
+
+ // History[0] is the initial position (zero log entries). After that,
+ // append exactly one snapshot for each newly created log entry. Repeated
+ // calls after the same event are intentionally ignored.
+ if(!last){
+  state.history.push(snap);
+  return;
+ }
+ const lastLogCount=Array.isArray(last.log)?last.log.length:0;
+ const currentLogCount=snap.log.length;
+ if(currentLogCount>lastLogCount){
+  // Normally this is exactly +1. Keeping the guard as > makes the function
+  // robust if a future code path appends more than one event at once.
+  state.history.push(snap);
+ }else if(currentLogCount===lastLogCount && currentLogCount===0){
+  // Allow the initial state to be refreshed only while the history is empty.
+  // No-op for an already initialized history.
+ }
 }
 
+/* raw move code used by the engine: from | to<<6 | short<<12 | capture<<13 */
+function aiRawOf(m){return (m.fromR*COLS+m.fromC)|((m.r*COLS+m.c)<<6)|((m.moveType==='short'?1:0)<<12)|((m.capture==='tile'?1:m.capture==='barra'?2:0)<<13);}
+function aiPickMove(all,timeMs){
+ // Moves that would complete a threefold repetition (= draw). Avoid them unless the AI is losing.
+ const drawMoves=all.filter(mv=>{
+  if(mv.capture)return false;
+  const after=applyMove(state.board,mv);
+  return (state.positionCounts&&state.positionCounts[positionKey(after,'white',state.pool)]||0)>=2;
+ });
+ const exclude=new Set(drawMoves.map(aiRawOf));
+ const res=AI2.chooseMove(state.board,'brown',{pool:state.pool,timeMs,maxDepth:12,exclude});
+ if(!res||!res.move)return null;
+ if(drawMoves.length&&res.depth>0&&res.score<-60)return drawMoves[0];   // losing anyway: take the draw
+ const p=res.move;
+ return all.find(x=>x.fromR===p.fromR&&x.fromC===p.fromC&&x.r===p.r&&x.c===p.c&&x.moveType===p.moveType&&(x.capture||null)===(p.capture||null))||null;
+}
 function aiMove(){
  if(state.gameOver||state.turn!=='brown') return;
  document.getElementById('ai-thinking').style.display='inline';
+
  setTimeout(()=>{
   const all=genMoves(state.board,'brown');
   if(!all.length){
@@ -1489,120 +1801,11 @@ function aiMove(){
    state.gameOver=true; state.winner='white'; state.draw=false; state.overReason='nomoves';
    logGameOver('white','nomoves'); pushHistory(); renderBoard(); return;
   }
-
-  // Score every legal move with explicit priorities matching strong human play:
-  // 1) capture white tile
-  // 2) quiet move that improves mobility / center / threats
-  // 3) capture barra only if it doesn't dump us into a dead zone
-  function scoreMove(m){
-   const after=applyMove(state.board,m);
-   let sc = evaluate(after,'brown');
-   const myM = genMoves(after,'brown').length;
-   const oppM = genMoves(after,'white').length;
-   const baseMy = genMoves(state.board,'brown').length;
-   const baseOpp = genMoves(state.board,'white').length;
-
-   const hangs = canCaptureAt(after, m.r, m.c, 'white');
-   if(hangs){
-     if(m.capture==='tile') sc -= 20;
-     else sc -= 300;
-   }
-   sc -= countHanging(after,'brown') * 50;
-   sc += countHanging(after,'white') * 50;
-
-   // Attack first: tiles > barra (wall fuel) > quiet
-   if(m.capture==='tile') sc += 320;
-   else if(m.capture==='barra') sc += (!hangs && myM>=2) ? 110 : -70;
-   else sc += 3;
-
-   // Create threats on white tiles
-   let threats=0, barraThreats=0;
-   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const x=after[r][c];
-    if(x?.type==='tile'&&x.color==='brown'){
-     const mv=getPossibleMoves(r,c,after,'brown');
-     threats += mv.filter(t=>t.capture==='tile').length;
-     barraThreats += mv.filter(t=>t.capture==='barra').length;
-    }
-   }
-   sc += threats * 30;
-   sc += barraThreats * 8;
-
-   // Push into white half; punish pure retreats
-   const fwd = m.r - m.fromR;
-   sc += fwd * 14;
-   if(fwd < 0 && !m.capture) sc -= 45;
-   if(m.r >= 5) sc += 14;
-   if(m.r >= 6) sc += 8;
-
-   // Stay close to white pieces (pressure / block)
-   let minD=99;
-   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const x=state.board[r][c];
-    if(x?.type==='tile'&&x.color==='white') minD=Math.min(minD, Math.abs(r-m.r)+Math.abs(c-m.c));
-   }
-   if(minD<99) sc += Math.max(0, 7-minD) * 7;
-
-   // Cutting white mobility is the winning plan
-   sc += (myM - baseMy) * 12;
-   sc += (baseOpp - oppM) * 22;
-   if(oppM < baseOpp) sc += 15;
-   if(myM===0) sc -= 600;
-   if(myM===1) sc -= 100;
-   sc += (3.5 - Math.abs(m.c - 3)) * 3;
-   if(!m.capture && (m.c===0 || m.c===COLS-1)) sc -= 22;
-   if(m.moveType==='full') sc += 5;
-   // Avoid cycling into a position already seen twice (prevents draw by repetition)
-   try{
-    const afterKey=positionKey(after,'white',state.pool); // after our move, white to move
-    if((state.positionCounts[afterKey]||0)>=2) sc -= 80;
-   }catch(e){}
-   return sc;
-  }
-
-  // HARD FILTER: drop moves that hang the moved piece for free (not a tile exchange)
-  function isSafe(m){
-   if(m.capture==='tile') return true;
-   const after=applyMove(state.board,m);
-   return !canCaptureAt(after, m.r, m.c, 'white');
-  }
-  const safePool = all.filter(isSafe);
-  const pool = safePool.length ? safePool : all; // only hang if literally no safe move
-
-  // Rank pool by heuristic
-  let bestH=null, bestHS=-Infinity;
-  for(const cand of pool){
-   const s=scoreMove(cand);
-   if(s>bestHS){ bestHS=s; bestH=cand; }
-  }
-
-  // Search only among safe moves: temporarily restrict via ordering (hanging already -500)
-  const total = countTiles(state.board,'brown') + countTiles(state.board,'white');
-  const timeMs = total<=6 ? 1600 : 1000;
-  const maxDepth = total<=5 ? 4 : 3;
-  let res = iterativeDeepening(state.board, maxDepth, timeMs);
-  let m = res.move;
-
-  // Force safe move
-  if(m && !isSafe(m) && safePool.length) m = bestH;
-  if(m && !pool.some(x=>x.fromR===m.fromR&&x.fromC===m.fromC&&x.r===m.r&&x.c===m.c&&x.moveType===m.moveType)){
-   m = bestH; // search picked something outside pool
-  }
-  if(bestH){
-   if(!m) m=bestH;
-   else {
-    const sSearch=scoreMove(m);
-    if(bestHS > sSearch + 15) m=bestH;
-    if(m.capture==='barra' && pool.some(x=>x.capture==='tile')){
-      m = pool.filter(x=>x.capture==='tile').sort((a,b)=>scoreMove(b)-scoreMove(a))[0];
-    }
-    if(genMoves(applyMove(state.board,m),'brown').length===0){
-      const alive=pool.filter(x=>genMoves(applyMove(state.board,x),'brown').length>0);
-      if(alive.length) m=alive.sort((a,b)=>scoreMove(b)-scoreMove(a))[0];
-    }
-   }
-  }
-  if(!m) m=bestH||pool[0]||all[0];
+  const total=countTiles(state.board,'brown')+countTiles(state.board,'white');
+  const timeMs=total<=8?2400:2000;
+  let m=null;
+  try{ m=aiPickMove(all,timeMs); }catch(e){ console.error('AI search failed',e); }
+  if(!m) m=all.find(x=>x.capture==='tile')||all.find(x=>x.capture==='barra')||all[0];
 
   document.getElementById('ai-thinking').style.display='none';
   const tgt=state.board[m.r][m.c], piece=state.board[m.fromR][m.fromC];
@@ -1610,9 +1813,21 @@ function aiMove(){
   state.board[m.fromR][m.fromC]=null;
   state.board[m.r][m.c]=piece;
   state.lastPlaced={r:m.r,c:m.c};
-  if(m.capture==='tile'){ logMsg+=` x W${tgt.val}`; state.log.push(logMsg); pushHistory(); beginCapturePlacement('brown',null); }
-  else if(m.capture==='barra'){ logMsg+=' x B'; state.log.push(logMsg); pushHistory(); beginCapturePlacement('brown',deepClone(tgt)); }
-  else { state.log.push(logMsg); endTurn(); }
+
+  if(m.capture==='tile'){
+   logMsg+=` x W${tgt.val}`;
+   state.log.push(logMsg);
+   pushHistory();
+   beginCapturePlacement('brown',null);
+  }else if(m.capture==='barra'){
+   logMsg+=' x B';
+   state.log.push(logMsg);
+   pushHistory();
+   beginCapturePlacement('brown',deepClone(tgt));
+  }else{
+   state.log.push(logMsg);
+   endTurn();
+  }
  },20);
 }
 
