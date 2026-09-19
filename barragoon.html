@@ -369,7 +369,7 @@ const SVGS = {
   ONE:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg>`,
   TWO:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg>`,
   RIGHT:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg>`,
-  LEFT:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg>`,
+  LEFT:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 28 V62 Q28 78 44 78 H72"/><path d="M55 88 L78 72 L55 56"/></svg>`,
   ALL:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg>`,
   T2:`<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg>`,
   T3:`<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg>`,
@@ -387,7 +387,7 @@ const I18N={
   saved:'Hra uložena',loaded:'Hra načtena',restarted:'Hra restartována',copied:'Log zkopírován',
   whiteWins:'Bílý vyhrál!',brownWins:'Hnědý vyhrál!',draw:'Remíza',
   colorWhite:'Bílý',colorBrown:'Hnědý',
-  resultNoTiles:'{c} nemá žádné kameny.',resultNoMoves:'{c} nemá žádný platný tah.',resultDraw:'Hráči se dohodli na remíze.',
+  resultNoTiles:'{c} nemá žádné kameny.',resultNoMoves:'{c} nemá žádný platný tah.',resultDraw:'Hráči se dohodli na remíze.',resultDrawRep:'Stejný vzor tahů 3× — remíza.',
   trophyLine:'{w} vyhrává — {r}',trophyLineDraw:'Remíza — {r}',
   placedBarra:'{c} umístil Barragoon → {coord} ({face}{o})',
   placeHintPC:'1× klik = další strana · 2× klik = potvrdit',placeHintTouch:'Klepnutí = další strana · dlouhý stisk = potvrdit',
@@ -430,7 +430,7 @@ const I18N={
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg></div><span>Jednosměrný<br>vstup z opačné strany šipky → výstup jen ve směru šipky</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg></div><span>Dvousměrný<br>jen po ose šipek · oběma směry (ne kolmo)</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg></div><span>Pravá zatáčka<br>při průchodu musíš zatočit doprava ve směru značky (ne rovně)</span></div>
-   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg></div><span>Levá zatáčka<br>při průchodu musíš zatočit doleva ve směru značky (ne rovně)</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 28 V62 Q28 78 44 78 H72"/><path d="M55 88 L78 72 L55 56"/></svg></div><span>Levá zatáčka<br>při průchodu musíš zatočit doleva ve směru značky (ne rovně)</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></div><span>ALL – všechny zatáčky<br>vstup odkudkoli → výstup jen doleva/doprava, nikdy rovně</span></div>
   </div>
   <p><b>Výjimka:</b> Barragoon se symbolem ALL nahoře nemůže být zajat kamenem 2.</p>
@@ -478,7 +478,7 @@ const I18N={
   saved:'Game saved',loaded:'Game loaded',restarted:'Game restarted',copied:'Log copied',
   whiteWins:'White wins!',brownWins:'Brown wins!',draw:'Draw',
   colorWhite:'White',colorBrown:'Brown',
-  resultNoTiles:'{c} has no tiles left.',resultNoMoves:'{c} has no legal move.',resultDraw:'The players agreed to a draw.',
+  resultNoTiles:'{c} has no tiles left.',resultNoMoves:'{c} has no legal move.',resultDraw:'The players agreed to a draw.',resultDrawRep:'Same move pattern three times — draw.',
   trophyLine:'{w} wins — {r}',trophyLineDraw:'Draw — {r}',
   placedBarra:'{c} placed a Barragoon → {coord} ({face}{o})',
   placeHintPC:'1× click = next face · 2× click = confirm',placeHintTouch:'Tap = next face · long-press = confirm',
@@ -517,7 +517,7 @@ const I18N={
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg></div><span>One Way<br>enter from the opposite side → exit only in the arrow direction</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg></div><span>Two Ways<br>only along the arrow axis · either direction (not sideways)</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg></div><span>Right Turn<br>when crossing you must turn right along the mark (never straight)</span></div>
-   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg></div><span>Left Turn<br>when crossing you must turn left along the mark (never straight)</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 28 V62 Q28 78 44 78 H72"/><path d="M55 88 L78 72 L55 56"/></svg></div><span>Left Turn<br>when crossing you must turn left along the mark (never straight)</span></div>
    <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></div><span>ALL – All Turns<br>enter from any side → exit only left/right, never straight through</span></div>
   </div>
   <p><b>Exception:</b> a Barragoon with ALL uppermost cannot be captured by a 2-space tile.</p>
@@ -547,6 +547,21 @@ let lang='cs';
 const ROWS=9,COLS=7;
 const DIRS=[[-1,0],[0,1],[1,0],[0,-1]]; // N,E,S,W
 const ORIENT_DEG=[0,90,180,270];
+const ORIENT_LABEL_CS=['↑ sever (nahoru)','→ východ (doprava)','↓ jih (dolů)','← západ (doleva)'];
+const ORIENT_LABEL_EN=['↑ N (up)','→ E (right)','↓ S (down)','← W (left)'];
+/** SVG arrows (ONE/TWO/RIGHT/LEFT) are drawn pointing East. orient is DIRS index (0=N,1=E,2=S,3=W). */
+function barraRotDeg(sym, orient){
+ // DIRS: 0=N, 1=E, 2=S, 3=W.
+ // ONE / TWO / RIGHT / LEFT SVGs are all drawn with primary exit toward East.
+ // Map orient → CSS rotate so the visible arrow matches the rule direction.
+ const o=orient||0;
+ if(sym==='X'||sym==='ALL') return 0; // no preferred direction
+ return ((o+3)%4)*90; // 0:N→270°, 1:E→0°, 2:S→90°, 3:W→180°
+}
+function orientLabel(o){
+ const arr=lang==='cs'?ORIENT_LABEL_CS:ORIENT_LABEL_EN;
+ return arr[o||0]||'';
+}
 const CUBE_FACES=['X','ONE','TWO','RIGHT','LEFT','ALL'];
 const FACE_NAMES={
  cs:{X:'X (stop)',ONE:'Jednosměr',TWO:'Dvousměr',RIGHT:'Pravá zatáčka',LEFT:'Levá zatáčka',ALL:'Všechny směry'},
@@ -581,7 +596,7 @@ function getInitialBoard(){
 let state={
  board:null,turn:'white',pool:24,log:[],history:[],selected:null,targets:[],
  placingBarra:null,placeMode:'rotate',placeQueue:[],
- gameOver:false,winner:null,draw:false,overReason:null,showCoords:false,
+ gameOver:false,winner:null,draw:false,overReason:null,showCoords:false,positionCounts:{},
  replayMode:false,replayIndex:0,replayPlaying:false,replayTimer:null,
  lastClickTime:0,lastClickTarget:null,forcedCapture:null,lastPlaced:null,pcFaceTimer:null
 };
@@ -590,6 +605,21 @@ function deepClone(o){return JSON.parse(JSON.stringify(o));}
 function inBounds(r,c){return r>=0&&r<ROWS&&c>=0&&c<COLS;}
 function other(color){return color==='white'?'brown':'white';}
 function coord(r,c){return String.fromCharCode(97+c)+(ROWS-r);}
+/** Human-readable path: a1→b2[ONE]→c2 (Barragoon squares marked with symbol). */
+function formatPath(fromR,fromC,path,toR,toC){
+ const parts=[coord(fromR,fromC)];
+ for(const p of (path||[])){
+  let s=coord(p.r,p.c);
+  if(p.barra) s+=`[${p.barra}]`;
+  parts.push(s);
+ }
+ const last=path&&path.length?path[path.length-1]:null;
+ if(!last||last.r!==toR||last.c!==toC) parts.push(coord(toR,toC));
+ // Deduplicate consecutive identical squares
+ const out=[];
+ for(const s of parts){ if(out[out.length-1]!==s) out.push(s); }
+ return out.join('→');
+}
 const TOAST_MAX_PX=14; // horní mez velikosti písma toastu (mobil)
 function fitToast(el){
  // Zvolí největší písmo (max TOAST_MAX_PX), při kterém se hláška ještě vejde na 1 řádek.
@@ -610,7 +640,7 @@ function updatePlacerUI(opts){
  const hint=document.getElementById('barra-hint'),label=document.getElementById('barra-orient-label');
  if(!state.placingBarra){el.classList.remove('active');return;}
  el.classList.add('active');
- const rot=(state.placingBarra.orient||0)*90;
+ const rot=barraRotDeg(state.placingBarra.sym,state.placingBarra.orient||0);
  const faceHtml=`<div class="barra-face" style="transform:rotate(${rot}deg)">${SVGS[state.placingBarra.sym]||SVGS.X}</div>`;
  const doFlip = opts && opts.flip;
  if(doFlip){
@@ -622,7 +652,7 @@ function updatePlacerUI(opts){
   clearTimeout(updatePlacerUI._flipT);
   updatePlacerUI._flipT=setTimeout(()=>{
    if(!state.placingBarra)return;
-   const r=(state.placingBarra.orient||0)*90;
+   const r=barraRotDeg(state.placingBarra.sym,state.placingBarra.orient||0);
    preview.innerHTML=`<div class="barra-face" style="transform:rotate(${r}deg)">${SVGS[state.placingBarra.sym]||SVGS.X}</div>`;
   }, 150);
   setTimeout(()=>preview.classList.remove('flip'), 400);
@@ -633,7 +663,7 @@ function updatePlacerUI(opts){
  const touch=isTouchDevice();
  hint.textContent=state.placeMode==='place'?t(touch?'placeHintReadyTouch':'placeHintReadyPC'):t(touch?'placeHintTouch':'placeHintPC');
  const faceName=(FACE_NAMES[lang]||FACE_NAMES.cs)[state.placingBarra.sym]||state.placingBarra.sym;
- label.textContent=DIRECTIONAL.has(state.placingBarra.sym)?`${t('face')}: ${faceName} · ${t('orient')}: ${ORIENT_DEG[state.placingBarra.orient||0]}°`:`${t('face')}: ${faceName}`;
+ label.textContent=DIRECTIONAL.has(state.placingBarra.sym)?`${t('face')}: ${faceName} · ${t('orient')}: ${orientLabel(state.placingBarra.orient||0)}`:`${t('face')}: ${faceName}`;
 }
 
 function renderBoard(){
@@ -654,7 +684,7 @@ function renderBoard(){
    p.className='piece '+(cell.type==='tile'?'tile-'+cell.color:'barra');
    if(state.lastPlaced&&state.lastPlaced.r===r&&state.lastPlaced.c===c)p.classList.add('last-placed');
    if(cell.type==='tile'){p.style.color=cell.color==='white'?'#222':'#f5e6d3';p.innerHTML=SVGS['T'+cell.val]||'';}
-   else{const rot=(cell.orient||0)*90;p.innerHTML=`<div style="transform:rotate(${rot}deg);width:100%;height:100%;display:flex;align-items:center;justify-content:center">${SVGS[cell.sym]||SVGS.X}</div>`;}
+   else{const rot=barraRotDeg(cell.sym,cell.orient||0);p.innerHTML=`<div style="transform:rotate(${rot}deg);width:100%;height:100%;display:flex;align-items:center;justify-content:center">${SVGS[cell.sym]||SVGS.X}</div>`;}
    sq.appendChild(p);
   }
   // Coords last in DOM → sit on top of piece as watermark; empty = dark gray
@@ -708,7 +738,7 @@ function renderBoard(){
  const stW=document.getElementById('st-white'), stB=document.getElementById('st-brown');
  stW.classList.remove('active-turn'); stB.classList.remove('active-turn');
  if(state.gameOver){
-  (state.winner==='white'?stW:stB).classList.add('active-turn');
+  if(!state.draw)(state.winner==='white'?stW:stB).classList.add('active-turn');
  }else if(!state.placingBarra){
   (state.turn==='white'?stW:stB).classList.add('active-turn');
  }
@@ -719,11 +749,13 @@ function renderBoard(){
 function updateOverBanner(){
  const el=document.getElementById('over-banner');
  if(!state.gameOver){el.classList.remove('show');clearTimeout(updateOverBanner._t);return;}
- const titleEl=document.getElementById('over-title'),reasonEl=document.getElementById('over-reason');
+ const titleEl=document.getElementById('over-title'),reasonEl=document.getElementById('over-reason'),iconEl=document.getElementById('over-trophy');
  if(state.draw){
+  iconEl.textContent='🤝';
   titleEl.textContent=t('draw');
-  reasonEl.textContent=t('resultDraw');
+  reasonEl.textContent=t('resultDrawRep')||t('resultDraw');
  }else{
+  iconEl.textContent='🏆';
   titleEl.textContent=state.winner==='white'?t('whiteWins'):t('brownWins');
   const loser=other(state.winner);
   const reasonKey=state.overReason==='notiles'?'resultNoTiles':'resultNoMoves';
@@ -752,17 +784,17 @@ function renderLogEntry(raw,number){
   const color=cch==='W'?'white':'brown';
   const orient=parseInt(orientStr,10)||0;
   const face=(FACE_NAMES[lang]||FACE_NAMES.cs)[sym]||sym;
-  const rotDeg=orient*90;
+  const rotDeg=barraRotDeg(sym,orient);
   // Color stone without pictogram, arrow, Barragoon with selected face, (degrees)
   const colorChip=`<span class="log-piece ${color}" title="${color}"></span>`;
   const barraChip=`<span class="log-piece barra" title="${face}"><div style="transform:rotate(${rotDeg}deg);width:100%;height:100%;display:flex;align-items:center;justify-content:center">${SVGS[sym]||SVGS.X}</div></span>`;
-  const deg=`<span class="log-arrow">(${ORIENT_DEG[orient]}°)</span>`;
+  const deg=`<span class="log-arrow">(${orientLabel(orient)})</span>`;
   return `<div class="log-entry log-place">${no}${colorChip}<span class="log-arrow"> → </span>${barraChip}<span class="log-arrow"> </span>${deg}</div>`;
  }
  if(s.startsWith('OVER|')){
   const [,winner,reason,loser]=s.split('|');
-  if(reason==='draw'){
-   return `<div class="log-entry log-over">${no}<span class="log-piece trophy">🏆</span><span class="log-arrow"> ${t('resultDraw')}</span></div>`;
+  if(reason==='draw'||reason==='repetition'||!winner){
+   return `<div class="log-entry log-over">${no}<span class="log-piece trophy">🤝</span><span class="log-arrow"> ${t('resultDrawRep')||t('resultDraw')}</span></div>`;
   }
   const wColor=winner==='white'?'white':'brown';
   const lColor=loser==='white'?'white':'brown';
@@ -823,7 +855,7 @@ function getPossibleMoves(r,c,board,color){
  const moves=[];
  const lengths=[{n:piece.val,type:'full'},{n:piece.val-1,type:'short'}].filter(x=>x.n>0);
 
- function addMove(n,moveType,tr,tc){
+ function addMove(n,moveType,tr,tc,path){
   if(tr===r&&tc===c)return;
   const target=board[tr][tc];
   if(target){
@@ -832,7 +864,7 @@ function getPossibleMoves(r,c,board,color){
    if(target.type==='barra'&&!canCaptureBarra(piece,target))return;
   }
   const capture=target?.type==='tile'?'tile':target?.type==='barra'?'barra':null;
-  moves.push({r:tr,c:tc,steps:n,moveType,capture,fromR:r,fromC:c});
+  moves.push({r:tr,c:tc,steps:n,moveType,capture,fromR:r,fromC:c,path:path||[]});
  }
 
  /*
@@ -842,8 +874,8 @@ function getPossibleMoves(r,c,board,color){
   * forces a turn, we immediately move through it in its permitted exit
   * direction; that forced turn consumes the single turn.
   */
- function search(cr,cc,steps,lastDir,turned,n,moveType){
-  if(steps===n){addMove(n,moveType,cr,cc);return;}
+ function search(cr,cc,steps,lastDir,turned,n,moveType,path){
+  if(steps===n){addMove(n,moveType,cr,cc,path);return;}
 
   let dirs=[0,1,2,3];
   if(lastDir!==-1){
@@ -858,16 +890,13 @@ function getPossibleMoves(r,c,board,color){
    const mid=board[nr][nc];
 
    if(mid?.type==='tile'){
-    // A tile can only be the final square; jumping over it is forbidden.
-    if(nextSteps===n)addMove(n,moveType,nr,nc);
+    if(nextSteps===n)addMove(n,moveType,nr,nc,path.concat([{r:nr,c:nc}]));
     continue;
    }
 
    if(mid?.type==='barra'){
     if(nextSteps===n){
-     // Landing on a Barragoon is a legal full-move capture (subject to the
-     // ALL/2-space exception). A short move may not capture.
-     addMove(n,moveType,nr,nc);
+     addMove(n,moveType,nr,nc,path.concat([{r:nr,c:nc,barra:mid.sym}]));
      continue;
     }
 
@@ -877,7 +906,6 @@ function getPossibleMoves(r,c,board,color){
     if(forced&&turned)continue;
 
     for(const outDir of exits){
-     // A Barragoon may not send the tile back through the side it entered.
      if(outDir===OPPOSITE[d])continue;
      const changed=outDir!==d;
      if(changed&&turned)continue;
@@ -886,20 +914,19 @@ function getPossibleMoves(r,c,board,color){
      if(!inBounds(er,ec))continue;
      const exitCell=board[er][ec];
      if(exitCell?.type==='tile')continue;
-     // The Barragoon itself consumes one movement square. The exit square is
-     // the next movement square and is processed normally by recursion.
-     search(nr,nc,nextSteps,outDir,nextTurned,n,moveType);
+     // Stand on Barragoon (counts as a step), then leave in exit direction
+     search(nr,nc,nextSteps,outDir,nextTurned,n,moveType,path.concat([{r:nr,c:nc,barra:mid.sym,via:true}]));
     }
     continue;
    }
 
    const changed=lastDir!==-1&&d!==lastDir;
    if(changed&&turned)continue;
-   search(nr,nc,nextSteps,d,turned||changed,n,moveType);
+   search(nr,nc,nextSteps,d,turned||changed,n,moveType,path.concat([{r:nr,c:nc}]));
   }
  }
 
- for(const len of lengths)search(r,c,0,-1,false,len.n,len.type);
+ for(const len of lengths)search(r,c,0,-1,false,len.n,len.type,[]);
 
  const uniq=new Map();
  for(const m of moves){
@@ -936,6 +963,17 @@ function findCapturesOfTarget(color,tr,tc){
 }
 
 function beginCapturePlacement(capturerColor,capturedBarra=null){
+ // Capturing the last opponent tile ends the game immediately (no Barragoon placement).
+ if(!capturedBarra){
+  const victim=other(capturerColor);
+  if(countTiles(state.board,victim)===0){
+   state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';
+   state.gameOver=true;state.winner=capturerColor;state.draw=false;state.overReason='notiles';
+   logGameOver(capturerColor,'notiles');
+   pushHistory();renderBoard();
+   return;
+  }
+ }
  if(capturedBarra){
   state.placeQueue=[{who:capturerColor,barra:capturedBarra,reuse:true}];
   advancePlacement();
@@ -944,10 +982,15 @@ function beginCapturePlacement(capturerColor,capturedBarra=null){
  // A tile capture creates two new Barragoons: one for opponent, one for capturer.
  if(state.pool>=2){
   state.pool-=2;
-  state.placeQueue=[{who:other(capturerColor),reuse:false},{who:capturerColor,reuse:false}];
+  // Skip placement for a side that already has no tiles (cannot continue the game)
+  const queue=[];
+  const opp=other(capturerColor);
+  if(countTiles(state.board,opp)>0) queue.push({who:opp,reuse:false});
+  if(countTiles(state.board,capturerColor)>0) queue.push({who:capturerColor,reuse:false});
+  state.placeQueue=queue;
+  if(!queue.length){finishPlacementAndTurn();return;}
   advancePlacement();
  }else{
-  // No reserve pieces remain; according to the physical rules there is nothing to place.
   state.placeQueue=[];
   finishPlacementAndTurn();
  }
@@ -956,6 +999,12 @@ function beginCapturePlacement(capturerColor,capturedBarra=null){
 function advancePlacement(){
  if(!state.placeQueue.length){finishPlacementAndTurn();return;}
  const next=state.placeQueue[0];
+ // Side with no tiles left cannot place — skip (game should already be over for last-tile capture)
+ if(countTiles(state.board, next.who)===0){
+  state.placeQueue.shift();
+  advancePlacement();
+  return;
+ }
  if(next.who==='brown'){
   if(next.reuse){placeAIBarra(next.barra);}
   else placeAIBarra();
@@ -1085,7 +1134,7 @@ function doMove(fr,fc,tr,tc,info){
  // Revalidate against the current board.
  const legal=getPossibleMoves(fr,fc,state.board,piece.color).find(m=>m.r===tr&&m.c===tc&&m.moveType===info.moveType&&m.capture===info.capture);
  if(!legal)return;
- let logMsg=`${piece.color==='white'?'W':'B'}${piece.val} ${coord(fr,fc)}→${coord(tr,tc)}${info.moveType==='short'?' S':''}`;
+ let logMsg=`${piece.color==='white'?'W':'B'}${piece.val} ${formatPath(fr,fc,info.path,tr,tc)}${info.moveType==='short'?' S':''}`;
  state.board[fr][fc]=null;state.board[tr][tc]=piece;
  state.lastPlaced={r:tr,c:tc};
  state.selected=null;state.targets=[];state.forcedCapture=null;
@@ -1194,17 +1243,19 @@ function evaluate(board, color){
  // Human wins by walling + immobilizing. Mobility difference is decisive.
  // Material matters, but a mobile 2-tile side beats a stuck 4-tile side.
  // Offense: advance into white, threaten captures, then wall. Defense alone loses (see logs).
- let E = 110*(myT-oppT) + 24*(myM-oppM) + 12*Bc + 28*(myThreat-oppThreat) + 5*(myPos-oppPos) - 4*myEdge + 2*oppEdge;
- E -= myHang * 60;
- E += oppHang * 50;
+ // Marathon logs: white wins by farming walls + slowly freezing brown.
+ // Counter: cut white mobility hard, threaten tiles, place walls in white half.
+ let E = 120*(myT-oppT) + 32*(myM-oppM) + 16*Bc + 32*(myThreat-oppThreat) + 6*(myPos-oppPos) - 3*myEdge + 4*oppEdge;
+ E -= myHang * 55;
+ E += oppHang * 55;
 
  if(oppT===0) return 1e6;
  if(myT===0) return -1e6;
- if(oppM===0 && oppT>0) E += 8e4;
- if(myM===0 && myT>0) E -= 8e4;
- if(myM<=3 && myT>0) E -= 90*(4-myM);
- if(oppM<=3 && oppT>0) E += 100*(4-oppM);
- if(myM>oppM) E += 12;
+ if(oppM===0 && oppT>0) E += 1e5;
+ if(myM===0 && myT>0) E -= 1e5;
+ if(myM<=3 && myT>0) E -= 85*(4-myM);
+ if(oppM<=4 && oppT>0) E += 110*(5-oppM); // reward squeezing white early
+ if(myM>oppM) E += 20;
  return E;
 }
 
@@ -1212,8 +1263,8 @@ function orderMoves(moves, side, board){
  return moves.slice().sort((a,b)=>{
   const score=m=>{
    let s=0;
-   if(m.capture==='tile') s+=220;
-   else if(m.capture==='barra') s+=70;
+   if(m.capture==='tile') s+=240;
+   else if(m.capture==='barra') s+=95;
    else s+=15;
    s += (3.5-Math.abs(m.c-3))*3;
    // Strong forward bias — logs show AI retreating into a cage
@@ -1338,10 +1389,12 @@ function placeAIBarra(reuse=null){
    b[r][c]={type:'barra',sym:s.sym,orient:s.orient||0};
    const w=mob(b,'white'), br=mob(b,'brown');
    // Steal as many white moves as possible; never tank own mobility
-   let score = (baseW-w)*28 + (br-baseB)*18;
-   if(w===0 && baseW>0) score += 80; // complete freeze of white is huge
-   if(br===0 && baseB>0) score -= 100;
-   if(r>=5) score += 10;
+   let score = (baseW-w)*36 + (br-baseB)*14;
+   if(w===0 && baseW>0) score += 120;
+   if(w<=2 && baseW>2) score += 40;
+   if(br===0 && baseB>0) score -= 120;
+   if(r>=5) score += 14;
+   if(r>=6) score += 10;
    if(s.sym==='X' && w<baseW) score += 8;
    for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
     const nr=r+dr,nc=c+dc;
@@ -1356,6 +1409,47 @@ function placeAIBarra(reuse=null){
  state.lastPlaced={r,c};
 }
 
+function positionKey(board,turn,pool){
+ // Compact key of board + side to move (threefold repetition)
+ const cells=[];
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(!x){cells.push('.');continue;}
+  if(x.type==='tile') cells.push((x.color==='white'?'W':'B')+x.val);
+  else cells.push('X'+x.sym+(x.orient||0));
+ }
+ return cells.join('')+'|'+turn+'|'+pool;
+}
+function recordAndCheckRepetition(){
+ if(!state.positionCounts) state.positionCounts={};
+ const key=positionKey(state.board,state.turn,state.pool);
+ state.positionCounts[key]=(state.positionCounts[key]||0)+1;
+ if(state.positionCounts[key]>=3) return true;
+ // Also: same sequence of 6 non-PLACE moves repeated as two identical blocks of 3
+ const moves=state.log.filter(l=>!String(l).startsWith('PLACE')&&!String(l).startsWith('OVER'));
+ if(moves.length>=6){
+  const a=moves.slice(-6,-3).join('||');
+  const b=moves.slice(-3).join('||');
+  if(a===b && a.length>0){
+   // Need the previous identical block too (3× the pattern of length 3) or 2× cycle of 2
+   if(moves.length>=12){
+    const c=moves.slice(-12,-6).join('||');
+    if(c===a+'||'+b || c===moves.slice(-6).join('||')) return true;
+   }
+   // Cycle of 2 moves repeated 3 times: M1 M2 M1 M2 M1 M2
+   if(moves.length>=6){
+    const m=moves.slice(-6);
+    if(m[0]===m[2]&&m[2]===m[4]&&m[1]===m[3]&&m[3]===m[5]&&m[0]!==m[1]) return true;
+   }
+  }
+ }
+ return false;
+}
+function declareDraw(reason){
+ state.gameOver=true;state.winner=null;state.draw=true;state.overReason=reason||'draw';
+ logGameOver('',reason||'draw');
+ pushHistory();renderBoard();
+}
 function endTurn(){
  state.turn=other(state.turn);
  const side=state.turn;
@@ -1366,6 +1460,11 @@ function endTurn(){
   state.gameOver=true;state.winner=other(side);state.draw=false;state.overReason=reason;
   logGameOver(state.winner,reason);
   pushHistory(); renderBoard(); return;
+ }
+ // Threefold repetition of the same position (board + side to move)
+ if(recordAndCheckRepetition()){
+  declareDraw('draw');
+  return;
  }
  // Snapshot AFTER turn switch so replay/deactivate restore correct side-to-move
  pushHistory();
@@ -1403,55 +1502,61 @@ function aiMove(){
    const baseMy = genMoves(state.board,'brown').length;
    const baseOpp = genMoves(state.board,'white').length;
 
-   // Never hang a piece for free
    const hangs = canCaptureAt(after, m.r, m.c, 'white');
    if(hangs){
-     if(m.capture==='tile') sc -= 25;
+     if(m.capture==='tile') sc -= 20;
      else sc -= 300;
    }
-   sc -= countHanging(after,'brown') * 55;
-   sc += countHanging(after,'white') * 45;
+   sc -= countHanging(after,'brown') * 50;
+   sc += countHanging(after,'white') * 50;
 
-   // OFFENSE first (logs: AI stayed defensive and lost)
-   if(m.capture==='tile') sc += 280;
-   else if(m.capture==='barra'){
-     // Farm Barragoons like the human — place walls afterward
-     sc += (!hangs && myM>=2) ? 90 : -80;
-   } else {
-     sc += 5;
-   }
+   // Attack first: tiles > barra (wall fuel) > quiet
+   if(m.capture==='tile') sc += 320;
+   else if(m.capture==='barra') sc += (!hangs && myM>=2) ? 110 : -70;
+   else sc += 3;
 
-   // Threaten white tiles after the move
-   let threats=0;
+   // Create threats on white tiles
+   let threats=0, barraThreats=0;
    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const x=after[r][c];
     if(x?.type==='tile'&&x.color==='brown'){
-     threats += getPossibleMoves(r,c,after,'brown').filter(mv=>mv.capture==='tile').length;
+     const mv=getPossibleMoves(r,c,after,'brown');
+     threats += mv.filter(t=>t.capture==='tile').length;
+     barraThreats += mv.filter(t=>t.capture==='barra').length;
     }
    }
-   sc += threats * 22;
+   sc += threats * 30;
+   sc += barraThreats * 8;
 
-   // Advance into white half; punish retreat toward home (low r)
+   // Push into white half; punish pure retreats
    const fwd = m.r - m.fromR;
-   sc += fwd * 12;
-   if(fwd < 0) sc -= 35;
-   if(m.r >= 5) sc += 10; // in white territory
+   sc += fwd * 14;
+   if(fwd < 0 && !m.capture) sc -= 45;
+   if(m.r >= 5) sc += 14;
+   if(m.r >= 6) sc += 8;
 
-   // Proximity to nearest white tile (pressure)
+   // Stay close to white pieces (pressure / block)
    let minD=99;
    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const x=state.board[r][c];
     if(x?.type==='tile'&&x.color==='white') minD=Math.min(minD, Math.abs(r-m.r)+Math.abs(c-m.c));
    }
-   if(minD<99) sc += Math.max(0, 6-minD) * 5;
+   if(minD<99) sc += Math.max(0, 7-minD) * 7;
 
-   sc += (myM - baseMy) * 14;
-   sc += (baseOpp - oppM) * 16;
+   // Cutting white mobility is the winning plan
+   sc += (myM - baseMy) * 12;
+   sc += (baseOpp - oppM) * 22;
+   if(oppM < baseOpp) sc += 15;
    if(myM===0) sc -= 600;
    if(myM===1) sc -= 100;
-   sc += (3.5 - Math.abs(m.c - 3)) * 4;
-   if(!m.capture && (m.c===0 || m.c===COLS-1)) sc -= 28;
-   if(m.moveType==='full') sc += 4;
+   sc += (3.5 - Math.abs(m.c - 3)) * 3;
+   if(!m.capture && (m.c===0 || m.c===COLS-1)) sc -= 22;
+   if(m.moveType==='full') sc += 5;
+   // Avoid cycling into a position already seen twice (prevents draw by repetition)
+   try{
+    const afterKey=positionKey(after,'white',state.pool); // after our move, white to move
+    if((state.positionCounts[afterKey]||0)>=2) sc -= 80;
+   }catch(e){}
    return sc;
   }
 
@@ -1501,7 +1606,7 @@ function aiMove(){
 
   document.getElementById('ai-thinking').style.display='none';
   const tgt=state.board[m.r][m.c], piece=state.board[m.fromR][m.fromC];
-  let logMsg=`B${piece.val} ${coord(m.fromR,m.fromC)}→${coord(m.r,m.c)}${m.moveType==='short'?' S':''}`;
+  let logMsg=`B${piece.val} ${formatPath(m.fromR,m.fromC,m.path,m.r,m.c)}${m.moveType==='short'?' S':''}`;
   state.board[m.fromR][m.fromC]=null;
   state.board[m.r][m.c]=piece;
   state.lastPlaced={r:m.r,c:m.c};
@@ -1524,7 +1629,7 @@ function loadGame(){
   const d=JSON.parse(raw);
   state.board=d.board;state.turn=d.turn;state.pool=d.pool??24;state.log=d.log||[];state.history=d.history||[];
   state.gameOver=!!d.gameOver;state.winner=d.winner||null;state.draw=!!d.draw;state.overReason=d.overReason||null;state.showCoords=!!d.showCoords;state.lastPlaced=d.lastPlaced?{...d.lastPlaced}:null;
-  state.selected=null;state.targets=[];state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';state.forcedCapture=null;
+  state.selected=null;state.targets=[];state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';state.forcedCapture=null;state.positionCounts={};
   state.replayMode=false;state.replayPlaying=false;clearTimeout(state.replayTimer);
   renderBoard();toast(t('loaded'));
   if(state.turn==='brown'&&!state.gameOver)setTimeout(aiMove,280);
@@ -1544,7 +1649,7 @@ function restartGame(){
  state.pool=24;state.log=[];state.history=[];
  state.selected=null;state.targets=[];state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';
  state.gameOver=false;state.winner=null;state.draw=false;state.overReason=null;state.lastPlaced=null;state.replayMode=false;state.replayIndex=0;
- state.replayPlaying=false;state.forcedCapture=null;clearTimeout(state.replayTimer);
+ state.replayPlaying=false;state.forcedCapture=null;state.positionCounts={};clearTimeout(state.replayTimer);
  pushHistory();renderBoard();
  const who = state.turn==='white' ? (lang==='cs'?'Začíná bílý':'White starts') : (lang==='cs'?'Začíná hnědý (AI)':'Brown (AI) starts');
  toast(who);
