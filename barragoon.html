@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#2b1e14">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Barragoon</title>
+<style>
+:root {
+  --bg: #2b1e14;            /* tmavý ořech */
+  --board-light: #e8d5b5;
+  --board-dark: #c4a574;
+  --accent: #e8b64c;        /* zlatá (stejná rodina jako zvýraznění posledního položeného kamene) */
+  --text: #f5e6d3;          /* krémová – stejná jako písmo na hnědých kamenech */
+  --panel: #3b2a1b;
+  --line: #5a4029;
+  --btn: #6b4423;
+  --btn-hover: #a67c52;
+  --shadow: rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 8px;
+  background-image: radial-gradient(ellipse 130% 55% at 50% 0%, #4d3623 0%, rgba(77,54,35,0) 100%); background-repeat: no-repeat; }
+html { scrollbar-color: #8a6238 #2b1e14; }
+header { width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center; padding: 6px 4px; gap: 6px; }
+#title { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 800; letter-spacing: 2px; cursor: pointer; user-select: none; background: linear-gradient(90deg, #f5d98a, #e0a63a 55%, #c98a2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); position: relative; text-align: center; width: 100%; }
+#title::after { content: ''; position: absolute; inset: 0; }
+.menu { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.menu button, .ctrl-btn {
+  background: linear-gradient(145deg, #a67c52, #6b4423); border: 2px solid #4a2f18; color: var(--text);
+  width: 40px; height: 40px; border-radius: 10px;
+  font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: filter 0.2s, transform 0.1s; box-shadow: 0 3px 8px var(--shadow), inset 0 1px 0 rgba(255,235,200,.25);
+}
+.menu button:hover, .ctrl-btn:hover { filter: brightness(1.14); }
+.menu button:active, .ctrl-btn:active { transform: scale(0.92); }
+.menu button.active, .ctrl-btn.active { background: linear-gradient(145deg, #f5d98a, #d99a0b); border-color: #8a6300; color: #2b1e14; }
+#status {
+  width: 100%; max-width: 520px; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 8px 6px; min-height: 40px;
+}
+.status-item {
+  display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line); font-size: 0.95rem; min-width: 64px; justify-content: center;
+}
+.status-item .num { font-weight: 800; color: var(--accent); min-width: 1.3em; text-align: center; }
+.status-item .icon { font-size: 1.15rem; line-height: 1; }
+.status-item.active-turn {
+  background: linear-gradient(135deg, #f5d98a 0%, #e0a63a 100%); border-color: #8a6300; color: #2b1e14; font-weight: 700;
+  box-shadow: 0 0 0 2px #f1c40f, 0 2px 12px rgba(241,196,15,0.35);
+}
+.status-item.active-turn .num { color: #2b1e14; }
+#ai-thinking { display: none; color: #f5a623; font-size: 0.8rem; font-weight: 600; margin-left: 4px; }
+.status-item.active-turn #ai-thinking { color: #2b1e14; }
+#board-wrap { position: relative; width: 100%; max-width: 420px; aspect-ratio: 7/9; margin: 4px 0; touch-action: none; }
+#over-banner {
+  display: none; position: absolute; inset: 0; z-index: 50; border-radius: 6px;
+  background: rgba(30,20,12,0.86); backdrop-filter: blur(2px);
+  flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px;
+}
+#over-banner.show { display: flex; }
+#over-trophy { font-size: 3rem; line-height: 1; margin-bottom: 8px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+#over-title { font-size: 1.35rem; font-weight: 800; color: #f5d98a; margin-bottom: 6px; }
+#over-reason { font-size: 0.9rem; color: #e2d2b6; max-width: 90%; }
+#board {
+  display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(9, 1fr);
+  width: 100%; height: 100%; border: 3px solid #4a2f18; border-radius: 6px; overflow: hidden;
+  background: #4a2f18; box-shadow: 0 8px 24px var(--shadow); position: relative;
+}
+.sq {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(0,0,0,0.12); cursor: pointer; user-select: none; transition: background 0.15s;
+}
+.sq.light { background: var(--board-light); }
+.sq.dark { background: var(--board-dark); }
+.sq.highlight, .sq.target { /* stavové třídy; vzhled pole beze změny */ }
+.sq.selected .piece {
+  outline: 3px solid #27ae60;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(39,174,96,0.35), 0 3px 8px var(--shadow);
+}
+.piece.last-placed { outline: 3px solid #f1c40f; outline-offset: 2px; }
+.sq.selected .piece.last-placed {
+  outline: 3px solid #27ae60;
+  box-shadow: 0 0 0 2px rgba(39,174,96,0.35), 0 3px 8px var(--shadow);
+}
+.move-hints {
+  position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; gap:5px; pointer-events:none;
+}
+.move-hint {
+  width:18px; height:18px; border-radius:50%; border:2px solid rgba(255,255,255,.9); box-shadow:0 1px 4px rgba(0,0,0,.55);
+  pointer-events:auto; cursor:pointer;
+}
+.move-hint.short { background:#2f80ed; }
+.move-hint.full { background:#27ae60; }
+.move-hint.both { background:#27ae60; border-color:#2f80ed; }
+@media (max-width:520px){ .move-hint{width:16px;height:16px;border-width:1.5px;} .move-hints{gap:3px;} }
+.place-hint-dot { width: 18px; height: 18px; border-radius: 50%; background: #8e44ad; border: 2px solid rgba(255,255,255,.95); box-shadow: 0 1px 4px rgba(0,0,0,.55); position:absolute; z-index:5; pointer-events:auto; cursor:pointer; }
+.log-entry { display:flex; align-items:center; gap:7px; margin-bottom:5px; white-space:nowrap; }
+.log-no { width:2.2em; color:#b59d78; text-align:right; flex:0 0 auto; }
+.log-piece { width:24px; height:24px; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:0 1px 3px rgba(0,0,0,.45); }
+.log-piece.white { background:linear-gradient(145deg,#fff8e7,#e8d9b8); border:1px solid #c9b896; color:#222; }
+.log-piece.brown { background:linear-gradient(145deg,#a67c52,#6b4423); border:1px solid #4a2f18; color:#f5e6d3; }
+.log-piece.barra { background:linear-gradient(145deg,#2c2c2c,#111); border:1px solid #000; color:#fff; }
+.log-piece.trophy { background:linear-gradient(145deg,#f9d976,#c9920a); border:1px solid #8a6300; font-size:14px; }
+.log-piece svg { width:82%; height:82%; }
+.log-arrow { color:#e2d2b6; }
+.log-entry.log-place { opacity:.92; }
+.log-entry.log-over { font-weight:700; }
+@media (max-width:520px){ .place-hint-dot{width:16px;height:16px;border-width:1.5px;} }
+/* Souřadnice: <span class="coord ..."> je POTOMEK pole (.sq), proto selektor .coord (ne .sq.coord) */
+#board-wrap { container-type: inline-size; }
+.coord {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;      /* dole */
+  justify-content: center;    /* uprostřed */
+  padding-bottom: 9%;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  font-size: 0.9rem;
+  font-size: max(11px, 3.8cqw);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+/* prázdné pole: tmavě šedé písmo uprostřed dole */
+.coord.on-empty {
+  z-index: 1;
+  color: #444;
+}
+/* kámen / Barragoon: průsvitný vodoznak ve spodní části kamene – symbol kamene zůstává vidět */
+.coord.on-piece,
+.coord.on-barra {
+  z-index: 3; /* nad kamenem (2), pod nápovědou tahů (4/5) */
+  color: rgba(255, 255, 255, 0.75);
+  -webkit-text-stroke: 0.8px rgba(0, 0, 0, 0.6);
+  paint-order: stroke fill;
+}
+/* bílý kámen: černá souřadnice */
+.coord.on-piece.on-white {
+  color: #000;
+  -webkit-text-stroke: 0;
+}
+.piece {
+  width: 84%; height: 84%; border-radius: 14%; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 8px var(--shadow); position: relative; z-index: 2; transition: transform 0.15s;
+}
+.piece.tile-white { background: linear-gradient(145deg, #fff8e7, #e8d9b8); border: 2px solid #c9b896; }
+.piece.tile-brown { background: linear-gradient(145deg, #a67c52, #6b4423); border: 2px solid #4a2f18; }
+.piece.barra { background: linear-gradient(145deg, #2c2c2c, #111); border: 2px solid #000; border-radius: 20%; }
+.piece svg { width: 68%; height: 68%; }
+.watermark {
+  position: absolute; inset: 0; opacity: 0.14; pointer-events: none; z-index: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.watermark svg { width: 55%; height: 55%; }
+#barra-placer {
+  display: none; width: 100%; max-width: 420px; margin: 8px 0 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+#barra-placer.active { display: block; }
+#barra-placer .hint { font-size: 0.8rem; color: #d2bd98; margin-bottom: 6px; line-height: 1.3; }
+#barra-preview {
+  width: 52px; height: 52px; margin: 0 auto 4px; border-radius: 14%;
+  background: linear-gradient(145deg, #2c2c2c, #111); border: 3px solid #000;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5); cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s; user-select: none;
+  -webkit-touch-callout: none; touch-action: manipulation;
+  perspective: 200px;
+  transform-style: preserve-3d;
+}
+#help-body .only-touch { display: none; }
+#help-body.touch .only-touch { display: inline; }
+#help-body.touch .only-pc { display: none; }
+#barra-preview:hover { filter: brightness(1.08); }
+#barra-preview:active { filter: brightness(0.95); }
+#barra-preview.ready { border-color: #f1c40f; box-shadow: 0 0 0 3px #f1c40f, 0 3px 10px rgba(0,0,0,0.5); }
+#barra-preview .barra-face {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden;
+}
+#barra-preview .barra-face svg { width: 62%; height: 62%; pointer-events: none; }
+#barra-preview.flip {
+  animation: barraFlip 0.38s ease-in-out;
+}
+@keyframes barraFlip {
+  0%   { transform: rotateY(0deg) scale(1); }
+  40%  { transform: rotateY(90deg) scale(0.92); }
+  60%  { transform: rotateY(90deg) scale(0.92); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+#barra-orient-label { font-size: 0.75rem; color: #e2d2b6; margin-top: 2px; }
+#player-controls {
+  display: none; width: 100%; max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 8px 10px; margin-top: 8px; flex-direction: row; align-items: center; justify-content: center;
+  gap: 10px; flex-wrap: nowrap; overflow-x: auto;
+}
+#player-controls.active { display: flex; }
+.player-btns { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: center; align-items: center; flex: 0 0 auto; }
+.player-btns button { width: 38px; height: 38px; font-size: 1.05rem; flex: 0 0 auto; }
+#move-counter { font-size: 0.85rem; font-weight: 600; color: #d2bd98; white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 480px) {
+  .player-btns button { width: 32px; height: 32px; font-size: 0.95rem; }
+  #move-counter { font-size: 0.72rem; }
+  #player-controls { gap: 6px; padding: 6px 8px; }
+}
+#log-panel { width:100%; max-width:520px; max-height:70vh; display:flex; flex-direction:column; }
+#log-header { display:flex; justify-content:space-between; align-items:center; padding:0 0 10px; border-bottom:1px solid var(--line); }
+#log-actions { display:flex; gap:6px; align-items:center; }
+#log-content { scrollbar-color:#8a6238 #3b2a1b; flex:1; min-height:0; overflow-y:auto; padding:10px 2px 2px; font-size:0.8rem; font-family:monospace; line-height:1.45; color:#e2d2b6; }
+#log-content div { white-space:pre-wrap; }
+#log-close, #btn-copy-log, #btn-clear-storage { width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; }
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(20,12,6,0.78); z-index: 100;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; max-width: 520px; width: 100%; max-height: 85vh;
+  overflow-y: auto; padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); scrollbar-color: #8a6238 #3b2a1b;
+}
+.modal h3, .modal h4 { color: #f5d98a; margin: 14px 0 6px; font-size: 1rem; }
+.modal h2 { margin-bottom: 12px; color: var(--accent); }
+.modal p, .modal li { font-size: 0.9rem; line-height: 1.5; margin-bottom: 8px; color: #e2d2b6; }
+.modal button.close { margin-top: 12px; background: linear-gradient(145deg, #f5d98a, #d99a0b); color: #2b1e14; border: 2px solid #8a6300; padding: 9px 20px; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: 700; width: 100%; }
+.modal button.close:hover { filter: brightness(1.06); }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(145deg, #fff8e7, #e8d9b8); color: #3b2a1a; border: 2px solid #c9b896;
+  padding: 10px 22px; border-radius: 12px; font-weight: 700; z-index: 200; opacity: 0; transition: opacity 0.3s;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  pointer-events: none; white-space: nowrap; width: max-content; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; text-align: center;
+  font-size: 14px; /* mobilní maximum; fitToast může zmenšit */
+}
+.toast.wrap { white-space: normal; text-overflow: clip; line-height: 1.3; }
+.toast.show { opacity: 1; }
+.help-icons { display:flex; flex-wrap:wrap; gap:10px; margin:10px 0; align-items:flex-start; }
+.help-icon-card {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  background:rgba(0,0,0,.22); border:1px solid rgba(232,213,181,.14); border-radius:10px; padding:8px 10px; min-width:72px; max-width:110px;
+}
+.help-icon-card .sym {
+  width:44px; height:44px; border-radius:12%;
+  background:linear-gradient(145deg,#2c2c2c,#111); border:2px solid #000;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.help-icon-card .sym svg { width:70%; height:70%; }
+.help-icon-card .tile-demo {
+  width:44px; height:44px; border-radius:12%;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.help-icon-card .tile-demo.white { background:linear-gradient(145deg,#fff8e7,#e8d9b8); border:2px solid #c9b896; color:#222; }
+.help-icon-card .tile-demo.brown { background:linear-gradient(145deg,#a67c52,#6b4423); border:2px solid #4a2f18; color:#f5e6d3; }
+.help-icon-card .tile-demo svg { width:70%; height:70%; }
+.help-icon-card span { font-size:0.72rem; color:#e2d2b6; text-align:center; line-height:1.25; }
+.help-dots { display:flex; flex-wrap:wrap; gap:12px; margin:8px 0; align-items:center; }
+.help-dots .dot-row { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#e2d2b6; }
+.help-dots .demo-dot {
+  width:18px; height:18px; border-radius:50%; border:2px solid rgba(255,255,255,.9);
+  box-shadow:0 1px 4px rgba(0,0,0,.55); flex-shrink:0;
+}
+.help-dots .demo-dot.short { background:#2f80ed; }
+.help-dots .demo-dot.full { background:#27ae60; }
+.help-dots .demo-dot.both { background:#27ae60; border-color:#2f80ed; }
+.help-dots .demo-dot.place { background:#8e44ad; }
+
+.help-ex-grid { display:flex; flex-wrap:wrap; gap:12px; margin:10px 0; }
+.help-ex-card {
+  flex:1 1 140px; max-width:200px; background:rgba(0,0,0,.2);
+  border:1px solid rgba(232,213,181,.15); border-radius:10px; padding:8px; text-align:center;
+}
+.help-ex-card img { width:100%; height:auto; border-radius:6px; background:#1a1a2e; }
+.help-ex-card figcaption { font-size:0.78rem; color:#e2d2b6; margin-top:6px; line-height:1.3; }
+.help-inline-sym { display:inline-flex; vertical-align:middle; margin:0 2px; }
+.help-ex-sheet { width:100%; border-radius:8px; margin:8px 0; background:#0f1624; }
+
+
+.board-blocked { pointer-events: none !important; opacity: 0.72; filter: grayscale(0.15); }
+#board-wrap.replay-on #board { pointer-events: none !important; }
+@media (max-width: 480px) {
+  .menu button, .ctrl-btn { width: 36px; height: 36px; font-size: 1.05rem; }
+  #board-wrap { max-width: 92vw; }
+  .status-item { padding: 4px 7px; font-size: 0.85rem; min-width: 52px; }
+  #barra-preview { width: 48px; height: 48px; }
+  body { padding-bottom: 24px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div id="title" title="Toggle coordinates">BARRAGOON</div>
+  <div class="menu">
+    <button id="btn-save" title="Save">💾</button>
+    <button id="btn-load" title="Load">📂</button>
+    <button id="btn-restart" title="Restart">🔄</button>
+    <button id="btn-log" title="Log">📜</button>
+    <button id="btn-player" title="Replay">▶️</button>
+    <button id="btn-lang" title="English">🇬🇧</button>
+    <button id="btn-help" title="Help">💡</button>
+  </div>
+</header>
+<div id="status">
+  <div class="status-item" id="st-white">
+    <span class="icon">⚪</span>
+    <span class="num" id="white-count">7</span>
+  </div>
+  <div class="status-item" id="st-pool">
+    <span class="icon">⬛</span>
+    <span class="num" id="pool-count">24</span>
+  </div>
+  <div class="status-item" id="st-brown">
+    <span class="num" id="brown-count">7</span>
+    <span class="icon">🟤</span>
+    <span id="ai-thinking">AI…</span>
+  </div>
+</div>
+<div id="board-wrap"><div id="board"></div><div id="over-banner"><div id="over-trophy">🏆</div><div id="over-title"></div><div id="over-reason"></div></div></div>
+<div id="barra-placer">
+  <div class="hint" id="barra-hint"></div>
+  <div id="barra-preview"></div>
+  <div id="barra-orient-label">strana: X</div>
+</div>
+<div id="player-controls">
+  <div class="player-btns">
+    <button class="ctrl-btn" id="p-start">⏮</button>
+    <button class="ctrl-btn" id="p-prev">⏪</button>
+    <button class="ctrl-btn" id="p-play">▶️</button>
+    <button class="ctrl-btn" id="p-next">⏩</button>
+    <button class="ctrl-btn" id="p-end">⏭</button>
+  </div>
+  <div id="move-counter">0 / 0</div>
+</div>
+<div class="modal-overlay" id="log-modal">
+  <div class="modal" id="log-panel">
+    <div id="log-header">
+      <span>Záznam hry</span>
+      <div id="log-actions">
+        <button class="ctrl-btn" id="btn-clear-storage" title="Vymazat uložená data">🗑️</button>
+        <button class="ctrl-btn" id="btn-copy-log" title="Kopírovat">📋</button>
+        <button class="ctrl-btn" id="log-close" title="Zavřít">✕</button>
+      </div>
+    </div>
+    <div id="log-content"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="help-modal">
+  <div class="modal">
+    <h2 id="help-title">Barragoon – Nápověda</h2>
+    <div id="help-body"></div>
+    <button class="close" id="help-close">Zavřít</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SVGS = {
+  X:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"><line x1="22" y1="22" x2="78" y2="78"/><line x1="78" y1="22" x2="22" y2="78"/></svg>`,
+  ONE:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg>`,
+  TWO:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg>`,
+  RIGHT:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg>`,
+  LEFT:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg>`,
+  ALL:`<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg>`,
+  T2:`<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg>`,
+  T3:`<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg>`,
+  T4:`<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg>`
+};
+const WM_SVG={
+  T2:`<svg viewBox="0 0 100 100" fill="#555"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg>`,
+  T3:`<svg viewBox="0 0 100 100" fill="#555"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="#555" stroke-width="8"/></svg>`,
+  T4:`<svg viewBox="0 0 100 100" fill="#555"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="#555" stroke-width="7"/></svg>`,
+  X:`<svg viewBox="0 0 100 100" fill="none" stroke="#555" stroke-width="12" stroke-linecap="round"><line x1="22" y1="22" x2="78" y2="78"/><line x1="78" y1="22" x2="22" y2="78"/></svg>`
+};
+const I18N={
+ cs:{
+  title:'BARRAGOON',log:'Záznam hry',helpTitle:'Barragoon – Nápověda',close:'Zavřít',
+  saved:'Hra uložena',loaded:'Hra načtena',restarted:'Hra restartována',copied:'Log zkopírován',
+  whiteWins:'Bílý vyhrál!',brownWins:'Hnědý vyhrál!',draw:'Remíza',
+  colorWhite:'Bílý',colorBrown:'Hnědý',
+  resultNoTiles:'{c} nemá žádné kameny.',resultNoMoves:'{c} nemá žádný platný tah.',resultDraw:'Hráči se dohodli na remíze.',
+  trophyLine:'{w} vyhrává — {r}',trophyLineDraw:'Remíza — {r}',
+  placedBarra:'{c} umístil Barragoon → {coord} ({face}{o})',
+  placeHintPC:'1× klik = další strana · 2× klik = potvrdit',placeHintTouch:'Klepnutí = další strana · dlouhý stisk = potvrdit',
+  shortMove:'Krátký tah',fullMove:'Plný tah',placeHintReadyPC:'Klikni na fialové kolečko pro umístění',placeHintReadyTouch:'Klepni na fialové kolečko pro umístění',orient:'směr',face:'strana',placeYou:'Umístěte Barragoon',
+  langFlag:'🇬🇧',langTitle:'English',
+  help:`
+  <p><i>© 2014 Designer: Frank Warneke, Robert Witter</i></p>
+  <p><b>Barragoon</b> je fascinující, ryze strategická hra bez jakéhokoli prvku náhody. Složitost a rozmanitost této hry se všemi jejími nečekanými zvraty vás nadchne!</p>
+  <h3>1. Příprava hry</h3>
+  <p>Čtrnáct kamenů a prvních 8 Barragoonů se rozmístí na desce do výchozího postavení. Zbývajících 24 Barragoonů se položí vedle desky a přidávají se do hry v jejím průběhu.</p>
+  <h3>2. Hra</h3>
+  <p>Oba hráči pomocí taktiky přesouvají své kameny a rozmísťují Barragoony tak, aby mohli zajmout všechny soupeřovy kameny nebo omezili jeho postup. Hráč prohrává, pokud již nemá žádný kámen, kterým může táhnout. Zahajující barva se při každé nové hře střídá; hráči se ve tazích střídají. Hrajete bílými, AI hnědými.</p>
+  <h3>Ovládání hry</h3>
+  <ul>
+   <li><b>💾 Uložit</b> – uloží aktuální rozehranou hru.</li>
+   <li><b>📂 Načíst</b> – načte uloženou hru.</li>
+   <li><b>🔄 Restart</b> – zahájí novou hru.</li>
+   <li><b>📜 Záznam hry</b> – otevře herní log; <b>📋</b> zkopíruje jeho obsah, <b>✕</b> nebo kliknutí mimo okno jej zavře.</li>
+   <li><b>▶️ Replay</b> – zobrazí uložené stavy hry a umožní procházet historii nebo ji přehrát.</li>
+   <li><b>🇬🇧</b> – přepne rozhraní do angličtiny.</li>
+   <li><b>💡 Nápověda</b> – zobrazí tato pravidla a ovládání.</li>
+   <li><b>BARRAGOON</b> – kliknutím na název lze zapnout/vypnout souřadnice polí.</li>
+   <li><b>Pohyb:</b> nejprve klikni na svůj kámen. Nápověda tahů:
+    <div class="help-dots">
+      <div class="dot-row"><span class="demo-dot short"></span> krátký tah</div>
+      <div class="dot-row"><span class="demo-dot full"></span> plný tah</div>
+      <div class="dot-row"><span class="demo-dot both"></span> krátký i plný</div>
+    </div>
+    Kliknutím na kolečko zvolíš tah.</li>
+   <li><b>Umístění Barragoonu:</b> po potvrzení symbolu se na volných polích zobrazí
+    <div class="help-dots"><div class="dot-row"><span class="demo-dot place"></span> volné pole pro položení</div></div>
+    Kliknutím na fialové kolečko Barragoon umístíš.</li>
+   <li><b>Volba symbolu Barragoonu:</b> <span class="only-pc">1× klik = další strana, 2× klik = potvrdit.</span><span class="only-touch">klepnutí = další strana, dlouhý stisk = potvrdit.</span></li>
+  </ul>
+  <h3>3. Barragoon</h3>
+  <p>Barragoon je centrálním prvkem hry. Blokuje nebo uvolňuje pohyb kamenů v určitých směrech podle symbolu, který je nahoře. Pokud horní symbol uvolňuje určitý směr, všechny ostatní směry jsou blokovány.</p>
+  <h4>3.1 Symboly Barragoonu</h4>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"><line x1="22" y1="22" x2="78" y2="78"/><line x1="78" y1="22" x2="22" y2="78"/></svg></div><span>X – zákaz vstupu<br>nelze překročit</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg></div><span>Jednosměrný<br>jen ve směru šipky</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg></div><span>Dvousměrný<br>jeden ze 2 směrů</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg></div><span>Pravá zatáčka<br>vynucená doprava</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg></div><span>Levá zatáčka<br>vynucená doleva</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></div><span>ALL – všechny zatáčky<br>vždy se zatáčkou</span></div>
+  </div>
+  <p><b>Výjimka:</b> Barragoon se symbolem ALL nahoře nemůže být zajat kamenem 2.</p>
+  <h4>3.2 Umístění Barragoonu</h4>
+  <p>Zajatý Barragoon se vrací na nové místo na desce; nové Barragoony se přidávají po zajetí kamene. Zvolený symbol musí být nahoře a směrový symbol musí být natočen do zvoleného směru.</p>
+  <h3>4. Kameny</h3>
+  <p>V každé barvě jsou tři druhy kamenů:</p>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg></div><span>Kámen 2<br>tah 2 / krátký 1</span></div>
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg></div><span>Kámen 3<br>tah 3 / krátký 2</span></div>
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg></div><span>Kámen 4<br>tah 4 / krátký 3</span></div>
+  </div>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg></div><span>Kámen 2</span></div>
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg></div><span>Kámen 3</span></div>
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg></div><span>Kámen 4</span></div>
+  </div>
+  <h4>4.1 Pohyb kamene</h4>
+  <ul>
+   <li>Cílové pole se do délky tahu započítává, startovní pole nikoli.</li>
+   <li>Pohyb je vodorovný nebo svislý; diagonální pohyb není dovolen.</li>
+   <li>Během jednoho tahu lze změnit směr právě nejvýše jednou o 90°. Není dovolena druhá zatáčka ani otočení o 180°.</li>
+   <li>Barragoon lze během tahu překročit, pokud to jeho horní symbol dovoluje; pole Barragoonu se započítává do délky tahu.</li>
+   <li>Pokud Barragoon vynutí změnu směru, tato změna se počítá jako jediná povolená změna směru. Před ani za Barragoonem tedy nelze v témže tahu znovu zatočit.</li>
+   <li>Nelze přeskakovat vlastní ani soupeřovy kameny.</li>
+   <li>Vlastní kámen nelze zajmout vlastním kamenem.</li>
+  </ul>
+  <h4>4.2 Krátký tah</h4>
+  <p>Kámen 2 táhne 1 pole, kámen 3 táhne 2 pole a kámen 4 táhne 3 pole. Krátkým tahem nelze nic zajmout a cílové pole musí být zcela neobsazené – nesmí na něm být kámen ani Barragoon.</p>
+  <h4>4.3 Plný tah</h4>
+  <p>Kámen 2/3/4 táhne přesně 2/3/4 pole. Může skončit na prázdném poli, na soupeřově kameni nebo na Barragoonu. Kámen 2 <b>nemůže zajmout</b> Barragoon se symbolem <span class="help-inline-sym" style="display:inline-flex;width:1.25em;height:1.25em;vertical-align:-0.25em;background:linear-gradient(145deg,#2c2c2c,#111);border-radius:20%;border:1px solid #000;align-items:center;justify-content:center;color:#fff"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" style="width:1.1em;height:1.1em;vertical-align:-0.2em;display:inline-block"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></span> nahoře.</p>
+  <h4>4.4 Zajetí kamene</h4>
+  <p>Pokud kámen během plného tahu dopadne na soupeřův kámen, zajme jej a soupeřův kámen se odstraní z desky. Útočící hráč si vezme dva nové Barragoony a jeden z nich dá soupeři. Oba hráči je drží v ruce. Nejprve položí svůj Barragoon soupeř, potom útočník. Následně je na tahu druhý hráč.</p>
+  <h4>4.5 Zajetí Barragoonu</h4>
+  <p>Pokud kámen během plného tahu dopadne na Barragoon, zajme jej. Zajatý Barragoon je ihned stejným hráčem umístěn na jiné prázdné pole. Potom je na tahu druhý hráč.</p>
+  <h3>5. Konec hry</h3>
+  <p>Hra končí, když hráč, který je na tahu, již nemá žádný kámen nebo jeho zbývající kameny nelze přesunout.</p>
+  <p><b>a)</b> Pokud byly všechny kameny obou hráčů zajaty nebo se nemohou pohybovat, prohrává hráč, který je na tahu, protože nemůže provést tah.</p>
+  <p><b>b)</b> Pokud se kameny obou hráčů stále mohou pohybovat, ale v pokračování hry nejsou schopny zajmout Barragoon ani soupeřův kámen, hra končí remízou.</p>
+  <p><b>c)</b> Pokud hráči třikrát zopakují stejný vzor tahů, může hráč, který právě dokončil svůj tah, nabídnout remízu. Pokud je nabídka odmítnuta, musí hráči při nejbližší příležitosti zvolit jinou posloupnost tahů. Hráč, který remízu odmítl, zpravidla provede první odlišný tah, pokud je jiný tah možný. Pokud se od opakování nelze odchýlit, hra končí remízou.</p>
+`
+ },
+ en:{
+  title:'BARRAGOON',log:'Game Log',helpTitle:'Barragoon – Help',close:'Close',
+  saved:'Game saved',loaded:'Game loaded',restarted:'Game restarted',copied:'Log copied',
+  whiteWins:'White wins!',brownWins:'Brown wins!',draw:'Draw',
+  colorWhite:'White',colorBrown:'Brown',
+  resultNoTiles:'{c} has no tiles left.',resultNoMoves:'{c} has no legal move.',resultDraw:'The players agreed to a draw.',
+  trophyLine:'{w} wins — {r}',trophyLineDraw:'Draw — {r}',
+  placedBarra:'{c} placed a Barragoon → {coord} ({face}{o})',
+  placeHintPC:'1× click = next face · 2× click = confirm',placeHintTouch:'Tap = next face · long-press = confirm',
+  shortMove:'Short move',fullMove:'Full move',placeHintReadyPC:'Click the purple dot to place',placeHintReadyTouch:'Tap the purple dot to place',orient:'dir',face:'face',placeYou:'Place Barragoon',
+  langFlag:'🇨🇿',langTitle:'Čeština',
+  help:`
+  <p><i>© 2014 Designer: Frank Warneke, Robert Witter</i></p>
+  <p><b>Barragoon</b> is a fascinating, purely strategic game with no element of chance. The complexity and variety of the game, with all its unexpected twists, makes it highly engaging!</p>
+  <h3>1. Preparations for play</h3>
+  <p>The 14 tiles and the first 8 Barragoon pieces are arranged on the board in their starting positions. The remaining 24 Barragoons are placed next to the board and are added as the game progresses.</p>
+  <h3>2. Play</h3>
+  <p>Both players use tactical skills to move their tiles and arrange Barragoons so they can capture all of their opponent's tiles or impede the opponent's progress. A player loses when they no longer have a tile they can move. The starting colour alternates each new game; players take turns. You play White, the AI plays Brown.</p>
+  <h3>Game controls</h3>
+  <ul>
+   <li><b>💾 Save</b> – saves the current game.</li><li><b>📂 Load</b> – loads the saved game.</li><li><b>🔄 Restart</b> – starts a new game.</li>
+   <li><b>📜 Game Log</b> – opens the log; <b>📋</b> copies it, <b>✕</b> or clicking outside closes it.</li>
+   <li><b>▶️ Replay</b> – browses or plays back the stored game history.</li><li><b>🇨🇿</b> – switches the interface to Czech.</li><li><b>💡 Help</b> – opens these rules and controls.</li>
+   <li><b>BARRAGOON</b> – click the title to show/hide board coordinates.</li>
+   <li><b>Move:</b> click your tile first. Move hints:
+    <div class="help-dots">
+      <div class="dot-row"><span class="demo-dot short"></span> short move</div>
+      <div class="dot-row"><span class="demo-dot full"></span> full move</div>
+      <div class="dot-row"><span class="demo-dot both"></span> short or full</div>
+    </div>
+    Click the dot to choose the move.</li>
+   <li><b>Place a Barragoon:</b> after confirming the face, empty squares show
+    <div class="help-dots"><div class="dot-row"><span class="demo-dot place"></span> free square to place</div></div>
+    Click a purple dot to place it.</li>
+   <li><b>Selecting a Barragoon face:</b> <span class="only-pc">1× click = next face, 2× click = confirm.</span><span class="only-touch">tap = next face, long-press = confirm.</span></li>
+  </ul>
+  <h3>3. The Barragoon</h3>
+  <p>The Barragoon is the central element of the game. It blocks or frees tile movement in specific directions depending on the uppermost symbol. If the uppermost symbol frees movement in a particular direction, all other directions are blocked.</p>
+  <h4>3.1 Barragoon symbols</h4>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"><line x1="22" y1="22" x2="78" y2="78"/><line x1="78" y1="22" x2="22" y2="78"/></svg></div><span>X – No Entry<br>cannot be crossed</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 50 H72"/><path d="M55 28 L78 50 L55 72"/></svg></div><span>One Way<br>arrow direction only</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 H78"/><path d="M38 28 L18 50 L38 72"/><path d="M62 28 L82 50 L62 72"/></svg></div><span>Two Ways<br>either arrow direction</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M28 72 V38 Q28 22 44 22 H72"/><path d="M55 12 L78 28 L55 44"/></svg></div><span>Right Turn<br>forced right turn</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M72 72 V38 Q72 22 56 22 H28"/><path d="M45 12 L22 28 L45 44"/></svg></div><span>Left Turn<br>forced left turn</span></div>
+   <div class="help-icon-card"><div class="sym"><svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></div><span>ALL – All Turns<br>always with a turn</span></div>
+  </div>
+  <p><b>Exception:</b> a Barragoon with ALL uppermost cannot be captured by a 2-space tile.</p>
+  <h4>3.2 Placing a Barragoon</h4>
+  <p>A captured Barragoon is returned to a new position; new Barragoons are added after a tile is captured. The chosen symbol faces upwards and any direction-dependent symbol is turned to the chosen direction.</p>
+  <h3>4. The tiles</h3>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg></div><span>Tile 2<br>move 2 / short 1</span></div>
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg></div><span>Tile 3<br>move 3 / short 2</span></div>
+   <div class="help-icon-card"><div class="tile-demo white"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg></div><span>Tile 4<br>move 4 / short 3</span></div>
+  </div>
+  <div class="help-icons">
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="50" r="16"/><circle cx="72" cy="50" r="16"/><rect x="28" y="44" width="44" height="12" rx="2"/></svg></div><span>Tile 2</span></div>
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="26" r="14"/><circle cx="28" cy="68" r="14"/><circle cx="72" cy="68" r="14"/><path d="M50 26 L28 68 L72 68 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/></svg></div><span>Tile 3</span></div>
+   <div class="help-icon-card"><div class="tile-demo brown"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="30" cy="30" r="13"/><circle cx="70" cy="30" r="13"/><circle cx="30" cy="70" r="13"/><circle cx="70" cy="70" r="13"/><path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg></div><span>Tile 4</span></div>
+  </div>
+  <h4>4.1 Moving a tile</h4><ul><li>The target square counts; the starting square does not.</li><li>Horizontal/vertical only; diagonal movement is not allowed.</li><li>At most one 90° direction change per move; no second turn and no 180° reversal.</li><li>A Barragoon may be crossed if its uppermost symbol permits it; its square counts as part of the move.</li><li>A Barragoon-forced turn uses the one permitted direction change, so no additional turn may be made before or after it.</li><li>You cannot jump over your own or your opponent's tiles.</li><li>You cannot capture your own tile.</li></ul>
+  <h4>4.2 Short move</h4><p>A 2-space tile moves 1 square, a 3-space tile 2, and a 4-space tile 3. A short move cannot capture anything and must end on a completely unoccupied square; neither a tile nor a Barragoon may occupy it.</p>
+  <h4>4.3 Full move</h4><p>A 2/3/4 tile moves exactly 2/3/4 squares. It may end empty, on an opponent tile, or on a Barragoon. A 2-space tile <b>cannot capture</b> a Barragoon with <span class="help-inline-sym" style="display:inline-flex;width:1.25em;height:1.25em;vertical-align:-0.25em;background:linear-gradient(145deg,#2c2c2c,#111);border-radius:20%;border:1px solid #000;align-items:center;justify-content:center;color:#fff"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" style="width:1.05em;height:1.05em"><path d="M50 18 L50 35 M50 65 L50 82 M18 50 L35 50 M65 50 L82 50"/><path d="M28 28 L40 40 M72 28 L60 40 M28 72 L40 60 M72 72 L60 60"/><circle cx="50" cy="50" r="11" stroke-width="7"/></svg></span> uppermost.</p>
+  <h4>4.4 Capturing a tile</h4><p>If a tile lands on an opponent tile during a full move, it captures it. The captured tile is removed. The capturer takes two new Barragoons and gives one to the opponent. Both keep them in hand. The opponent places first, then the capturer. Then the other player moves.</p>
+  <h4>4.5 Capturing a Barragoon</h4><p>If a tile lands on a Barragoon during a full move, it captures it. The captured Barragoon is immediately placed by the same player on another empty square. Then the other player moves.</p>
+    <h3>5. End of the game</h3><p>The game ends when the player whose turn it is has no tiles left or their remaining tiles cannot move.</p><p><b>a)</b> If all tiles belonging to both players have been captured or are unable to move, the player whose turn it is loses because they cannot make a move.</p><p><b>b)</b> If both players' tiles can still move but cannot capture a Barragoon or an opponent tile in the continued game, the game ends in a draw.</p><p><b>c)</b> If the players repeat the same pattern of moves three times, the player who has just completed their turn may offer a draw. If declined, a different sequence must be chosen at the earliest opportunity; normally the player who declined makes the first different move, unless no alternative exists. If neither side can deviate, the game is a draw.</p>
+  `
+ }
+};
+let lang='cs';
+const ROWS=9,COLS=7;
+const DIRS=[[-1,0],[0,1],[1,0],[0,-1]]; // N,E,S,W
+const ORIENT_DEG=[0,90,180,270];
+const CUBE_FACES=['X','ONE','TWO','RIGHT','LEFT','ALL'];
+const FACE_NAMES={
+ cs:{X:'X (stop)',ONE:'Jednosměr',TWO:'Dvousměr',RIGHT:'Pravá zatáčka',LEFT:'Levá zatáčka',ALL:'Všechny směry'},
+ en:{X:'X (stop)',ONE:'One way',TWO:'Two ways',RIGHT:'Right turn',LEFT:'Left turn',ALL:'All turns'}
+};
+const DIRECTIONAL=new Set(['ONE','TWO','RIGHT','LEFT']);
+const RIGHT_OF=[1,2,3,0],LEFT_OF=[3,0,1,2],OPPOSITE=[2,3,0,1];
+
+function getStartWatermarks(){
+ const wm=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+ wm[0][1]='T4';wm[0][2]='T3';wm[0][4]='T3';wm[0][5]='T4';
+ wm[1][2]='T2';wm[1][3]='T3';wm[1][4]='T2';
+ wm[7][2]='T2';wm[7][3]='T3';wm[7][4]='T2';
+ wm[8][1]='T4';wm[8][2]='T3';wm[8][4]='T3';wm[8][5]='T4';
+ [[3,1],[3,5],[4,0],[4,2],[4,4],[4,6],[5,1],[5,5]].forEach(([r,c])=>wm[r][c]='X');
+ return wm;
+}
+const START_WM=getStartWatermarks();
+
+function getInitialBoard(){
+ const b=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+ b[0][1]={type:'tile',color:'brown',val:4};b[0][2]={type:'tile',color:'brown',val:3};
+ b[0][4]={type:'tile',color:'brown',val:3};b[0][5]={type:'tile',color:'brown',val:4};
+ b[1][2]={type:'tile',color:'brown',val:2};b[1][3]={type:'tile',color:'brown',val:3};b[1][4]={type:'tile',color:'brown',val:2};
+ b[7][2]={type:'tile',color:'white',val:2};b[7][3]={type:'tile',color:'white',val:3};b[7][4]={type:'tile',color:'white',val:2};
+ b[8][1]={type:'tile',color:'white',val:4};b[8][2]={type:'tile',color:'white',val:3};
+ b[8][4]={type:'tile',color:'white',val:3};b[8][5]={type:'tile',color:'white',val:4};
+ [[3,1],[3,5],[4,0],[4,2],[4,4],[4,6],[5,1],[5,5]].forEach(([r,c])=>b[r][c]={type:'barra',sym:'X',orient:0});
+ return b;
+}
+
+let state={
+ board:null,turn:'white',pool:24,log:[],history:[],selected:null,targets:[],
+ placingBarra:null,placeMode:'rotate',placeQueue:[],
+ gameOver:false,winner:null,draw:false,overReason:null,showCoords:false,
+ replayMode:false,replayIndex:0,replayPlaying:false,replayTimer:null,
+ lastClickTime:0,lastClickTarget:null,forcedCapture:null,lastPlaced:null,pcFaceTimer:null
+};
+
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+function inBounds(r,c){return r>=0&&r<ROWS&&c>=0&&c<COLS;}
+function other(color){return color==='white'?'brown':'white';}
+function coord(r,c){return String.fromCharCode(97+c)+(ROWS-r);}
+const TOAST_MAX_PX=14; // horní mez velikosti písma toastu (mobil)
+function fitToast(el){
+ // Zvolí největší písmo (max TOAST_MAX_PX), při kterém se hláška ještě vejde na 1 řádek.
+ // Nevejde-li se ani při základní velikosti, zalomí se na více řádků (místo oříznutí).
+ const base=Math.max(11,Math.min(14,window.innerWidth<=480?14:window.innerWidth*0.032));
+ el.classList.remove('wrap');
+ let size=TOAST_MAX_PX;el.style.fontSize=size+'px';
+ while(size>base&&el.scrollWidth>el.clientWidth+1){size--;el.style.fontSize=size+'px';}
+ if(el.scrollWidth>el.clientWidth+1){el.style.fontSize=base+'px';el.classList.add('wrap');}
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;fitToast(el);el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),1800);}
+function t(k){return I18N[lang][k]||k;}
+function fmtT(k,vals){let s=t(k);for(const key in vals)s=s.split('{'+key+'}').join(vals[key]);return s;}
+function colorName(color){return color==='white'?t('colorWhite'):t('colorBrown');}
+
+function updatePlacerUI(opts){
+ const el=document.getElementById('barra-placer'),preview=document.getElementById('barra-preview');
+ const hint=document.getElementById('barra-hint'),label=document.getElementById('barra-orient-label');
+ if(!state.placingBarra){el.classList.remove('active');return;}
+ el.classList.add('active');
+ const rot=(state.placingBarra.orient||0)*90;
+ const faceHtml=`<div class="barra-face" style="transform:rotate(${rot}deg)">${SVGS[state.placingBarra.sym]||SVGS.X}</div>`;
+ const doFlip = opts && opts.flip;
+ if(doFlip){
+  preview.classList.remove('flip');
+  // force reflow so animation can restart
+  void preview.offsetWidth;
+  preview.classList.add('flip');
+  // swap face at mid-flip
+  clearTimeout(updatePlacerUI._flipT);
+  updatePlacerUI._flipT=setTimeout(()=>{
+   if(!state.placingBarra)return;
+   const r=(state.placingBarra.orient||0)*90;
+   preview.innerHTML=`<div class="barra-face" style="transform:rotate(${r}deg)">${SVGS[state.placingBarra.sym]||SVGS.X}</div>`;
+  }, 150);
+  setTimeout(()=>preview.classList.remove('flip'), 400);
+ }else if(!preview.classList.contains('flip')){
+  preview.innerHTML=faceHtml;
+ }
+ preview.classList.toggle('ready',state.placeMode==='place');
+ const touch=isTouchDevice();
+ hint.textContent=state.placeMode==='place'?t(touch?'placeHintReadyTouch':'placeHintReadyPC'):t(touch?'placeHintTouch':'placeHintPC');
+ const faceName=(FACE_NAMES[lang]||FACE_NAMES.cs)[state.placingBarra.sym]||state.placingBarra.sym;
+ label.textContent=DIRECTIONAL.has(state.placingBarra.sym)?`${t('face')}: ${faceName} · ${t('orient')}: ${ORIENT_DEG[state.placingBarra.orient||0]}°`:`${t('face')}: ${faceName}`;
+}
+
+function renderBoard(){
+ const boardEl=document.getElementById('board');boardEl.innerHTML='';
+ const wrap=document.getElementById('board-wrap');
+ if(wrap){
+  wrap.classList.toggle('replay-on', !!state.replayMode);
+  boardEl.classList.toggle('board-blocked', !!state.replayMode);
+ }
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const sq=document.createElement('div');
+  sq.className='sq '+((r+c)%2===0?'light':'dark');sq.dataset.r=r;sq.dataset.c=c;
+  const cell=state.board[r][c];
+  if(START_WM[r][c]){const wm=document.createElement('div');wm.className='watermark';wm.innerHTML=WM_SVG[START_WM[r][c]]||'';sq.appendChild(wm);}
+
+  if(cell){
+   const p=document.createElement('div');
+   p.className='piece '+(cell.type==='tile'?'tile-'+cell.color:'barra');
+   if(state.lastPlaced&&state.lastPlaced.r===r&&state.lastPlaced.c===c)p.classList.add('last-placed');
+   if(cell.type==='tile'){p.style.color=cell.color==='white'?'#222':'#f5e6d3';p.innerHTML=SVGS['T'+cell.val]||'';}
+   else{const rot=(cell.orient||0)*90;p.innerHTML=`<div style="transform:rotate(${rot}deg);width:100%;height:100%;display:flex;align-items:center;justify-content:center">${SVGS[cell.sym]||SVGS.X}</div>`;}
+   sq.appendChild(p);
+  }
+  // Coords last in DOM → sit on top of piece as watermark; empty = dark gray
+  if(state.showCoords){
+   const cd=document.createElement('span');
+   const kind=!cell?'on-empty':(cell.type==='barra'?'on-barra':'on-piece'+(cell.color==='white'?' on-white':''));
+   cd.className='coord '+kind;
+   cd.textContent=coord(r,c);
+   sq.appendChild(cd);
+  }
+  if(state.selected&&state.selected.r===r&&state.selected.c===c)sq.classList.add('selected');
+  const tgs=state.targets.filter(x=>x.r===r&&x.c===c);
+  if(tgs.length){
+   // Nápověda mění pouze kolečko, nikoli pozadí ani obvod pole.
+   const hasShort=tgs.some(x=>x.moveType==='short');
+   const hasFull=tgs.some(x=>x.moveType==='full');
+   const hints=document.createElement('div');
+   hints.className='move-hints';
+   if(hasShort && hasFull){
+    // Jedno kolečko: plný tah = zelená výplň + modrý obvod.
+    const dot=document.createElement('span');
+    dot.className='move-hint both';
+    dot.dataset.moveType='full';
+    dot.title=`${t('shortMove')} / ${t('fullMove')}`;
+    hints.appendChild(dot);
+   }else if(hasShort || hasFull){
+    const type=hasShort?'short':'full';
+    const dot=document.createElement('span');
+    dot.className=`move-hint ${type}`;
+    dot.dataset.moveType=type;
+    dot.title=type==='short'?t('shortMove'):t('fullMove');
+    hints.appendChild(dot);
+   }
+   sq.appendChild(hints);
+  }
+  if(state.placingBarra&&state.placeMode==='place'&&!cell){
+   const dot=document.createElement('span');
+   dot.className='place-hint-dot';
+   dot.title=t('placeYou');
+   sq.appendChild(dot);
+  }
+  sq.addEventListener('click',(e)=>onSquareClick(r,c,e));
+  boardEl.appendChild(sq);
+ }
+ let w=0,br=0;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const x=state.board[r][c];if(x?.type==='tile')x.color==='white'?w++:br++;}
+ document.getElementById('pool-count').textContent=state.pool;
+ document.getElementById('white-count').textContent=w;
+ document.getElementById('brown-count').textContent=br;
+ // Turn indicator: clear then set (prevents stuck highlight after replay)
+ const stW=document.getElementById('st-white'), stB=document.getElementById('st-brown');
+ stW.classList.remove('active-turn'); stB.classList.remove('active-turn');
+ if(state.gameOver){
+  (state.winner==='white'?stW:stB).classList.add('active-turn');
+ }else if(!state.placingBarra){
+  (state.turn==='white'?stW:stB).classList.add('active-turn');
+ }
+ updateOverBanner();
+ updatePlacerUI();updateLog();updatePlayerUI();
+}
+
+function updateOverBanner(){
+ const el=document.getElementById('over-banner');
+ if(!state.gameOver){el.classList.remove('show');clearTimeout(updateOverBanner._t);return;}
+ const titleEl=document.getElementById('over-title'),reasonEl=document.getElementById('over-reason');
+ if(state.draw){
+  titleEl.textContent=t('draw');
+  reasonEl.textContent=t('resultDraw');
+ }else{
+  titleEl.textContent=state.winner==='white'?t('whiteWins'):t('brownWins');
+  const loser=other(state.winner);
+  const reasonKey=state.overReason==='notiles'?'resultNoTiles':'resultNoMoves';
+  reasonEl.textContent=fmtT(reasonKey,{c:colorName(loser)});
+ }
+ el.classList.add('show');
+ // Show trophy overlay 3 seconds then hide (log keeps the result)
+ clearTimeout(updateOverBanner._t);
+ updateOverBanner._t=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function logTileSVG(val){return SVGS['T'+val]||'';}
+function logBarraSVG(){return SVGS.X||'';}
+function logPlacement(color,r,c,sym,orient){
+ state.log.push(`PLACE|${color[0].toUpperCase()}|${sym}|${orient||0}|${coord(r,c)}`);
+}
+function logGameOver(winner,reason){
+ state.log.push(`OVER|${winner||''}|${reason||''}|${winner?other(winner):''}`);
+}
+function renderLogEntry(raw,number){
+ const s=String(raw||'');
+ const no=`<span class="log-no">${String(number).padStart(2,'0')}.</span>`;
+
+ if(s.startsWith('PLACE|')){
+  const [,cch,sym,orientStr,cd]=s.split('|');
+  const color=cch==='W'?'white':'brown';
+  const orient=parseInt(orientStr,10)||0;
+  const face=(FACE_NAMES[lang]||FACE_NAMES.cs)[sym]||sym;
+  const rotDeg=orient*90;
+  // Color stone without pictogram, arrow, Barragoon with selected face, (degrees)
+  const colorChip=`<span class="log-piece ${color}" title="${color}"></span>`;
+  const barraChip=`<span class="log-piece barra" title="${face}"><div style="transform:rotate(${rotDeg}deg);width:100%;height:100%;display:flex;align-items:center;justify-content:center">${SVGS[sym]||SVGS.X}</div></span>`;
+  const deg=`<span class="log-arrow">(${ORIENT_DEG[orient]}°)</span>`;
+  return `<div class="log-entry log-place">${no}${colorChip}<span class="log-arrow"> → </span>${barraChip}<span class="log-arrow"> </span>${deg}</div>`;
+ }
+ if(s.startsWith('OVER|')){
+  const [,winner,reason,loser]=s.split('|');
+  if(reason==='draw'){
+   return `<div class="log-entry log-over">${no}<span class="log-piece trophy">🏆</span><span class="log-arrow"> ${t('resultDraw')}</span></div>`;
+  }
+  const wColor=winner==='white'?'white':'brown';
+  const lColor=loser==='white'?'white':'brown';
+  const note=reason==='notiles'
+    ?(lang==='cs'?' nemá kámen':(lang==='en'?' has no tiles':''))
+    :(lang==='cs'?' nemá tah':(lang==='en'?' has no moves':''));
+  // Trophy sits on winner stone (replaces pictogram); then → loser stone + note
+  return `<div class="log-entry log-over">${no}<span class="log-piece ${wColor}" title="${wColor}" style="font-size:14px;line-height:1">🏆</span><span class="log-arrow"> → </span><span class="log-piece ${lColor}" title="${lColor}"></span><span class="log-arrow">${note}</span></div>`;
+ }
+
+ const m=s.match(/^([WB])(2|3|4)\s+([a-g]\d)→([a-g]\d)(\s+S)?(?:\s+x\s*([WB])(2|3|4))?(\s+x\s*B)?$/i);
+ if(!m)return `<div class="log-entry">${no}<span>${s}</span></div>`;
+ const color=m[1].toUpperCase()==='W'?'white':'brown';
+ const val=m[2];
+ const short=m[5]?` <span title="${t('shortMove')}">S</span>`:'';
+ let capture='';
+ if(m[6]){
+  const cc=m[6].toUpperCase()==='W'?'white':'brown';
+  capture=` <span class="log-arrow">x </span><span class="log-piece ${cc}" title="${cc==='white'?'W':'B'}${m[7]}">${logTileSVG(m[7])}</span>`;
+ }else if(m[8]){
+  capture=` <span class="log-arrow">x </span><span class="log-piece barra" title="Barragoon">${logBarraSVG()}</span>`;
+ }
+ return `<div class="log-entry">${no}<span class="log-piece ${color}" title="${m[1].toUpperCase()}${val}">${logTileSVG(val)}</span><span>${m[3]}→${m[4]}${short}${capture}</span></div>`;
+}
+function updateLog(){
+ const el=document.getElementById('log-content');
+ const rows=state.log.map((l,i)=>({l,i})).reverse();
+ el.innerHTML=rows.map(x=>renderLogEntry(x.l,x.i+1)).join('')||'<div style="opacity:.5">—</div>';
+ el.scrollTop=0;
+}
+function updatePlayerUI(){
+ document.getElementById('move-counter').textContent=`${state.replayIndex} / ${Math.max(0,state.history.length-1)}`;
+ document.getElementById('p-play').textContent=state.replayPlaying?'⏸':'▶️';
+}
+
+/* Returns the directions that may be used after entering a Barragoon.
+   d is the direction used to enter the Barragoon. */
+function barraExitDirs(barra,d){
+ const o=barra.orient||0;
+ if(barra.sym==='X')return [];
+ if(barra.sym==='ONE')return [o];
+ if(barra.sym==='TWO')return [o,OPPOSITE[o]];
+ if(barra.sym==='RIGHT')return [RIGHT_OF[d]===o?o:-1].filter(x=>x>=0);
+ if(barra.sym==='LEFT')return [LEFT_OF[d]===o?o:-1].filter(x=>x>=0);
+ if(barra.sym==='ALL')return [RIGHT_OF[d],LEFT_OF[d]];
+ return [];
+}
+function barraForcesTurn(barra){return ['RIGHT','LEFT','ALL'].includes(barra.sym);}
+function canCaptureBarra(piece,barra){
+ return !(piece.val===2&&barra.sym==='ALL');
+}
+
+/* Generate complete legal moves for both short and full moves.
+   The path search explicitly handles Barragoon-forced turns. */
+function getPossibleMoves(r,c,board,color){
+ const piece=board[r][c];
+ if(!piece||piece.type!=='tile'||piece.color!==color)return [];
+ const moves=[];
+ const lengths=[{n:piece.val,type:'full'},{n:piece.val-1,type:'short'}].filter(x=>x.n>0);
+
+ function addMove(n,moveType,tr,tc){
+  if(tr===r&&tc===c)return;
+  const target=board[tr][tc];
+  if(target){
+   if(moveType==='short')return;
+   if(target.type==='tile'&&target.color===color)return;
+   if(target.type==='barra'&&!canCaptureBarra(piece,target))return;
+  }
+  const capture=target?.type==='tile'?'tile':target?.type==='barra'?'barra':null;
+  moves.push({r:tr,c:tc,steps:n,moveType,capture,fromR:r,fromC:c});
+ }
+
+ /*
+  * Search the actual path, not just the destination.  A state contains the
+  * current square, number of travelled squares, current direction and
+  * whether the one allowed 90° turn has already been used.  When a Barragoon
+  * forces a turn, we immediately move through it in its permitted exit
+  * direction; that forced turn consumes the single turn.
+  */
+ function search(cr,cc,steps,lastDir,turned,n,moveType){
+  if(steps===n){addMove(n,moveType,cr,cc);return;}
+
+  let dirs=[0,1,2,3];
+  if(lastDir!==-1){
+   dirs=dirs.filter(d=>d!==OPPOSITE[lastDir]);
+   if(turned)dirs=dirs.filter(d=>d===lastDir);
+  }
+
+  for(const d of dirs){
+   const nr=cr+DIRS[d][0],nc=cc+DIRS[d][1];
+   if(!inBounds(nr,nc))continue;
+   const nextSteps=steps+1;
+   const mid=board[nr][nc];
+
+   if(mid?.type==='tile'){
+    // A tile can only be the final square; jumping over it is forbidden.
+    if(nextSteps===n)addMove(n,moveType,nr,nc);
+    continue;
+   }
+
+   if(mid?.type==='barra'){
+    if(nextSteps===n){
+     // Landing on a Barragoon is a legal full-move capture (subject to the
+     // ALL/2-space exception). A short move may not capture.
+     addMove(n,moveType,nr,nc);
+     continue;
+    }
+
+    const exits=barraExitDirs(mid,d);
+    if(!exits.length)continue;
+    const forced=barraForcesTurn(mid);
+    if(forced&&turned)continue;
+
+    for(const outDir of exits){
+     // A Barragoon may not send the tile back through the side it entered.
+     if(outDir===OPPOSITE[d])continue;
+     const changed=outDir!==d;
+     if(changed&&turned)continue;
+     const nextTurned=turned||changed||forced;
+     const er=nr+DIRS[outDir][0],ec=nc+DIRS[outDir][1];
+     if(!inBounds(er,ec))continue;
+     const exitCell=board[er][ec];
+     if(exitCell?.type==='tile')continue;
+     // The Barragoon itself consumes one movement square. The exit square is
+     // the next movement square and is processed normally by recursion.
+     search(nr,nc,nextSteps,outDir,nextTurned,n,moveType);
+    }
+    continue;
+   }
+
+   const changed=lastDir!==-1&&d!==lastDir;
+   if(changed&&turned)continue;
+   search(nr,nc,nextSteps,d,turned||changed,n,moveType);
+  }
+ }
+
+ for(const len of lengths)search(r,c,0,-1,false,len.n,len.type);
+
+ const uniq=new Map();
+ for(const m of moves){
+  // Keep short/full (and capture/non-capture) alternatives separate.
+  const k=`${m.r},${m.c},${m.moveType},${m.capture||''}`;
+  if(!uniq.has(k))uniq.set(k,m);
+ }
+ return Array.from(uniq.values());
+}
+
+function hasAnyMove(color,board){
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)
+  if(board[r][c]?.type==='tile'&&board[r][c].color===color&&getPossibleMoves(r,c,board,color).length)return true;
+ return false;
+}
+function hasAnyCapture(color,board){
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  if(board[r][c]?.type!=='tile'||board[r][c].color!==color)continue;
+  if(getPossibleMoves(r,c,board,color).some(m=>m.capture))return true;
+ }
+ return false;
+}
+
+/* A tile/opponent/Barragoon touched first becomes the mandatory capture target
+   when such a capture is possible, implementing the rule in click interaction. */
+function findCapturesOfTarget(color,tr,tc){
+ const out=[];
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const p=state.board[r][c];
+  if(p?.type==='tile'&&p.color===color)
+   getPossibleMoves(r,c,state.board,color).forEach(m=>{if(m.capture&&m.r===tr&&m.c===tc)out.push({...m,fromR:r,fromC:c});});
+ }
+ return out;
+}
+
+function beginCapturePlacement(capturerColor,capturedBarra=null){
+ if(capturedBarra){
+  state.placeQueue=[{who:capturerColor,barra:capturedBarra,reuse:true}];
+  advancePlacement();
+  return;
+ }
+ // A tile capture creates two new Barragoons: one for opponent, one for capturer.
+ if(state.pool>=2){
+  state.pool-=2;
+  state.placeQueue=[{who:other(capturerColor),reuse:false},{who:capturerColor,reuse:false}];
+  advancePlacement();
+ }else{
+  // No reserve pieces remain; according to the physical rules there is nothing to place.
+  state.placeQueue=[];
+  finishPlacementAndTurn();
+ }
+}
+
+function advancePlacement(){
+ if(!state.placeQueue.length){finishPlacementAndTurn();return;}
+ const next=state.placeQueue[0];
+ if(next.who==='brown'){
+  if(next.reuse){placeAIBarra(next.barra);}
+  else placeAIBarra();
+  if(state.lastPlaced){
+   const p=state.board[state.lastPlaced.r][state.lastPlaced.c];
+   if(p&&p.type==='barra')logPlacement('brown',state.lastPlaced.r,state.lastPlaced.c,p.sym,p.orient);
+  }
+  pushHistory();
+  state.placeQueue.shift();
+  renderBoard();
+  setTimeout(advancePlacement,80);
+ }else{
+  state.placingBarra=next.reuse?deepClone(next.barra):{sym:'X',orient:0};
+  state.placeMode='rotate';
+  toast(t('placeYou'));
+  renderBoard();
+ }
+}
+function finishPlacementAndTurn(){
+ state.placingBarra=null;state.placeMode='rotate';state.placeQueue=[];state.forcedCapture=null;
+ pushHistory();endTurn();
+}
+
+function confirmFaceAndShowTargets(){
+ if(!state.placingBarra)return;
+ state.placeMode='place';renderBoard();
+}
+function cycleFaceOrOrient(){
+ if(!state.placingBarra)return;
+ if(state.placeMode==='place'){
+  if(DIRECTIONAL.has(state.placingBarra.sym))state.placingBarra.orient=((state.placingBarra.orient||0)+1)%4;
+  else state.placeMode='rotate';
+ }else{
+  const idx=CUBE_FACES.indexOf(state.placingBarra.sym);
+  state.placingBarra.sym=CUBE_FACES[(idx+1)%CUBE_FACES.length];
+  state.placingBarra.orient=0;
+ }
+ updatePlacerUI({flip:true});
+ renderBoard();
+}
+function isTouchDevice(){return ('ontouchstart'in window)||(navigator.maxTouchPoints>0);}
+function onBarraPreviewClick(e){
+ if(!state.placingBarra)return;
+ e.preventDefault();e.stopPropagation();
+ if(isTouchDevice()){
+  if(longPressFired){longPressFired=false;return;}
+  cycleFaceOrOrient();return;
+ }
+ // PC: one click selects the next face. Double-click confirms the currently
+ // selected face without allowing the second click to advance it again.
+ if(state.pcFaceTimer){clearTimeout(state.pcFaceTimer);state.pcFaceTimer=null;return;}
+ state.pcFaceTimer=setTimeout(()=>{
+  state.pcFaceTimer=null;
+  if(state.placingBarra)cycleFaceOrOrient();
+ },220);
+}
+function onBarraPreviewDoubleClick(e){
+ if(!state.placingBarra||isTouchDevice())return;
+ e.preventDefault();e.stopPropagation();
+ if(state.pcFaceTimer){clearTimeout(state.pcFaceTimer);state.pcFaceTimer=null;}
+ confirmFaceAndShowTargets();
+}
+function onBarraTouchStart(){
+ if(!state.placingBarra)return;
+ longPressFired=false;
+ longPressTimer=setTimeout(()=>{longPressTimer=null;longPressFired=true;confirmFaceAndShowTargets();if(navigator.vibrate)navigator.vibrate(30);},480);
+}
+function onBarraTouchEnd(){if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}}
+function onBarraTouchMove(){if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}}
+
+function onSquareClick(r,c,e=null){
+ if(state.gameOver||state.replayMode)return;
+
+ if(state.placingBarra){
+  if(state.placeMode!=='place'||state.board[r][c]!==null)return;
+  const placed=state.placingBarra;
+  state.board[r][c]={type:'barra',sym:placed.sym,orient:placed.orient||0};
+  state.lastPlaced={r,c};
+  logPlacement('white',r,c,placed.sym,placed.orient||0);
+  pushHistory();
+  state.placingBarra=null;state.placeMode='rotate';state.placeQueue.shift();
+  advancePlacement();return;
+ }
+ if(state.turn!=='white')return;
+
+ const cell=state.board[r][c];
+
+ // If an opponent tile/Barragoon is touched first, force a capture if one exists.
+ if(!state.selected&&cell&&(cell.type==='barra'||(cell.type==='tile'&&cell.color!=='white'))){
+  const caps=findCapturesOfTarget('white',r,c);
+  if(caps.length){
+   const first=caps[0];
+   state.selected={r:first.fromR,c:first.fromC};
+   state.targets=getPossibleMoves(first.fromR,first.fromC,state.board,'white').filter(m=>m.capture&&m.r===r&&m.c===c);
+   renderBoard();return;
+  }
+ }
+ if(state.selected){
+  const candidates=state.targets.filter(t=>t.r===r&&t.c===c);
+  if(candidates.length){
+   const requestedType=e?.target?.closest?.('.move-hint')?.dataset?.moveType;
+   const tgt=(requestedType&&candidates.find(t=>t.moveType===requestedType))
+      ||candidates.find(t=>t.capture)
+      ||candidates.find(t=>t.moveType==='full')
+      ||candidates[0];
+   doMove(state.selected.r,state.selected.c,r,c,tgt);return;
+  }
+  // Click same own tile again → deselect
+  if(cell?.type==='tile'&&cell.color==='white'&&state.selected.r===r&&state.selected.c===c){
+   state.selected=null;state.targets=[];renderBoard();return;
+  }
+  // Different own tile → switch selection
+  if(cell?.type==='tile'&&cell.color==='white'){
+   state.selected={r,c};state.targets=getPossibleMoves(r,c,state.board,'white');renderBoard();return;
+  }
+  state.selected=null;state.targets=[];renderBoard();return;
+ }
+ if(cell?.type==='tile'&&cell.color==='white'){
+  state.selected={r,c};state.targets=getPossibleMoves(r,c,state.board,'white');
+  renderBoard();
+ }
+}
+
+function doMove(fr,fc,tr,tc,info){
+ const piece=state.board[fr][fc],target=state.board[tr][tc];
+ if(!piece||piece.type!=='tile')return;
+ // Revalidate against the current board.
+ const legal=getPossibleMoves(fr,fc,state.board,piece.color).find(m=>m.r===tr&&m.c===tc&&m.moveType===info.moveType&&m.capture===info.capture);
+ if(!legal)return;
+ let logMsg=`${piece.color==='white'?'W':'B'}${piece.val} ${coord(fr,fc)}→${coord(tr,tc)}${info.moveType==='short'?' S':''}`;
+ state.board[fr][fc]=null;state.board[tr][tc]=piece;
+ state.lastPlaced={r:tr,c:tc};
+ state.selected=null;state.targets=[];state.forcedCapture=null;
+
+ if(info.capture==='tile'){
+  logMsg+=` x ${target.color[0].toUpperCase()}${target.val}`;
+  state.log.push(logMsg);
+  pushHistory(); // separate step: capture move
+  beginCapturePlacement(piece.color,null);return;
+ }
+ if(info.capture==='barra'){
+  logMsg+=' x B';
+  state.log.push(logMsg);
+  pushHistory(); // separate step: capture move
+  beginCapturePlacement(piece.color,deepClone(target));return;
+ }
+ state.log.push(logMsg);endTurn();
+}
+
+/* ===================== AI ENGINE =====================
+   Negamax + α-β + iterative deepening
+   E = w1·ΔS + w2·ΔM + w3·Bc + w4·Bp
+   Priority: keep own mobility, squeeze opponent, avoid edge traps
+====================================================== */
+function countTiles(board,color){
+ let n=0;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]?.type==='tile'&&board[r][c].color===color)n++;
+ return n;
+}
+function genMoves(board,side){
+ const moves=[];
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(x?.type==='tile'&&x.color===side) getPossibleMoves(r,c,board,side).forEach(m=>moves.push(m));
+ }
+ return moves;
+}
+function applyMove(board,m){
+ const nb=deepClone(board);
+ const piece=deepClone(nb[m.fromR][m.fromC]);
+ nb[m.fromR][m.fromC]=null;
+ nb[m.r][m.c]=piece;
+ return nb;
+}
+/** True if `byColor` can capture whatever stands on (tr,tc) with a full-move capture. */
+function canCaptureAt(board, tr, tc, byColor){
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(x?.type!=='tile'||x.color!==byColor) continue;
+  const moves=getPossibleMoves(r,c,board,byColor);
+  if(moves.some(m=>m.r===tr&&m.c===tc&&m.capture)) return true;
+ }
+ return false;
+}
+/** Count own tiles that white can capture next. */
+function countHanging(board, color){
+ const opp=other(color);
+ let n=0;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(x?.type==='tile'&&x.color===color&&canCaptureAt(board,r,c,opp)) n+=x.val;
+ }
+ return n;
+}
+
+// Fast single-pass evaluation from `color` perspective
+function evaluate(board, color){
+ const opp=other(color);
+ let myT=0,oppT=0,myM=0,oppM=0,myThreat=0,oppThreat=0,myPos=0,oppPos=0,myEdge=0,oppEdge=0;
+ // Precompute moves once per piece
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(x?.type!=='tile') continue;
+  const moves=getPossibleMoves(r,c,board,x.color);
+  const edgePenalty = (c===0||c===COLS-1) ? 1 : 0;
+  if(x.color===color){
+   myT++; myM+=moves.length; myEdge+=edgePenalty;
+   // Brown advances to high r; white to low r
+   myPos += (color==='brown' ? r : (ROWS-1-r)) * 2;
+   myPos += (3.5-Math.abs(c-3))*1.5; // prefer center files
+   for(const m of moves){ if(m.capture==='tile') myThreat+=12; else if(m.capture==='barra') myThreat+=4; }
+  }else{
+   oppT++; oppM+=moves.length; oppEdge+=edgePenalty;
+   oppPos += (opp==='brown' ? r : (ROWS-1-r)) * 2;
+   oppPos += (3.5-Math.abs(c-3))*1.5;
+   for(const m of moves){ if(m.capture==='tile') oppThreat+=12; else if(m.capture==='barra') oppThreat+=4; }
+  }
+ }
+ // Barragoon control Bc — walls near opponent in their depth
+ let Bc=0;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c]; if(x?.type!=='barra') continue;
+  const inOppDepth = (opp==='white' && r>=5) || (opp==='brown' && r<=3);
+  for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+   const nr=r+dr,nc=c+dc; if(!inBounds(nr,nc)) continue;
+   const n=board[nr][nc];
+   if(n?.type==='tile'&&n.color===opp){ Bc += x.sym==='X' ? 4 : 1; }
+   if(n?.type==='tile'&&n.color===color){ Bc -= x.sym==='X' ? 3 : 0.5; }
+  }
+  if(inOppDepth && x.sym==='X') Bc += 2;
+ }
+
+ // Hanging pieces (can be captured next) — critical
+ const myHang=countHanging(board,color);
+ const oppHang=countHanging(board,opp);
+ // Human wins by walling + immobilizing. Mobility difference is decisive.
+ // Material matters, but a mobile 2-tile side beats a stuck 4-tile side.
+ // Offense: advance into white, threaten captures, then wall. Defense alone loses (see logs).
+ let E = 110*(myT-oppT) + 24*(myM-oppM) + 12*Bc + 28*(myThreat-oppThreat) + 5*(myPos-oppPos) - 4*myEdge + 2*oppEdge;
+ E -= myHang * 60;
+ E += oppHang * 50;
+
+ if(oppT===0) return 1e6;
+ if(myT===0) return -1e6;
+ if(oppM===0 && oppT>0) E += 8e4;
+ if(myM===0 && myT>0) E -= 8e4;
+ if(myM<=3 && myT>0) E -= 90*(4-myM);
+ if(oppM<=3 && oppT>0) E += 100*(4-oppM);
+ if(myM>oppM) E += 12;
+ return E;
+}
+
+function orderMoves(moves, side, board){
+ return moves.slice().sort((a,b)=>{
+  const score=m=>{
+   let s=0;
+   if(m.capture==='tile') s+=220;
+   else if(m.capture==='barra') s+=70;
+   else s+=15;
+   s += (3.5-Math.abs(m.c-3))*3;
+   // Strong forward bias — logs show AI retreating into a cage
+   const fwd = side==='brown' ? (m.r-m.fromR) : (m.fromR-m.r);
+   s += fwd*8;
+   if(fwd<0) s -= 25; // retreat penalty
+   if(!m.capture && (m.c===0||m.c===COLS-1)) s-=20;
+   if(m.moveType==='full') s+=4;
+   if(board && m.capture!=='tile'){
+    const after=applyMove(board,m);
+    if(canCaptureAt(after,m.r,m.c,other(side))) s -= 500;
+   }
+   return s;
+  };
+  return score(b)-score(a);
+ });
+}
+
+const AI_TT=new Map();
+let AI_nodes=0, AI_deadline=0;
+
+function negamax(board, depth, alpha, beta, side){
+ if(Date.now()>AI_deadline) return {score:0, move:null, timeout:true};
+ AI_nodes++;
+ const moves=orderMoves(genMoves(board,side), side, board);
+ if(!moves.length){
+  // no moves for side → loss for side; score from brown root perspective handled by sign flips
+  return {score: side==='brown' ? -4e5 : 4e5, move:null};
+ }
+ if(depth===0){
+  const stand = evaluate(board,'brown') * (side==='brown' ? 1 : -1);
+  return {score: stand, move:null};
+ }
+ // TT
+ const key=side+'|'+depth+'|'+JSON.stringify(board).length; // cheap; full hash below
+ // Use simple position key
+ let h=side==='brown'?1:2;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const x=board[r][c];
+  if(!x) h=h*17+1;
+  else if(x.type==='tile') h=h*17+(x.color==='w'?3:5)+x.val+(r<<3)+c;
+  else h=h*17+7+(x.orient||0)+(r<<3)+c;
+ }
+ const ttKey=h+'@'+depth+'@'+side;
+ const hit=AI_TT.get(ttKey);
+ if(hit) return {score:hit.s, move:hit.m};
+
+ const limit = depth>=3 ? 12 : depth===2 ? 16 : 22;
+ let bestScore=-Infinity, bestMove=null;
+ for(const m of moves.slice(0,limit)){
+  if(Date.now()>AI_deadline) return {score:bestScore, move:bestMove, timeout:true};
+  // Barragoon captures are strategic (wall building) — keep them
+  const child=negamax(applyMove(board,m), depth-1, -beta, -alpha, other(side));
+  if(child.timeout) return {score:bestScore, move:bestMove, timeout:true};
+  const sc=-child.score;
+  if(sc>bestScore){bestScore=sc; bestMove=m;}
+  if(sc>alpha) alpha=sc;
+  if(alpha>=beta) break;
+ }
+ AI_TT.set(ttKey,{s:bestScore,m:bestMove});
+ if(AI_TT.size>6000) AI_TT.clear();
+ return {score:bestScore, move:bestMove};
+}
+
+function iterativeDeepening(board, maxDepth, timeMs){
+ AI_deadline=Date.now()+timeMs;
+ AI_TT.clear(); AI_nodes=0;
+ let best={score:0, move:null};
+ // Opening: prefer developing from back rank toward center
+ for(let d=1; d<=maxDepth; d++){
+  const res=negamax(board, d, -Infinity, Infinity, 'brown');
+  if(res.move) best=res;
+  if(res.timeout) break;
+ }
+ // Fallback: best ordered legal move
+ if(!best.move){
+  const all=orderMoves(genMoves(board,'brown'),'brown',board);
+  best={score:0, move:all[0]||null};
+ }
+ return best;
+}
+
+function placeAIBarra(reuse=null){
+ // Mirror human wall strategy: maximize cut to WHITE mobility, protect own paths
+ const empties=[];
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++) if(!state.board[r][c]) empties.push([r,c]);
+ if(!empties.length) return;
+
+ function mob(board,color){
+  let m=0;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+   const x=board[r][c];
+   if(x?.type==='tile'&&x.color===color) m+=getPossibleMoves(r,c,board,color).length;
+  }
+  return m;
+ }
+ const baseW=mob(state.board,'white'), baseB=mob(state.board,'brown');
+ const symbols=reuse?[reuse]:[
+  {sym:'X',orient:0},
+  {sym:'ONE',orient:0},{sym:'ONE',orient:1},{sym:'ONE',orient:2},{sym:'ONE',orient:3},
+  {sym:'TWO',orient:0},{sym:'TWO',orient:1}
+ ];
+
+ // Prefer squares near white pieces and in white half (r>=5); avoid own cluster
+ const ranked=empties.map(([r,c])=>{
+  let pr = (r>=5 ? r*5 : -r*3);
+  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
+   const x=state.board[rr][cc];
+   if(!x||x.type!=='tile') continue;
+   const d=Math.abs(rr-r)+Math.abs(cc-c);
+   if(x.color==='white') pr += Math.max(0, 7-d)*4;
+   else pr -= Math.max(0, 5-d)*5;
+  }
+  return {r,c,pr};
+ }).sort((a,b)=>b.pr-a.pr);
+
+ const candidates=ranked.slice(0, Math.min(18, ranked.length));
+ let best=null, bestScore=-Infinity;
+ for(const {r,c} of candidates){
+  for(const s of symbols){
+   const b=deepClone(state.board);
+   b[r][c]={type:'barra',sym:s.sym,orient:s.orient||0};
+   const w=mob(b,'white'), br=mob(b,'brown');
+   // Steal as many white moves as possible; never tank own mobility
+   let score = (baseW-w)*28 + (br-baseB)*18;
+   if(w===0 && baseW>0) score += 80; // complete freeze of white is huge
+   if(br===0 && baseB>0) score -= 100;
+   if(r>=5) score += 10;
+   if(s.sym==='X' && w<baseW) score += 8;
+   for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+    const nr=r+dr,nc=c+dc;
+    if(inBounds(nr,nc) && state.board[nr][nc]?.type==='tile' && state.board[nr][nc].color==='brown') score -= 20;
+    if(inBounds(nr,nc) && state.board[nr][nc]?.type==='tile' && state.board[nr][nc].color==='white') score += 8;
+   }
+   if(score>bestScore){ bestScore=score; best=[r,c,s]; }
+  }
+ }
+ const [r,c,s]=best || [candidates[0].r, candidates[0].c, {sym:'X',orient:0}];
+ state.board[r][c]={type:'barra',sym:s.sym,orient:s.orient||0};
+ state.lastPlaced={r,c};
+}
+
+function endTurn(){
+ state.turn=other(state.turn);
+ const side=state.turn;
+ let tilesLeft=0;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(state.board[r][c]?.type==='tile'&&state.board[r][c].color===side)tilesLeft++;
+ if(tilesLeft===0||!hasAnyMove(side,state.board)){
+  const reason=tilesLeft===0?'notiles':'nomoves';
+  state.gameOver=true;state.winner=other(side);state.draw=false;state.overReason=reason;
+  logGameOver(state.winner,reason);
+  pushHistory(); renderBoard(); return;
+ }
+ // Snapshot AFTER turn switch so replay/deactivate restore correct side-to-move
+ pushHistory();
+ renderBoard();
+ if(state.turn==='brown'&&!state.gameOver&&!state.replayMode) setTimeout(aiMove,180);
+}
+
+function pushHistory(){
+ const snap={board:deepClone(state.board),turn:state.turn,pool:state.pool,log:state.log.slice(),gameOver:state.gameOver,winner:state.winner,draw:state.draw,overReason:state.overReason,lastPlaced:state.lastPlaced?{...state.lastPlaced}:null};
+ const last=state.history[state.history.length-1];
+ const key=JSON.stringify({board:snap.board,turn:snap.turn,pool:snap.pool});
+ if(!last||JSON.stringify({board:last.board,turn:last.turn,pool:last.pool})!==key) state.history.push(snap);
+}
+
+function aiMove(){
+ if(state.gameOver||state.turn!=='brown') return;
+ document.getElementById('ai-thinking').style.display='inline';
+ setTimeout(()=>{
+  const all=genMoves(state.board,'brown');
+  if(!all.length){
+   document.getElementById('ai-thinking').style.display='none';
+   state.gameOver=true; state.winner='white'; state.draw=false; state.overReason='nomoves';
+   logGameOver('white','nomoves'); pushHistory(); renderBoard(); return;
+  }
+
+  // Score every legal move with explicit priorities matching strong human play:
+  // 1) capture white tile
+  // 2) quiet move that improves mobility / center / threats
+  // 3) capture barra only if it doesn't dump us into a dead zone
+  function scoreMove(m){
+   const after=applyMove(state.board,m);
+   let sc = evaluate(after,'brown');
+   const myM = genMoves(after,'brown').length;
+   const oppM = genMoves(after,'white').length;
+   const baseMy = genMoves(state.board,'brown').length;
+   const baseOpp = genMoves(state.board,'white').length;
+
+   // Never hang a piece for free
+   const hangs = canCaptureAt(after, m.r, m.c, 'white');
+   if(hangs){
+     if(m.capture==='tile') sc -= 25;
+     else sc -= 300;
+   }
+   sc -= countHanging(after,'brown') * 55;
+   sc += countHanging(after,'white') * 45;
+
+   // OFFENSE first (logs: AI stayed defensive and lost)
+   if(m.capture==='tile') sc += 280;
+   else if(m.capture==='barra'){
+     // Farm Barragoons like the human — place walls afterward
+     sc += (!hangs && myM>=2) ? 90 : -80;
+   } else {
+     sc += 5;
+   }
+
+   // Threaten white tiles after the move
+   let threats=0;
+   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=after[r][c];
+    if(x?.type==='tile'&&x.color==='brown'){
+     threats += getPossibleMoves(r,c,after,'brown').filter(mv=>mv.capture==='tile').length;
+    }
+   }
+   sc += threats * 22;
+
+   // Advance into white half; punish retreat toward home (low r)
+   const fwd = m.r - m.fromR;
+   sc += fwd * 12;
+   if(fwd < 0) sc -= 35;
+   if(m.r >= 5) sc += 10; // in white territory
+
+   // Proximity to nearest white tile (pressure)
+   let minD=99;
+   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=state.board[r][c];
+    if(x?.type==='tile'&&x.color==='white') minD=Math.min(minD, Math.abs(r-m.r)+Math.abs(c-m.c));
+   }
+   if(minD<99) sc += Math.max(0, 6-minD) * 5;
+
+   sc += (myM - baseMy) * 14;
+   sc += (baseOpp - oppM) * 16;
+   if(myM===0) sc -= 600;
+   if(myM===1) sc -= 100;
+   sc += (3.5 - Math.abs(m.c - 3)) * 4;
+   if(!m.capture && (m.c===0 || m.c===COLS-1)) sc -= 28;
+   if(m.moveType==='full') sc += 4;
+   return sc;
+  }
+
+  // HARD FILTER: drop moves that hang the moved piece for free (not a tile exchange)
+  function isSafe(m){
+   if(m.capture==='tile') return true;
+   const after=applyMove(state.board,m);
+   return !canCaptureAt(after, m.r, m.c, 'white');
+  }
+  const safePool = all.filter(isSafe);
+  const pool = safePool.length ? safePool : all; // only hang if literally no safe move
+
+  // Rank pool by heuristic
+  let bestH=null, bestHS=-Infinity;
+  for(const cand of pool){
+   const s=scoreMove(cand);
+   if(s>bestHS){ bestHS=s; bestH=cand; }
+  }
+
+  // Search only among safe moves: temporarily restrict via ordering (hanging already -500)
+  const total = countTiles(state.board,'brown') + countTiles(state.board,'white');
+  const timeMs = total<=6 ? 1600 : 1000;
+  const maxDepth = total<=5 ? 4 : 3;
+  let res = iterativeDeepening(state.board, maxDepth, timeMs);
+  let m = res.move;
+
+  // Force safe move
+  if(m && !isSafe(m) && safePool.length) m = bestH;
+  if(m && !pool.some(x=>x.fromR===m.fromR&&x.fromC===m.fromC&&x.r===m.r&&x.c===m.c&&x.moveType===m.moveType)){
+   m = bestH; // search picked something outside pool
+  }
+  if(bestH){
+   if(!m) m=bestH;
+   else {
+    const sSearch=scoreMove(m);
+    if(bestHS > sSearch + 15) m=bestH;
+    if(m.capture==='barra' && pool.some(x=>x.capture==='tile')){
+      m = pool.filter(x=>x.capture==='tile').sort((a,b)=>scoreMove(b)-scoreMove(a))[0];
+    }
+    if(genMoves(applyMove(state.board,m),'brown').length===0){
+      const alive=pool.filter(x=>genMoves(applyMove(state.board,x),'brown').length>0);
+      if(alive.length) m=alive.sort((a,b)=>scoreMove(b)-scoreMove(a))[0];
+    }
+   }
+  }
+  if(!m) m=bestH||pool[0]||all[0];
+
+  document.getElementById('ai-thinking').style.display='none';
+  const tgt=state.board[m.r][m.c], piece=state.board[m.fromR][m.fromC];
+  let logMsg=`B${piece.val} ${coord(m.fromR,m.fromC)}→${coord(m.r,m.c)}${m.moveType==='short'?' S':''}`;
+  state.board[m.fromR][m.fromC]=null;
+  state.board[m.r][m.c]=piece;
+  state.lastPlaced={r:m.r,c:m.c};
+  if(m.capture==='tile'){ logMsg+=` x W${tgt.val}`; state.log.push(logMsg); pushHistory(); beginCapturePlacement('brown',null); }
+  else if(m.capture==='barra'){ logMsg+=' x B'; state.log.push(logMsg); pushHistory(); beginCapturePlacement('brown',deepClone(tgt)); }
+  else { state.log.push(logMsg); endTurn(); }
+ },20);
+}
+
+function saveGame(){
+ localStorage.setItem('barragoon_save',JSON.stringify({
+  board:state.board,turn:state.turn,pool:state.pool,log:state.log,history:state.history,
+  gameOver:state.gameOver,winner:state.winner,draw:state.draw,overReason:state.overReason,lastPlaced:state.lastPlaced,showCoords:state.showCoords
+ }));
+ toast(t('saved'));
+}
+function loadGame(){
+ const raw=localStorage.getItem('barragoon_save');if(!raw){toast('—');return;}
+ try{
+  const d=JSON.parse(raw);
+  state.board=d.board;state.turn=d.turn;state.pool=d.pool??24;state.log=d.log||[];state.history=d.history||[];
+  state.gameOver=!!d.gameOver;state.winner=d.winner||null;state.draw=!!d.draw;state.overReason=d.overReason||null;state.showCoords=!!d.showCoords;state.lastPlaced=d.lastPlaced?{...d.lastPlaced}:null;
+  state.selected=null;state.targets=[];state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';state.forcedCapture=null;
+  state.replayMode=false;state.replayPlaying=false;clearTimeout(state.replayTimer);
+  renderBoard();toast(t('loaded'));
+  if(state.turn==='brown'&&!state.gameOver)setTimeout(aiMove,280);
+ }catch(e){toast('Load error');}
+}
+function nextStarter(){
+ // Alternate who starts each new game (persisted across reloads)
+ let last='brown';
+ try{ last=localStorage.getItem('barragoon_starter')||'brown'; }catch(e){}
+ const starter = last==='white' ? 'brown' : 'white';
+ try{ localStorage.setItem('barragoon_starter', starter); }catch(e){}
+ return starter;
+}
+function restartGame(){
+ state.board=getInitialBoard();
+ state.turn=nextStarter();
+ state.pool=24;state.log=[];state.history=[];
+ state.selected=null;state.targets=[];state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';
+ state.gameOver=false;state.winner=null;state.draw=false;state.overReason=null;state.lastPlaced=null;state.replayMode=false;state.replayIndex=0;
+ state.replayPlaying=false;state.forcedCapture=null;clearTimeout(state.replayTimer);
+ pushHistory();renderBoard();
+ const who = state.turn==='white' ? (lang==='cs'?'Začíná bílý':'White starts') : (lang==='cs'?'Začíná hnědý (AI)':'Brown (AI) starts');
+ toast(who);
+ if(state.turn==='brown') setTimeout(aiMove, 350);
+}
+function toggleLog(){document.getElementById('log-modal').classList.add('show');updateLog();}
+function closeLog(){document.getElementById('log-modal').classList.remove('show');}
+function copyLog(){
+ const txt=state.log.map((l,i)=>`${String(i+1).padStart(2,'0')}. ${l}`).join('\n');
+ if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(()=>toast(t('copied')));
+ else toast(txt?'':'—');
+}
+function clearStorage(){
+ const msg = lang==='cs'
+  ? 'Opravdu vymazat všechna uložená data hry (localStorage)?'
+  : 'Really clear all saved game data (localStorage)?';
+ if(!confirm(msg)) return;
+ try{
+  localStorage.removeItem('barragoon_save');
+  toast(lang==='cs'?'Uložená data vymazána':'Saved data cleared');
+ }catch(e){ toast('Error'); }
+}
+function togglePlayer(){
+ if(!state.replayMode){
+  // ENTER replay: freeze live game so deactivate can restore exact side-to-move
+  state._liveSnap={
+   board:deepClone(state.board),
+   turn:state.turn,
+   pool:state.pool,
+   gameOver:state.gameOver,
+   winner:state.winner,
+   draw:state.draw,
+   overReason:state.overReason,
+   lastPlaced:state.lastPlaced?{...state.lastPlaced}:null,
+   log:state.log.slice(),
+   placingBarra:state.placingBarra?deepClone(state.placingBarra):null,
+   placeQueue:deepClone(state.placeQueue||[]),
+   placeMode:state.placeMode
+  };
+  state.replayMode=true;
+  state.replayPlaying=false;clearTimeout(state.replayTimer);
+  state.replayIndex=Math.max(0,state.history.length-1);
+  state.selected=null;state.targets=[];
+  state.placingBarra=null;state.placeQueue=[];state.placeMode='rotate';
+  document.getElementById('btn-player').classList.add('active');
+  document.getElementById('player-controls').classList.add('active');
+  renderBoard();
+ }else{
+  // EXIT replay: restore the frozen live position (AI already moved → player to move)
+  state.replayMode=false;
+  state.replayPlaying=false;clearTimeout(state.replayTimer);
+  document.getElementById('btn-player').classList.remove('active');
+  document.getElementById('player-controls').classList.remove('active');
+  const live=state._liveSnap;
+  state._liveSnap=null;
+  if(live){
+   state.board=deepClone(live.board);
+   state.turn=live.turn;
+   state.pool=live.pool;
+   state.gameOver=!!live.gameOver;
+   state.winner=live.winner||null;
+   state.draw=!!live.draw;
+   state.overReason=live.overReason||null;
+   state.lastPlaced=live.lastPlaced?{...live.lastPlaced}:null;
+   state.log=live.log?live.log.slice():state.log;
+   state.placingBarra=live.placingBarra?deepClone(live.placingBarra):null;
+   state.placeQueue=live.placeQueue?deepClone(live.placeQueue):[];
+   state.placeMode=live.placeMode||'rotate';
+  }else if(state.history.length){
+   // fallback: last history + if log says brown just moved, force white to move
+   const last=state.history[state.history.length-1];
+   state.board=deepClone(last.board);state.turn=last.turn;state.pool=last.pool;
+   state.gameOver=!!last.gameOver;state.winner=last.winner||null;state.draw=!!last.draw;
+   state.overReason=last.overReason||null;state.lastPlaced=last.lastPlaced?{...last.lastPlaced}:null;
+   const lastLog=state.log[state.log.length-1]||'';
+   if(!state.gameOver && !state.placingBarra && /^B\d/.test(lastLog) && state.turn==='brown'){
+    state.turn='white';
+   }
+   if(!state.gameOver && !state.placingBarra && /^W\d/.test(lastLog) && state.turn==='white'){
+    // white moved last → brown to move only if no pending place; else keep
+   }
+  }
+  state.selected=null;state.targets=[];state.forcedCapture=null;
+  // Do NOT auto-start AI here — if it is brown's turn the player deactivated mid-AI; only trigger if turn is brown AND last log is white move
+  renderBoard();
+  const lastLog=state.log[state.log.length-1]||'';
+  if(state.turn==='brown'&&!state.gameOver&&!state.placingBarra&&/^W\d|^PLACE\|W/.test(lastLog)){
+   setTimeout(aiMove,280);
+  }
+ }
+}
+function loadHistoryIndex(idx){
+ if(idx<0||idx>=state.history.length)return;
+ state.replayIndex=idx;const h=state.history[idx];
+ state.board=deepClone(h.board);state.turn=h.turn;state.pool=h.pool;state.gameOver=!!h.gameOver;state.winner=h.winner||null;state.draw=!!h.draw;state.overReason=h.overReason||null;state.lastPlaced=h.lastPlaced?{...h.lastPlaced}:null;
+ state.selected=null;state.targets=[];state.placingBarra=null;renderBoard();
+}
+function toggleLang(){
+ lang=lang==='cs'?'en':'cs';
+ const lb=document.getElementById('btn-lang');
+ lb.textContent=t('langFlag');
+ lb.title=t('langTitle');
+ document.getElementById('title').textContent=t('title');
+ document.querySelector('#log-header span').textContent=t('log');
+ document.getElementById('help-title').textContent=t('helpTitle');
+ document.getElementById('help-close').textContent=t('close');
+ document.getElementById('help-body').innerHTML=t('help');
+ renderBoard();toast(lang==='cs'?'Čeština':'English');
+}
+function showHelp(){
+ document.getElementById('help-body').innerHTML=t('help');
+ document.getElementById('help-title').textContent=t('helpTitle');
+ document.getElementById('help-close').textContent=t('close');
+ document.getElementById('help-modal').classList.add('show');
+}
+
+document.getElementById('btn-save').onclick=saveGame;
+document.getElementById('btn-load').onclick=loadGame;
+document.getElementById('btn-restart').onclick=restartGame;
+document.getElementById('btn-log').onclick=toggleLog;
+document.getElementById('btn-player').onclick=togglePlayer;
+document.getElementById('btn-lang').onclick=toggleLang;
+document.getElementById('btn-help').onclick=showHelp;
+document.getElementById('help-close').onclick=()=>document.getElementById('help-modal').classList.remove('show');
+document.getElementById('help-modal').addEventListener('click',e=>{if(e.target.id==='help-modal')e.currentTarget.classList.remove('show');});
+document.getElementById('btn-copy-log').onclick=copyLog;
+document.getElementById('btn-clear-storage').onclick=clearStorage;
+document.getElementById('log-close').onclick=closeLog;
+document.getElementById('log-modal').addEventListener('click',e=>{if(e.target.id==='log-modal')closeLog();});
+document.getElementById('title').onclick=()=>{state.showCoords=!state.showCoords;renderBoard();};
+
+const barraPrev=document.getElementById('barra-preview');
+barraPrev.addEventListener('click',onBarraPreviewClick);
+barraPrev.addEventListener('dblclick',onBarraPreviewDoubleClick);
+barraPrev.addEventListener('touchstart',onBarraTouchStart,{passive:true});
+barraPrev.addEventListener('touchend',onBarraTouchEnd);
+barraPrev.addEventListener('touchmove',onBarraTouchMove);
+barraPrev.addEventListener('touchcancel',onBarraTouchEnd);
+
+document.getElementById('p-start').onclick=()=>loadHistoryIndex(0);
+document.getElementById('p-prev').onclick=()=>loadHistoryIndex(state.replayIndex-1);
+document.getElementById('p-next').onclick=()=>loadHistoryIndex(state.replayIndex+1);
+document.getElementById('p-end').onclick=()=>loadHistoryIndex(state.history.length-1);
+document.getElementById('p-play').onclick=()=>{
+ if(!state.replayMode)return;
+ state.replayPlaying=!state.replayPlaying;updatePlayerUI();
+ if(state.replayPlaying){
+  const step=()=>{
+   if(!state.replayPlaying)return;
+   if(state.replayIndex<state.history.length-1){loadHistoryIndex(state.replayIndex+1);state.replayTimer=setTimeout(step,900);}
+   else{state.replayPlaying=false;updatePlayerUI();}
+  };step();
+ }else clearTimeout(state.replayTimer);
+};
+
+restartGame();
+document.getElementById('btn-lang').textContent=t('langFlag');
+document.getElementById('btn-lang').title=t('langTitle');
+document.getElementById('help-body').classList.toggle('touch',isTouchDevice());
+document.getElementById('help-body').innerHTML=t('help');
+</script>
+</body>
+</html>
