@@ -1219,9 +1219,9 @@ function toFast(board){
 }
 
 /* ---------- move generation (exact port of getPossibleMoves) ---------- */
-let gB=null,gFrom=0,gColor=0,gVal=0,gN=0,gType=0,gOut=null,gCnt=0,gStamp=1;
-const gSeen=new Int32Array(NS*2);
-function addMove(to){
+let gB=null,gFrom=0,gColor=0,gVal=0,gN=0,gType=0,gOut=null,gCnt=0,gStamp=1,gAnd=15;
+const gSeen=new Int32Array(NS*2), gMask=new Uint8Array(NS*2);
+function addMove(to,fd){
   if(to===gFrom)return;
   const tg=gB[to]; let cap=0;
   if(tg!==0){
@@ -1230,18 +1230,19 @@ function addMove(to){
     else{ if(gVal===2&&((tg-20)>>2)===5)return; cap=2; }
   }
   const key=to*2+gType;
-  if(gSeen[key]===gStamp)return; gSeen[key]=gStamp;
+  if(gSeen[key]===gStamp){gMask[key]|=(1<<fd);return;}
+  gSeen[key]=gStamp; gMask[key]=(1<<fd);
   gOut[gCnt++]=gFrom|(to<<6)|(gType<<12)|(cap<<13);
 }
-function dfs(cur,steps,lastDir,turned){
-  if(steps===gN){addMove(cur);return;}
+function dfs(cur,steps,lastDir,turned,fd){
+  if(steps===gN){addMove(cur,fd);return;}
   for(let d=0;d<4;d++){
     if(lastDir!==-1){ if(d===OPP[lastDir])continue; if(turned&&d!==lastDir)continue; }
     const nxt=NB[cur*4+d]; if(nxt<0)continue;
-    const ns=steps+1, mid=gB[nxt];
+    const ns=steps+1, mid=gB[nxt], f=steps===0?d:fd;
     if(mid!==0){
-      if(mid<20){ if(ns===gN)addMove(nxt); continue; }
-      if(ns===gN){addMove(nxt);continue;}
+      if(mid<20){ if(ns===gN)addMove(nxt,f); continue; }
+      if(ns===gN){addMove(nxt,f);continue;}
       const code=mid-20, sym=code>>2;
       const mask=EXITM[code*4+d]; if(!mask)continue;
       const forced=FORCED[sym]; if(forced&&turned)continue;
@@ -1252,19 +1253,23 @@ function dfs(cur,steps,lastDir,turned){
         const nt=turned||changed||forced;
         const en=NB[nxt*4+od]; if(en<0)continue;
         const ec=gB[en]; if(ec!==0&&ec<20)continue;
-        dfs(nxt,ns,od,nt);
+        dfs(nxt,ns,od,nt,f);
       }
       continue;
     }
     const changed=lastDir!==-1&&d!==lastDir;
     if(changed&&turned)continue;
-    dfs(nxt,ns,d,turned||changed);
+    dfs(nxt,ns,d,turned||changed,f);
   }
 }
 function genTile(B,i,out,cnt){
   const p=B[i]; gB=B; gFrom=i; gColor=p>=12?1:0; gVal=p-(gColor?10:0); gOut=out; gCnt=cnt; gStamp++;
-  gType=0; gN=gVal; dfs(i,0,-1,false);
-  if(gVal>1){ gType=1; gN=gVal-1; dfs(i,0,-1,false); }
+  const c0=cnt;
+  gType=0; gN=gVal; dfs(i,0,-1,false,0);
+  if(gVal>1){ gType=1; gN=gVal-1; dfs(i,0,-1,false,0); }
+  let a=15;
+  for(let k=c0;k<gCnt;k++){const m=out[k]; a&=gMask[((m>>6)&63)*2+((m>>12)&1)];}
+  gAnd=a;   // directions that EVERY move of this tile starts with (blocking that neighbour walls the tile in)
   return gCnt;
 }
 function genSide(B,color,out){
@@ -1294,10 +1299,10 @@ function fullHash(B,side,pool){
 }
 
 /* ---------- static evaluation ---------- */
-const PARAMS={MOBK:22,DEAD_F:0.2,FRAG_F:0.6,BAROPT:14,W_TERR:2.6,W_REACH:2.0,OPEN0:-30,OPEN1:-13,OPEN2:-3,LIVE0:-300,LIVE1:-200,LIVE2:-90,LIVE3:-35,ALIVE:1};
+const PARAMS={MOBK:22,DEAD_F:0.2,FRAG_F:0.6,BAROPT:14,W_TERR:2.6,W_REACH:2.0,OPEN0:-30,OPEN1:-13,OPEN2:-3,LIVE0:-300,LIVE1:-200,LIVE2:-90,LIVE3:-35,ALIVE:1,K1F:0.5,REG3F:0.4,REG6F:0.75,KILLQ:70,SOFT_F:0.72,SOFTK:0.78};
 const MOBV=new Float64Array(80);
 let OPENPEN=[-30,-13,-3,0,0],LIVEPEN=[-300,-200,-90,-35];
-let DEAD_F=0.2,FRAG_F=0.6,BAROPT=14,ALIVE=1;
+let DEAD_F=0.2,FRAG_F=0.6,BAROPT=14,ALIVE=1,K1F=0.5,REG3F=0.4,REG6F=0.75,KILLQ=70,SOFT_F=0.72,SOFTK=0.78;
 function setParams(o){
   if(o)Object.assign(PARAMS,o);
   for(let m=0;m<80;m++)MOBV[m]=PARAMS.MOBK*Math.log(1+m);
@@ -1305,6 +1310,7 @@ function setParams(o){
   LIVEPEN=[PARAMS.LIVE0,PARAMS.LIVE1,PARAMS.LIVE2,PARAMS.LIVE3];
   DEAD_F=PARAMS.DEAD_F;FRAG_F=PARAMS.FRAG_F;BAROPT=PARAMS.BAROPT;ALIVE=PARAMS.ALIVE;
   W_TERR=PARAMS.W_TERR;W_REACH=PARAMS.W_REACH;
+  K1F=PARAMS.K1F;REG3F=PARAMS.REG3F;REG6F=PARAMS.REG6F;KILLQ=PARAMS.KILLQ;SOFT_F=PARAMS.SOFT_F;SOFTK=PARAMS.SOFTK;
 }
 const scrM=new Int32Array(200);
 const barSeen=new Int32Array(NS); let barStamp=1;
@@ -1312,6 +1318,29 @@ function openN(B,s){
   let n=0;
   for(let d=0;d<4;d++){const q=NB[s*4+d]; if(q>=0&&B[q]===0)n++;}
   return n;
+}
+const scrK=new Int32Array(200);
+const regSeen=new Int32Array(NS); let regStamp=1; const regQ=new Int8Array(NS);
+/* number of empty squares reachable from tile i through empty squares (capped) */
+function regionSize(B,i,cap){
+  regStamp++; let h=0,t=0,n=0;
+  for(let d=0;d<4;d++){const q=NB[i*4+d];if(q>=0&&B[q]===0&&regSeen[q]!==regStamp){regSeen[q]=regStamp;regQ[t++]=q;}}
+  while(h<t&&n<cap){
+    const c=regQ[h++];n++;
+    for(let d=0;d<4;d++){const q=NB[c*4+d];if(q>=0&&B[q]===0&&regSeen[q]!==regStamp){regSeen[q]=regStamp;regQ[t++]=q;}}
+  }
+  return n+(t-h>0?t-h:0)>cap?cap:n+(t-h);
+}
+/* can ONE Barragoon placed next to tile i take away all of its moves? */
+function killableInOne(B,i){
+  for(let d=0;d<4;d++){
+    const q=NB[i*4+d]; if(q<0||B[q]!==0)continue;
+    B[q]=XCODE;
+    const c=genTile(B,i,scrK,0);
+    B[q]=0;
+    if(c===0)return true;
+  }
+  return false;
 }
 /* per-side score; fills tile stats. */
 function sideScore(B,color){
@@ -1328,8 +1357,19 @@ function sideScore(B,color){
     barOpts+=bc;
     const o=openN(B,i);
     // a tile that cannot move is (almost) permanently dead: it is worth little
+    // neighbouring TILES may still move away, so a tile blocked only by tiles is not permanently dead
+    let tn=0;for(let d=0;d<4;d++){const q=NB[i*4+d];if(q>=0&&B[q]>0&&B[q]<20)tn++;}
     let f=1;
-    if(cnt===0)f=DEAD_F; else if(cnt<=2||o<=1)f=FRAG_F;
+    if(cnt===0)f=tn>0?SOFT_F:DEAD_F; else if(cnt<=2||o<=1)f=FRAG_F;
+    if(cnt>0&&o<=2){
+      // fragile: how close is it to being walled in?
+      let em=0;for(let d=0;d<4;d++){const q=NB[i*4+d];if(q>=0&&B[q]===0)em|=1<<d;}
+      if((gAnd&em)!==0){ const kf=tn>0?SOFTK:K1F; if(f>kf)f=kf; }
+      else{
+        const rg=regionSize(B,i,7);
+        if(rg<=3){ if(f>REG3F)f=REG3F; } else if(rg<=6){ if(f>REG6F)f=REG6F; }
+      }
+    }
     sc+=(100+12*(v-2))*f;
     if(cnt>0){live++;sc+=MOBV[cnt>79?79:cnt];sc+=OPENPEN[o];}
     const c=i%C;
@@ -1370,12 +1410,30 @@ function evalPos(B,side){
 }
 
 /* ---------- placement heuristic used inside the search ---------- */
+const KSC=new Int16Array(NS);
+const scrQ=new Int32Array(200);
+function tryKill(B,e,s,cnt,v){
+  B[s]=XCODE; const c2=genTile(B,e,scrQ,0); B[s]=0;
+  if(c2===0)KSC[s]+=KILLQ+16*v; else if(c2<cnt)KSC[s]+=Math.min(30,(cnt-c2)*5);
+}
 function quickPlace(B,pc){
+  KSC.fill(0);
+  // real effect on the enemy's fragile tiles
+  for(let e=0;e<NS;e++){
+    const p=B[e]; if(p<=0||p>=20||(p>=12?1:0)===pc)continue;
+    const cnt=genTile(B,e,scrQ,0); if(cnt===0||cnt>9)continue;
+    const v=p-(p>=12?10:0), andM=gAnd;
+    for(let d1=0;d1<4;d1++){
+      const n1=NB[e*4+d1]; if(n1<0||B[n1]!==0)continue;
+      if((andM>>d1)&1)KSC[n1]+=KILLQ+16*v;
+      if(cnt<=4)for(let d2=0;d2<4;d2++){const n2=NB[n1*4+d2]; if(n2>=0&&n2!==e&&B[n2]===0)tryKill(B,e,n2,cnt,v);}
+    }
+  }
   let best=-1,bestS=-1e9,firstEmpty=-1;
   for(let s=0;s<NS;s++){
     if(B[s]!==0)continue;
     if(firstEmpty<0)firstEmpty=s;
-    let sc=0,any=false;
+    let sc=KSC[s],any=KSC[s]>0;
     for(let d=0;d<4;d++){
       const n=NB[s*4+d]; if(n<0)continue;
       const q=B[n]; if(q===0||q>=20)continue;
@@ -1647,7 +1705,24 @@ function choosePlacement(board,side,ctx,opts){
   return {sq:best,code:XCODE};
 }
 
-return {setParams,PARAMS,choosePlacement,toFast,genSide,genTile,evalPos,quickPlace,chooseMove,decode,fullHash,NS,C,R,NB,openN,
+/* exact score of every root move at a fixed depth (analysis only) */
+function analyze(board,side,opts){
+  opts=opts||{};
+  const B=board instanceof Int8Array?board.slice():toFast(board);
+  const pool=opts.pool==null?24:opts.pool, color=side==='brown'?1:0;
+  if(opts.params)setParams(opts.params);
+  ttClear(); fullHash(B,color,pool);
+  deadline=Date.now()+(opts.timeMs||60000); aborted=false; nodes=0; maxNodes=Infinity; hist.fill(0);killer.fill(0);
+  const root=new Int32Array(200); const n=genSide(B,color,root); const res=[];
+  for(let i=0;i<n;i++){
+    const m=root[i]; const np=applyTurn(B,m,color,pool,0);
+    const v=-negamax(B,(opts.depth||4)-1,-Infinity,Infinity,1-color,np,1);
+    undoTurn(B,0); if(aborted)break;
+    res.push({raw:m,move:decode(m,B),score:v});
+  }
+  res.sort((a,b)=>b.score-a.score); return res;
+}
+return {analyze,setParams,PARAMS,choosePlacement,toFast,genSide,genTile,evalPos,quickPlace,chooseMove,decode,fullHash,NS,C,R,NB,openN,
         _internals:{applyTurn,undoTurn,negamax,qsearch,ttClear,setNodes:(n)=>{nodes=n;}}};
 })();
 
@@ -1802,7 +1877,8 @@ function aiMove(){
    logGameOver('white','nomoves'); pushHistory(); renderBoard(); return;
   }
   const total=countTiles(state.board,'brown')+countTiles(state.board,'white');
-  const timeMs=total<=8?2400:2000;
+  let timeMs=total<=8?2600:2200;
+  if(all.length<=10)timeMs=Math.round(timeMs*1.5);   // few legal moves: search is cheap and depth decides the endgame
   let m=null;
   try{ m=aiPickMove(all,timeMs); }catch(e){ console.error('AI search failed',e); }
   if(!m) m=all.find(x=>x.capture==='tile')||all.find(x=>x.capture==='barra')||all[0];
