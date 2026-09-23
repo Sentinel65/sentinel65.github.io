@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sayū</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --accent: #e94560;
+  --text: #eaeaea;
+  --tile-wood: #d4a574;
+  --black-side: #111;
+  --red-side: #c41e3a;
+  --highlight: #f1c40f;
+  --ok: #2ecc71;
+  --tile-size: 62px;
+  --stone-gap: 4px;
+  --octagon-size: calc(var(--tile-size) * 0.85);
+  --cell-size: calc(var(--tile-size) + var(--stone-gap));
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+body { display: flex; flex-direction: column; }
+
+#boardArea, #pool, .modal-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#boardArea::-webkit-scrollbar,
+#pool::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+header {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 8px; background: var(--panel); border-bottom: 2px solid #111;
+  gap: 6px; min-height: 44px; flex-shrink: 0;
+}
+.menu-btn {
+  background: transparent; border: 1px solid #444; color: var(--text);
+  width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+  font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.menu-btn:hover, .menu-btn:active { background: var(--tile-wood); border-color: var(--tile-wood); color: #1a1a1a; }
+.lang-btn { font-size: 1.25rem; font-weight: 700; letter-spacing: 0; }
+
+#btnReplay.active { background: var(--tile-wood); border-color: var(--tile-wood); color: #1a1a1a; }
+
+#replaySection {
+  flex-shrink: 0; background: var(--panel); border-top: 2px solid #111;
+  display: none; flex-direction: column; max-height: 36vh;
+}
+#replaySection.show { display: flex; }
+#replayHeader {
+  padding: 4px 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;
+  opacity: 0.9;
+}
+#replayControls {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px; min-height: 70px;
+}
+.replay-btn {
+  width: 46px; height: 42px; border: 1px solid #555; border-radius: 9px;
+  background: #202b49; color: var(--text); font-size: 1.35rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.replay-btn:hover, .replay-btn:active { background: var(--tile-wood); border-color: var(--tile-wood); color: #1a1a1a; }
+.replay-btn:disabled { opacity: .35; cursor: default; }
+.replay-main { width: 52px; height: 46px; font-size: 1.5rem; }
+#replayStep { min-width: 82px; text-align: center; font-weight: 700; font-size: .85rem; }
+
+#boardArea.replay-locked { touch-action: none; }
+#boardArea.replay-locked::after {
+  content: ''; position: absolute; inset: 0; z-index: 40;
+  background: transparent; pointer-events: auto; cursor: default;
+}
+#boardArea.replay-locked .cell { cursor: default !important; }
+
+@media (min-width: 800px) {
+  #replaySection { max-height: 28vh; }
+}
+
+#statusBar {
+  display: flex; justify-content: center; align-items: center;
+  padding: 6px 10px; background: #0f3460; gap: 16px; flex-shrink: 0;
+}
+.score-box {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 1rem;
+  border: 2px solid transparent; transition: all 0.2s;
+}
+.score-box.black { color: #ccc; background: #1a1a1a44; }
+.score-box.red { color: var(--red-side); background: #c41e3a22; }
+.score-box.active {
+  border-color: var(--highlight);
+  box-shadow: 0 0 10px rgba(241,196,15,0.5);
+  transform: scale(1.05);
+}
+.score-box .dot { width: 14px; height: 14px; border-radius: 50%; border: none; }
+.score-box.black .dot { background: #111; }
+.score-box.red .dot { background: var(--red-side); }
+#phaseLabel { font-size: 0.75rem; opacity: 0.85; max-width: 42%; text-align: center; }
+
+#main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; min-height: 0;
+}
+
+#boardArea {
+  flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
+  background: radial-gradient(ellipse at center, #1e3a5f 0%, #0d1b2a 100%);
+  position: relative; touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  -webkit-user-select: none; user-select: none;
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  padding: 28px;
+}
+#boardWrap {
+  min-width: calc(7 * var(--cell-size) + 60px);
+  min-height: calc(7 * var(--cell-size) + 60px);
+  display: flex; align-items: center; justify-content: center;
+  margin: auto;
+}
+#board {
+  display: grid;
+  touch-action: pan-x pan-y;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(7, var(--cell-size));
+  grid-template-rows: repeat(7, var(--cell-size));
+  gap: 0;
+  background: transparent;
+  padding: 0;
+}
+.cell {
+  width: var(--cell-size); height: var(--cell-size);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: default;
+  touch-action: pan-x pan-y;
+}
+.cell.has-tile { background: transparent; }
+.cell.last-placed {
+  z-index: 3;
+  filter: drop-shadow(0 0 8px #f1c40f) drop-shadow(0 0 3px #ffffff);
+}
+.cell.valid {
+  cursor: pointer;
+  background: transparent;
+}
+.cell.valid::before {
+  content: '';
+  position: absolute;
+  width: var(--octagon-size); height: var(--octagon-size);
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26, 188, 156, 0.32);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  pointer-events: none;
+  transition: background 0.15s;
+}
+.cell.valid:hover::before, .cell.valid:active::before {
+  background: rgba(26, 188, 156, 0.55);
+}
+.cell.valid::after {
+  content: '';
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  background: #1abc9c; opacity: 0.95; pointer-events: none; z-index: 1;
+}
+.cell.valid-noeffect {
+  cursor: pointer;
+  background: transparent;
+}
+.cell.valid-noeffect::before {
+  content: '';
+  position: absolute;
+  width: var(--octagon-size); height: var(--octagon-size);
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(231, 76, 60, 0.32);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  pointer-events: none;
+  transition: background 0.15s;
+}
+.cell.valid-noeffect:hover::before, .cell.valid-noeffect:active::before {
+  background: rgba(231, 76, 60, 0.55);
+}
+.cell.valid-noeffect::after {
+  content: '';
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  background: #e74c3c; opacity: 0.95; pointer-events: none; z-index: 1;
+}
+.cell.convert-target {
+  cursor: pointer;
+  animation: pulseConvert 1s ease-in-out infinite;
+  z-index: 2;
+}
+.cell.convert-target::before {
+  content: '';
+  position: absolute;
+  width: 100%; height: 100%;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  box-shadow: 0 0 14px 4px rgba(241,196,15,0.75);
+  outline: 3px solid #f1c40f;
+  pointer-events: none;
+}
+@keyframes pulseConvert {
+  0%,100% { filter: drop-shadow(0 0 4px rgba(241,196,15,0.6)); }
+  50% { filter: drop-shadow(0 0 10px rgba(241,196,15,0.95)); }
+}
+.cell.converting {
+  z-index: 12;
+  animation: tileFlip 0.75s ease-in-out;
+}
+.cell.converting svg {
+  transform-origin: center center;
+}
+@keyframes tileFlip {
+  0%   { transform: perspective(500px) rotateY(0deg) scale(1); }
+  40%  { transform: perspective(500px) rotateY(90deg) scale(1.08); }
+  60%  { transform: perspective(500px) rotateY(90deg) scale(1.08); }
+  100% { transform: perspective(500px) rotateY(0deg) scale(1); }
+}
+.cell.spin-orient {
+  z-index: 12;
+  animation: tileSpin 0.55s ease-out;
+}
+@keyframes tileSpin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+.cell svg { width: var(--tile-size); height: var(--tile-size); pointer-events: none; display: block; flex: 0 0 var(--tile-size); }
+
+#poolSection {
+  flex-shrink: 0; background: var(--panel); border-top: 2px solid #111;
+  display: flex; flex-direction: column; max-height: 36vh;
+}
+#poolHeader {
+  padding: 4px 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;
+  opacity: 0.9;
+}
+#pool {
+  overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+  padding: 8px; display: flex; flex-direction: row; gap: var(--stone-gap); align-items: center;
+  min-height: 78px;
+}
+.pool-tile {
+  width: var(--tile-size); height: var(--tile-size); flex-shrink: 0;
+  cursor: pointer; border-radius: 0;
+  border: 2px solid transparent; transition: all 0.15s;
+  background: transparent;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+.pool-tile:hover { filter: brightness(1.08); }
+.pool-tile.selected {
+  filter: drop-shadow(0 0 8px var(--tile-wood)) drop-shadow(0 0 2px var(--tile-wood));
+  transform: scale(1.02);
+}
+.pool-tile svg { width: var(--tile-size); height: var(--tile-size); display: block; }
+
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 50;
+  display: none; align-items: center; justify-content: center; padding: 16px;
+}
+.modal.show { display: flex; }
+.modal-content {
+  background: var(--tile-wood); border-radius: 14px; max-width: 520px; width: 100%;
+  max-height: 85vh; overflow-y: auto; padding: 18px; border: 2px solid #111;
+  position: relative; color: #1a1a1a;
+}
+.modal-content h2 { margin-bottom: 12px; color: #111; padding-right: 32px; }
+.modal-content p, .modal-content li { margin-bottom: 8px; line-height: 1.5; font-size: 0.92rem; color: #1a1a1a; }
+.modal-content ul, .modal-content ol { padding-left: 20px; }
+.close-modal {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; color: #1a1a1a; font-size: 1.6rem; cursor: pointer;
+  line-height: 1; padding: 4px 8px;
+}
+.close-modal:hover { color: #000; }
+.log-actions { position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:4px; }
+.log-action-btn { width:40px; height:40px; padding:0; border:1px solid #444; border-radius:10px; background:transparent; color:#1a1a1a; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.2rem; }
+.log-action-btn:hover, .log-action-btn:active { background:var(--tile-wood); border-color:#111; filter:brightness(0.95); }
+
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--tile-wood); color: #1a1a1a; padding: 10px 18px; border-radius: 10px;
+  border: 2px solid #111;
+  display: none; z-index: 100; font-weight: 600; font-size: 0.9rem;
+  max-width: 90vw; text-align: center;
+}
+#toast.show { display: block; animation: fade 2.5s forwards; }
+@keyframes fade { 0%,80% { opacity: 1; } 100% { opacity: 0; } }
+
+#endgameToast {
+  position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+  background: var(--tile-wood); color: #1a1a1a; padding: 20px 30px; border-radius: 16px;
+  border: 3px solid #111; display: none; z-index: 200; font-weight: 700; font-size: 1.3rem;
+  flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  text-align: center; white-space: nowrap;
+}
+#endgameToast.show { display: flex; animation: fadeEnd 3.5s forwards; }
+#endgameToast .emoji { font-size: 4rem; line-height: 1; margin-bottom: 5px; }
+@keyframes fadeEnd { 
+  0%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); } 
+}
+
+.stat-item {
+  background: rgba(0,0,0,0.06); padding: 12px; border-radius: 8px; margin-bottom: 12px;
+  cursor: pointer; border: 1px solid #111; transition: background 0.2s; font-size: 0.95rem; color: #1a1a1a;
+}
+.stat-item:hover { background: rgba(0,0,0,0.12); }
+.stat-item strong { display: block; margin-bottom: 4px; font-size: 1.05rem; }
+
+#confirmToast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--tile-wood); border: 2px solid #111; color: #1a1a1a;
+  padding: 14px 16px; border-radius: 12px; z-index: 110;
+  display: none; flex-direction: column; align-items: center; gap: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5); max-width: 90vw;
+}
+#confirmToast.show { display: flex; }
+#confirmToast .msg { font-weight: 600; font-size: 0.95rem; text-align: center; }
+#confirmToast .btns { display: flex; gap: 10px; }
+#confirmToast .btns button {
+  border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; font-size: 0.9rem;
+}
+#confirmToast .yes { background: #1a1a1a; color: #fff; }
+#confirmToast .no { background: #555; color: #fff; }
+
+@media (min-width: 500px) {
+  :root { --tile-size: 70px; }
+  #pool { min-height: 86px; }
+}
+@media (min-width: 800px) {
+  :root { --tile-size: 74px; }
+  #poolSection { max-height: 28vh; }
+}
+</style>
+</head>
+<body>
+<header>
+  <button class="menu-btn" id="btnRestart" title="Restart">🔄</button>
+  <button class="menu-btn" id="btnSave" title="Uložit / Save">💾</button>
+  <button class="menu-btn" id="btnLoad" title="Načíst / Load">📂</button>
+  <button class="menu-btn" id="btnLog" title="Log">📜</button>
+  <button class="menu-btn" id="btnReplay" title="Přehrávač tahů / Move replay">▶️</button>
+  <button class="menu-btn" id="btnStats" title="Statistiky / Stats">📊</button>
+  <button class="menu-btn lang-btn" id="btnLang" title="Jazyk / Language">🇬🇧</button>
+  <button class="menu-btn" id="btnHelp" title="Nápověda / Help">💡</button>
+</header>
+
+<div id="statusBar">
+  <div class="score-box black" id="scoreBoxBlack">
+    <span class="dot"></span>
+    <span id="scoreBlack">1</span>
+  </div>
+  <div id="phaseLabel"></div>
+  <div class="score-box red" id="scoreBoxRed">
+    <span class="dot"></span>
+    <span id="scoreRed">0</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="boardArea">
+    <div id="boardWrap">
+      <div id="board"></div>
+    </div>
+  </div>
+  <div id="poolSection">
+    <div id="poolHeader">
+      <span data-i18n="pool">Dostupné kameny</span>
+      <span id="poolCount">48</span>
+    </div>
+    <div id="pool"></div>
+  </div>
+  <div id="replaySection">
+    <div id="replayHeader">
+      <span data-i18n="replayTitle">Přehrávač tahů</span>
+      <span id="replayStep">0 / 0</span>
+    </div>
+    <div id="replayControls">
+      <button class="replay-btn" id="replayFirst" title="Na začátek">⏮</button>
+      <button class="replay-btn" id="replayPrev" title="Krok zpět">◀</button>
+      <button class="replay-btn replay-main" id="replayPlay" title="Pauza / automatické přehrávání">⏯</button>
+      <button class="replay-btn" id="replayNext" title="Krok vpřed">▶</button>
+      <button class="replay-btn" id="replayLast" title="Na konec">⏭</button>
+    </div>
+  </div>
+</div>
+
+<div id="helpModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" id="closeHelp">×</button>
+    <h2 data-i18n="helpTitle">Nápověda – Sayū</h2>
+    <div id="helpContent"></div>
+  </div>
+</div>
+<div id="logModal" class="modal">
+  <div class="modal-content">
+    <div class="log-actions">
+      <button class="log-action-btn" id="btnCopyFullLog" title="Kopírovat log">📋</button>
+      <button class="log-action-btn" id="btnClearStorage" title="Smazat data">🗑️</button>
+      <button class="log-action-btn" id="closeLog" title="Zavřít">×</button>
+    </div>
+    <h2 data-i18n="gameLog" style="padding-right:132px;">Log hry</h2>
+    <pre id="fullLog" style="font-size:0.95rem;max-height:55vh;overflow:auto;white-space:pre-wrap;font-family:monospace;"></pre>
+  </div>
+</div>
+<div id="statsModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" id="closeStats">×</button>
+    <h2 data-i18n="statsTitle">Záznamy her</h2>
+    <div id="statsContent"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="endgameToast"></div>
+<div id="confirmToast">
+  <div class="msg" id="confirmMsg"></div>
+  <div class="btns">
+    <button class="yes" id="confirmYes">OK</button>
+    <button class="no" id="confirmNo">✕</button>
+  </div>
+</div>
+
+<script>
+const i18n = {
+  cs: {
+    pool: "Dostupné kameny", replayTitle: "Přehrávač tahů", gameLog: "Log hry",
+    helpTitle: "Nápověda – Sayū", copyRev: "Kopírovat v reverse",
+    placeTile: "1× klik = rotace kamene",
+    convertPhase: "Konverze…", aiThinking: "AI přemýšlí…",
+    gameOver: "Konec hry!", winBlack: "Černá vyhrává!", winRed: "Červená vyhrává!", draw: "Remíza!",
+    saved: "Hra uložena", loaded: "Hra načtena", noSave: "Žádná uložená hra", copied: "Log zkopírován",
+    startPlaced: "Startovní kámen umístěn", placed: "⬇", converted: "🔄",
+    statsTitle: "Záznamy her", bestGame: "Nejlepší výsledek", lastGame: "Poslední hra", noRecord: "Zatím žádný záznam",
+    helpHtml: `
+<p><i>© 2022 Designer And rules: Khanat Sadomwattana</i></p>
+<p>Abstraktní taktická hra Sayū se hraje bez klasického herního plánu přímo na stole. Cílem hry je mít na konci partie více kamenů své barvy otočených lícem nahoru, než soupeř.</p>
+<p>Hra se hraje na pomyslné mřížce o maximálním rozměru 7 × 7 polí: žádný nově položený kámen nesmí být vzdálen více než 3 pole od startovního kamene (směrem nahoru, dolů, doleva či doprava).</p>
+<p><strong>Průběh tahu hráče</strong><br>
+Hráči se střídají v jednotlivých tazích. Tah se skládá ze dvou hlavních fází: Umístění kamene a Vyhodnocení konverze (převrácení).</p>
+<p><strong>1. Fáze: Umístění kamene</strong></p>
+<ul>
+<li>Hráč si vybere jeden dostupný kámen ze své nabídky.</li>
+<li>Položí ho na libovolné volné pole, které sousedí hranou (nahoru, dolů, doleva, doprava) s jakýmkoliv již dříve umístěným kamenem na stole.</li>
+<li>Při položení může hráč kámen natočit do kteréhokoliv z 8 směrů. Orientaci určuje středová šipka na kameni. Kámen se pokládá tak, aby lícem nahoru ukazoval barvu aktivního hráče.</li>
+</ul>
+<p><strong>2. Fáze: Konverze kamenů (Převracení soupeře)</strong><br>
+Jakmile kámen položíte, zkontrolujete, zda dokáže „konvertovat“ (přetáhnout na vaši stranu) sousedící soupeřovy kameny.<br>
+Ke konverzi dojde tehdy, jsou-li současně splněny tyto 3 podmínky:</p>
+<ol>
+<li>Vnější šipka vlivu vašeho kamene musí mířit přímo na soupeřův kámen.</li>
+<li>Cílový soupeřův kámen nesmí mít na této sdílené hraně svou vlastní šipku vlivu namířenou zpět proti vašemu kameni (obrana).</li>
+<li>Oba kameny nesmí mít stejnou orientaci (středové šipky obou kamenů nesmí mířit do stejného směru ze 8 možných).</li>
+</ol>
+<p><strong>Řetězová reakce (Chaining)</strong></p>
+<ul>
+<li>Pokud nově položený kámen splní podmínky pro konverzi, převrátíte soupeřův kámen na svou barvu.</li>
+<li>Tento převrácený kámen musíte okamžitě natočit do stejné orientace (směru středové šipky), v jaké je kámen, který tuto konverzi způsobil.</li>
+<li>Převrácený kámen se v tu chvíli začne chovat, jako by byl právě nově položen. Zkontrolujete jeho šipky vlivu a pokud splňuje 3 podmínky konverze vůči jiným sousedním soupeřovým kamenům, dojde k řetězové reakci a převrátí se další kámen.</li>
+<li>Pravidlo pro větvení: Pokud může jeden kámen v daný moment konvertovat více soupeřových kamenů najednou, aktivní hráč si musí vybrat pouze jeden z nich, který převrátí. Řetězec pak pokračuje pouze z tohoto jednoho zvoleného kamene.</li>
+<li>Řetězová reakce končí v momentě, kdy už žádný nově převrácený kámen nesplňuje podmínky pro konverzi dalších okolních kamenů. Následně hraje soupeř.</li>
+</ul>
+<p><strong>Konec hry a určení vítěze</strong><br>
+Hra končí ve chvíli, kdy hráči umístí na stůl všech 48 hratelných kamenů a dojde k vyhodnocení poslední řetězové reakce.</p>`
+  },
+  en: {
+    pool: "Available tiles", replayTitle: "Move replay", gameLog: "Game log",
+    helpTitle: "Help – Sayū", copyRev: "Copy reversed",
+    placeTile: "1× click = rotate tile",
+    convertPhase: "Conversion…", aiThinking: "AI thinking…",
+    gameOver: "Game over!", winBlack: "Black wins!", winRed: "Red wins!", draw: "Draw!",
+    saved: "Game saved", loaded: "Game loaded", noSave: "No saved game", copied: "Log copied",
+    startPlaced: "Home tile placed", placed: "⬇", converted: "🔄",
+    statsTitle: "Game Records", bestGame: "Best result", lastGame: "Last game", noRecord: "No record yet",
+    helpHtml: `
+<p><i>© 2022 Designer And rules: Khanat Sadomwattana</i></p>
+<p>The abstract tactical game Sayū is played without a traditional board, directly on the table. The goal of the game is to have more of your color stones face-up at the end of the game than your opponent.</p>
+<p>The game is played on an imaginary 7 × 7 grid: no newly placed stone may be more than 3 spaces away from the starting stone (up, down, left, or right).</p>
+<p><strong>Player's Turn</strong><br>
+Players take turns. A turn consists of two main phases: Tile Placement and Conversion Resolution (Flipping).</p>
+<p><strong>Phase 1: Tile Placement</strong></p>
+<ul>
+<li>A player selects one available tile from their pool.</li>
+<li>They place it on any empty space that shares an edge (up, down, left, right) with any previously placed tile on the board.</li>
+<li>When placing, the player can rotate the tile into any of the 8 directions. The orientation is determined by the central arrow. The tile is placed so that the active player's color is face-up.</li>
+</ul>
+<p><strong>Phase 2: Tile Conversion (Flipping the Opponent)</strong><br>
+Once you place a tile, check if it can "convert" (flip to your side) adjacent opponent's tiles.<br>
+A conversion occurs if all 3 of these conditions are met simultaneously:</p>
+<ol>
+<li>The outer influence arrow of your tile must point directly at the opponent's tile.</li>
+<li>The target opponent's tile must not have its own influence arrow on this shared edge pointing back at your tile (defense).</li>
+<li>Both tiles must not have the same orientation (the central arrows of both tiles must not point in the same direction out of the 8 possible).</li>
+</ol>
+<p><strong>Chain Reaction (Chaining)</strong></p>
+<ul>
+<li>If the newly placed tile meets the conditions for conversion, you flip the opponent's tile to your color.</li>
+<li>This flipped tile must immediately be rotated to the exact same orientation (central arrow direction) as the tile that caused this conversion.</li>
+<li>The flipped tile then acts as if it were just newly placed. You check its influence arrows, and if it meets the 3 conversion conditions against other adjacent opponent's tiles, a chain reaction occurs and another tile is flipped.</li>
+<li>Branching rule: If a single tile can convert multiple opponent tiles at once, the active player must choose only one of them to flip. The chain then continues only from this single chosen tile.</li>
+<li>The chain reaction ends when no newly flipped tile meets the conditions to convert other surrounding tiles. The opponent then takes their turn.</li>
+</ul>
+<p><strong>End of Game and Winner</strong><br>
+The game ends when players have placed all 48 playable tiles on the board and the final chain reaction has been resolved.</p>`
+  }
+};
+let lang = 'cs';
+function t(key) { return i18n[lang][key] || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (i18n[lang][k]) el.textContent = i18n[lang][k];
+  });
+  document.getElementById('btnLang').textContent = lang === 'cs' ? '🇬🇧' : '🇨🇿';
+  document.getElementById('btnReplay').title = lang === 'cs' ? 'Přehrávač tahů' : 'Move replay';
+  document.getElementById('btnStats').title = lang === 'cs' ? 'Statistiky' : 'Statistics';
+  document.getElementById('btnHelp').title = lang === 'cs' ? 'Nápověda' : 'Help';
+  document.getElementById('replayFirst').title = lang === 'cs' ? 'Na začátek' : 'First step';
+  document.getElementById('replayPrev').title = lang === 'cs' ? 'Krok zpět' : 'Previous step';
+  document.getElementById('replayPlay').title = lang === 'cs' ? 'Pauza / automatické přehrávání' : 'Pause / autoplay';
+  document.getElementById('replayNext').title = lang === 'cs' ? 'Krok vpřed' : 'Next step';
+  document.getElementById('replayLast').title = lang === 'cs' ? 'Na konec' : 'Last step';
+  document.getElementById('helpContent').innerHTML = i18n[lang].helpHtml;
+  updateStatus();
+}
+
+const DIRS = [
+  {dx:0, dy:-1}, {dx:1, dy:-1}, {dx:1, dy:0}, {dx:1, dy:1},
+  {dx:0, dy:1}, {dx:-1, dy:1}, {dx:-1, dy:0}, {dx:-1, dy:-1}
+];
+const SIZE = 7, CENTER = 3;
+
+function combinations(arr, k) {
+  const res = [];
+  function rec(start, path) {
+    if (path.length === k) { res.push([...path]); return; }
+    for (let i = start; i < arr.length; i++) {
+      path.push(arr[i]); rec(i + 1, path); path.pop();
+    }
+  }
+  rec(0, []);
+  return res;
+}
+const TILE_TYPES = combinations([0,1,2,3,4,5,6,7], 3).slice(0, 48);
+
+function arrowPath(cx, cy, angleDeg, len, head) {
+  const rad = angleDeg * Math.PI / 180;
+  const x2 = cx + len * Math.cos(rad);
+  const y2 = cy + len * Math.sin(rad);
+  const hx = x2 - head * Math.cos(rad);
+  const hy = y2 - head * Math.sin(rad);
+  const ax = hx + head * 0.55 * Math.cos(rad + Math.PI/2);
+  const ay = hy + head * 0.55 * Math.sin(rad + Math.PI/2);
+  const bx = hx + head * 0.55 * Math.cos(rad - Math.PI/2);
+  const by = hy + head * 0.55 * Math.sin(rad - Math.PI/2);
+  return `M ${cx} ${cy} L ${x2} ${y2} M ${x2} ${y2} L ${ax} ${ay} M ${x2} ${y2} L ${bx} ${by}`;
+}
+
+function renderTileSVG(relativeArrows, orientation, color, size = 100, isStart = false) {
+  const s = size, cx = s/2, cy = s/2;
+  const outerR = s * 0.46;
+  const innerR = s * 0.20;
+  const fill = color === 'red' ? '#c41e3a' : '#111111';
+  const arrowCol = color === 'red' ? '#e63946' : '#0d0d0d';
+  const wood = '#d4a574';
+  const ang0 = -Math.PI/2 + Math.PI/8;
+
+  let pts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = ang0 + i * Math.PI/4;
+    pts.push((cx + outerR * Math.cos(a)).toFixed(2) + ',' + (cy + outerR * Math.sin(a)).toFixed(2));
+  }
+  let svg = `<svg viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<polygon points="${pts.join(' ')}" fill="${wood}" stroke="#8b6914" stroke-width="${(s*0.014).toFixed(2)}"/>`;
+
+  pts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = ang0 + i * Math.PI/4;
+    pts.push((cx + innerR * Math.cos(a)).toFixed(2) + ',' + (cy + innerR * Math.sin(a)).toFixed(2));
+  }
+  svg += `<polygon points="${pts.join(' ')}" fill="${fill}" stroke="${color === 'red' ? '#8b0000' : '#333'}" stroke-width="${(s*0.01).toFixed(2)}"/>`;
+
+  if (isStart) { svg += `</svg>`; return svg; }
+
+  if (orientation >= 0) {
+    const oriAng = -90 + orientation * 45;
+    const clen = innerR * 0.72;
+    const chead = s * 0.055;
+    const rad = oriAng * Math.PI / 180;
+    const back = clen * 0.35;
+    const sx0 = cx - back * Math.cos(rad);
+    const sy0 = cy - back * Math.sin(rad);
+    svg += `<path d="${arrowPath(sx0, sy0, oriAng, clen, chead)}" stroke="#ffffff" stroke-width="${(s*0.022).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
+  }
+
+  if (relativeArrows && relativeArrows.length) {
+    const absArrows = relativeArrows.map(r => (r + Math.max(0, orientation)) % 8);
+    for (const d of absArrows) {
+      const a = -90 + d * 45;
+      const startR = innerR + s * 0.04;
+      const alen = (outerR - startR) * 0.72;
+      const ahead = s * 0.065;
+      const sx = cx + startR * Math.cos(a * Math.PI / 180);
+      const sy = cy + startR * Math.sin(a * Math.PI / 180);
+      svg += `<path d="${arrowPath(sx, sy, a, alen, ahead)}" stroke="${arrowCol}" stroke-width="${(s*0.032).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
+    }
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+let state = null;
+let selectedTileIdx = null;
+let selectedOri = 0;
+let pendingChoices = null;
+let lastPlaced = null;
+let isAI = true;
+let logEntries = [];
+let replayHistory = [];
+let replayIndex = 0;
+let replayTimer = null;
+let replayActive = false;
+let starterNext = localStorage.getItem('sayu_nextStarter') || 'black';
+let actionNo = 0;
+
+function cloneBoard(board) { return JSON.parse(JSON.stringify(board)); }
+function addReplayStep(focusX = CENTER, focusY = CENTER, endOfTurn = false) {
+  replayHistory.push({
+    board: cloneBoard(state.board),
+    focus: { x: focusX, y: focusY },
+    number: actionNo,
+    endOfTurn: !!endOfTurn,
+    currentPlayer: state ? state.currentPlayer : 'black',
+    gameOver: state ? !!state.gameOver : false
+  });
+  replayIndex = replayHistory.length - 1;
+}
+function markLastReplayStepEndOfTurn() {
+  if (replayHistory.length) {
+    replayHistory[replayHistory.length - 1].endOfTurn = true;
+  }
+}
+function countColorsOnBoard(board) {
+  let b = 0, r = 0;
+  for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+    const t = board[y][x];
+    if (t) { if (t.color === 'black') b++; else r++; }
+  }
+  return { black: b, red: r };
+}
+function updateStatusFromSnap(snap) {
+  if (!snap || !snap.board) return;
+  const scores = countColorsOnBoard(snap.board);
+  document.getElementById('scoreBlack').textContent = scores.black;
+  document.getElementById('scoreRed').textContent = scores.red;
+  const player = snap.currentPlayer || 'black';
+  const over = !!snap.gameOver;
+  document.getElementById('scoreBoxBlack').classList.toggle('active', !over && player === 'black');
+  document.getElementById('scoreBoxRed').classList.toggle('active', !over && player === 'red');
+  let phase = '';
+  if (over) {
+    phase = scores.black > scores.red ? t('winBlack') : scores.red > scores.black ? t('winRed') : t('draw');
+  } else if (snap.endOfTurn) {
+    phase = t('placeTile');
+  } else {
+    phase = t('convertPhase');
+  }
+  document.getElementById('phaseLabel').textContent = phase;
+}
+function resetReplayHistory() {
+  replayHistory = [];
+  replayIndex = 0;
+  if (state) addReplayStep(CENTER, CENTER);
+}
+function ensureReplayHistory() {
+  if (!replayHistory.length && state) addReplayStep(lastPlaced?.x ?? CENTER, lastPlaced?.y ?? CENTER);
+}
+function stopReplayTimer() {
+  if (replayTimer) { clearInterval(replayTimer); replayTimer = null; }
+  const btn = document.getElementById('replayPlay');
+  if (btn) btn.textContent = '⏯';
+}
+function renderReplayBoard() {
+  ensureReplayHistory();
+  const snap = replayHistory[replayIndex];
+  if (!snap) return;
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x; cell.dataset.y = y;
+      const tile = snap.board[y][x];
+      if (tile) {
+        cell.classList.add('has-tile');
+        cell.innerHTML = renderTileSVG(tile.relative, tile.orientation, tile.color, 62, tile.isStart);
+        if (snap.endOfTurn && snap.focus && snap.focus.x === x && snap.focus.y === y) {
+          cell.classList.add('last-placed');
+        }
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+  updateReplayControls(snap);
+  updateStatusFromSnap(snap);
+}
+function updateReplayControls(snap) {
+  const replayNumber = Number.isFinite(snap.number) ? snap.number : replayIndex;
+  const replayLastStep = replayHistory[replayHistory.length - 1];
+  const replayTotal = replayHistory.length > 1 && replayLastStep && Number.isFinite(replayLastStep.number) ? replayLastStep.number : Math.max(0, replayHistory.length - 1);
+  document.getElementById('replayStep').textContent = `${String(replayNumber).padStart(3,'0')} / ${String(replayTotal).padStart(3,'0')}`;
+  document.getElementById('replayPrev').disabled = replayIndex <= 0;
+  document.getElementById('replayFirst').disabled = replayIndex <= 0;
+  document.getElementById('replayNext').disabled = replayIndex >= replayHistory.length - 1;
+  document.getElementById('replayLast').disabled = replayIndex >= replayHistory.length - 1;
+}
+function playTileFlipAnim(cell, fromTile, toTile, onDone) {
+  if (!cell || !fromTile || !toTile) {
+    if (onDone) onDone();
+    return;
+  }
+  cell.classList.remove('last-placed', 'converting', 'spin-orient');
+  cell.classList.add('has-tile');
+  cell.innerHTML = renderTileSVG(fromTile.relative, fromTile.orientation, fromTile.color, 62, fromTile.isStart);
+  cell.classList.remove('converting');
+  void cell.offsetWidth;
+  cell.classList.add('converting');
+  setTimeout(() => {
+    cell.innerHTML = renderTileSVG(toTile.relative, toTile.orientation, toTile.color, 62, toTile.isStart);
+  }, 380);
+  setTimeout(() => {
+    cell.classList.remove('converting');
+    const oriChanged = fromTile.orientation !== toTile.orientation && (fromTile.orientation >= 0 || toTile.orientation >= 0);
+    if (oriChanged) {
+      cell.classList.remove('spin-orient');
+      void cell.offsetWidth;
+      cell.classList.add('spin-orient');
+      setTimeout(() => {
+        cell.classList.remove('spin-orient');
+        if (onDone) onDone();
+      }, 560);
+    } else {
+      if (onDone) onDone();
+    }
+  }, 780);
+}
+function showReplayStep(index, center = true) {
+  ensureReplayHistory();
+  const prevIndex = replayIndex;
+  const newIndex = Math.max(0, Math.min(index, replayHistory.length - 1));
+  const prevSnap = replayHistory[prevIndex];
+  const newSnap = replayHistory[newIndex];
+
+  const shouldCenter = center;
+
+  if (newIndex === prevIndex + 1 && prevSnap && newSnap && newSnap.focus) {
+    const fx = newSnap.focus.x, fy = newSnap.focus.y;
+    const fromTile = prevSnap.board[fy] && prevSnap.board[fy][fx];
+    const toTile = newSnap.board[fy] && newSnap.board[fy][fx];
+    if (fromTile && toTile && (fromTile.color !== toTile.color || fromTile.orientation !== toTile.orientation)) {
+      replayIndex = prevIndex;
+      renderReplayBoard();
+      replayIndex = newIndex;
+      updateReplayControls(newSnap);
+      const cell = document.querySelector(`.cell[data-x="${fx}"][data-y="${fy}"]`);
+      playTileFlipAnim(cell, fromTile, toTile, () => {
+        if (cell && newSnap.endOfTurn) cell.classList.add('last-placed');
+      });
+      updateStatusFromSnap(newSnap);
+      if (shouldCenter) setTimeout(() => centerOnCell(fx, fy), 20);
+      
+      if (newIndex === replayHistory.length - 1 && newSnap.gameOver) {
+        showEndgameToast(countColorsOnBoard(newSnap.board));
+      }
+      return;
+    }
+  }
+
+  replayIndex = newIndex;
+  renderReplayBoard();
+  if (shouldCenter && newSnap && newSnap.focus) {
+    const f = newSnap.focus;
+    setTimeout(() => centerOnCell(f.x, f.y), 20);
+  }
+  
+  if (newIndex === replayHistory.length - 1 && newSnap && newSnap.gameOver && prevIndex !== newIndex) {
+    showEndgameToast(countColorsOnBoard(newSnap.board));
+  }
+}
+function toggleReplay() {
+  if (replayActive) {
+    stopReplayTimer();
+    replayActive = false;
+    document.getElementById('replaySection').classList.remove('show');
+    document.getElementById('poolSection').style.display = '';
+    document.getElementById('boardArea').classList.remove('replay-locked');
+    document.getElementById('btnReplay').classList.remove('active');
+    renderBoard(); renderPool();
+    updateStatus();
+    return;
+  }
+  ensureReplayHistory();
+  stopReplayTimer();
+  replayActive = true;
+  document.getElementById('replaySection').classList.add('show');
+  document.getElementById('poolSection').style.display = 'none';
+  document.getElementById('boardArea').classList.add('replay-locked');
+  document.getElementById('btnReplay').classList.add('active');
+  showReplayStep(replayIndex, true);
+}
+function toggleReplayPlay() {
+  ensureReplayHistory();
+  if (replayTimer) { stopReplayTimer(); return; }
+  if (replayIndex >= replayHistory.length - 1) replayIndex = 0;
+  const btn = document.getElementById('replayPlay');
+  btn.textContent = '⏸';
+  replayTimer = setInterval(() => {
+    if (!replayActive || replayIndex >= replayHistory.length - 1) { stopReplayTimer(); return; }
+    showReplayStep(replayIndex + 1, true);
+  }, 2200);
+}
+
+function centerOnCell(x, y) {
+  const area = document.getElementById('boardArea');
+  const board = document.getElementById('board');
+  if (!area || !board) return;
+  const cell = board.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+  if (cell) {
+    const ar = area.getBoundingClientRect();
+    const cr = cell.getBoundingClientRect();
+    const dx = (cr.left + cr.width / 2) - (ar.left + ar.width / 2);
+    const dy = (cr.top + cr.height / 2) - (ar.top + ar.height / 2);
+    area.scrollBy({ left: dx, top: dy, behavior: 'smooth' });
+  } else {
+    const cellSize = board.offsetWidth / SIZE;
+    area.scrollTo({
+      left: board.offsetLeft + (x + 0.5) * cellSize - area.clientWidth / 2,
+      top: board.offsetTop + (y + 0.5) * cellSize - area.clientHeight / 2,
+      behavior: 'smooth'
+    });
+  }
+}
+
+function createInitialState(starter = 'black') {
+  const pool = TILE_TYPES.map((arrows, i) => ({ id: i, relative: arrows, used: false }));
+  const board = Array.from({length: SIZE}, () => Array(SIZE).fill(null));
+  board[CENTER][CENTER] = { relative: [], orientation: -1, color: 'black', isStart: true };
+  return { board, pool, currentPlayer: starter, starter, phase: 'place', movesLeft: 48, gameOver: false };
+}
+
+function countColors() {
+  let b = 0, r = 0;
+  for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+    const t = state.board[y][x];
+    if (t) { if (t.color === 'black') b++; else r++; }
+  }
+  return { black: b, red: r };
+}
+
+function updateStatus() {
+  if (replayActive) return;
+  const scores = countColors();
+  document.getElementById('scoreBlack').textContent = scores.black;
+  document.getElementById('scoreRed').textContent = scores.red;
+  document.getElementById('scoreBoxBlack').classList.toggle('active', !state.gameOver && state.currentPlayer === 'black');
+  document.getElementById('scoreBoxRed').classList.toggle('active', !state.gameOver && state.currentPlayer === 'red');
+  let phase = '';
+  if (state.gameOver) {
+    const sc = countColors();
+    phase = sc.black > sc.red ? t('winBlack') : sc.red > sc.black ? t('winRed') : t('draw');
+  } else if (state.phase === 'place') phase = t('placeTile');
+  else if (state.phase === 'convert') phase = t('convertPhase');
+  else if (state.phase === 'ai') phase = t('aiThinking');
+  document.getElementById('phaseLabel').textContent = phase;
+  const poolCount = document.getElementById('poolCount');
+  if (poolCount) poolCount.textContent = state.pool.filter(p => !p.used).length;
+}
+
+function addLog(msg, numbered = true) {
+  if (numbered) {
+    actionNo++;
+    logEntries.push(`${String(actionNo).padStart(3, '0')}. ${msg}`);
+  } else {
+    logEntries.push(msg);
+  }
+}
+function normalizeLogData(entries) {
+  let n = 0; const out = [];
+  for (const raw of (Array.isArray(entries) ? entries : [])) {
+    const msg = String(raw);
+    if (/^\d{3}\.\s/.test(msg)) {
+      out.push(msg); const m = msg.match(/^(\d{3})\./); n = Math.max(n, Number(m[1]));
+    } else if (/^[⚫●🔴]\s/.test(msg) || /^\s*↳/.test(msg)) {
+      n++; out.push(`${String(n).padStart(3, '0')}. ${msg}`);
+    } else out.push(msg);
+  }
+  return { entries: out, next: n };
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function showEndgameToast(sc) {
+  const el = document.getElementById('endgameToast');
+  let msg = ''; let emoji = '🤝';
+  if (sc.black > sc.red) { msg = `🏆 ⚫ ${sc.black} : ${sc.red} 🔴`; emoji = '😃'; }
+  else if (sc.red > sc.black) { msg = `🏆 🔴 ${sc.red} : ${sc.black} ⚫`; emoji = '😢'; }
+  else { msg = `🤝 ⚫ ${sc.black} : ${sc.red} 🔴`; emoji = '😐'; }
+  el.innerHTML = `<div class="emoji">${emoji}</div><div>${msg}</div>`;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function confirmDialog(msg, onYes) {
+  const box = document.getElementById('confirmToast');
+  document.getElementById('confirmMsg').textContent = msg;
+  box.classList.add('show');
+  const yes = document.getElementById('confirmYes');
+  const no = document.getElementById('confirmNo');
+  const cleanup = () => {
+    box.classList.remove('show');
+    yes.onclick = null;
+    no.onclick = null;
+  };
+  yes.onclick = () => { cleanup(); onYes(); };
+  no.onclick = cleanup;
+}
+
+function wouldConvertOnPlace(x, y) {
+  if (selectedTileIdx === null || state.phase !== 'place' || state.currentPlayer !== 'black') return false;
+  const p = state.pool[selectedTileIdx];
+  if (!p || p.used) return false;
+  const temp = { relative: [...p.relative], orientation: selectedOri, color: 'black', isStart: false };
+  state.board[y][x] = temp;
+  const possibles = getPossibleConversions(x, y);
+  state.board[y][x] = null;
+  return possibles.length > 0;
+}
+
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  const convertSet = new Set();
+  if (pendingChoices && pendingChoices.possibles) {
+    pendingChoices.possibles.forEach(c => convertSet.add(c.x + ',' + c.y));
+  }
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x; cell.dataset.y = y;
+      const tile = state.board[y][x];
+      if (tile) {
+        cell.classList.add('has-tile');
+        cell.innerHTML = renderTileSVG(tile.relative, tile.orientation, tile.color, 62, tile.isStart);
+        if (lastPlaced && lastPlaced.x === x && lastPlaced.y === y && state.phase !== 'convert') {
+          cell.classList.add('last-placed');
+        }
+      }
+      if (state.phase === 'place' && selectedTileIdx !== null && isValidPlacement(x, y)) {
+        if (wouldConvertOnPlace(x, y)) {
+          cell.classList.add('valid');
+        } else {
+          cell.classList.add('valid-noeffect');
+        }
+        cell.addEventListener('click', () => placeSelected(x, y));
+      }
+      if (convertSet.has(x + ',' + y)) {
+        cell.classList.add('convert-target');
+        cell.addEventListener('click', () => {
+          if (!pendingChoices) return;
+          const { fromX, fromY } = pendingChoices;
+          pendingChoices = null;
+          doConvert(x, y, fromX, fromY);
+        });
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function isValidPlacement(x, y) {
+  if (state.board[y][x]) return false;
+  if (Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) > 3) return false;
+  const orth = [[0,-1],[1,0],[0,1],[-1,0]];
+  for (const [dx, dy] of orth) {
+    const nx = x + dx, ny = y + dy;
+    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && state.board[ny][nx]) return true;
+  }
+  return false;
+}
+
+function renderPool() {
+  const poolEl = document.getElementById('pool');
+  poolEl.innerHTML = '';
+  state.pool.forEach((p, idx) => {
+    if (p.used) return;
+    const div = document.createElement('div');
+    const isSel = selectedTileIdx === idx;
+    div.className = 'pool-tile' + (isSel ? ' selected' : '');
+    const ori = isSel ? selectedOri : 0;
+    div.innerHTML = renderTileSVG(p.relative, ori, 'black', 62);
+    div.addEventListener('click', () => {
+      if (state.phase !== 'place' || state.currentPlayer !== 'black') return;
+      if (selectedTileIdx === idx) {
+        selectedOri = (selectedOri + 1) % 8;
+      } else {
+        selectedTileIdx = idx;
+        selectedOri = 0;
+      }
+      renderPool();
+      renderBoard();
+    });
+    poolEl.appendChild(div);
+  });
+}
+
+function placeSelected(x, y) {
+  if (selectedTileIdx === null || !isValidPlacement(x, y)) return;
+  const p = state.pool[selectedTileIdx];
+  state.board[y][x] = {
+    relative: [...p.relative],
+    orientation: selectedOri,
+    color: state.currentPlayer,
+    isStart: false
+  };
+  p.used = true;
+  state.movesLeft--;
+  lastPlaced = { x, y };
+  addLog(`${state.currentPlayer === 'black' ? '⚫' : '🔴'} ${t('placed')} @(${x},${y}) ori=${selectedOri}`);
+  selectedTileIdx = null;
+  selectedOri = 0;
+  state.phase = 'convert';
+  updateStatus();
+  renderBoard();
+  renderPool();
+  addReplayStep(x, y);
+  setTimeout(() => processConversion(x, y), 280);
+}
+
+function getAbsoluteArrows(tile) {
+  if (!tile || tile.isStart || !tile.relative.length) return [];
+  return tile.relative.map(r => (r + (tile.orientation < 0 ? 0 : tile.orientation)) % 8);
+}
+
+function getPossibleConversions(x, y) {
+  const tile = state.board[y][x];
+  if (!tile) return [];
+  const abs = getAbsoluteArrows(tile);
+  const results = [];
+  for (const d of abs) {
+    const nx = x + DIRS[d].dx, ny = y + DIRS[d].dy;
+    if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) continue;
+    const target = state.board[ny][nx];
+    if (!target || target.color === tile.color) continue;
+    if (getAbsoluteArrows(target).includes((d + 4) % 8)) continue;
+    const oriA = (tile.orientation < 0 || tile.isStart) ? -1 : tile.orientation;
+    const oriB = (target.orientation < 0 || target.isStart) ? -1 : target.orientation;
+    if (oriA === oriB && oriA !== -1) continue;
+    results.push({ x: nx, y: ny, dir: d });
+  }
+  return results;
+}
+
+function processConversion(sx, sy) {
+  const possibles = getPossibleConversions(sx, sy);
+  if (possibles.length === 0) {
+    pendingChoices = null;
+    markLastReplayStepEndOfTurn();
+    endTurn();
+    setTimeout(() => {
+      if (lastPlaced) centerOnCell(lastPlaced.x, lastPlaced.y);
+    }, 30);
+    return;
+  }
+  if (possibles.length === 1 || state.currentPlayer === 'red') {
+    pendingChoices = null;
+    const choice = state.currentPlayer === 'red' ? chooseBestConvert(possibles, sx, sy) : possibles[0];
+    doConvert(choice.x, choice.y, sx, sy);
+  } else {
+    pendingChoices = { possibles, fromX: sx, fromY: sy };
+    renderBoard();
+  }
+}
+
+function chooseBestConvert(possibles, fromX, fromY) {
+  let best = possibles[0], bestScore = -1;
+  for (const c of possibles) {
+    const t = state.board[c.y][c.x];
+    const oldC = t.color, oldO = t.orientation;
+    t.color = state.currentPlayer;
+    t.orientation = state.board[fromY][fromX].orientation;
+    const next = getPossibleConversions(c.x, c.y).length;
+    t.color = oldC; t.orientation = oldO;
+    if (next > bestScore) { bestScore = next; best = c; }
+  }
+  return best;
+}
+
+function doConvert(tx, ty, fromX, fromY) {
+  pendingChoices = null;
+  const target = state.board[ty][tx];
+  const from = state.board[fromY][fromX];
+  const oldColor = target.color;
+  const oldOri = target.orientation;
+  const newColor = from.color;
+  const newOri = from.orientation < 0 ? 0 : from.orientation;
+  
+  target.color = newColor;
+  target.orientation = newOri;
+  lastPlaced = { x: tx, y: ty };
+  addLog(`  ↳ ${t('converted')} (${tx},${ty}) ori=${newOri}`);
+  addReplayStep(tx, ty);
+
+  const cell = document.querySelector(`.cell[data-x="${tx}"][data-y="${ty}"]`);
+  if (cell && !replayActive) {
+    cell.classList.remove('last-placed', 'convert-target');
+    cell.innerHTML = renderTileSVG(target.relative, oldOri, oldColor, 62, target.isStart);
+    cell.classList.add('has-tile', 'converting');
+    void cell.offsetWidth;
+    setTimeout(() => {
+      cell.innerHTML = renderTileSVG(target.relative, newOri, newColor, 62, target.isStart);
+    }, 380);
+    setTimeout(() => {
+      cell.classList.remove('converting');
+      if (oldOri !== newOri && oldOri >= 0) {
+        cell.classList.add('spin-orient');
+        void cell.offsetWidth;
+        setTimeout(() => cell.classList.remove('spin-orient'), 560);
+      }
+      if (!replayActive) updateStatus();
+      setTimeout(() => processConversion(tx, ty), 200);
+    }, 780);
+  } else {
+    renderBoard();
+    if (!replayActive) updateStatus();
+    setTimeout(() => processConversion(tx, ty), 380);
+  }
+}
+
+function endTurn() {
+  if (state.movesLeft <= 0) {
+    state.gameOver = true;
+    state.phase = 'end';
+    if (replayHistory.length) {
+      const last = replayHistory[replayHistory.length - 1];
+      last.endOfTurn = true;
+      last.gameOver = true;
+    }
+    updateStatus();
+    renderBoard();
+    const sc = countColors();
+    let endMsg = '';
+    if (sc.black > sc.red) {
+      endMsg = `🏆 ⚫ ${sc.black} : ${sc.red} 🔴`;
+    } else if (sc.red > sc.black) {
+      endMsg = `🏆 🔴 ${sc.red} : ${sc.black} ⚫`;
+    } else {
+      endMsg = `🤝 ⚫ ${sc.black} : ${sc.red} 🔴`;
+    }
+    addLog(`=== ${t('gameOver')} ===`, false);
+    addLog(endMsg, false);
+    
+    const saveObj = {
+      board: state.board, pool: state.pool, currentPlayer: state.currentPlayer,
+      movesLeft: state.movesLeft, gameOver: state.gameOver, log: logEntries, lang,
+      starter: state.starter || 'black', nextStarter: starterNext, actionNo, replayHistory,
+      date: Date.now(), scoreBlack: sc.black, scoreRed: sc.red
+    };
+    localStorage.setItem('sayu_last_game', JSON.stringify(saveObj));
+    const diff = sc.black - sc.red;
+    const bestRaw = localStorage.getItem('sayu_best_game');
+    const best = bestRaw ? JSON.parse(bestRaw) : null;
+    const bestDiff = best ? (best.scoreBlack - best.scoreRed) : -9999;
+    if (diff > bestDiff) {
+      localStorage.setItem('sayu_best_game', JSON.stringify(saveObj));
+    }
+
+    showEndgameToast(sc);
+    return;
+  }
+  state.currentPlayer = state.currentPlayer === 'black' ? 'red' : 'black';
+  selectedTileIdx = null;
+  selectedOri = 0;
+  if (state.currentPlayer === 'red' && isAI) {
+    state.phase = 'ai';
+    updateStatus();
+    renderBoard();
+    renderPool();
+    setTimeout(aiMove, 550);
+  } else {
+    state.phase = 'place';
+    updateStatus();
+    renderBoard();
+    renderPool();
+  }
+}
+
+function aiMove() {
+  const candidates = [];
+  const available = state.pool.map((p, i) => ({ p, i })).filter(o => !o.p.used);
+  for (const { p, i } of available) {
+    for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+      if (!isValidPlacement(x, y)) continue;
+      for (let o = 0; o < 8; o++) {
+        candidates.push({ i, x, y, o, score: evaluatePlacement(p.relative, o, x, y) });
+      }
+    }
+  }
+  if (!candidates.length) { endTurn(); return; }
+  candidates.sort((a, b) => b.score - a.score);
+  const top = candidates.filter(c => c.score >= candidates[0].score - 1);
+  const chosen = top[Math.floor(Math.random() * Math.min(4, top.length))];
+  const p = state.pool[chosen.i];
+  state.board[chosen.y][chosen.x] = {
+    relative: [...p.relative], orientation: chosen.o, color: 'red', isStart: false
+  };
+  p.used = true;
+  state.movesLeft--;
+  lastPlaced = { x: chosen.x, y: chosen.y };
+  addLog(`🔴 ${t('placed')} @(${chosen.x},${chosen.y}) ori=${chosen.o}`);
+  state.phase = 'convert';
+  updateStatus();
+  renderBoard();
+  renderPool();
+  addReplayStep(chosen.x, chosen.y);
+  setTimeout(() => processConversion(chosen.x, chosen.y), 350);
+}
+
+function evaluatePlacement(relative, ori, x, y) {
+  const temp = { relative: [...relative], orientation: ori, color: 'red', isStart: false };
+  state.board[y][x] = temp;
+  let score = 0;
+  const poss = getPossibleConversions(x, y);
+  score += poss.length * 3;
+  for (const c of poss) {
+    const t = state.board[c.y][c.x];
+    const oldC = t.color, oldO = t.orientation;
+    t.color = 'red'; t.orientation = ori;
+    score += getPossibleConversions(c.x, c.y).length * 2;
+    t.color = oldC; t.orientation = oldO;
+  }
+  score -= (Math.abs(x - CENTER) + Math.abs(y - CENTER)) * 0.1;
+  state.board[y][x] = null;
+  return score;
+}
+
+function saveGame() {
+  localStorage.setItem('sayu_save', JSON.stringify({
+    board: state.board, pool: state.pool, currentPlayer: state.currentPlayer,
+    movesLeft: state.movesLeft, gameOver: state.gameOver, log: logEntries, lang,
+    starter: state.starter || 'black', nextStarter: starterNext, actionNo, replayHistory
+  }));
+  toast(t('saved'));
+}
+function loadGame() {
+  const raw = localStorage.getItem('sayu_save');
+  if (!raw) { toast(t('noSave')); return; }
+  try {
+    const data = JSON.parse(raw);
+    state = {
+      board: data.board, pool: data.pool, currentPlayer: data.currentPlayer,
+      phase: data.gameOver ? 'end' : (data.currentPlayer === 'red' && isAI ? 'ai' : 'place'),
+      movesLeft: data.movesLeft, gameOver: data.gameOver, starter: data.starter || data.currentPlayer || 'black'
+    };
+    const normalizedLog = normalizeLogData(data.log || []);
+    logEntries = normalizedLog.entries;
+    actionNo = Math.max(Number(data.actionNo) || 0, normalizedLog.next);
+    replayHistory = Array.isArray(data.replayHistory) ? data.replayHistory : [];
+    replayHistory.forEach((step, i) => { if (!Number.isFinite(step.number)) step.number = i; });
+    replayIndex = Math.max(0, replayHistory.length - 1);
+    if (data.nextStarter) starterNext = data.nextStarter;
+    localStorage.setItem('sayu_nextStarter', starterNext);
+    if (data.lang) { lang = data.lang; applyI18n(); }
+    selectedTileIdx = null; selectedOri = 0; pendingChoices = null;
+    if (!replayHistory.length) {
+      const savedActionNo = actionNo; actionNo = 0;
+      addReplayStep(lastPlaced?.x ?? CENTER, lastPlaced?.y ?? CENTER);
+      actionNo = savedActionNo;
+    }
+    updateStatus(); renderBoard(); renderPool();
+    toast(t('loaded'));
+    if (state.phase === 'ai') setTimeout(aiMove, 400);
+  } catch (e) { toast('Error'); }
+}
+
+window.loadRecordAsReplay = function(key) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    stopReplayTimer();
+    state = {
+      board: data.board, pool: data.pool, currentPlayer: data.currentPlayer,
+      phase: data.gameOver ? 'end' : (data.currentPlayer === 'red' && isAI ? 'ai' : 'place'),
+      movesLeft: data.movesLeft, gameOver: data.gameOver, starter: data.starter || data.currentPlayer || 'black'
+    };
+    const normalizedLog = normalizeLogData(data.log || []);
+    logEntries = normalizedLog.entries;
+    actionNo = Math.max(Number(data.actionNo) || 0, normalizedLog.next);
+    replayHistory = Array.isArray(data.replayHistory) ? data.replayHistory : [];
+    replayHistory.forEach((step, i) => { if (!Number.isFinite(step.number)) step.number = i; });
+    replayIndex = 0;
+    
+    document.getElementById('statsModal').classList.remove('show');
+    updateStatus(); renderBoard(); renderPool();
+    
+    if (!replayActive) toggleReplay();
+    showReplayStep(0, true);
+  } catch(e) { toast('Error'); }
+};
+
+function formatStatRecord(record, titleKey) {
+  if (!record) return `<p>${t(titleKey)}: <em>${t('noRecord')}</em></p>`;
+  const d = new Date(record.date).toLocaleString(lang);
+  return `
+    <div class="stat-item" onclick="loadRecordAsReplay('${titleKey === 'bestGame' ? 'sayu_best_game' : 'sayu_last_game'}')">
+      <strong>${t(titleKey)}</strong>
+      📅 ${d}<br>
+      🏆 ⚫ ${record.scoreBlack} : ${record.scoreRed} 🔴
+    </div>
+  `;
+}
+
+function openStatsModal() {
+  const best = localStorage.getItem('sayu_best_game');
+  const last = localStorage.getItem('sayu_last_game');
+  let html = formatStatRecord(best ? JSON.parse(best) : null, 'bestGame');
+  html += formatStatRecord(last ? JSON.parse(last) : null, 'lastGame');
+  document.getElementById('statsContent').innerHTML = html;
+  document.getElementById('statsModal').classList.add('show');
+}
+
+function restartGame() {
+  const starter = starterNext;
+  starterNext = starter === 'black' ? 'red' : 'black';
+  localStorage.setItem('sayu_nextStarter', starterNext);
+  state = createInitialState(starter);
+  logEntries = [];
+  actionNo = 0;
+  selectedTileIdx = null; selectedOri = 0; pendingChoices = null;
+  lastPlaced = { x: CENTER, y: CENTER };
+  resetReplayHistory();
+  stopReplayTimer();
+  replayActive = false;
+  document.getElementById('replaySection').classList.remove('show');
+  document.getElementById('poolSection').style.display = '';
+  document.getElementById('boardArea').classList.remove('replay-locked');
+  document.getElementById('btnReplay').classList.remove('active');
+  addLog(t('startPlaced') + ` (${starter === 'black' ? '⚫' : '🔴'})`, false);
+  updateStatus(); renderBoard(); renderPool();
+  setTimeout(() => centerOnCell(CENTER, CENTER), 50);
+  if (starter === 'red' && isAI) {
+    state.phase = 'ai';
+    updateStatus();
+    renderBoard();
+    setTimeout(aiMove, 550);
+  }
+}
+
+function getReversedLogText() { return [...logEntries].reverse().join('\n') || '—'; }
+function copyLogReversed() {
+  navigator.clipboard.writeText(getReversedLogText()).then(() => toast(t('copied')));
+}
+function clearLocalStorageData() {
+  confirmDialog(
+    lang === 'cs' ? 'Smazat všechna data hry z local storage?' : 'Delete all game data from local storage?',
+    () => {
+      Object.keys(localStorage).filter(k => k.startsWith('sayu_')).forEach(k => localStorage.removeItem(k));
+      starterNext = 'black';
+      toast(lang === 'cs' ? 'Data hry smazána' : 'Game data deleted');
+    }
+  );
+}
+
+document.getElementById('btnRestart').onclick = () => {
+  confirmDialog(lang === 'cs' ? 'Restartovat hru?' : 'Restart game?', restartGame);
+};
+document.getElementById('btnSave').onclick = saveGame;
+document.getElementById('btnLoad').onclick = loadGame;
+document.getElementById('btnLog').onclick = () => {
+  document.getElementById('fullLog').textContent = getReversedLogText();
+  document.getElementById('logModal').classList.add('show');
+};
+document.getElementById('btnCopyFullLog').onclick = copyLogReversed;
+document.getElementById('btnClearStorage').onclick = clearLocalStorageData;
+document.getElementById('btnReplay').onclick = toggleReplay;
+document.getElementById('btnStats').onclick = openStatsModal;
+document.getElementById('replayFirst').onclick = () => showReplayStep(0);
+document.getElementById('replayPrev').onclick = () => showReplayStep(replayIndex - 1);
+document.getElementById('replayPlay').onclick = toggleReplayPlay;
+document.getElementById('replayNext').onclick = () => showReplayStep(replayIndex + 1);
+document.getElementById('replayLast').onclick = () => showReplayStep(replayHistory.length - 1);
+document.getElementById('btnLang').onclick = () => { lang = lang === 'cs' ? 'en' : 'cs'; applyI18n(); };
+document.getElementById('btnHelp').onclick = () => document.getElementById('helpModal').classList.add('show');
+document.getElementById('closeHelp').onclick = () => document.getElementById('helpModal').classList.remove('show');
+document.getElementById('closeLog').onclick = () => document.getElementById('logModal').classList.remove('show');
+document.getElementById('closeStats').onclick = () => document.getElementById('statsModal').classList.remove('show');
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+});
+
+['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+  document.getElementById('boardArea').addEventListener(type, e => e.preventDefault(), { passive: false });
+});
+
+let boardTouchStartDistance = null;
+document.getElementById('boardArea').addEventListener('touchmove', e => {
+  if (e.touches.length >= 2) e.preventDefault();
+}, { passive: false });
+
+restartGame();
+applyI18n();
+</script>
+</body>
+</html>
