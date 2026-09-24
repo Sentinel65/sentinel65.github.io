@@ -989,10 +989,9 @@ function toast(msg) {
 
 function showEndgameToast(sc) {
   const el = document.getElementById('endgameToast');
-  let msg = ''; let emoji = '🤝';
+  let msg = '';
   if (sc.black > sc.red) { msg = `🏆 ⚫ ${sc.black} : ${sc.red} 🔴`; emoji = '😃'; }
   else if (sc.red > sc.black) { msg = `🏆 🔴 ${sc.red} : ${sc.black} ⚫`; emoji = '😢'; }
-  else { msg = `🤝 ⚫ ${sc.black} : ${sc.red} 🔴`; emoji = '😐'; }
   el.innerHTML = `<div class="emoji">${emoji}</div><div>${msg}</div>`;
   el.classList.remove('show');
   void el.offsetWidth;
@@ -1247,8 +1246,6 @@ function endTurn() {
       endMsg = `🏆 ⚫ ${sc.black} : ${sc.red} 🔴`;
     } else if (sc.red > sc.black) {
       endMsg = `🏆 🔴 ${sc.red} : ${sc.black} ⚫`;
-    } else {
-      endMsg = `🤝 ⚫ ${sc.black} : ${sc.red} 🔴`;
     }
     addLog(`=== ${t('gameOver')} ===`, false);
     addLog(endMsg, false);
