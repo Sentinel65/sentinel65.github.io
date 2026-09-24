@@ -36,10 +36,26 @@ body { display: flex; flex-direction: column; }
   height: 0;
 }
 
+#titleBar {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 8px 4px; background: var(--panel);
+  flex-shrink: 0;
+}
+.title-btn {
+  background: transparent; border: none; color: var(--text);
+  font-size: 1.55rem; font-weight: 700; letter-spacing: 0.08em;
+  cursor: pointer; padding: 2px 14px; line-height: 1.2;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  transition: color 0.15s;
+}
+.title-btn:hover, .title-btn:active { color: var(--accent); }
+.title-btn:focus { outline: none; }
+
 header {
   display: flex; align-items: center; justify-content: center;
   padding: 6px 8px; background: var(--panel); border-bottom: 2px solid #111;
   gap: 6px; min-height: 44px; flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 .menu-btn {
   background: transparent; border: 1px solid #444; color: var(--text);
@@ -51,6 +67,36 @@ header {
 .lang-btn { font-size: 1.25rem; font-weight: 700; letter-spacing: 0; }
 
 #btnReplay.active { background: var(--tile-wood); border-color: var(--tile-wood); color: #1a1a1a; }
+
+@media (max-width: 420px) {
+  header {
+    padding: 4px 4px;
+    gap: 3px;
+    min-height: 40px;
+  }
+  .menu-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+  }
+  .lang-btn { font-size: 1.1rem; }
+  #titleBar { padding: 6px 4px 2px; }
+  .title-btn { font-size: 1.35rem; padding: 2px 8px; }
+}
+@media (max-width: 360px) {
+  header {
+    padding: 3px 2px;
+    gap: 2px;
+  }
+  .menu-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    font-size: 1.05rem;
+  }
+  .lang-btn { font-size: 1.05rem; }
+}
 
 #replaySection {
   flex-shrink: 0; background: var(--panel); border-top: 2px solid #111;
@@ -75,12 +121,13 @@ header {
 .replay-main { width: 52px; height: 46px; font-size: 1.5rem; }
 #replayStep { min-width: 82px; text-align: center; font-weight: 700; font-size: .85rem; }
 
-#boardArea.replay-locked { touch-action: none; }
-#boardArea.replay-locked::after {
-  content: ''; position: absolute; inset: 0; z-index: 40;
-  background: transparent; pointer-events: auto; cursor: default;
+#boardArea.replay-locked {
+  touch-action: pan-x pan-y;
 }
-#boardArea.replay-locked .cell { cursor: default !important; }
+#boardArea.replay-locked .cell {
+  cursor: default !important;
+  pointer-events: none;
+}
 
 @media (min-width: 800px) {
   #replaySection { max-height: 28vh; }
@@ -235,6 +282,14 @@ header {
   100% { transform: rotate(360deg) scale(1); }
 }
 .cell svg { width: var(--tile-size); height: var(--tile-size); pointer-events: none; display: block; flex: 0 0 var(--tile-size); }
+.coord-label {
+  position: absolute; top: 1px; left: 2px;
+  font-size: 0.52rem; font-weight: 600; color: rgba(234,234,234,0.55);
+  pointer-events: none; z-index: 4; line-height: 1;
+  font-family: system-ui, monospace;
+  text-shadow: 0 0 3px #0d1b2a;
+}
+.cell.has-tile .coord-label { color: rgba(255,255,255,0.7); }
 
 #poolSection {
   flex-shrink: 0; background: var(--panel); border-top: 2px solid #111;
@@ -344,6 +399,9 @@ header {
 </style>
 </head>
 <body>
+<div id="titleBar">
+  <button class="title-btn" id="btnTitle" title="Souřadnice / Coordinates">Sayū</button>
+</div>
 <header>
   <button class="menu-btn" id="btnRestart" title="Restart">🔄</button>
   <button class="menu-btn" id="btnSave" title="Uložit / Save">💾</button>
@@ -631,6 +689,7 @@ let replayTimer = null;
 let replayActive = false;
 let starterNext = localStorage.getItem('sayu_nextStarter') || 'black';
 let actionNo = 0;
+let showCoords = false;
 
 function cloneBoard(board) { return JSON.parse(JSON.stringify(board)); }
 function addReplayStep(focusX = CENTER, focusY = CENTER, endOfTurn = false) {
@@ -689,6 +748,16 @@ function stopReplayTimer() {
   const btn = document.getElementById('replayPlay');
   if (btn) btn.textContent = '⏯';
 }
+function coordLabelText(x, y) {
+  return `${x},${y}`;
+}
+function addCoordLabel(cell, x, y) {
+  if (!showCoords) return;
+  const label = document.createElement('span');
+  label.className = 'coord-label';
+  label.textContent = coordLabelText(x, y);
+  cell.appendChild(label);
+}
 function renderReplayBoard() {
   ensureReplayHistory();
   const snap = replayHistory[replayIndex];
@@ -708,6 +777,7 @@ function renderReplayBoard() {
           cell.classList.add('last-placed');
         }
       }
+      addCoordLabel(cell, x, y);
       boardEl.appendChild(cell);
     }
   }
@@ -729,14 +799,17 @@ function playTileFlipAnim(cell, fromTile, toTile, onDone) {
     if (onDone) onDone();
     return;
   }
+  const cx = Number(cell.dataset.x), cy = Number(cell.dataset.y);
   cell.classList.remove('last-placed', 'converting', 'spin-orient');
   cell.classList.add('has-tile');
   cell.innerHTML = renderTileSVG(fromTile.relative, fromTile.orientation, fromTile.color, 62, fromTile.isStart);
+  addCoordLabel(cell, cx, cy);
   cell.classList.remove('converting');
   void cell.offsetWidth;
   cell.classList.add('converting');
   setTimeout(() => {
     cell.innerHTML = renderTileSVG(toTile.relative, toTile.orientation, toTile.color, 62, toTile.isStart);
+    addCoordLabel(cell, cx, cy);
   }, 380);
   setTimeout(() => {
     cell.classList.remove('converting');
@@ -854,7 +927,8 @@ function centerOnCell(x, y) {
 function createInitialState(starter = 'black') {
   const pool = TILE_TYPES.map((arrows, i) => ({ id: i, relative: arrows, used: false }));
   const board = Array.from({length: SIZE}, () => Array(SIZE).fill(null));
-  board[CENTER][CENTER] = { relative: [], orientation: -1, color: 'black', isStart: true };
+  const startColor = starter === 'black' ? 'red' : 'black';
+  board[CENTER][CENTER] = { relative: [], orientation: -1, color: startColor, isStart: true };
   return { board, pool, currentPlayer: starter, starter, phase: 'place', movesLeft: 48, gameOver: false };
 }
 
@@ -989,6 +1063,7 @@ function renderBoard() {
           doConvert(x, y, fromX, fromY);
         });
       }
+      addCoordLabel(cell, x, y);
       boardEl.appendChild(cell);
     }
   }
@@ -1131,10 +1206,12 @@ function doConvert(tx, ty, fromX, fromY) {
   if (cell && !replayActive) {
     cell.classList.remove('last-placed', 'convert-target');
     cell.innerHTML = renderTileSVG(target.relative, oldOri, oldColor, 62, target.isStart);
+    addCoordLabel(cell, tx, ty);
     cell.classList.add('has-tile', 'converting');
     void cell.offsetWidth;
     setTimeout(() => {
       cell.innerHTML = renderTileSVG(target.relative, newOri, newColor, 62, target.isStart);
+      addCoordLabel(cell, tx, ty);
     }, 380);
     setTimeout(() => {
       cell.classList.remove('converting');
@@ -1411,6 +1488,11 @@ document.getElementById('btnHelp').onclick = () => document.getElementById('help
 document.getElementById('closeHelp').onclick = () => document.getElementById('helpModal').classList.remove('show');
 document.getElementById('closeLog').onclick = () => document.getElementById('logModal').classList.remove('show');
 document.getElementById('closeStats').onclick = () => document.getElementById('statsModal').classList.remove('show');
+document.getElementById('btnTitle').onclick = () => {
+  showCoords = !showCoords;
+  if (replayActive) renderReplayBoard();
+  else renderBoard();
+};
 document.querySelectorAll('.modal').forEach(modal => {
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
 });
