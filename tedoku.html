@@ -393,7 +393,8 @@ function boardSVG(own,card,o){
   const rs=ids.map(i=>i/9|0),cs=ids.map(i=>i%9);
   const r0=Math.min(...rs),r1=Math.max(...rs),c0=Math.min(...cs),c1=Math.max(...cs);
   if(r1-r0===2&&c1-c0===2&&ids.length===9){
-   s+=`<use href="#i${k}" class="wm" x="${OX+c0*S+4}" y="${OY+r0*S+4}" width="${3*S-8}" height="${3*S-8}"/>`;
+   const pad=18;
+   s+=`<use href="#i${k}" class="wm" x="${OX+c0*S+pad}" y="${OY+r0*S+pad}" width="${3*S-2*pad}" height="${3*S-2*pad}"/>`;
   }else{
    const i=G.icons[k];
    s+=`<use href="#i${k}" class="wm" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`;
@@ -431,11 +432,18 @@ function boardSVG(own,card,o){
   if(c<8&&G.reg[i]!==G.reg[i+1])th+=`M${OX+(c+1)*S} ${OY+r*S}v${S}`;
   if(r<8&&G.reg[i]!==G.reg[i+9])th+=`M${OX+c*S} ${OY+(r+1)*S}h${S}`}
  s+=`<path d="${th}" class="bs" stroke-width="5" stroke-linecap="round"/><rect x="${OX}" y="${OY}" width="${9*S}" height="${9*S}" rx="8" class="bs" stroke-width="6"/>`;
- let og='';
- G.sec.forEach((ids,k)=>{if(!fullS[k])return;for(const i of ids){const r=i/9|0,c=i%9,x=OX+c*S,y=OY+r*S;
-  if(c===0||G.reg[i-1]!==k)og+=`M${x} ${y}v${S}`;if(c===8||G.reg[i+1]!==k)og+=`M${x+S} ${y}v${S}`;
-  if(r===0||G.reg[i-9]!==k)og+=`M${x} ${y}h${S}`;if(r===8||G.reg[i+9]!==k)og+=`M${x} ${y+S}h${S}`}});
+ let og='',ogY='';
+ const targetSec=noMove&&card&&card[0]==='s'?card[1]:-1;
+ G.sec.forEach((ids,k)=>{if(!fullS[k])return;
+  let path='';
+  for(const i of ids){const r=i/9|0,c=i%9,x=OX+c*S,y=OY+r*S;
+   if(c===0||G.reg[i-1]!==k)path+=`M${x} ${y}v${S}`;if(c===8||G.reg[i+1]!==k)path+=`M${x+S} ${y}v${S}`;
+   if(r===0||G.reg[i-9]!==k)path+=`M${x} ${y}h${S}`;if(r===8||G.reg[i+9]!==k)path+=`M${x} ${y+S}h${S}`}
+  if(k===targetSec)ogY+=path;else og+=path;
+ });
  if(og)s+=`<path d="${og}" stroke="#111" stroke-width="11" stroke-linecap="round" fill="none"/><path d="${og}" stroke="#07f1f2" stroke-width="6" stroke-linecap="round" fill="none"/>`;
+ // completed sector that is the current placement target (no legal move) → yellow outline for this turn
+ if(ogY)s+=`<path d="${ogY}" stroke="#111" stroke-width="11" stroke-linecap="round" fill="none"/><path d="${ogY}" stroke="#ffd400" stroke-width="6" stroke-linecap="round" fill="none"/>`;
  let wl='';for(const k of G.walls){const[a,b]=k.slice(1).split('_').map(Number);
   wl+=k[0]==='h'?`M${OX+b*S+2} ${OY+(a+1)*S}h${S-4}`:`M${OX+(b+1)*S} ${OY+a*S+2}v${S-4}`}
  if(wl)s+=`<path d="${wl}" stroke="#e8202a" stroke-width="11" stroke-linecap="round" fill="none"/>`;
