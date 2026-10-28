@@ -39,7 +39,7 @@ button.ok{background:#1f8a4c}
 #boards{display:flex;flex-direction:column;align-items:center;gap:10px}
 .sheet{width:100%;aspect-ratio:700/690;display:block;border-radius:10px;border:1.5px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 #bd2{display:none!important}
-.sheet{--blue:#263a8f;--red:#e8202a;--reddk:#a8121a;--paper:#fffaf0;--zone:#b9c6f2;--req:#ffe08a;--wm:#d9cfbc}
+.sheet{--blue:#263a8f;--red:#e8202a;--reddk:#a8121a;--paper:#fffaf0;--zone:#b9c6f2;--req:#ffe08a;--wm:#ebe4d4}
 .sheet .t{font-family:"Stardos Stencil",Impact,"Arial Black",sans-serif;font-weight:700}
 .bf{fill:var(--blue)}.bs{fill:none;stroke:var(--blue)}.rs{fill:none;stroke:var(--red)}
 .wm{color:var(--wm)}.pc{fill:var(--red);stroke:var(--paper);stroke-width:2}.pd{fill:var(--reddk);stroke:var(--paper);stroke-width:2}
@@ -378,59 +378,49 @@ function boardSVG(own,card,o){
  let s=`<rect width="700" height="690" style="fill:var(--paper)"/>`;
  const zr=card&&card[0]==='r'?card[1]:-1,zc=card&&card[0]==='c'?card[1]:-1;
  const noMove=!!o.noMove;
- const zoneFill=noMove?'#ffd400':'var(--zone)',zoneStroke=noMove?' stroke="#8a6a00" stroke-width="2.5"':'';
- let yoH='',yoY='';
+ // only yellow label / soft yellow tint when shape cannot be placed – no red outlines
+ const zoneFill=noMove?'#ffd400':'var(--zone)';
  for(let i=0;i<9;i++){
-  if(i===zc)s+=`<rect x="${OX+S*i+6}" y="8" width="${S-12}" height="40" rx="8" fill="${zoneFill}"${zoneStroke}/>`;
-  if(i===zr)s+=`<rect x="6" y="${OY+S*i+6}" width="46" height="${S-12}" rx="8" fill="${zoneFill}"${zoneStroke}/>`;
+  if(i===zc)s+=`<rect x="${OX+S*i+6}" y="8" width="${S-12}" height="40" rx="8" fill="${zoneFill}"/>`;
+  if(i===zr)s+=`<rect x="6" y="${OY+S*i+6}" width="46" height="${S-12}" rx="8" fill="${zoneFill}"/>`;
   s+=`<text x="${OX+S*(i+.5)}" y="38" font-size="30" text-anchor="middle" class="t bf">${i+1}</text><text x="32" y="${OY+S*(i+.5)+11}" font-size="30" text-anchor="middle" class="t" style="fill:var(--red)">${LET[i]}</text>`}
  for(let i=0;i<81;i++){const x=OX+(i%9)*S,y=OY+(i/9|0)*S;
   if(G.req&&G.req.has(i))s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" style="fill:var(--req)"/>`;
-  if(mask[i]){
-   if(noMove){
-    // free cells in zone = light green; occupied stay under filled pieces later
-    if(own[i]<0)s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="#b8f0c8" opacity=".9"/>`;
-    else s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="#ffb4b8" opacity=".35"/>`;
-   }else s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${zoneFill}" opacity="${G.req&&G.req.has(i)?.75:.55}"/>`;
-  }
+  if(mask[i])s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${zoneFill}" opacity="${noMove?.45:(G.req&&G.req.has(i)?.75:.55)}"/>`;
  }
- // strong outline around zone when no legal placement (sector = yellow, row/column = red)
- if(noMove&&card){
-  const sec=card[0]==='s',ln=(x1,y1,x2,y2)=>{
-   if(sec){yoH+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;yoY+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`}
-   else s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e8202a" stroke-width="5"/>`};
-  for(let i=0;i<81;i++)if(mask[i]){
-   const r=i/9|0,c=i%9,x=OX+c*S,y=OY+r*S;
-   if(c===0||!mask[i-1])ln(x,y,x,y+S);
-   if(c===8||!mask[i+1])ln(x+S,y,x+S,y+S);
-   if(r===0||!mask[i-9])ln(x,y,x+S,y);
-   if(r===8||!mask[i+9])ln(x,y+S,x+S,y+S);
+ // watermarks: classic 3×3 sectors → icon fills whole sector; irregular → centered on one cell
+ G.sec.forEach((ids,k)=>{
+  const rs=ids.map(i=>i/9|0),cs=ids.map(i=>i%9);
+  const r0=Math.min(...rs),r1=Math.max(...rs),c0=Math.min(...cs),c1=Math.max(...cs);
+  if(r1-r0===2&&c1-c0===2&&ids.length===9){
+   s+=`<use href="#i${k}" class="wm" x="${OX+c0*S+4}" y="${OY+r0*S+4}" width="${3*S-8}" height="${3*S-8}"/>`;
+  }else{
+   const i=G.icons[k];
+   s+=`<use href="#i${k}" class="wm" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`;
   }
- }
- G.icons.forEach((i,k)=>s+=`<use href="#i${k}" class="wm" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`);
+ });
  let thin='';for(let i=1;i<9;i++)thin+=`M${OX+i*S} ${OY}v${9*S}M${OX} ${OY+i*S}h${9*S}`;
  s+=`<path d="${thin}" class="bs" stroke-width="1.3"/>`;
- // hatched fill (like paper scribble) so grid lines stay readable
+ // hatched fill – same colour, different placement → different hatch angle
  const keyArr=o.keys||(own===G.ownA?G.keyA:G.keyP);
  const uid=o.uid||'b';
+ const ANGLES=[42,132,0,90]; // four directions to distinguish adjacent same-colour shapes
  const hatchDefs=new Set();
  let defs='';
  for(let i=0;i<81;i++)if(own[i]>=0){
-  const k=keyArr[i]||'_',col=COLORS[k]||'#555';
-  if(!hatchDefs.has(k)){
-   hatchDefs.add(k);
-   // dense diagonal hatch, transparent background → sudoku grid shows through
-   defs+=`<pattern id="${uid}ht${k}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(42)"><line x1="0" y1="0" x2="0" y2="5" stroke="${col}" stroke-width="2.6"/></pattern>`;
+  const k=keyArr[i]||'_',col=COLORS[k]||'#555',dir=own[i]%4,pid=`${uid}ht${k}_${dir}`;
+  if(!hatchDefs.has(pid)){
+   hatchDefs.add(pid);
+   defs+=`<pattern id="${pid}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(${ANGLES[dir]})"><line x1="0" y1="0" x2="0" y2="5" stroke="${col}" stroke-width="2.6"/></pattern>`;
   }
  }
  if(defs)s+=`<defs>${defs}</defs>`;
  for(let i=0;i<81;i++)if(own[i]>=0){
   const x=OX+(i%9)*S+1,y=OY+(i/9|0)*S+1;
   const isLast=lastIds.has(i);
-  const k=keyArr[i]||'_',col=COLORS[k]||'#555';
-  // light tint + hatch so cell isn't a solid block
+  const k=keyArr[i]||'_',col=COLORS[k]||'#555',dir=own[i]%4;
   s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="${col}" opacity=".18"/>`;
-  s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="url(#${uid}ht${k})"/>`;
+  s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="url(#${uid}ht${k}_${dir})"/>`;
   if(isLast){
    const cx=x+(S-2)/2,cy=y+(S-2)/2,rad=Math.max(3,S*0.12);
    s+=`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="#fff" stroke="#222" stroke-width="1.2"/>`;
@@ -446,7 +436,6 @@ function boardSVG(own,card,o){
   if(c===0||G.reg[i-1]!==k)og+=`M${x} ${y}v${S}`;if(c===8||G.reg[i+1]!==k)og+=`M${x+S} ${y}v${S}`;
   if(r===0||G.reg[i-9]!==k)og+=`M${x} ${y}h${S}`;if(r===8||G.reg[i+9]!==k)og+=`M${x} ${y+S}h${S}`}});
  if(og)s+=`<path d="${og}" stroke="#111" stroke-width="11" stroke-linecap="round" fill="none"/><path d="${og}" stroke="#07f1f2" stroke-width="6" stroke-linecap="round" fill="none"/>`;
- if(yoY)s+=`<g stroke="#5a4500" stroke-width="11" stroke-linecap="round">${yoH}</g><g stroke="#ffd400" stroke-width="6" stroke-linecap="round">${yoY}</g>`;
  let wl='';for(const k of G.walls){const[a,b]=k.slice(1).split('_').map(Number);
   wl+=k[0]==='h'?`M${OX+b*S+2} ${OY+(a+1)*S}h${S-4}`:`M${OX+(b+1)*S} ${OY+a*S+2}v${S-4}`}
  if(wl)s+=`<path d="${wl}" stroke="#e8202a" stroke-width="11" stroke-linecap="round" fill="none"/>`;
@@ -532,8 +521,21 @@ function draw(){
   const bp=bonusPts('P'),ba=bonusPts('A');
   const gridP=G.req&&![...G.req].every(i=>G.ownP[i]>=0)?0:parts(G.ownP).v;
   const gridA=G.req&&![...G.req].every(i=>G.ownA[i]>=0)?0:parts(G.ownA).v;
-  const outcome=CFG.ai?(a>b||(a===b&&ea<eb)?'Vyhráli jste.':a<b||(a===b&&ea>eb)?'Vyhrává AI.':'Remíza.'):rank(a);
-  const table=CFG.ai?`<table><thead><tr><th>Rozpis skóre</th><th>Hráč</th><th>AI</th></tr></thead><tbody><tr><td>Mřížka</td><td>${gridP}</td><td>${gridA}</td></tr><tr><td>Bonus za nepoužité dílky</td><td>+${bp}</td><td>+${ba}</td></tr><tr class="total"><th>Celkem</th><td>${a}</td><td>${b}</td></tr></tbody></table>`:`<table><thead><tr><th>Rozpis skóre</th><th>Body</th></tr></thead><tbody><tr><td>Mřížka</td><td>${gridP}</td></tr><tr><td>Bonus za nepoužité dílky</td><td>+${bp}</td></tr><tr class="total"><th>Celkem</th><td>${a}</td></tr></tbody></table>`;
+  const tie=CFG.ai&&a===b,winP=CFG.ai&&(a>b||(tie&&ea<eb)),winA=CFG.ai&&(a<b||(tie&&ea>eb));
+  const gE=v=>`<span style="color:#1f8a4c;font-weight:700">${v}</span>`;
+  const rE=v=>`<span style="color:#e8202a;font-weight:700">${v}</span>`;
+  let outcome;
+  if(!CFG.ai)outcome=rank(a);
+  else if(winP)outcome=tie?`Vyhráli jste. (${gE(ea)})`:'Vyhráli jste.';
+  else if(winA)outcome=tie?`Vyhrává AI. (${gE(eb)})`:'Vyhrává AI.';
+  else outcome='Remíza.';
+  let emptyRow='';
+  if(CFG.ai&&tie){
+   const eaC=ea<eb?gE(ea):(ea>eb?rE(ea):ea);
+   const ebC=eb<ea?gE(eb):(eb>ea?rE(eb):eb);
+   emptyRow=`<tr><td>Počet prázdných polí</td><td>${eaC}</td><td>${ebC}</td></tr>`;
+  }
+  const table=CFG.ai?`<table><thead><tr><th>Rozpis skóre</th><th>Hráč</th><th>AI</th></tr></thead><tbody><tr><td>Mřížka</td><td>${gridP}</td><td>${gridA}</td></tr><tr><td>Bonus za nepoužité dílky</td><td>+${bp}</td><td>+${ba}</td></tr>${emptyRow}<tr class="total"><th>Celkem</th><td>${a}</td><td>${b}</td></tr></tbody></table>`:`<table><thead><tr><th>Rozpis skóre</th><th>Body</th></tr></thead><tbody><tr><td>Mřížka</td><td>${gridP}</td></tr><tr><td>Bonus za nepoužité dílky</td><td>+${bp}</td></tr><tr class="total"><th>Celkem</th><td>${a}</td></tr></tbody></table>`;
   let t=`<div class="result-title">${CFG.ai?`Výsledek: ${a} : ${b}`:`Celkové skóre: ${a}`}</div><div>${outcome}</div><div style="margin-top:12px">${table}</div>`;
   if(G.req&&(a===bp||(CFG.ai&&b===ba)))t+='<div class="result-note">Nesplněné povinné oblasti znamenají 0 bodů za mřížku.</div>';
   $('end').innerHTML=t}}
@@ -610,9 +612,17 @@ function openHelp(){modal('',`
 <h4>Body</h4>
 <ul>
 <li>Sektor 3 body, řádek 1 bod, sloupec 1 bod.</li>
-<li>Hodnocení: ≤10 Máte na víc! · 11–15 Správná cesta · 16–24 Šampion Tedoku · 25–40 Černý pás · 41+ Podvádíte!</li>
+<li>Vyhrává vyšší skóre. Při <b>shodě bodů</b> rozhoduje <b>menší počet prázdných polí</b>.</li>
 <li>Hraje se 20 karet (z 27 se 7 náhodně odstraní).</li>
+<li>Hodnocení (solo):</li>
 </ul>
+<table style="width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:13px">
+<tr><td style="padding:4px 8px;border-bottom:1px solid var(--line)">≤ 10 bodů</td><td style="padding:4px 8px;border-bottom:1px solid var(--line)">Máte na víc!</td></tr>
+<tr><td style="padding:4px 8px;border-bottom:1px solid var(--line)">11–15 bodů</td><td style="padding:4px 8px;border-bottom:1px solid var(--line)">Jste na správné cestě!</td></tr>
+<tr><td style="padding:4px 8px;border-bottom:1px solid var(--line)">16–24 bodů</td><td style="padding:4px 8px;border-bottom:1px solid var(--line)">Šampion Tedoku</td></tr>
+<tr><td style="padding:4px 8px;border-bottom:1px solid var(--line)">25–40 bodů</td><td style="padding:4px 8px;border-bottom:1px solid var(--line)">Černý pás Tedoku</td></tr>
+<tr><td style="padding:4px 8px">41 a více</td><td style="padding:4px 8px">Podvádíte!</td></tr>
+</table>
 <h4>Režimy a volitelná pravidla</h4>
 <ul>
 <li><b>SOLO / AI:</b> proti AI hrajete na vlastní mřížce, AI na své, se stejnými kartami a kostkami (minimax + alfa-beta, hloubka 4).</li>
