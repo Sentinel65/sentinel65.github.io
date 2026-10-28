@@ -292,36 +292,45 @@ const rank=p=>p<=10?'Máte na víc!':p<=15?'Jste na správné cestě!':p<=24?'Š
 /* ---------- AI: minimax + alfa-beta, hloubka 4 ---------- */
 function countFilled(own,ids){let c=0;for(const i of ids)if(own[i]>=0)c++;return c}
 function partsVal(own){let s=0,r=0,c=0;for(let i=0;i<9;i++){if(full(own,G.sec[i]))s++;if(full(own,ROW[i]))r++;if(full(own,COL[i]))c++}return s*3+r+c}
+function reqEmpty(own){if(!G.req)return 0;let n=0;for(const i of G.req)if(own[i]<0)n++;return n}
 function ev(own){
- // actual end-score points dominate; progress toward full lines is secondary
- let s=partsVal(own)*12;
- for(const ids of G.sec){const c=countFilled(own,ids);if(c<9)s+=2.2*(c/9)**3}
+ // Final-like scoring + strong pressure on required areas / full lines
+ const pv=partsVal(own);
+ let s=pv*18;
+ // PROMO povinné oblasti: incomplete req → end score 0, so this must dominate
+ if(G.req){
+  const re=reqEmpty(own);
+  s-=re*28;
+  if(re===0)s+=50; // all required cells filled
+  else s+=(26-re)*.9;
+ }
+ for(const ids of G.sec){const c=countFilled(own,ids);if(c<9)s+=2.8*(c/9)**3;if(c===8)s+=4.5;if(c===7)s+=1.8}
  for(let k=0;k<9;k++){
   const a=countFilled(own,ROW[k]),b=countFilled(own,COL[k]);
-  if(a<9)s+=1.1*(a/9)**3;if(b<9)s+=1.1*(b/9)**3;
-  // almost complete lines are valuable
-  if(a===8)s+=1.6;if(b===8)s+=1.6;if(a===7)s+=.7;if(b===7)s+=.7;
+  if(a<9)s+=1.3*(a/9)**3;if(b<9)s+=1.3*(b/9)**3;
+  if(a===8)s+=2.2;if(b===8)s+=2.2;if(a===7)s+=.9;if(b===7)s+=.9;
  }
- for(const ids of G.sec){const c=countFilled(own,ids);if(c===8)s+=3.5;if(c===7)s+=1.4}
- // connectivity / dead regions
+ // dead / isolated empty cells (hurts later placement)
  const seen=new Uint8Array(81);let dead=0,singles=0;
  for(let i=0;i<81;i++){if(own[i]>=0||seen[i])continue;const st=[i],comp=[i];seen[i]=1;
   while(st.length){const x=st.pop();for(const j of nb(x))if(own[j]<0&&!seen[j]){seen[j]=1;st.push(j);comp.push(j)}}
   if(comp.length===1)singles++;
-  if(comp.length<4){dead+=comp.length;if(G.req)for(const j of comp)if(G.req.has(j))s-=40}}
- s-=1.4*dead-0.8*singles;
- if(G.req)for(const i of G.req)if(own[i]>=0)s+=.6;
- // slight preference for filling more cells (fewer empties)
- s+=own.filter(x=>x>=0).length*.05;
+  if(comp.length<4){dead+=comp.length;if(G.req)for(const j of comp)if(G.req.has(j))s-=55}}
+ s-=1.6*dead-1.1*singles;
+ s+=own.filter(x=>x>=0).length*.08;
+ // unused bonus at end is +2 each – slight preference to save them if not useful
+ if(CFG.bonus){const b=G.bonusA;s+=(!b.B1?1.2:0)+(!b.B2?1.2:0)+(!b.B4?1.2:0)}
  return s}
 function moveScore(own,m){
- // immediate score gain + heuristic after the move
- const before=partsVal(own);
+ const beforeP=partsVal(own),beforeR=reqEmpty(own);
  m.ids.forEach(i=>own[i]=1);
- const after=partsVal(own);
- let v=ev(own)+(after-before)*20;
- // prefer die shapes over spending bonuses early
- if(BONUS.includes(m.key)||m.key==='D1')v-=(after>before?0:2.5);
+ const afterP=partsVal(own),afterR=reqEmpty(own);
+ let v=ev(own)+(afterP-beforeP)*30+(beforeR-afterR)*45;
+ // spending a bonus: only good if it fills req or completes a line
+ if(BONUS.includes(m.key)){
+  if(afterP>beforeP||beforeR>afterR)v+=6;
+  else v-=8; // avoid wasting bonuses
+ }
  m.ids.forEach(i=>own[i]=-1);
  return v}
 function topMoves(own,mv,n){
@@ -330,36 +339,45 @@ function topMoves(own,mv,n){
  return sc.slice(0,n).map(x=>x[1])}
 const withMove=(own,m)=>{const o=own.slice();m.ids.forEach(i=>o[i]=1);return o};
 function samples(rem,rr,n){const out=[];for(let i=0;i<n;i++)out.push([rem[rr()*rem.length|0],FACES[rr()*6|0]]);return out}
-// Uzel „příroda“ (min): vybere nejhorší karta+kostka. Uzel AI (max): vybere nejlepší zakreslení.
 function natureNode(own,rem,d,alpha,beta,rr){
  if(!rem.length||d<=0)return ev(own);
  let v=1e9;const base=d===1?ev(own):0;
- for(const[card,die]of samples(rem,rr,4)){
+ const nSamp=rem.length<=6?Math.min(6,rem.length*2):4;
+ for(const[card,die]of samples(rem,rr,nSamp)){
   const mask=zoneMask(card),keys=dieKeys(die,'A');
   let val;
-  if(d===1)val=base-(genMoves(own,keys,mask,true).length?0:6);
+  if(d===1)val=base-(genMoves(own,keys,mask,true).length?0:8);
   else val=aiNode(own,mask,keys,rem,d-1,alpha,Math.min(beta,v),rr);
   if(val<v)v=val;if(v<=alpha)break}
  return v}
 function aiNode(own,mask,keys,rem,d,alpha,beta,rr){
  const mv=genMoves(own,keys,mask);
- if(!mv.length)return natureNode(own,rem,d-1,alpha,beta,rr)-6;
+ if(!mv.length)return natureNode(own,rem,d-1,alpha,beta,rr)-8;
  let v=-1e9;
- for(const m of topMoves(own.slice(),mv,8)){
+ for(const m of topMoves(own.slice(),mv,10)){
   const r=natureNode(withMove(own,m),rem,d-1,Math.max(alpha,v),beta,rr);
   if(r>v)v=r;if(v>=beta)break}
  return v}
 function aiChoose(){
- // try die shapes first; only fall back to bonuses if die cannot place
  const dieOnly=G.die==='*'?ALL5:[G.die];
  let mv=genMoves(G.ownA,dieOnly,G.mask);
- if(!mv.length)mv=genMoves(G.ownA,dieKeys(G.die,'A'),G.mask);
+ // also consider unused bonuses; moveScore decides if they are worth it
+ if(CFG.bonus){
+  const unused=BONUS.filter(k=>!G.bonusA[k]);
+  if(unused.length){
+   const bm=genMoves(G.ownA,unused,G.mask);
+   // if die cannot place, bonuses are the only option; otherwise merge and rank
+   mv=mv.length?mv.concat(bm):bm;
+  }
+ }
  if(!mv.length)return null;
  const rr=rng32(CFG.seed*31+G.t*17+5),rem=G.deck.slice(G.t+1);
- // late game: deeper look at remaining cards; early: still depth 3-4
- const depth=rem.length<=8?4:3;
+ // deeper search mid/late game; wider beam when many req cells still open
+ const re=reqEmpty(G.ownA);
+ const depth=rem.length<=10||re>0?4:3;
+ const beam=re>0||rem.length<=8?12:10;
  let best=null,bv=-1e9;
- for(const m of topMoves(G.ownA.slice(),mv,10)){
+ for(const m of topMoves(G.ownA.slice(),mv,beam)){
   const v=natureNode(withMove(G.ownA,m),rem,depth,bv,1e9,rr);
   if(v>bv||!best){bv=v;best=m}}
  return best}
@@ -550,6 +568,30 @@ function draw(){
 /* ---------- log, modal ---------- */
 const cellName=i=>LET[i/9|0]+(i%9+1);
 const cardName=c=>c[0]==='r'?'Řádek '+LET[c[1]]:c[0]==='c'?'Sloupec '+(c[1]+1):'Sektor '+(c[1]+1)+' ('+NAMES[c[1]]+')';
+function logSummary(){
+ if(!G.over)return '';
+ const a=final(G.ownP),b=final(G.ownA);
+ const ea=81-G.ownP.filter(x=>x>=0).length,eb=81-G.ownA.filter(x=>x>=0).length;
+ const bp=bonusPts('P'),ba=bonusPts('A');
+ const gridP=G.req&&![...G.req].every(i=>G.ownP[i]>=0)?0:parts(G.ownP).v;
+ const gridA=G.req&&![...G.req].every(i=>G.ownA[i]>=0)?0:parts(G.ownA).v;
+ const skP=G.sk.P||0,skA=G.sk.A||0;
+ let out='\n--- HODNOCENÍ ---\n';
+ if(CFG.ai){
+  const tie=a===b,winP=a>b||(tie&&ea<eb),winA=a<b||(tie&&ea>eb);
+  const result=winP?(tie?`Vyhrál Hráč (méně prázdných: ${ea})`:'Vyhrál Hráč'):winA?(tie?`Vyhrála AI (méně prázdných: ${eb})`:'Vyhrála AI'):'Remíza';
+  out+=`Výsledek: ${a} : ${b}  →  ${result}\n`;
+  out+=`Hráč: mřížka ${gridP} + bonus ${bp} = ${a}  |  prázdná pole ${ea}  |  přeskočeno ${skP}\n`;
+  out+=`AI:    mřížka ${gridA} + bonus ${ba} = ${b}  |  prázdná pole ${eb}  |  přeskočeno ${skA}\n`;
+  out+=`Hodnocení hráče: ${rank(a)}  |  Hodnocení AI: ${rank(b)}\n`;
+ }else{
+  out+=`Celkové skóre: ${a}  (mřížka ${gridP} + bonus ${bp})\n`;
+  out+=`Prázdná pole: ${ea}  |  Přeskočeno tahů: ${skP}\n`;
+  out+=`Hodnocení: ${rank(a)}\n`;
+ }
+ if(G.req&&(gridP===0||(CFG.ai&&gridA===0)))out+='Pozn.: Nesplněné povinné oblasti = 0 bodů za mřížku.\n';
+ return out;
+}
 function logText(){
  const pm={req:'Povinné oblasti',wall:'Nepřekročitelné hranice',irr:'Nepravidelné sektory'}[CFG.pm];
  const moves=(CFG.ai?G.log:G.log.filter(a=>a.w==='P')).map(a=>({seq:a.seq||0,type:'move',a}));
@@ -566,7 +608,8 @@ function logText(){
   const action=a.key==='D1'&&a.ids?`Bonus X1: ${a.ids.map(cellName).join(' ')}`:(a.ids?`${a.key}: ${a.ids.map(cellName).join(' ')}`:'přeskočeno');
   return `${n}. kolo ${n} | ${who} | ${cardName(a.card)} | kostka ${a.die} | ${action}`;
  }).join('\n');
- return `TEDOKU seed ${CFG.seed} | ${CFG.ai?'AI':'SOLO'}${CFG.bonus?' | Bonus':''}${CFG.diagBonus?' | Odměny za úhlopříčky':''}${CFG.promo?' | PROMO: '+pm:''}\n`+lines;
+ const head=`TEDOKU seed ${CFG.seed} | ${CFG.ai?'AI':'SOLO'}${CFG.bonus?' | Bonus':''}${CFG.diagBonus?' | Odměny za úhlopříčky':''}${CFG.promo?' | PROMO: '+pm:''}`;
+ return head+logSummary()+'\n'+lines;
 }
 function modal(tools,html){$('mtools').innerHTML=tools;$('mbody').innerHTML=html;$('modal').hidden=false}
 let settingsDraft=null,settingsChanged=false;
