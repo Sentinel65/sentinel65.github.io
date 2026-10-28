@@ -30,19 +30,20 @@ button:disabled{opacity:.35;cursor:default}
 button.ok{background:#1f8a4c}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .ic{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-#info{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin:4px 0 6px}
-.pt{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:4px 10px;font:700 18px/1 "Stardos Stencil",Impact,sans-serif;min-height:36px}
+#info{display:grid;grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr);gap:6px;align-items:center;margin:4px 0 6px}
+.pt{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:4px 10px;font:700 18px/1 "Stardos Stencil",Impact,sans-serif;min-height:36px;min-width:0}
 .pt.r{justify-content:flex-end}.pt.turn{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}.pt[data-view]{cursor:pointer;user-select:none;-webkit-user-select:none}.pt.view{outline:3px solid #168447;outline-offset:1px}.pt[data-view]:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .pt .ic{color:var(--mut);width:20px;height:20px}.pt.turn .ic{color:var(--acc)}
 .mid{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:4px 12px;min-width:90px;min-height:36px;justify-content:center;font:700 18px/1 "Stardos Stencil",Impact,sans-serif}
 .mid svg{height:22px;width:auto}
+#info .settings-btn{width:44px;height:36px;min-width:44px;border:2px solid var(--line);border-radius:9px;padding:5px 8px;background:var(--card);color:var(--fg)}#info .settings-btn .ic{width:22px;height:22px}
 #boards{display:flex;flex-direction:column;align-items:center;gap:10px}
 .sheet{width:100%;aspect-ratio:700/690;display:block;border-radius:10px;border:1.5px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 #bd2{display:none!important}
-.sheet{--blue:#263a8f;--red:#e8202a;--reddk:#a8121a;--paper:#fffaf0;--zone:#b9c6f2;--req:#ffe08a;--wm:#ebe4d4}
+.sheet{--blue:#263a8f;--red:#e8202a;--reddk:#a8121a;--paper:#fffaf0;--zone:#b9c6f2;--req:#f5b8d0;--wm:#ebe4d4}
 .sheet .t{font-family:"Stardos Stencil",Impact,"Arial Black",sans-serif;font-weight:700}
 .bf{fill:var(--blue)}.bs{fill:none;stroke:var(--blue)}.rs{fill:none;stroke:var(--red)}
-.wm{color:var(--wm)}.pc{fill:var(--red);stroke:var(--paper);stroke-width:2}.pd{fill:var(--reddk);stroke:var(--paper);stroke-width:2}
+.wm{color:var(--wm);opacity:.28}.wm.wm-req{opacity:.16}.wm.wm-irr{opacity:.36}.pc{fill:var(--red);stroke:var(--paper);stroke-width:2}.pd{fill:var(--reddk);stroke:var(--paper);stroke-width:2}
 .gok{fill:var(--blue);opacity:.6}.gbad{fill:var(--red);opacity:.35;stroke:var(--red);stroke-width:3}
 #transformControls{display:none;justify-content:center;gap:7px;margin:5px 0 2px;align-items:center;width:100%}#transformControls.show{display:flex}#transformControls button{flex:1 1 0;min-width:0;max-width:100px;height:46px;border:2px solid var(--line);border-radius:10px;background:#263a8f;color:#fff;font-size:23px;font-weight:700;box-shadow:0 2px 4px #0003}#transformControls button[data-c="ok"]{background:#1f8a4c}#transformControls button[data-c="skip"]{background:#e8202a}
 #rp{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin-top:10px}
@@ -103,12 +104,14 @@ const $=id=>document.getElementById(id);
 const IC={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
 bot:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3.5" r="1"/><circle cx="9" cy="14" r="1.2"/><circle cx="15" cy="14" r="1.2"/>',
 star:'<path d="M12 3l2.8 6 6.2.8-4.6 4.4 1.2 6.8L12 17.7 6.4 21l1.2-6.8L3 9.8 9.2 9z"/>',
+settings:'<path d="M4 21V14M4 10V3M12 21V12M12 8V3M20 21V16M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>',
 req:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
 wall:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18" stroke-width="1" /><path d="M5 8h14" stroke-width="4" stroke="#ff7b83"/>',
 irr:'<path d="M4 4h9v6h7v10H9v-6H4z"/>',
 save:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7V3M8 21v-7h8v7"/>',
 load:'<path d="M3 7h7l2 2h9v10H3z"/><path d="M12 12v5m-2.5-2.5L12 17l2.5-2.5"/>',
 redo:'<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/>',
+undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/>',
 log:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
 play:'<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>',
 help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.4-1.1 1-1.1 1.8M12 17v.2"/>',
@@ -118,7 +121,7 @@ rot:'<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/>',flip:'<path d="
 skip:'<path d="M5 5l9 7-9 7zM17 5v14"/>',first:'<path d="M6 5v14M18 5l-9 7 9 7z"/>',prev:'<path d="M17 5l-9 7 9 7z"/>',next:'<path d="M7 5l9 7-9 7z"/>',last:'<path d="M18 5v14M6 5l9 7-9 7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',
 bonus:'<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>'};
 const ico=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
-function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function rng32(a){const f=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};f.getState=()=>a|0;f.setState=v=>{a=v|0};return f}
 const nb=i=>{const r=i/9|0,c=i%9,o=[];if(r>0)o.push(i-9);if(r<8)o.push(i+9);if(c>0)o.push(i-1);if(c<8)o.push(i+1);return o};
 /* ---------- generátory mřížky ---------- */
 function standard(){return Array.from({length:81},(_,i)=>(i/27|0)*3+((i%9)/3|0))}
@@ -162,7 +165,7 @@ function genReq(rnd){
 /* ---------- tvary ---------- */
 const SH={D1:[[0,0]],T:[[0,1],[1,0],[1,1],[1,2]],O:[[0,0],[0,1],[1,0],[1,1]],S:[[0,1],[0,2],[1,0],[1,1]],I:[[0,0],[0,1],[0,2],[0,3]],L:[[0,0],[1,0],[1,1],[1,2]],B1:[[0,0]],B2:[[0,0],[0,1]],B4:[[0,0],[0,1],[1,0],[1,1]]};
 const FACES=['T','O','S','I','L','*'],ALL5=['T','O','S','I','L'],BONUS=['B1','B2','B4'],NAMES=['Tykev','Geta','Tomoe','Čtyřlístek','Hvězdice','Hřeben','Leknín','Vějíř','Lotos'],LET='ABCDEFGHI';
-const COLORS={T:'#e8202a',O:'#263a8f',S:'#1f8a4c',I:'#c45c26',L:'#7b3fa0',B1:'#e8b923',B2:'#e8b923',B4:'#e8b923',D1:'#e8b923'};
+const COLORS={T:'#e8202a',O:'#263a8f',S:'#1f8a4c',I:'#5c3317',L:'#7b3fa0',B1:'#1a1a1a',B2:'#1a1a1a',B4:'#1a1a1a',D1:'#1a1a1a'};
 const norm=cs=>{const mr=Math.min(...cs.map(a=>a[0])),mc=Math.min(...cs.map(a=>a[1]));return cs.map(([r,c])=>[r-mr,c-mc]).sort((a,b)=>a[0]-b[0]||a[1]-b[1])};
 const rotC=cs=>norm(cs.map(([r,c])=>[c,-r])),flipC=cs=>norm(cs.map(([r,c])=>[r,-c]));
 function orient(shape,rot,flip){let cs=norm(shape.map(p=>[...p]));if(flip)cs=flipC(cs);for(let i=0;i<rot;i++)cs=rotC(cs);return cs}
@@ -177,8 +180,34 @@ const KEY='tedoku_save_v1',SETTINGS_KEY='tedoku_settings_v1',S=64,OX=64,OY=52;
 const ROW=Array.from({length:9},(_,r)=>Array.from({length:9},(_,c)=>r*9+c)),COL=Array.from({length:9},(_,c)=>Array.from({length:9},(_,r)=>r*9+c));
 let CFG={seed:1+Math.floor(Math.random()*999999),ai:false,promo:false,pm:'irr',bonus:true,diagBonus:false},G,TM=null;
 let boardView='P';
+const undoStack=[];
 const irrOn=()=>CFG.promo&&CFG.pm==='irr';
+function cloneStateValue(v){
+ if(v instanceof Set)return new Set(v);
+ if(v instanceof Uint8Array)return new Uint8Array(v);
+ if(Array.isArray(v))return v.map(cloneStateValue);
+ if(v&&typeof v==='object'){const o={};for(const k of Object.keys(v))o[k]=cloneStateValue(v[k]);return o}
+ return v;
+}
+function pushUndo(){
+ if(!G||G.quiet||G.rep)return;
+ // A move that triggers diagonal rewards is still one undoable turn.
+ if(undoStack.length&&undoStack[undoStack.length-1].turn===G.t)return;
+ const rng=G.rnd;
+ undoStack.push({turn:G.t,state:cloneStateValue(G),rng,rngState:rng&&rng.getState?rng.getState():null,boardView});
+ if(undoStack.length>20)undoStack.shift();
+}
+function undoLastMove(){
+ if(!undoStack.length||G.rep)return;
+ clearInterval(TM);TM=null;
+ const snap=undoStack.pop(),nextId=(G.id||0)+1,rng=snap.rng;
+ if(rng&&snap.rngState!==null&&rng.setState)rng.setState(snap.rngState);
+ G=cloneStateValue(snap.state);G.rnd=rng;G.id=nextId;G.rep=null;G.quiet=false;
+ boardView=snap.boardView||'P';G.msg='Poslední tah byl vrácen.';
+ resetOutsideTaps();draw();
+}
 function init(quiet){
+ undoStack.length=0;
  const rnd=rng32(CFG.seed*7+13);
  const reg=irrOn()?generate(CFG.seed):standard();
  const walls=CFG.promo&&CFG.pm==='wall'?genWalls(rnd):new Set(),req=CFG.promo&&CFG.pm==='req'?genReq(rnd):null;
@@ -278,7 +307,7 @@ function put(){
  if(G.anc<0){G.msg='Posuňte tvar na desku.';return draw()}
  const cells=place0(G.cs,G.anc),why=reasonC(cells);
  if(why){G.msg=why;return draw()}
- resetOutsideTaps();G.float=false;
+ resetOutsideTaps();pushUndo();G.float=false;
  const wasDiag=G.pendingDiag,placed=cells.map(([r,c])=>r*9+c);
  apply('P',G.sel,placed);
  if(wasDiag){logEvent('P','bonus',placed[0]);G.pendingDiag=false;G.diagQueue.shift();if(G.diagQueue.length){beginDiagBonus();return}G.mask=zoneMask(G.card);after('P');return}
@@ -289,54 +318,124 @@ function parts(own){let s=0,r=0,c=0;for(let i=0;i<9;i++){if(full(own,G.sec[i]))s
 function bonusPts(w){if(!CFG.bonus)return 0;const b=w==='P'?G.bonusP:G.bonusA;return 2*(!b.B1+!b.B2+!b.B4)}
 const final=own=>{const base=G.req&&![...G.req].every(i=>own[i]>=0)?0:parts(own).v;const w=own===G.ownP?'P':'A';return base+bonusPts(w)};
 const rank=p=>p<=10?'Máte na víc!':p<=15?'Jste na správné cestě!':p<=24?'Šampion Tedoku.':p<=40?'Černý pás Tedoku.':'Podvádíte!';
-/* ---------- AI: minimax + alfa-beta, hloubka 4 ---------- */
+/* ---------- AI: režimově orientované vyhodnocení + minimax ---------- */
 function countFilled(own,ids){let c=0;for(const i of ids)if(own[i]>=0)c++;return c}
 function partsVal(own){let s=0,r=0,c=0;for(let i=0;i<9;i++){if(full(own,G.sec[i]))s++;if(full(own,ROW[i]))r++;if(full(own,COL[i]))c++}return s*3+r+c}
 function reqEmpty(own){if(!G.req)return 0;let n=0;for(const i of G.req)if(own[i]<0)n++;return n}
+function coversReq(m,own){if(!G.req)return 0;let n=0;for(const i of m.ids)if(G.req.has(i)&&own[i]<0)n++;return n}
+function reqAccess(own){
+ if(!G.req)return 0;let s=0;
+ for(const i of G.req){if(own[i]>=0)continue;let exits=0;for(const j of nb(i))if(own[j]<0)exits++;s+=Math.min(exits,2)}
+ return s
+}
 function ev(own){
- // Final-like scoring + strong pressure on required areas / full lines
  const pv=partsVal(own);
- let s=pv*18;
- // PROMO povinné oblasti: incomplete req → end score 0, so this must dominate
+ // Povinné oblasti jsou podmínkou platného výsledku, nikoli jen dalším bodovým cílem.
  if(G.req){
   const re=reqEmpty(own);
-  s-=re*28;
-  if(re===0)s+=50; // all required cells filled
-  else s+=(26-re)*.9;
+  if(re>0)return -re*1200+reqAccess(own)*7+lineProgress(own)*.15+own.filter(x=>x>=0).length*.02;
+  return 10000+pv*25+lineProgress(own);
  }
- for(const ids of G.sec){const c=countFilled(own,ids);if(c<9)s+=2.8*(c/9)**3;if(c===8)s+=4.5;if(c===7)s+=1.8}
+ return pv*24+lineProgress(own);
+}
+function lineProgress(own){
+ let s=0;
+ // Nepravidelné sektory: dokončení sektoru = 3 body → dominantní cíl
+ const sectorWeight=irrOn()?7.5:3.4;
+ for(const ids of G.sec){
+  const c=countFilled(own,ids);
+  if(c<9)s+=sectorWeight*(c/9)**3;
+  if(c===8)s+=irrOn()?14:5;
+  if(c===7)s+=irrOn()?5:1.8;
+  if(c===6)s+=irrOn()?2:0;
+ }
  for(let k=0;k<9;k++){
   const a=countFilled(own,ROW[k]),b=countFilled(own,COL[k]);
-  if(a<9)s+=1.3*(a/9)**3;if(b<9)s+=1.3*(b/9)**3;
-  if(a===8)s+=2.2;if(b===8)s+=2.2;if(a===7)s+=.9;if(b===7)s+=.9;
+  if(a<9)s+=1.35*(a/9)**3;if(b<9)s+=1.35*(b/9)**3;
+  if(a===8)s+=2.5;if(b===8)s+=2.5;
+  if(a===7)s+=1;if(b===7)s+=1;
  }
- // dead / isolated empty cells (hurts later placement)
  const seen=new Uint8Array(81);let dead=0,singles=0;
- for(let i=0;i<81;i++){if(own[i]>=0||seen[i])continue;const st=[i],comp=[i];seen[i]=1;
+ for(let i=0;i<81;i++){
+  if(own[i]>=0||seen[i])continue;
+  const st=[i],comp=[i];seen[i]=1;
   while(st.length){const x=st.pop();for(const j of nb(x))if(own[j]<0&&!seen[j]){seen[j]=1;st.push(j);comp.push(j)}}
   if(comp.length===1)singles++;
-  if(comp.length<4){dead+=comp.length;if(G.req)for(const j of comp)if(G.req.has(j))s-=55}}
- s-=1.6*dead-1.1*singles;
- s+=own.filter(x=>x>=0).length*.08;
- // unused bonus at end is +2 each – slight preference to save them if not useful
+  if(comp.length<4)dead+=comp.length;
+ }
+ // v irr trestej izolované díry uvnitř sektorů silněji
+ s-=((CFG.promo&&CFG.pm==='wall')?2.5:(irrOn()?2.2:1.6))*dead-(irrOn()?1.8:1.1)*singles;
+ s+=own.filter(x=>x>=0).length*(irrOn()?.15:.08);
  if(CFG.bonus){const b=G.bonusA;s+=(!b.B1?1.2:0)+(!b.B2?1.2:0)+(!b.B4?1.2:0)}
- return s}
-function moveScore(own,m){
- const beforeP=partsVal(own),beforeR=reqEmpty(own);
+ return s
+}
+// Jak dobře tah posouvá nepravidelné sektory ke kompletaci
+function sectorFocus(own,m){
+ if(!irrOn())return 0;
+ const before=G.sec.map(ids=>countFilled(own,ids));
  m.ids.forEach(i=>own[i]=1);
- const afterP=partsVal(own),afterR=reqEmpty(own);
- let v=ev(own)+(afterP-beforeP)*30+(beforeR-afterR)*45;
- // spending a bonus: only good if it fills req or completes a line
+ let sc=0;
+ G.sec.forEach((ids,si)=>{
+  const a=countFilled(own,ids),b=before[si];
+  if(a===b)return;
+  const add=a-b;
+  if(a===9)sc+=120+add*10;          // dokončení sektoru
+  else if(b>=7)sc+=35*add+b*3;       // skoro hotový – prioritní
+  else if(b>=5)sc+=18*add+b;         // rozpracovaný
+  else if(b>=3)sc+=6*add;            // střední
+  else sc+=2*add;                    // prázdný – jen lehce
+ });
+ m.ids.forEach(i=>own[i]=-1);
+ return sc
+}
+function moveScore(own,m){
+ const beforeP=partsVal(own),beforeR=reqEmpty(own),cov=coversReq(m,own),beforeA=reqAccess(own);
+ const beforeSec=G.sec.map(ids=>countFilled(own,ids));
+ const foc=sectorFocus(own,m);
+ m.ids.forEach(i=>own[i]=1);
+ const afterP=partsVal(own),afterR=reqEmpty(own),afterA=reqAccess(own);
+ let v=ev(own)+(afterP-beforeP)*22;
+ v+=m.ids.length*2.2;
+ if(G.req){
+  v+=cov*500+(beforeR-afterR)*900+(afterA-beforeA)*12;
+ }else{
+  v+=(afterP-beforeP)*14;
+  let sectorGain=0;
+  G.sec.forEach((ids,si)=>{
+   const a=countFilled(own,ids),b=beforeSec[si];
+   if(a===9&&b<9)sectorGain+=3;
+   else if(a===8&&b<8)sectorGain+=1.2;
+   else if(a>b&&a>=6)sectorGain+=.25*(a-b);
+  });
+  v+=sectorGain*(irrOn()?36:16);
+  v+=foc*(irrOn()?1.4:.3);
+  if(CFG.promo&&CFG.pm==='wall')v+=lineProgress(own)*.1;
+ }
  if(BONUS.includes(m.key)){
-  if(afterP>beforeP||beforeR>afterR)v+=6;
-  else v-=8; // avoid wasting bonuses
+  if(G.req&&cov>0)v+=40;
+  else if(afterP>beforeP)v+=8;
+  else if(irrOn()&&foc>=35)v+=12; // bonus, který dokončí skoro hotový sektor
+  else v-=35;
  }
  m.ids.forEach(i=>own[i]=-1);
- return v}
+ return v
+}
 function topMoves(own,mv,n){
+ if(G.req&&reqEmpty(own)>0){
+  const sc=mv.map(m=>[coversReq(m,own),moveScore(own,m),m]);
+  sc.sort((a,b)=>b[0]-a[0]||b[1]-a[1]);
+  return sc.slice(0,n).map(x=>x[2]);
+ }
+ if(irrOn()){
+  // primárně sectorFocus (dokončování nepravidelných sektorů), pak moveScore
+  const sc=mv.map(m=>[sectorFocus(own,m),moveScore(own,m),m.ids.length,m]);
+  sc.sort((a,b)=>b[0]-a[0]||b[1]-a[1]||b[2]-a[2]);
+  return sc.slice(0,n).map(x=>x[3]);
+ }
  const sc=mv.map(m=>[moveScore(own,m),m]);
  sc.sort((a,b)=>b[0]-a[0]);
- return sc.slice(0,n).map(x=>x[1])}
+ return sc.slice(0,n).map(x=>x[1])
+}
 const withMove=(own,m)=>{const o=own.slice();m.ids.forEach(i=>o[i]=1);return o};
 function samples(rem,rr,n){const out=[];for(let i=0;i<n;i++)out.push([rem[rr()*rem.length|0],FACES[rr()*6|0]]);return out}
 function natureNode(own,rem,d,alpha,beta,rr){
@@ -348,39 +447,88 @@ function natureNode(own,rem,d,alpha,beta,rr){
   let val;
   if(d===1)val=base-(genMoves(own,keys,mask,true).length?0:8);
   else val=aiNode(own,mask,keys,rem,d-1,alpha,Math.min(beta,v),rr);
-  if(val<v)v=val;if(v<=alpha)break}
- return v}
+  if(val<v)v=val;if(v<=alpha)break
+ }
+ return v
+}
 function aiNode(own,mask,keys,rem,d,alpha,beta,rr){
- const mv=genMoves(own,keys,mask);
+ let mv=genMoves(own,keys,mask);
  if(!mv.length)return natureNode(own,rem,d-1,alpha,beta,rr)-8;
+ if(G.req&&reqEmpty(own)>0){
+  const cov=mv.filter(m=>coversReq(m,own)>0);
+  if(cov.length)mv=cov;
+ }
  let v=-1e9;
- for(const m of topMoves(own.slice(),mv,10)){
+ for(const m of topMoves(own.slice(),mv,G.req&&reqEmpty(own)>0?14:10)){
   const r=natureNode(withMove(own,m),rem,d-1,Math.max(alpha,v),beta,rr);
-  if(r>v)v=r;if(v>=beta)break}
- return v}
+  if(r>v)v=r;if(v>=beta)break
+ }
+ return v
+}
 function aiChoose(){
  const dieOnly=G.die==='*'?ALL5:[G.die];
- let mv=genMoves(G.ownA,dieOnly,G.mask);
- // also consider unused bonuses; moveScore decides if they are worth it
- if(CFG.bonus){
-  const unused=BONUS.filter(k=>!G.bonusA[k]);
-  if(unused.length){
-   const bm=genMoves(G.ownA,unused,G.mask);
-   // if die cannot place, bonuses are the only option; otherwise merge and rank
-   mv=mv.length?mv.concat(bm):bm;
-  }
- }
- if(!mv.length)return null;
- const rr=rng32(CFG.seed*31+G.t*17+5),rem=G.deck.slice(G.t+1);
- // deeper search mid/late game; wider beam when many req cells still open
+ const dieMv=genMoves(G.ownA,dieOnly,G.mask);
+ const unused=CFG.bonus?BONUS.filter(k=>!G.bonusA[k]):[];
+ const bonusMv=unused.length?genMoves(G.ownA,unused,G.mask):[];
  const re=reqEmpty(G.ownA);
- const depth=rem.length<=10||re>0?4:3;
- const beam=re>0||rem.length<=8?12:10;
+ // Povinné oblasti: smí míchat bonusy; jinak bonus jen když kostka nejde položit
+ let mv;
+ if(G.req&&re>0)mv=dieMv.length?dieMv.concat(bonusMv):bonusMv;
+ else mv=dieMv.length?dieMv:bonusMv;
+ if(!mv.length)return null;
+ // Povinné oblasti: tvrdá priorita – nejdřív max. počet pokrytých povinných polí
+ if(G.req&&re>0){
+  const scored=mv.map(m=>{
+   const cov=coversReq(m,G.ownA);
+   const o=G.ownA.slice();m.ids.forEach(i=>o[i]=1);
+   // preferuj větší tvar ze stejného pokrytí (méně plýtvání bonusy)
+   return{m,cov,re:reqEmpty(o),acc:reqAccess(o),sz:m.ids.length,sc:moveScore(G.ownA,m)};
+  });
+  scored.sort((a,b)=>b.cov-a.cov||a.re-b.re||b.sz-a.sz||b.acc-a.acc||b.sc-a.sc);
+  if(scored[0].cov>0){
+   const bestCov=scored[0].cov;
+   const top=scored.filter(x=>x.cov===bestCov);
+   // malý bonus na povinnou díru jen když stejně velké pokrytí nejde větším tvarem
+   if(re<=4&&top[0].sz<=2){
+    const plug=top.find(x=>x.m.key==='B1'||x.m.key==='B2');
+    if(plug)return plug.m;
+   }
+   return top[0].m;
+  }
+  scored.sort((a,b)=>b.acc-a.acc||b.sz-a.sz||b.sc-a.sc);
+  return scored[0].m;
+ }
+ const rr=rng32(CFG.seed*31+G.t*17+5),rem=G.deck.slice(G.t+1);
+ // Nepravidelné sektory: širší beam + hlubší search; preferuj tahy s max. sectorFocus
+ if(irrOn()){
+  const ranked=topMoves(G.ownA.slice(),mv,18);
+  // pokud některý tah dokončí sektor, ber nejlepší z těch (greedy + minimax mezi nimi)
+  const finishers=ranked.filter(m=>{
+   const before=G.sec.map(ids=>countFilled(G.ownA,ids));
+   m.ids.forEach(i=>G.ownA[i]=1);
+   let ok=false;
+   G.sec.forEach((ids,si)=>{if(countFilled(G.ownA,ids)===9&&before[si]<9)ok=true});
+   m.ids.forEach(i=>G.ownA[i]=-1);
+   return ok;
+  });
+  const pool=finishers.length?finishers:ranked.slice(0,14);
+  const depth=rem.length<=12?4:3;
+  let best=null,bv=-1e9;
+  for(const m of pool){
+   const v=natureNode(withMove(G.ownA,m),rem,depth,bv,1e9,rr)+sectorFocus(G.ownA,m)*2;
+   if(v>bv||!best){bv=v;best=m}
+  }
+  return best;
+ }
+ const depth=rem.length<=10?4:3;
+ const beam=CFG.pm==='wall'?13:10;
  let best=null,bv=-1e9;
  for(const m of topMoves(G.ownA.slice(),mv,beam)){
   const v=natureNode(withMove(G.ownA,m),rem,depth,bv,1e9,rr);
-  if(v>bv||!best){bv=v;best=m}}
- return best}
+  if(v>bv||!best){bv=v;best=m}
+ }
+ return best
+}
 function scheduleAI(){const id=G.id;setTimeout(function w(){if(G.id!==id||G.over)return;if(G.rep){setTimeout(w,300);return}aiTurn()},450)}
 function aiTurn(){const m=aiChoose();apply('A',m&&m.key,m&&m.ids);after('A')}
 /* ---------- vykreslení ---------- */
@@ -406,16 +554,17 @@ function boardSVG(own,card,o){
   if(G.req&&G.req.has(i))s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" style="fill:var(--req)"/>`;
   if(mask[i])s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${zoneFill}" opacity="${noMove?.45:(G.req&&G.req.has(i)?.75:.55)}"/>`;
  }
- // watermarks: classic 3×3 sectors → icon fills whole sector; irregular → centered on one cell
+ // watermarks: soft transparency; weaker in required-areas, stronger in irregular sectors
+ const wmCls=G.req?'wm wm-req':(CFG.promo&&CFG.pm==='irr'?'wm wm-irr':'wm');
  G.sec.forEach((ids,k)=>{
   const rs=ids.map(i=>i/9|0),cs=ids.map(i=>i%9);
   const r0=Math.min(...rs),r1=Math.max(...rs),c0=Math.min(...cs),c1=Math.max(...cs);
   if(r1-r0===2&&c1-c0===2&&ids.length===9){
    const pad=18;
-   s+=`<use href="#i${k}" class="wm" x="${OX+c0*S+pad}" y="${OY+r0*S+pad}" width="${3*S-2*pad}" height="${3*S-2*pad}"/>`;
+   s+=`<use href="#i${k}" class="${wmCls}" x="${OX+c0*S+pad}" y="${OY+r0*S+pad}" width="${3*S-2*pad}" height="${3*S-2*pad}"/>`;
   }else{
    const i=G.icons[k];
-   s+=`<use href="#i${k}" class="wm" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`;
+   s+=`<use href="#i${k}" class="${wmCls}" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`;
   }
  });
  let thin='';for(let i=1;i<9;i++)thin+=`M${OX+i*S} ${OY}v${9*S}M${OX} ${OY+i*S}h${9*S}`;
@@ -472,7 +621,7 @@ function boardSVG(own,card,o){
   if(full(own,ROW[i]))s+=`<path d="M${rx+6} ${ry+6}l18 18m0-18l-18 18" class="rs" stroke-width="4"/>`;
   if(full(own,COL[i]))s+=`<path d="M${cx+6} ${cy+6}l18 18m0-18l-18 18" class="bs" stroke-width="4"/>`}
  if(o.ghost&&G.cs&&G.anc>=0){
-  const cells=place0(G.cs,G.anc),ok=!reasonC(cells),gcol='#4a4a4a';
+  const cells=place0(G.cs,G.anc),ok=!reasonC(cells),gcol='#9a9a9a';
   const border=ok?'#1f8a4c':'#e8202a';
   const visible=cells.filter(([r,c])=>r>=0&&r<9&&c>=0&&c<9);
   const inShape=new Set(visible.map(([r,c])=>r*9+c));
@@ -501,7 +650,7 @@ function view(){
 function menu(){
  const B=(a,ic,on,t,dis)=>`<button type="button" data-a="${a}" class="${on?'on':''}" title="${t}" aria-label="${t}" aria-pressed="${on?'true':'false'}" ${dis?'disabled':''}>${ico(ic)}</button>`;
  // single Solo/AI toggle – shows bot icon when AI is on, user when Solo
- $('menu').innerHTML=B('settings','star',false,'Nastavení')+B('save','save',false,'Uložit hru')+B('load','load',false,'Načíst hru')+B('restart','redo',false,'Restartovat')+B('log','log',false,'Log hry')+B('rep','play',!!G.rep,'Přehrávač tahů')+B('help','help',false,'Nápověda');
+ $('menu').innerHTML=B('save','save',false,'Uložit hru')+B('load','load',false,'Načíst hru')+B('restart','redo',false,'Restartovat')+B('undo','undo',false,'Vrátit poslední tah',!undoStack.length||!!G.rep)+B('log','log',false,'Log hry')+B('rep','play',!!G.rep,'Přehrávač tahů')+B('help','help',false,'Nápověda');
  $('menu2').hidden=true;
  $('menu2').innerHTML=CFG.promo?B('pm_req','req',CFG.pm==='req','Povinné oblasti')+B('pm_wall','wall',CFG.pm==='wall','Nepřekročitelné hranice')+B('pm_irr','irr',CFG.pm==='irr','Nepravidelné sektory'):''}
 function draw(){
@@ -534,7 +683,7 @@ function draw(){
  const live=!R&&!G.over;
  const dieLabel=die==='*'?'★':(die||'—');
  const scoreP=R?parts(oP).v:final(G.ownP),scoreA=R?parts(oA).v:final(G.ownA);
- $('info').innerHTML=`<div class="pt ${live&&G.turn==='P'?'turn':''} ${boardView==='P'?'view':''}" data-view="P" role="button" tabindex="0" aria-label="Zobrazit hrací desku hráče">${ico('user')}<span>${scoreP}</span></div><div class="mid"><span>${dieLabel}</span><span>${rnd}/20</span></div>`+(CFG.ai?`<div class="pt r ${live&&G.turn==='A'?'turn':''} ${boardView==='A'?'view':''}" data-view="A" role="button" tabindex="0" aria-label="Zobrazit hrací desku AI"><span>${scoreA}</span>${ico('bot')}</div>`:'<div></div>');
+ $('info').innerHTML=`<div class="pt ${live&&G.turn==='P'?'turn':''} ${boardView==='P'?'view':''}" data-view="P" role="button" tabindex="0" aria-label="Zobrazit hrací desku hráče">${ico('user')}<span>${scoreP}</span></div><div class="mid"><span>${rnd}/20</span></div><button type="button" class="settings-btn" data-a="settings" title="Nastavení hry" aria-label="Nastavení hry">${ico('settings')}</button>`+(CFG.ai?`<div class="pt r ${live&&G.turn==='A'?'turn':''} ${boardView==='A'?'view':''}" data-view="A" role="button" tabindex="0" aria-label="Zobrazit hrací desku AI"><span>${scoreA}</span>${ico('bot')}</div>`:'<div></div>');
  $('rp').hidden=!G.rep;
  if(G.rep){const n=G.log.length;$('rp').innerHTML=['first','prev'].map(a=>`<button type="button" data-r="${a}" aria-label="${a}">${ico(a)}</button>`).join('')+`<button type="button" data-r="pp" aria-label="Přehrát">${ico(G.rep.playing?'pause':'play')}</button>`+['next','last'].map(a=>`<button type="button" data-r="${a}" aria-label="${a}">${ico(a)}</button>`).join('')+`<input type="range" min="0" max="${n}" value="${G.rep.step}" aria-label="Krok"><b>${G.rep.step}/${n}</b>`}
  const act=$('act');act.hidden=!!R||G.over;
@@ -592,6 +741,35 @@ function logSummary(){
  if(G.req&&(gridP===0||(CFG.ai&&gridA===0)))out+='Pozn.: Nesplněné povinné oblasti = 0 bodů za mřížku.\n';
  return out;
 }
+function gridSnapshots(){
+ // Rekonstruuje obě mřížky z tahů uložených v logu; stav se zachytí na konci každého kola.
+ const p=Array(81).fill(null),a=Array(81).fill(null),out=[];
+ const moves=[...G.log].sort((x,y)=>(x.seq||0)-(y.seq||0));let at=0;
+ const cell=(key,required)=>{
+  if(key===null)return required?'..*':'...';
+  return String(key).padEnd(2,' ').slice(0,2)+(required?'*':' ');
+ };
+ const fmt=(own)=>{
+  const rows=[];
+  for(let r=0;r<9;r++){
+   const vals=[];
+   for(let c=0;c<9;c++){
+    const i=r*9+c,req=!!(G.req&&G.req.has(i));
+    vals.push(cell(own[i],req));
+   }
+   rows.push('  '+LET[r]+' '+vals.join(' '));
+  }
+  return rows.join('\n');
+ };
+ for(let t=0;t<20;t++){
+  while(at<moves.length&&moves[at].t<=t){
+   const m=moves[at++],own=m.w==='P'?p:a;
+   if(m.ids)for(const i of m.ids)own[i]=m.key||'X';
+  }
+  out.push(`\n--- STAV MŘÍŽKY PO ${t+1}. KOLE ---\nLegenda: ... prázdné pole; ..* prázdné povinné pole; písmeno/tvar + * = obsazené povinné pole.\nHráč:\n${fmt(p)}\nAI:\n${fmt(a)}`);
+ }
+ return out.join('\n');
+}
 function logText(){
  const pm={req:'Povinné oblasti',wall:'Nepřekročitelné hranice',irr:'Nepravidelné sektory'}[CFG.pm];
  const moves=(CFG.ai?G.log:G.log.filter(a=>a.w==='P')).map(a=>({seq:a.seq||0,type:'move',a}));
@@ -609,7 +787,7 @@ function logText(){
   return `${n}. kolo ${n} | ${who} | ${cardName(a.card)} | kostka ${a.die} | ${action}`;
  }).join('\n');
  const head=`TEDOKU seed ${CFG.seed} | ${CFG.ai?'AI':'SOLO'}${CFG.bonus?' | Bonus':''}${CFG.diagBonus?' | Odměny za úhlopříčky':''}${CFG.promo?' | PROMO: '+pm:''}`;
- return head+logSummary()+'\n'+lines;
+ return head+logSummary()+'\n'+lines+'\n\n'+gridSnapshots();
 }
 function modal(tools,html){$('mtools').innerHTML=tools;$('mbody').innerHTML=html;$('modal').hidden=false}
 let settingsDraft=null,settingsChanged=false;
@@ -658,7 +836,15 @@ function openHelp(){modal('',`
 <li>Karta (řádek / sloupec / sektor) + kostka (T, O, S, I, L). Při ★ si tvar vyberete sami.</li>
 <li>Pevný hod: tvar se hned objeví na desce. Při ★ vyberte jeden z pěti tvarů.</li>
 <li>Tvar <b>táhněte</b> po desce, <b>otočte / překlopte</b> tlačítky (klávesy R / F). Položení: na počítači <b>1× klepnutí mimo tvar</b> (nebo ✓); na mobilu <b>2× klepnutí mimo tvar</b> (nebo ✓).</li>
-<li>Když tvar nejde umístit, je zvýrazněn řádek, sloupec nebo sektor žlutě a tah přeskočíte (»).</li>
+<li>Když tvar nejde umístit, je zvýrazněn řádek, sloupec nebo sektor <b>žlutě</b> a tah přeskočíte (»).</li>
+</ul>
+<h4>Značení na desce</h4>
+<ul>
+<li><b>Žlutá</b> – aktuální karta (řádek / sloupec / sektor); při neplatném tahu silnější žluté podbarvení oblasti, kam tvar nejde umístit.</li>
+<li><b>Růžová</b> – povinná pole v režimu PROMO „Povinné oblasti“ (musí být všechna vyplněna, jinak 0 bodů za mřížku).</li>
+<li><b>Vodoznaky sektorů</b> – symboly na pozadí (průhledné); u Povinných oblastí slabší, u Nepravidelných sektorů silnější pro lepší orientaci.</li>
+<li><b>Modré orámování</b> – dokončený sektor; při neplatném tahu na tento sektor se dočasně změní na žluté.</li>
+<li><b>Šedý náhled tvaru</b> – zelený obrys = platná pozice, červený = neplatná.</li>
 </ul>
 <h4>Body</h4>
 <ul>
@@ -682,7 +868,7 @@ function openHelp(){modal('',`
 </ul>
 <h4>PROMO varianty</h4>
 <ul>
-<li><b>Povinné oblasti:</b> vyznačený řádek + sloupec + jeden sektor (26 polí) musí být vyplněny, jinak 0 bodů.</li>
+<li><b>Povinné oblasti:</b> vyznačený řádek + sloupec + jeden sektor (26 polí, <b>růžově</b> podbarvená) musí být vyplněny, jinak 0 bodů za mřížku.</li>
 <li><b>Nepřekročitelné hranice:</b> 3 červené čáry; tvar přes ně nesmí přejít.</li>
 <li><b>Nepravidelné sektory:</b> 9 souvislých sektorů po 9 polích (ne čtverce 3×3). Bodování zůstává.</li>
 </ul>
@@ -789,10 +975,10 @@ $('act').addEventListener('click',e=>{
  if(b.dataset.c==='rot')rotateSelected();
  else if(b.dataset.c==='flp')flipSelected();
  else if(b.dataset.c==='ok'&&G.float)put();
- else if(b.dataset.c==='skip'&&canSkipTurn()){apply('P',null,null);after('P')}
+ else if(b.dataset.c==='skip'&&canSkipTurn()){pushUndo();apply('P',null,null);after('P')}
 });
 // Rotation and flip controls stay below the board.
-$('transformControls').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!canPlay())return;if(b.dataset.c==='rot')rotateSelected();else if(b.dataset.c==='flp')flipSelected();else if(b.dataset.c==='ok'&&G.float)put();else if(b.dataset.c==='skip'&&canSkipTurn()){apply('P',null,null);after('P')}});
+$('transformControls').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!canPlay())return;if(b.dataset.c==='rot')rotateSelected();else if(b.dataset.c==='flp')flipSelected();else if(b.dataset.c==='ok'&&G.float)put();else if(b.dataset.c==='skip'&&canSkipTurn()){pushUndo();apply('P',null,null);after('P')}});
 // board: drag floating shape; outside tap places (1× desktop, 2× mobile)
 const isTouchUI=()=>window.matchMedia('(pointer:coarse)').matches||('ontouchstart' in window);
 let outsideTaps=0,outsideTapTimer=null;
@@ -835,13 +1021,13 @@ $('bd').addEventListener('pointerup',e=>{
  drag.on=false;
  // if only a tiny movement on the shape, do nothing (stay floating)
 });
-$('info').addEventListener('click',e=>{const p=e.target.closest('[data-view]');if(!p)return;const v=p.dataset.view;if(v==='A'&&!CFG.ai)return;boardView=v;draw()});
+$('info').addEventListener('click',e=>{if(e.target.closest('[data-a="settings"]')){openSettings();return}const p=e.target.closest('[data-view]');if(!p)return;const v=p.dataset.view;if(v==='A'&&!CFG.ai)return;boardView=v;draw()});
 $('info').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const p=e.target.closest('[data-view]');if(!p)return;e.preventDefault();const v=p.dataset.view;if(v==='A'&&!CFG.ai)return;boardView=v;draw()});
 $('menu').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
  if(a==='ai'){CFG.ai=!CFG.ai;restart()}
  else if(a==='bonus'){CFG.bonus=!CFG.bonus;restart()}
  else if(a==='promo'){CFG.promo=!CFG.promo;restart()}else if(a==='settings')openSettings()
- else if(a==='save')save();else if(a==='load')load();else if(a==='restart')restart();
+ else if(a==='save')save();else if(a==='load')load();else if(a==='restart')restart();else if(a==='undo')undoLastMove();
  else if(a==='log')openLog();else if(a==='help')openHelp();
  else if(a==='rep'){if(G.rep){clearInterval(TM);G.rep=null}else G.rep={step:0,playing:false};draw()}});
 $('menu2').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;CFG.pm=b.dataset.a.slice(3);restart()});
