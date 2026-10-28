@@ -278,7 +278,7 @@ function put(){
  if(G.anc<0){G.msg='Posuňte tvar na desku.';return draw()}
  const cells=place0(G.cs,G.anc),why=reasonC(cells);
  if(why){G.msg=why;return draw()}
- G.float=false;
+ resetOutsideTaps();G.float=false;
  const wasDiag=G.pendingDiag,placed=cells.map(([r,c])=>r*9+c);
  apply('P',G.sel,placed);
  if(wasDiag){logEvent('P','bonus',placed[0]);G.pendingDiag=false;G.diagQueue.shift();if(G.diagQueue.length){beginDiagBonus();return}G.mask=zoneMask(G.card);after('P');return}
@@ -290,46 +290,77 @@ function bonusPts(w){if(!CFG.bonus)return 0;const b=w==='P'?G.bonusP:G.bonusA;re
 const final=own=>{const base=G.req&&![...G.req].every(i=>own[i]>=0)?0:parts(own).v;const w=own===G.ownP?'P':'A';return base+bonusPts(w)};
 const rank=p=>p<=10?'Máte na víc!':p<=15?'Jste na správné cestě!':p<=24?'Šampion Tedoku.':p<=40?'Černý pás Tedoku.':'Podvádíte!';
 /* ---------- AI: minimax + alfa-beta, hloubka 4 ---------- */
+function countFilled(own,ids){let c=0;for(const i of ids)if(own[i]>=0)c++;return c}
+function partsVal(own){let s=0,r=0,c=0;for(let i=0;i<9;i++){if(full(own,G.sec[i]))s++;if(full(own,ROW[i]))r++;if(full(own,COL[i]))c++}return s*3+r+c}
 function ev(own){
- let s=0,f=0;
- for(const ids of G.sec){let c=0;for(const i of ids)if(own[i]>=0)c++;f+=c;s+=c===9?3:1.4*(c/9)**2}
- for(let k=0;k<9;k++){let a=0,b=0;for(const i of ROW[k])if(own[i]>=0)a++;for(const i of COL[k])if(own[i]>=0)b++;s+=(a===9?1:.7*(a/9)**2)+(b===9?1:.7*(b/9)**2)}
- s+=f*.04;
- const seen=new Uint8Array(81);let dead=0;
+ // actual end-score points dominate; progress toward full lines is secondary
+ let s=partsVal(own)*12;
+ for(const ids of G.sec){const c=countFilled(own,ids);if(c<9)s+=2.2*(c/9)**3}
+ for(let k=0;k<9;k++){
+  const a=countFilled(own,ROW[k]),b=countFilled(own,COL[k]);
+  if(a<9)s+=1.1*(a/9)**3;if(b<9)s+=1.1*(b/9)**3;
+  // almost complete lines are valuable
+  if(a===8)s+=1.6;if(b===8)s+=1.6;if(a===7)s+=.7;if(b===7)s+=.7;
+ }
+ for(const ids of G.sec){const c=countFilled(own,ids);if(c===8)s+=3.5;if(c===7)s+=1.4}
+ // connectivity / dead regions
+ const seen=new Uint8Array(81);let dead=0,singles=0;
  for(let i=0;i<81;i++){if(own[i]>=0||seen[i])continue;const st=[i],comp=[i];seen[i]=1;
   while(st.length){const x=st.pop();for(const j of nb(x))if(own[j]<0&&!seen[j]){seen[j]=1;st.push(j);comp.push(j)}}
-  if(comp.length<4){dead+=comp.length;if(G.req)for(const j of comp)if(G.req.has(j))s-=30}}
- s-=.9*dead;
- if(G.req)for(const i of G.req)if(own[i]>=0)s+=.5;
+  if(comp.length===1)singles++;
+  if(comp.length<4){dead+=comp.length;if(G.req)for(const j of comp)if(G.req.has(j))s-=40}}
+ s-=1.4*dead-0.8*singles;
+ if(G.req)for(const i of G.req)if(own[i]>=0)s+=.6;
+ // slight preference for filling more cells (fewer empties)
+ s+=own.filter(x=>x>=0).length*.05;
  return s}
-function topMoves(own,mv,n){const sc=mv.map(m=>{m.ids.forEach(i=>own[i]=1);const v=ev(own);m.ids.forEach(i=>own[i]=-1);return[v,m]});sc.sort((a,b)=>b[0]-a[0]);return sc.slice(0,n).map(x=>x[1])}
+function moveScore(own,m){
+ // immediate score gain + heuristic after the move
+ const before=partsVal(own);
+ m.ids.forEach(i=>own[i]=1);
+ const after=partsVal(own);
+ let v=ev(own)+(after-before)*20;
+ // prefer die shapes over spending bonuses early
+ if(BONUS.includes(m.key)||m.key==='D1')v-=(after>before?0:2.5);
+ m.ids.forEach(i=>own[i]=-1);
+ return v}
+function topMoves(own,mv,n){
+ const sc=mv.map(m=>[moveScore(own,m),m]);
+ sc.sort((a,b)=>b[0]-a[0]);
+ return sc.slice(0,n).map(x=>x[1])}
 const withMove=(own,m)=>{const o=own.slice();m.ids.forEach(i=>o[i]=1);return o};
 function samples(rem,rr,n){const out=[];for(let i=0;i<n;i++)out.push([rem[rr()*rem.length|0],FACES[rr()*6|0]]);return out}
 // Uzel „příroda“ (min): vybere nejhorší karta+kostka. Uzel AI (max): vybere nejlepší zakreslení.
 function natureNode(own,rem,d,alpha,beta,rr){
- if(!rem.length)return ev(own);
+ if(!rem.length||d<=0)return ev(own);
  let v=1e9;const base=d===1?ev(own):0;
- for(const[card,die]of samples(rem,rr,3)){
+ for(const[card,die]of samples(rem,rr,4)){
   const mask=zoneMask(card),keys=dieKeys(die,'A');
   let val;
-  if(d===1)val=base-(genMoves(own,keys,mask,true).length?0:4);
+  if(d===1)val=base-(genMoves(own,keys,mask,true).length?0:6);
   else val=aiNode(own,mask,keys,rem,d-1,alpha,Math.min(beta,v),rr);
   if(val<v)v=val;if(v<=alpha)break}
  return v}
 function aiNode(own,mask,keys,rem,d,alpha,beta,rr){
  const mv=genMoves(own,keys,mask);
- if(!mv.length)return natureNode(own,rem,d-1,alpha,beta,rr)-4;
+ if(!mv.length)return natureNode(own,rem,d-1,alpha,beta,rr)-6;
  let v=-1e9;
- for(const m of topMoves(own.slice(),mv,5)){
+ for(const m of topMoves(own.slice(),mv,8)){
   const r=natureNode(withMove(own,m),rem,d-1,Math.max(alpha,v),beta,rr);
   if(r>v)v=r;if(v>=beta)break}
  return v}
 function aiChoose(){
- const mv=genMoves(G.ownA,dieKeys(G.die,'A'),G.mask);if(!mv.length)return null;
+ // try die shapes first; only fall back to bonuses if die cannot place
+ const dieOnly=G.die==='*'?ALL5:[G.die];
+ let mv=genMoves(G.ownA,dieOnly,G.mask);
+ if(!mv.length)mv=genMoves(G.ownA,dieKeys(G.die,'A'),G.mask);
+ if(!mv.length)return null;
  const rr=rng32(CFG.seed*31+G.t*17+5),rem=G.deck.slice(G.t+1);
+ // late game: deeper look at remaining cards; early: still depth 3-4
+ const depth=rem.length<=8?4:3;
  let best=null,bv=-1e9;
- for(const m of topMoves(G.ownA.slice(),mv,6)){
-  const v=natureNode(withMove(G.ownA,m),rem,3,bv,1e9,rr);
+ for(const m of topMoves(G.ownA.slice(),mv,10)){
+  const v=natureNode(withMove(G.ownA,m),rem,depth,bv,1e9,rr);
   if(v>bv||!best){bv=v;best=m}}
  return best}
 function scheduleAI(){const id=G.id;setTimeout(function w(){if(G.id!==id||G.over)return;if(G.rep){setTimeout(w,300);return}aiTurn()},450)}
@@ -379,29 +410,30 @@ function boardSVG(own,card,o){
  G.icons.forEach((i,k)=>s+=`<use href="#i${k}" class="wm" x="${OX+(i%9)*S+S/2-27}" y="${OY+(i/9|0)*S+S/2-27}" width="54" height="54"/>`);
  let thin='';for(let i=1;i<9;i++)thin+=`M${OX+i*S} ${OY}v${9*S}M${OX} ${OY+i*S}h${9*S}`;
  s+=`<path d="${thin}" class="bs" stroke-width="1.3"/>`;
- // solid colored cells (separated), last move has center dots, same-color neighbors get hatch
+ // hatched fill (like paper scribble) so grid lines stay readable
  const keyArr=o.keys||(own===G.ownA?G.keyA:G.keyP);
- const dirs=[[0,1],[1,0]];
+ const uid=o.uid||'b';
+ const hatchDefs=new Set();
+ let defs='';
  for(let i=0;i<81;i++)if(own[i]>=0){
-  const x=OX+(i%9)*S+1,y=OY+(i/9|0)*S+1,r=i/9|0,c=i%9;
+  const k=keyArr[i]||'_',col=COLORS[k]||'#555';
+  if(!hatchDefs.has(k)){
+   hatchDefs.add(k);
+   // dense diagonal hatch, transparent background → sudoku grid shows through
+   defs+=`<pattern id="${uid}ht${k}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(42)"><line x1="0" y1="0" x2="0" y2="5" stroke="${col}" stroke-width="2.6"/></pattern>`;
+  }
+ }
+ if(defs)s+=`<defs>${defs}</defs>`;
+ for(let i=0;i<81;i++)if(own[i]>=0){
+  const x=OX+(i%9)*S+1,y=OY+(i/9|0)*S+1;
   const isLast=lastIds.has(i);
-  const k=keyArr[i],col=COLORS[k]||'#888';
-  s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="${col}" stroke="#fffaf0" stroke-width="2"/>`;
-  // hatch if same-color neighbor (different placement)
-  let hatch=false;
-  for(const [dr,dc] of dirs){
-   const j=(r+dr)*9+(c+dc);
-   if(r+dr<9&&c+dc<9&&own[j]>=0&&keyArr[j]===k&&own[j]!==own[i])hatch=true;
-  }
-  if(hatch){
-   const pid=o.uid||'h';
-   s+=`<defs><pattern id="${pid}h${i}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#000" stroke-width="2" opacity=".25"/></pattern></defs>`;
-   s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="url(#${pid}h${i})"/>`;
-  }
-  // last-move dots
+  const k=keyArr[i]||'_',col=COLORS[k]||'#555';
+  // light tint + hatch so cell isn't a solid block
+  s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="${col}" opacity=".18"/>`;
+  s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="url(#${uid}ht${k})"/>`;
   if(isLast){
    const cx=x+(S-2)/2,cy=y+(S-2)/2,rad=Math.max(3,S*0.12);
-   s+=`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="#fff" stroke="#222" stroke-width="1"/>`;
+   s+=`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="#fff" stroke="#222" stroke-width="1.2"/>`;
   }
  }
  let th='';
@@ -425,19 +457,26 @@ function boardSVG(own,card,o){
   if(full(own,ROW[i]))s+=`<path d="M${rx+6} ${ry+6}l18 18m0-18l-18 18" class="rs" stroke-width="4"/>`;
   if(full(own,COL[i]))s+=`<path d="M${cx+6} ${cy+6}l18 18m0-18l-18 18" class="bs" stroke-width="4"/>`}
  if(o.ghost&&G.cs&&G.anc>=0){
-  const cells=place0(G.cs,G.anc),ok=!reasonC(cells),gcol=COLORS[G.sel]||'#263a8f';
+  const cells=place0(G.cs,G.anc),ok=!reasonC(cells),gcol='#4a4a4a';
+  const border=ok?'#1f8a4c':'#e8202a';
   const visible=cells.filter(([r,c])=>r>=0&&r<9&&c>=0&&c<9);
-  // Adapt preview contrast to what is underneath each cell. Occupied cells get a bright
-  // translucent overlay; empty cells keep the piece colour. Double outlines stay visible
-  // on both light and dark colours and over the grid lines.
+  const inShape=new Set(visible.map(([r,c])=>r*9+c));
+  // grey fill per cell; single outer outline of the whole shape (green=ok, red=invalid)
   visible.forEach(([r,c])=>{
    const i=r*9+c,occupied=G.ownP[i]>=0,x=OX+c*S+1,y=OY+r*S+1;
-   const fill=ok?(occupied?'#fff':gcol):'#ff2638';
-   const opacity=occupied?.86:.78;
-   s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="${fill}" opacity="${opacity}" stroke="#111" stroke-width="5"/>`;
-   s+=`<rect x="${x+3}" y="${y+3}" width="${S-8}" height="${S-8}" rx="4" fill="none" stroke="${occupied?'#ffdf3a':'#fff'}" stroke-width="3.5" stroke-dasharray="6 3"/>`;
-   if(occupied)s+=`<path d="M${x+8} ${y+8}l${S-18} ${S-18}m0 -${S-18}l-${S-18} ${S-18}" stroke="#111" stroke-width="2" opacity=".7"/>`;
+   s+=`<rect x="${x}" y="${y}" width="${S-2}" height="${S-2}" fill="${gcol}" opacity="${occupied?.65:.8}"/>`;
+   if(occupied)s+=`<path d="M${x+10} ${y+10}l${S-22} ${S-22}m0 -${S-22}l-${S-22} ${S-22}" stroke="#fff" stroke-width="2" opacity=".7"/>`;
   });
+  // outer perimeter only
+  let ol='';
+  visible.forEach(([r,c])=>{
+   const x=OX+c*S+1,y=OY+r*S+1,w=S-2,h=S-2;
+   if(!inShape.has(r*9+c-1))ol+=`M${x} ${y}v${h}`;
+   if(!inShape.has(r*9+c+1))ol+=`M${x+w} ${y}v${h}`;
+   if(!inShape.has((r-1)*9+c))ol+=`M${x} ${y}h${w}`;
+   if(!inShape.has((r+1)*9+c))ol+=`M${x} ${y+h}h${w}`;
+  });
+  if(ol)s+=`<path d="${ol}" fill="none" stroke="${border}" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>`;
  }
  return s}
 function view(){
@@ -565,7 +604,7 @@ function openHelp(){modal('',`
 <ul>
 <li>Karta (řádek / sloupec / sektor) + kostka (T, O, S, I, L). Při ★ si tvar vyberete sami.</li>
 <li>Pevný hod: tvar se hned objeví na desce. Při ★ vyberte jeden z pěti tvarů.</li>
-<li>Tvar <b>táhněte</b> po desce, <b>otočte / překlopte</b> tlačítky (klávesy R / F) a <b>klepnutím mimo tvar</b> (nebo ✓) ho položíte.</li>
+<li>Tvar <b>táhněte</b> po desce, <b>otočte / překlopte</b> tlačítky (klávesy R / F). Položení: na počítači <b>1× klepnutí mimo tvar</b> (nebo ✓); na mobilu <b>2× klepnutí mimo tvar</b> (nebo ✓).</li>
 <li>Když tvar nejde umístit, je zvýrazněn řádek, sloupec nebo sektor žlutě a tah přeskočíte (»).</li>
 </ul>
 <h4>Body</h4>
@@ -671,15 +710,15 @@ function paintTray(){
  $('trayHint').textContent='';
 }
 function selectShape(k){
- boardView='P';floatShape(k);paintTray();paintBoard();
+ boardView='P';resetOutsideTaps();floatShape(k);paintTray();paintBoard();
 }
 function rotateSelected(){
  if(!G.float||!G.sel)return;
- G.rot=((G.rot||0)+1)%4;syncCS();paintTray();paintBoard();
+ resetOutsideTaps();G.rot=((G.rot||0)+1)%4;syncCS();paintTray();paintBoard();
 }
 function flipSelected(){
  if(!G.float||!G.sel)return;
- G.flip=!G.flip;syncCS();paintTray();paintBoard();
+ resetOutsideTaps();G.flip=!G.flip;syncCS();paintTray();paintBoard();
 }
 // tray buttons
 $('act').addEventListener('click',e=>{
@@ -693,18 +732,30 @@ $('act').addEventListener('click',e=>{
 });
 // Rotation and flip controls stay below the board.
 $('transformControls').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!canPlay())return;if(b.dataset.c==='rot')rotateSelected();else if(b.dataset.c==='flp')flipSelected();else if(b.dataset.c==='ok'&&G.float)put();else if(b.dataset.c==='skip'&&canSkipTurn()){apply('P',null,null);after('P')}});
-// board: drag floating shape, tap outside = place
+// board: drag floating shape; outside tap places (1× desktop, 2× mobile)
+const isTouchUI=()=>window.matchMedia('(pointer:coarse)').matches||('ontouchstart' in window);
+let outsideTaps=0,outsideTapTimer=null;
+function resetOutsideTaps(){outsideTaps=0;if(outsideTapTimer){clearTimeout(outsideTapTimer);outsideTapTimer=null}}
 $('bd').addEventListener('pointerdown',e=>{
  if(boardView!=='P'||!canPlay()||!G.float||!G.cs||e.button!==0)return;e.preventDefault();
  const i=cellAt(e);if(i<0)return;
  const cells=shapeCellsAt(G.anc);
- // if tap on the floating shape → start drag; outside → place
  if(cells.includes(i)){
+  resetOutsideTaps();
   drag={on:true,moved:false,x:e.clientX,y:e.clientY,startAnc:G.anc};
   try{$('bd').setPointerCapture(e.pointerId)}catch(err){}
  }else{
-  // tap outside shape → place at current position
-  put();
+  // mobile: 2 taps outside to confirm; desktop: 1 tap
+  if(isTouchUI()){
+   outsideTaps++;
+   if(outsideTaps>=2){resetOutsideTaps();put()}
+   else{
+    G.msg='Znovu klepněte mimo tvar pro potvrzení umístění.';
+    $('msg').textContent=G.msg;
+    if(outsideTapTimer)clearTimeout(outsideTapTimer);
+    outsideTapTimer=setTimeout(()=>{resetOutsideTaps();if(G.msg&&G.msg.indexOf('Znovu klepněte')===0){G.msg='';$('msg').textContent=''}},2500);
+   }
+  }else{resetOutsideTaps();put()}
  }
 });
 $('bd').addEventListener('pointermove',e=>{
@@ -715,7 +766,7 @@ $('bd').addEventListener('pointermove',e=>{
  if(i>=0&&i!==G.anc){
   const h=Math.max(...G.cs.map(p=>p[0]))+1,w=Math.max(...G.cs.map(p=>p[1]))+1;
   const rr=Math.max(0,Math.min(9-h,(i/9|0))),cc=Math.max(0,Math.min(9-w,i%9));
-  const a=rr*9+cc;if(a!==G.anc){G.anc=a;paintBoard()}
+  const a=rr*9+cc;if(a!==G.anc){resetOutsideTaps();G.anc=a;paintBoard()}
  }
 });
 $('bd').addEventListener('pointerup',e=>{
